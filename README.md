@@ -1,20 +1,3 @@
-<head>
-<style>
-body {
-    text-align:justify;
-    width: 800px;
-    background-color:#F0F0F0;
-    margin-left: auto;
-    margin-right: auto;
-}
-section#text {
-    background-color: #DDD;
-    padding: 5px 20px;
-}
-</style>
-</head>
-<section id="text">
-
 Introduction
 ============
 
@@ -467,10 +450,6 @@ Bill Vaglienti
 
 Five by Five Development, LLC
 
-info@fivebyfivedevelopment.com
-
 [www.fivebyfivedevelopment.com](http://www.fivebyfivedevelopment.com)
  
 Before founding Five by Five Development in 2013 I was co-founder of [Cloud Cap Technology](http://www.cloudcaptech.com), which developed the Piccolo flight management system. Although Piccolo was at heart a flight controller, I spent more time coding communications protocols than anything else. Hopefully ProtoGen will allow myself and others to spend less time doing that.
-
-</section>
