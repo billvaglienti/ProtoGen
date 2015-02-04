@@ -2,7 +2,6 @@
 #include "protocolpacket.h"
 #include "enumcreator.h"
 #include "protocolscaling.h"
-#include "fieldarraycoding.h"
 #include "fieldcoding.h"
 #include "protocolsupport.h"
 #include <QDomDocument>
