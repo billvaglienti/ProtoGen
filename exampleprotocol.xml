@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+
+<Protocol name="Demolink" prefix="" api="1" version="1.0.0.a" endian="big"
+          comment="This is an demonstration protocol definition. This file demonstrates most things 
+                   that the ProtoGen application can do regarding automatic protocol packing/upacking
+                   code generation.
+
+                   ProtoGen can handle bitfields, enumerations, arrays, and can 
+                   efficiently encode data for little or big endian architectures.">
+
+    <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
+
+    <Enum name="packetIds" comment="The list of packet identifiers">
+        <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts"/>
+        <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
+        <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
+        <Value name="THROTTLESETTINGS" comment="Throttle settings packet"/>
+        <Value name="VERSION" value="20" comment="Version reporting packet"/>
+        <Value name="TELEMETRY" comment="Regular elemetry packet"/>
+        <Value name="GPS" comment="Data for a single GPS"/>
+
+    </Enum>
+
+    <Packet name="KeepAlive" ID="KEEPALIVE" comment="Send this packet to inform the receiver that the communications link is still active."/>
+
+    <Structure name="GPS" comment="Information from a GPS including the position, velocity, and quality data.
+                                   This is a generic GPS description that should suffice for most GPS devices">
+
+        <Structure name="PositionLLA" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
+            <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="3.15" comment="The latitude of the position in radians, positive North"/>
+            <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="3.15" comment="The longitude of the position in radians, positive East"/>
+            <Data name="altitude" inMemoryType="float64" encodedType="unsigned24" min="-1000" scaler="1000" comment="The altitude above the WGS-84 ellipsoid of the position in meters"/>
+        </Structure>
+
+        <Structure name="VelocityNED" comment="Velocity in North, East, Down">
+            <Data name="north" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the North direction"/>
+            <Data name="east" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the East direction"/>
+            <Data name="down" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the Down direction"/>
+        </Structure>
+
+        <Data name="ITOW" inMemoryType="unsigned32" comment="GPS time of week in milliseconds"/>
+        <Data name="Week" inMemoryType="unsigned16" comment="GPS week number"/>
+        <Data name="PDOP" inMemoryType="float32" encodedType="unsigned 8" min = "0" max="25.5" comment="Position dilution of precision"/>
+        <Data name="numSvInfo" inMemoryType="unsigned8" comment="The number of space vehicles for which there is data in this structure"/>
+        <Structure name="svInfo" array="24" variableArray="numSvInfo" comment="details about individual space vehicles">
+            <Data name="PRN" inMemoryType="unsigned8" comment="Satellite psuedo-random-number identifier"/>
+            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="3.15" comment="elevation angle of the satellite in radians"/>
+            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="3.15" comment="azimuth angle of the satellite in radians"/>
+            <Data name="L1CNo" inMemoryType="unsigned8" comment="Carrier to noise ratio in dB-Hz for the L1 frequency"/>
+            <Data name="L2CNo" inMemoryType="unsigned8" comment="Carrier to noise ratio in dB-Hz for the L2 frequency"/>
+            <Data name="visible" inMemoryType="bitfield1" comment="Set if the satellite should be visible"/>
+            <Data name="tracked" inMemoryType="bitfield1" comment="Set if the satellite is tracked"/>
+            <Data name="healthy" inMemoryType="bitfield1" comment="Set if the satellite is reporting itself as health"/>
+            <Data name="used" inMemoryType="bitfield1" comment="Set if the satellite is used in the current PVT solution"/>
+        </Structure>
+    </Structure>
+
+    <Packet name="GPS" file="GPS" comment="Packet for a single GPS">
+        <Data name="gps" struct="GPS"/>
+    </Packet>
+
+    <Packet name="EngineCommand" file="Engine" ID="ENGINECOMMAND"
+            comment="Engine command packet. Send this packet to change the engines operating point. The command can be
+            either a throttle or an RPM. The interpretation of the command is a function of the engine operating mode,
+            see the EngineSettings packet.">
+	
+        <Data name="command" inMemoryType="float32" comment="The engine command, which is a throttle or an RPM depending on the engine control mode"/>
+
+    </Packet>
+   
+    <Packet name="EngineSettings" file="Engine" ID="ENGINESETTINGS"
+            comment="Change the engine control settings, including the operating
+            mode and feedback gains. Engine settings are stored non-volatilely each
+            time this packet is received. Send this packet with zero length to
+            request the current engine settings.">
+    
+        <Enum name="engineModes" comment="Modes of operation for the engine">
+            <Value name="openLoop" comment="Engine control using direct throttle command with no feedback"/>
+            <Value name="throttleToRPM" comment="Throttle command is mapped to an RPM command"/>
+            <Value name="directRPM" comment="RPM is commanded directly by the user"/>
+        </Enum>
+            
+        <Data name="mode" enum="engineModes" encodedType="unsigned8" comment="Engine control mode of operation"/>
+        <Data name="grain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
+        <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
+    </Packet>
+
+    <Packet name="ThrottleSettings" file="Engine" ID="THROTTLESETTINGS"
+            comment="Change the throttle control settings. The engine control
+            laws output a throttle command signal from 0 to 1. The data in this
+            packet are used to determine what pulse width to send to the servo 
+            for that throttle. The throttle to pulse width mapping can be a 
+            straight line, or a linearly interpolated table with up to 10 points.">
+        
+        <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
+        <Data name="reserved" inMemoryType="bitfield3"/>
+        <Data name="enableCurve" inMemoryType="bitfield1" comment="Set to enable the throttle curve"/>
+        
+        <Structure name="curvePoint" array="10" variableArray="numCurvePoints" comment="table for throttle calibration">
+            <Data name="throttle" inMemoryType="float32" encodedType="unsigned8" min="0.0" max="1.0"
+                  comment="Throttle for this curve point, from 0.0 to 1.0"/>
+            <Data name="PWM" inMemoryType="unsigned16"
+                  comment="PWM in microseconds for this curve point"/>
+        </Structure>
+
+        <Data name="lowPWM" inMemoryType="unsigned16" default="1100"
+              comment="PWM in microseconds for 0% throttle"/>
+        <Data name="highPWM" inMemoryType="unsigned16" default="1900"
+              comment="PWM in microseconds for 100% throttle"/>
+        
+    </Packet>
+            
+    <Structure name="Date" comment="Calendar date information">
+        <Data name="year" inMemoryType="unsigned16" comment="year of the date"/>
+        <Data name="month" inMemoryType="unsigned8" comment="month of the year, from 1 to 12"/>
+        <Data name="day" inMemoryType="unsigned8" comment="day of the month, from 1 to 31"/>
+    </Structure>
+    
+    <Structure name="Board" comment="Manufacturing and calibration details about the board hardware">
+        <Data name="manufactureDate" struct="Date" comment="The date this board was manufactured"/>
+        <Data name="calibratedDate" struct="Date" comment="The date this board was calibrated and tested"/>
+        <Data name="serialNumber" inMemoryType="unsigned32" comment="serial number of the board"/>
+        <Data name="assemblyNumber" inMemoryType="bitfield31" comment="serial number of the assembly"/>
+        <Data name="isCalibrated" inMemoryType="bitfield1" comment="set if the board has been calibrated"/>        
+    </Structure>
+
+    <Packet name="Version"  parameterInterface="true" structureInterface="true"
+            comment="Version information for the software and hardware. Send
+            this packet with zero lengtht to request the version information.">
+        
+        <Data name="board" struct="Board" comment="details about this boards provenance"/>
+        <Data name="major" inMemoryType="unsigned8" comment="major version of the software"/>
+        <Data name="minor" inMemoryType="unsigned8" comment="minor version of the software"/>
+        <Data name="sub" inMemoryType="unsigned8" comment="sub version of the software"/>
+        <Data name="patch" inMemoryType="unsigned8" comment="patch version of the software"/>
+        <Data name="date" struct="Date" comment="the release date of the software"/>
+        <Data name="description" inMemoryType="signed8" array = "64" encodedType = "string"
+              comment="description of the software version"/>
+        
+    </Packet>
+    
+    <Packet name="Telemetry" comment="GPS and other position telemetry. This packet is transmitted spontaneously 4 times a second.">
+        
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned64"
+              comment="Reserve 8 bytes of space for future expansion"/>
+        <Data name="reserved" inMemoryType="null" array="N3D" encodedType="unsigned8"
+              comment="Reserve an array for future expansion"/>
+        <Data name="magIncluded" inMemoryType="bitfield1" comment="set if magnetometer data are included in this packet"/>
+        <Data name="laserIncluded" inMemoryType="bitfield1" comment="set if laser range finder data are included in this packet"/>
+        <Data name="airDataIncluded" inMemoryType="bitfield1" comment="set if air data are included in this packet"/>
+        <Data name="numGPSs" inMemoryType="uint8_t" comment="number of GPS sources"/>
+        <Data name="gpsData" struct="GPS" array="3" variableArray="numGPSs" comment="Information from all possible GPS systems"/>
+        <Data name="ECEF" inMemoryType="double" array="N3D" encodedType="null"
+              comment="Position in Earth-centered, Earth-fixed meters; not part of the packet"/>
+        <Data name="numControls" inMemoryType="unsigned8" comment="number of control signals"/>
+        <Data name="controls" inMemoryType="float" array="16" variableArray="numControls" encodedType="int16_t" max="1.5" comment="control signals in radians or -1.0 to 1.0 for dimensionless controls"/>
+        <Data name="numFueltanks" inMemoryType="uint8_t" comment="number of fuel tanks intalled"/>
+        <Data name="fuel" inMemoryType="float" array="8" variableArray="numFueltanks" encodedType="float16" comment="kilograms of fuel remaining in each tank"/>
+        <Data name="dynamicP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" min="-200" max="16000" comment="Dynamic pressure in Pascals"/>
+        <Data name="staticP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" max="115000" comment="Static pressure in Pascals"/>
+        <Data name="OAT" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint8_t" min="200" max="400" comment="Outside air temperature in Kelvin"/>
+        <Data name="mag" inMemoryType="float" array="N3D" dependsOn="magIncluded" encodedType="int16_t" max="100000" comment="magnetic field in nanoTesla in body X, Y, Z"/>
+        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" encodedType="int16_t" max="3.15" comment="True heading computed by magnetic field in radians"/>
+        <Data name="laserAGL" inMemoryType="float" dependsOn="laserIncluded" encodedType="uint16_t" min="-5" max="145" comment="Altitude above ground in meters as measured by the laser altimeter"/>
+
+    </Packet>
+    
+</Protocol>
