@@ -1,5 +1,6 @@
 #include "protocolfield.h"
 #include "protocolparser.h"
+#include "shuntingyard.h"
 #include <QString>
 #include <QDomElement>
 #include <iostream>
@@ -717,7 +718,7 @@ void ProtocolField::parse(const QDomElement& field)
                             std::cout << name.toStdString() << ": min value ignored because encoded type is signed" << std::endl;
                         else
                         {
-                            encodedMin = minString.toDouble(&ok);
+                            encodedMin = ShuntingYard::computeInfix(minString, &ok);
 
                             if(!ok)
                                 std::cout << name.toStdString() + ": min is not a number, 0.0 assumed" << std::endl;
@@ -726,7 +727,7 @@ void ProtocolField::parse(const QDomElement& field)
 
                     if(!maxString.isEmpty())
                     {
-                        encodedMax = maxString.toDouble(&ok);
+                        encodedMax = ShuntingYard::computeInfix(maxString, &ok);
                         if(!ok)
                         {
                             std::cout << name.toStdString() + ": max is not a number, 1.0 assumed" << std::endl;
@@ -749,7 +750,8 @@ void ProtocolField::parse(const QDomElement& field)
                     }
                     else if(!scalerString.isEmpty())
                     {
-                        scaler = scalerString.toDouble(&ok);
+                        scaler = ShuntingYard::computeInfix(scalerString, &ok);
+
                         if(!ok)
                         {
                             std::cout << name.toStdString() + ": scaler is not a number, 1.0 assumed" << std::endl;

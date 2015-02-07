@@ -31,7 +31,8 @@ SOURCES += main.cpp \
     protocolstructure.cpp \
     protocolstructuremodule.cpp \
     protocolsupport.cpp \
-    encodedlength.cpp
+    encodedlength.cpp \
+    shuntingyard.cpp
 
 HEADERS += \
     protocolparser.h \
@@ -45,7 +46,8 @@ HEADERS += \
     protocolstructure.h \
     protocolstructuremodule.h \
     protocolsupport.h \
-    encodedlength.h
+    encodedlength.h \
+    shuntingyard.h
 
 RESOURCES += \
     ProtoGen.qrc

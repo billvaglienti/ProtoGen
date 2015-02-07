@@ -27,8 +27,8 @@
                                    This is a generic GPS description that should suffice for most GPS devices">
 
         <Structure name="PositionLLA" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
-            <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="3.15" comment="The latitude of the position in radians, positive North"/>
-            <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="3.15" comment="The longitude of the position in radians, positive East"/>
+            <Data name="latitude" inMemoryType="float64" encodedType="signed32" scaler="2^31/(pi/2)" comment="The latitude of the position in radians, positive North"/>
+            <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="pi" comment="The longitude of the position in radians, positive East"/>
             <Data name="altitude" inMemoryType="float64" encodedType="unsigned24" min="-1000" scaler="1000" comment="The altitude above the WGS-84 ellipsoid of the position in meters"/>
         </Structure>
 
@@ -44,8 +44,8 @@
         <Data name="numSvInfo" inMemoryType="unsigned8" comment="The number of space vehicles for which there is data in this structure"/>
         <Structure name="svInfo" array="24" variableArray="numSvInfo" comment="details about individual space vehicles">
             <Data name="PRN" inMemoryType="unsigned8" comment="Satellite psuedo-random-number identifier"/>
-            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="3.15" comment="elevation angle of the satellite in radians"/>
-            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="3.15" comment="azimuth angle of the satellite in radians"/>
+            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="pi" comment="elevation angle of the satellite in radians"/>
+            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="pi" comment="azimuth angle of the satellite in radians"/>
             <Data name="L1CNo" inMemoryType="unsigned8" comment="Carrier to noise ratio in dB-Hz for the L1 frequency"/>
             <Data name="L2CNo" inMemoryType="unsigned8" comment="Carrier to noise ratio in dB-Hz for the L2 frequency"/>
             <Data name="visible" inMemoryType="bitfield1" comment="Set if the satellite should be visible"/>
