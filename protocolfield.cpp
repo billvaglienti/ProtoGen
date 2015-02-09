@@ -13,6 +13,7 @@ TypeData::TypeData() :
     isFloat(false),
     isEnum(false),
     isString(false),
+    isFixedString(false),
     isNull(false),
     bits(8)
 {
@@ -26,6 +27,7 @@ TypeData::TypeData(const TypeData& that) :
     isFloat(that.isFloat),
     isEnum(that.isEnum),
     isString(that.isString),
+    isFixedString(that.isFixedString),
     isNull(that.isNull),
     bits(that.bits)
 {
@@ -561,15 +563,17 @@ void ProtocolField::parse(const QDomElement& field)
         if(inMemoryType.isStruct || inMemoryType.isString || inMemoryType.isBitfield || encodedType.isBitfield || encodedType.isNull)
         {
             std::cout << name.toStdString() << ": min, max, and scaler do not apply to this type data" << std::endl;
+            maxString.clear();
+            minString.clear();
+            scalerString.clear();
         }
         else if(encodedType.isFloat)
         {
             std::cout << name.toStdString() << ": min, max, and scaler are ignored because encoded type is float, which are never scaled" << std::endl;
+            maxString.clear();
+            minString.clear();
+            scalerString.clear();
         }
-
-        maxString.clear();
-        minString.clear();
-        scalerString.clear();
     }
 
     if(inMemoryType.isString)

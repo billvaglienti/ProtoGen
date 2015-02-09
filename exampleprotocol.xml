@@ -172,7 +172,7 @@
         <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t"/>
         <Data name="constant2" inMemoryType="signed8" array="24" encodedType="string" constant="To be or not to be" comment="encoding a string constant"/>
         <Data name="cos45" inMemoryType="float32" constant="0.70710678118654752440084436210485" comment="directly encoding floating point constant"/>
-        <Data name="sin45" inMemoryType="float32" array="3" constant="0.70710678118654752440084436210485" encodedType="signed8" min="-1" max ="1" comment="scaling a floating point constant"/>
+        <Data name="sin45" inMemoryType="float32" array="3" constant="0.70710678118654752440084436210485" encodedType="signed8" max ="1" comment="scaling a floating point constant"/>
         <Data name="constant3" inMemoryType="unsigned32" constant="327612" comment="encoding an integer constant"/>
         <Data name="token" inMemoryType="unsigned8" comment="A value that the user provides"/>
     </Packet>
