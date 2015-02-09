@@ -21,14 +21,14 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.0.3. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenInstall.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGen.zip).
+This document refers to ProtoGen version 1.1.0. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip).
 
 ---
 
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]`. `Protocol.xml` is the file that defines the protocol details. `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run. `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. `-no-helper-files' will cause ProtoGen to skip the output of files not directly specified by the protocol.xml.
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]`. `Protocol.xml` is the file that defines the protocol details. `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run. `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. `-no-helper-files` will cause ProtoGen to skip the output of files not directly specified by the protocol.xml.
 
 Dependencies
 ------------
@@ -168,7 +168,7 @@ Structure tag Attributes:
 
 ###Structure : Data subtags
 
-The Structure tag supports Data subtags. Each Data tag represents one line in the structure definition. In the Date structure example the Data tags are simple. The Data tags are explained in more detail in the section on packets.
+The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. In the Date structure example the Data tags are simple. The data tags are explained in more detail in the section on packets.
     
     <Structure name="Date" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" comment="year of the date"/>
@@ -216,7 +216,7 @@ Packet tag attributes:
 
 ###Packet : Data subtags
 
-The Packet tag supports Data subtags. The Data tag is the most complex part of the packet definition. Each Data tag represents one line in the packets structure definition, and one hunk of data in the packets encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
+The Packet tag supports data subtags. The data tag is the most complex part of the packet definition. Each Data tag represents one line in the packets structure definition, and one hunk of data in the packets encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
 	        
     <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
     <Data name="reserved" inMemoryType="bitfield3"/>
@@ -306,7 +306,7 @@ Data subtag attributes:
 
 - `constant` : is used to specify that this field in a packet is to always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-prior known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
 
-- `comment` : A one line doxygen comment that follows the Data declaration.
+- `comment` : A one line doxygen comment that follows the data declaration.
 
 ---
 
