@@ -61,7 +61,7 @@ win32{
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall\exampleprotocol.xml)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)\release\ProtoGen.exe)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.exe)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$[QT_INSTALL_BINS]\windeployqt $$shell_path($$quote($$PWD\ProtoGenInstall\ProtoGen.exe)) $$escape_expand(\n\t)
-        QMAKE_POST_LINK += $$quote(perl) $$quote($$shell_path($$PWD\Markdown.pl)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.txt)) > $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.html)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$quote(perl) $$quote($$shell_path($$PWD\Markdown.pl)) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.html)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$quote(\Program Files\7-Zip\7z) a $$quote($$shell_path($$PWD\ProtoGenInstall.zip)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
     }
 }

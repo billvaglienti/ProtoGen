@@ -28,11 +28,7 @@ public:
     //! Output the markdown documentation for this structure and its children
     virtual QString getMarkdown(QString prefix) const;
 
-    /*!
-     * Output the top level markdown documentation for the this structure and its children
-     * \param indent is the markdown indentation level
-     * \return the markdown documentation for this structure and its children
-     */
+    //! Output the top level markdown documentation for the this structure and its children
     QString getTopLevelMarkdown(QString indent) const;
 
 protected:

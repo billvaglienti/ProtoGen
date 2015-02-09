@@ -6,7 +6,7 @@
 class ProtocolFile
 {
 public:
-    ProtocolFile(const QString& moduleName);
+    ProtocolFile(const QString& moduleName, bool onlyversion = false);
 
     ProtocolFile();
 
@@ -21,6 +21,9 @@ public:
 
     //! Set the name of the module
     void setModuleName(const QString& name);
+
+    //! Set the versionOnly flag, which controls if version and date or just version are output
+    void setVersionOnly(bool onlyversion) {versionOnly = onlyversion;}
 
     //! Return the filename
     virtual QString fileName(void) const = 0;
@@ -47,6 +50,7 @@ protected:
 
     bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
     bool appending;     //!< Flag set if an append operation is in progress
+    bool versionOnly;   //!< Flag to limit protogen notice to use only the version, not the date and time
 };
 
 

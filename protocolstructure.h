@@ -33,20 +33,17 @@ public:
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const {return bitfields;}
 
-    //! True if this encodable has a direct child that uses arrays
-    virtual bool usesArrays(void) const {return arrays;}
-
-    //! True if this encodable has a direct child that uses a reserved array field
-    virtual bool usesReservedArrays(void) const {return reservedArrays;}
+    //! True if this encodable has a direct child that needs an iterator
+    virtual bool usesIterator(void) const {return needsIterator;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return defaults;}
 
-    //! True if this encodable has a direct child that uses default arrays
-    virtual bool usesDefaultArrays(void) const {return defaultArrays;}
+    //! Get the number of encoded fields
+    int getNumberOfEncodes(void) const;
 
-    //! True if this encodable has a direct child that uses strings
-    virtual bool usesStrings(void) const {return strings;}
+    //! Get the number of encoded fields whose value is set by the user.
+    int getNumberOfNonConstEncodes(void) const;
 
     //! Get the declaration for this structure as a member of another
     virtual QString getDeclaration(void) const;
@@ -78,10 +75,8 @@ protected:
     QList<Encodable*> encodables;
 
     bool bitfields;             //!< True if this structure uses bitfields
-    bool arrays;                //!< True if this structure uses arrays
-    bool reservedArrays;        //!< True if this structure has a null (reserved) array field
+    bool needsIterator;                //!< True if this structure uses arrays
     bool defaults;              //!< True if this structure uses default values
-    bool defaultArrays;         //!< True if this structure uses default values in arrays
     bool strings;               //!< True if this structure uses strings
 
 };

@@ -298,14 +298,19 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
  */
 void ProtocolPacket::createStructurePacketFunctions(void)
 {
-    if(encodables.length() > 0)
+    if(getNumberOfEncodes() > 0)
     {
+        int numNonConstEncodes = getNumberOfNonConstEncodes();
+
         // For structures the prefix is already in the typeName
 
         // The prototype for the packet encode function
         header.makeLineSeparator();
         header.write("//! " + getPacketEncodeBriefComment() + "\n");
-        header.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user);\n");
+        if(numNonConstEncodes > 0)
+            header.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user);\n");
+        else
+            header.write("void encode" + prefix + name + "PacketStructure(void* pkt);\n");
 
         // The source function for the encode function
         source.makeLineSeparator();
@@ -314,18 +319,28 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         source.write(" *\n");
         source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
         source.write(" * \\param pkt points to the packet which will be created by this function\n");
-        source.write(" * \\param user points to the user data that will be encoded in pkt\n");
-        source.write(" */\n");
-        source.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user)\n");
 
-        source.write("{\n");
+        if(numNonConstEncodes > 0)
+        {
+            source.write(" * \\param user points to the user data that will be encoded in pkt\n");
+            source.write(" */\n");
+            source.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user)\n");
+            source.write("{\n");
+        }
+        else
+        {
+            source.write(" */\n");
+            source.write("void encode" + prefix + name + "PacketStructure(void* pkt)\n");
+            source.write("{\n");
+        }
+
         source.write("    uint8_t* data = get" + protoName + "PacketData(pkt);\n");
         source.write("    int byteindex = 0;\n");
 
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(arrays || reservedArrays || strings)
+        if(needsIterator)
             source.write("    int i = 0;\n");
 
         int bitcount = 0;
@@ -370,7 +385,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(arrays || strings || defaultArrays)
+        if(needsIterator)
             source.write("    int i = 0;\n");
         source.write("\n");
         source.write("    // Verify the packet identifier\n");
@@ -439,6 +454,37 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         source.write("    return 1;\n");
         source.write("}\n");
     }
+    else
+    {
+        source.makeLineSeparator();
+        source.write("/*!\n");
+        source.write(" * \\brief " + getPacketEncodeBriefComment() + "\n");
+        source.write(" *\n");
+        source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
+        source.write(" * \\param pkt points to the packet which will be created by this function\n");
+        source.write(" */\n");
+        source.write("void encode" + prefix + name + "PacketStructure(void* pkt)\n");
+        source.write("{\n");
+        source.write("    // create a zero length packet\n");
+        source.write("    finish" + protoName + "Packet(pkt, 0, get" + prefix + name + "PacketID());\n");
+        source.write("}\n");
+
+        source.write("\n");
+        source.write("/*!\n");
+        source.write(" * \\brief " + getPacketDecodeBriefComment() + "\n");
+        source.write(" *\n");
+        source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
+        source.write(" * \\param pkt points to the packet being decoded by this function\n");
+        source.write(" * \\return 0 is returned if the packet ID is wrong, else 1\n");
+        source.write(" */\n");
+        source.write("int decode" + prefix + name + "PacketStructure(const void* pkt)\n");
+        source.write("{\n");
+        source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+        source.write("        return 0;\n");
+        source.write("    else\n");
+        source.write("        return 1;\n");
+        source.write("}\n");
+    }
 
 }// createStructurePacketFunctions
 
@@ -458,7 +504,7 @@ void ProtocolPacket::createPacketFunctions(void)
     header.write("//! " + getPacketDecodeBriefComment() + "\n");
     header.write(getPacketDecodeSignature() + ";\n");
 
-    if(encodables.length() > 0)
+    if(getNumberOfEncodes() > 0)
     {
         int i;
         source.makeLineSeparator();
@@ -468,10 +514,7 @@ void ProtocolPacket::createPacketFunctions(void)
         source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
         source.write(" * \\param pkt points to the packet which will be created by this function\n");
         for(i = 0; i < encodables.length(); i++)
-        {
-            if(!encodables[i]->isNull())
-                source.write(" * \\param " + encodables[i]->name + " is " + encodables[i]->comment + "\n");
-        }
+            source.write(encodables.at(i)->getEncodeParameterComment());
         source.write(" */\n");
         source.write(getPacketEncodeSignature() + "\n");
         source.write("{\n");
@@ -481,7 +524,7 @@ void ProtocolPacket::createPacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(arrays || reservedArrays || strings)
+        if(needsIterator)
             source.write("    int i = 0;\n");
 
         // Keep our own track of the bitcount so we know what to do when we close the bitfield
@@ -512,19 +555,14 @@ void ProtocolPacket::createPacketFunctions(void)
         source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
         source.write(" * \\param pkt points to the packet being decoded by this function\n");
         for(i = 0; i < encodables.length(); i++)
-        {
-            if(encodables[i]->isNull() || encodables[i]->isReserved())
-                continue;
-
-            source.write(" * \\param " + encodables[i]->name + " receives the " + encodables[i]->comment + "\n");
-        }
+            source.write(encodables.at(i)->getDecodeParameterComment());
         source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
         source.write(" */\n");
         source.write(getPacketDecodeSignature() + "\n");
         source.write("{\n");
         if(bitfields)
             source.write("    int bitcount = 0;\n");
-        if(arrays || strings || defaultArrays)
+        if(needsIterator)
             source.write("    int i = 0;\n");
         source.write("    int byteindex = 0;\n");
         source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");

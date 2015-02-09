@@ -268,11 +268,19 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 {
     QString output;
 
+    if(getNumberOfEncodes() <= 0)
+        return;
+
+    int numNonConstEncodes = getNumberOfNonConstEncodes();
+
     header.makeLineSeparator();
 
     // My encoding and decoding prototypes in the header file
     output += "//! Encode a " + typeName + " structure into a byte array\n";
-    output += "int encode" + typeName + "(uint8_t* data, int byteCount, const " + typeName + "* user);\n";
+    if(numNonConstEncodes > 0)
+        output += "int encode" + typeName + "(uint8_t* data, int byteCount, const " + typeName + "* user);\n";
+    else
+        output += "int encode" + typeName + "(uint8_t* data, int byteCount);\n";
     output += "\n";
     output += "//! Decode a " + typeName + " structure from a byte array\n";
     output += "int decode" + typeName + "(const uint8_t* data, int byteCount, " + typeName + "* user);\n";
@@ -288,16 +296,20 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     output += ProtocolParser::outputLongComment(" *", comment) + "\n";
     output += " * \\param data points to the byte array to add encoded data to\n";
     output += " * \\param byteindex is the starting location in the byte array\n";
-    output += " * \\param user is the data to encode in the byte array\n";
+    if(numNonConstEncodes > 0)
+        output += " * \\param user is the data to encode in the byte array\n";
     output += " * \\return the location for the next data to be encoded in the byte array\n";
     output += " */\n";
-    output += "int encode" + typeName + "(uint8_t* data, int byteindex, const " + typeName + "* user)\n";
+    if(numNonConstEncodes > 0)
+        output += "int encode" + typeName + "(uint8_t* data, int byteindex, const " + typeName + "* user)\n";
+    else
+        output += "int encode" + typeName + "(uint8_t* data, int byteindex)\n";
     output += "{\n";
 
     if(bitfields)
         output += "    int bitcount = 0;\n";
 
-    if(arrays || reservedArrays || strings)
+    if(needsIterator)
         output += "    int i = 0;\n";
 
     int bitcount = 0;
@@ -336,7 +348,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
         output += "    int bitcount = 0;\n";
 
     // Reserved arrays are handled here differently, don't need the iterator
-    if(arrays || strings)
+    if(needsIterator)
         output += "    int i = 0;\n";
 
     bitcount = 0;

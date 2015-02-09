@@ -13,11 +13,8 @@
 ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
-    arrays(false),
-    reservedArrays(false),
-    defaults(false),
-    defaultArrays(false),
-    strings(false)
+    needsIterator(false),
+    defaults(false)
 {
 
 }
@@ -31,11 +28,8 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
 ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field) :
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
-    arrays(false),
-    reservedArrays(false),
-    defaults(false),
-    defaultArrays(false),
-    strings(false)
+    needsIterator(false),
+    defaults(false)
 {
     parse(field);
 
@@ -74,11 +68,8 @@ void ProtocolStructure::clear(void)
 
     // The rest of the metadata
     bitfields = false;
-    arrays = false;
-    reservedArrays = false;
+    needsIterator = false;
     defaults = false;
-    defaultArrays = false;
-    strings = false;
 
 }// ProtocolStructure::clear
 
@@ -146,7 +137,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
         {
             // If the encodable is null, then none of the metadata
             // matters, its not going to end up in the output
-            if(!encodable->isNull())
+            if(!encodable->isNotEncoded())
             {
                 if(encodable->isPrimitive())
                 {
@@ -154,16 +145,8 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     if(encodable->usesBitfields())
                         bitfields = true;
 
-                    if(encodable->usesReservedArrays())
-                        reservedArrays = true;
-                    else if(encodable->usesArrays())
-                        arrays = true;
-
-                    if(encodable->usesDefaultArrays())
-                        defaultArrays = true;
-
-                    if(encodable->usesStrings())
-                        strings = true;
+                    if(encodable->usesIterator())
+                        needsIterator = true;
 
                     if(encodable->usesDefaults())
                         defaults = true;
@@ -186,7 +169,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                 {
                     // Structures can be arrays as well.
                     if(encodable->isArray())
-                        arrays = true;
+                        needsIterator = true;
                 }
 
 
@@ -201,7 +184,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                            continue;
 
                        // It has to be a named variable that is both in memory and encoded
-                       if(prevEncodable->isNull() || prevEncodable->isReserved())
+                       if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
                            continue;
 
                        // It has to be a primitive, and it cannot be an array itself
@@ -239,7 +222,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                                continue;
 
                            // It has to be a named variable that is both in memory and encoded
-                           if(prevEncodable->isNull() || prevEncodable->isReserved())
+                           if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
                                continue;
 
                            // It has to be a primitive, and it cannot be an array itself
@@ -270,6 +253,49 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     }// for all children
 
 }// ProtocolStructure::parseChildren
+
+
+/*!
+ * Get the number of encoded fields. This is not the same as the length of the
+ * encodables list, because some or all of them could be isNotEncoded()
+ * \return the number of encodables that appear in the packet.
+ */
+int ProtocolStructure::getNumberOfEncodes(void) const
+{
+    // Its is possible that all of our encodes are in fact not encoded
+    int numEncodes = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        if(encodables.at(i)->isNotEncoded())
+            continue;
+        else
+            numEncodes++;
+    }
+
+    return numEncodes;
+}
+
+
+/*!
+ * Get the number of encoded fields whose value is set by the user. This is
+ * not the same as the length of the encodables list, because some or all of
+ * them could be isNotEncoded(), isNotInMemory(), or isConstant()
+ * \return the number of user set encodables that appear in the packet.
+ */
+int ProtocolStructure::getNumberOfNonConstEncodes(void) const
+{
+    // Its is possible that all of our encodes are in fact not set by the user
+    int numEncodes = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isNotInMemory() || encodables.at(i)->isConstant())
+            continue;
+        else
+            numEncodes++;
+    }
+
+    return numEncodes;
+}
 
 
 /*!
@@ -457,7 +483,7 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, EncodedLen
         if(bitfields)
             output += "    int bitcount = 0;\n";
 
-        if(arrays || reservedArrays || strings)
+        if(needsIterator)
             output += "    int i = 0;\n";
 
         int bitcount = 0;
@@ -530,7 +556,7 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
         if(bitfields)
             output += "    int bitcount = 0;\n";
 
-        if(arrays || reservedArrays || strings)
+        if(needsIterator)
             output += "    int i = 0;\n";
 
         int bitcount = 0;

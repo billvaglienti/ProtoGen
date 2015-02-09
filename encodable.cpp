@@ -9,8 +9,9 @@ Encodable::Encodable(const QString& protocolName, const QString& protocolPrefix,
     support(supported),
     protoName(protocolName),
     prefix(protocolPrefix),
-    null(false),
-    reserved(false)
+    notEncoded(false),
+    notInMemory(false),
+    constant(false)
 {
 }
 
@@ -24,8 +25,9 @@ void Encodable::clear(void)
     comment.clear();
     array.clear();
     encodedLength.clear();
-    null = false;
-    reserved = false;
+    notEncoded = false;
+    notInMemory = false;
+    constant = false;
 }
 
 
@@ -77,14 +79,14 @@ QString Encodable::getCloseBitfieldString(int* bitcount, EncodedLength* encLengt
 
 
 /*!
- * Return the signature of this field in an encode function signature. The
+ * Return the signature of this field in a encode function signature. The
  * string will start with ", " assuming this field is not the first part of
  * the function signature.
  * \return the string that provides this fields encode function signature
  */
 QString Encodable::getEncodeSignature(void) const
 {
-    if(null || reserved)
+    if(notEncoded || notInMemory || constant)
         return "";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
@@ -96,14 +98,14 @@ QString Encodable::getEncodeSignature(void) const
 
 
 /*!
- * Return the signature of this field in an decode function signature. The
+ * Return the signature of this field in a decode function signature. The
  * string will start with ", " assuming this field is not the first part of
  * the function signature.
  * \return the string that provides this fields decode function signature
  */
 QString Encodable::getDecodeSignature(void) const
 {
-    if(null || reserved)
+    if(notEncoded || notInMemory)
         return "";
     else if(isArray())
         return ", " + typeName + " " + name + "[" + array + "]";
@@ -119,7 +121,7 @@ QString Encodable::getDecodeSignature(void) const
  */
 QString Encodable::getEncodeParameterComment(void) const
 {
-    if(null || reserved)
+    if(notEncoded || notInMemory || constant)
         return "";
     else
         return " * \\param " + name + " is " + comment + "\n";
@@ -133,7 +135,7 @@ QString Encodable::getEncodeParameterComment(void) const
  */
 QString Encodable::getDecodeParameterComment(void) const
 {
-    if(null || reserved)
+    if(notEncoded || notInMemory)
         return "";
     else
         return " * \\param " + name + " receives " + comment + "\n";

@@ -67,6 +67,7 @@ bool FieldCoding::generate(void)
 bool FieldCoding::generateEncodeHeader(void)
 {
     header.setModuleName("fieldencode");
+    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -109,6 +110,10 @@ bool FieldCoding::generateEncodeHeader(void)
 
     header.write("\n#include <stdint.h>\n");
 
+    header.write("\n\
+    //! Encode a null terminated string on a byte stream\n\
+    void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+
     for(int i = 0; i < typeNames.size(); i++)
     {
         // big endian
@@ -140,17 +145,61 @@ bool FieldCoding::generateEncodeHeader(void)
 bool FieldCoding::generateEncodeSource(void)
 {
     source.setModuleName("fieldencode");
+    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();
 
     if(support.specialFloat)
-    {
-        source.write("\n");
         source.write("#include \"floatspecial.h\"\n");
-    }
 
-    source.write("\n");
+    source.write("\n\n");
+
+    // The string function, this was hand-written and pasted in here
+    source.write("\
+/*!\n\
+* Encode a null terminated string on a byte stream\n\
+* \\param string is the null termianted string to encode\n\
+* \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
+* \\param index gives the location of the first byte in the byte stream, and\n\
+*        will be incremented by the number of bytes encoded when this function\n\
+*        is complete.\n\
+* \\param maxLength is the maximum number of bytes that can be encoded. A null\n\
+*        terminator is always included in the encoding.\n\
+* \\param fixedLength should be 1 to force the number of bytes encoded to be\n\
+*        exactly equal to maxLength.\n\
+*/\n\
+void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
+{\n\
+    int i;\n\
+\n\
+    // increment byte pointer for starting point\n\
+    bytes += (*index);\n\
+\n\
+    // Reserve the last byte for null termination\n\
+    for(i = 0; i < maxLength - 1; i++)\n\
+    {\n\
+        if(string[i] == 0)\n\
+            break;\n\
+        else\n\
+            bytes[i] = (uint8_t)string[i];\n\
+    }\n\
+\n\
+    // Make sure last byte has null termination\n\
+    bytes[i++] = 0;\n\
+\n\
+    if(fixedLength)\n\
+    {\n\
+        // Finish with null bytes\n\
+        for(; i < maxLength; i++)\n\
+            bytes[i] = 0;\n\
+    }\n\
+\n\
+    // Return for the number of bytes we encoded\n\
+    (*index) += i;\n\
+\n\
+}// stringToBytes\n");
+
 
     for(int i = 0; i < typeNames.size(); i++)
     {
@@ -416,6 +465,7 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
 bool FieldCoding::generateDecodeHeader(void)
 {
     header.setModuleName("fielddecode");
+    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -460,6 +510,10 @@ bool FieldCoding::generateDecodeHeader(void)
 
     header.write("\n#include <stdint.h>\n");
 
+    header.write("\n\
+    //! Decode a null terminated string from a byte stream\n\
+    void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+
     for(int type = 0; type < typeNames.size(); type++)
     {
         header.write("\n");
@@ -489,17 +543,53 @@ bool FieldCoding::generateDecodeHeader(void)
 bool FieldCoding::generateDecodeSource(void)
 {
     source.setModuleName("fielddecode");
+    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();
 
     if(support.specialFloat)
-    {
-        source.write("\n");
         source.write("#include \"floatspecial.h\"\n");
-    }
 
-    source.write("\n");
+    source.write("\n\n");
+
+    source.write("\
+/*!\n\
+ * Decode a null terminated string from a byte stream\n\
+ * \\param string receives the deocded null-terminated string.\n\
+ * \\param bytes is a pointer to the byte stream to be decoded.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by the number of bytes decoded when this function\n\
+ *        is complete.\n\
+ * \\param maxLength is the maximum number of bytes that can be decoded.\n\
+ *        maxLength includes the null terminator, which is always applied.\n\
+ * \\param fixedLength should be 1 to force the number of bytes decoded to be\n\
+ *        exactly equal to maxLength.\n\
+ */\n\
+void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
+{\n\
+    // increment byte pointer for starting point\n\
+    bytes += *index;\n\
+\n\
+    int i;\n\
+\n\
+    for(i = 0; i < maxLength - 1; i++)\n\
+    {\n\
+        if(bytes[i] == 0)\n\
+            break;\n\
+        else\n\
+            string[i] = (char)bytes[i];\n\
+    }\n\
+\n\
+    // Make sure we include null terminator\n\
+    string[i++] = 0;\n\
+\n\
+    if(fixedLength)\n\
+        (*index) += maxLength;\n\
+    else\n\
+        (*index) += i;\n\
+\n\
+}// stringFromBytes\n");
 
     for(int type = 0; type < typeNames.size(); type++)
     {

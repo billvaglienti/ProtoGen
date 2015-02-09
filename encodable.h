@@ -73,10 +73,13 @@ public:
     bool isArray(void) const {return !array.isEmpty();}
 
     //! True if this encodable is NOT encoded
-    bool isNull(void) const {return null;}
+    bool isNotEncoded(void) const {return notEncoded;}
 
     //! True if this encodable is NOT in memory
-    bool isReserved(void) const {return reserved;}
+    bool isNotInMemory(void) const {return notInMemory;}
+
+    //! True if this encodable is a constant
+    bool isConstant(void) const {return constant;}
 
     //! True if this encodable is a primitive bitfield
     virtual bool isBitfield(void) const {return false;}
@@ -87,20 +90,11 @@ public:
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const = 0;
 
-    //! True if this encodable has a direct child that uses arrays
-    virtual bool usesArrays(void) const = 0;
-
-    //! True if this encodable has a direct child that uses a reserved array field
-    virtual bool usesReservedArrays(void) const = 0;
+    //! True if this encodable has a direct child that needs an iterator
+    virtual bool usesIterator(void) const = 0;
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const = 0;
-
-    //! True if this encodable has a direct child that uses default arrays
-    virtual bool usesDefaultArrays(void) const = 0;
-
-    //! True if this encodable has a direct child that uses strings
-    virtual bool usesStrings(void) const = 0;
 
     //! Add successive length strings
     static void addToLengthString(QString & totalLength, const QString & length);
@@ -124,8 +118,9 @@ public:
     QString variableArray;  //!< variable that gives the length of the array in a packet
     QString dependsOn;      //!< variable that determines if this field is present
     EncodedLength encodedLength;    //!< The lengths of the encodables
-    bool null;              //!< True if this encodable is NOT encoded
-    bool reserved;          //!< True if this encodable is NOT in memory
+    bool notEncoded;        //!< True if this encodable is NOT encoded
+    bool notInMemory;       //!< True if this encodable is NOT in memory
+    bool constant;          //!< True if this encodable is a constant
 };
 
 #endif // ENCODABLE_H

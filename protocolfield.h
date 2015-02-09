@@ -25,7 +25,6 @@ public:
     bool isFixedString; //!< true if type is a fixed length string
     bool isNull;        //!< true if type is null, i.e not in memory OR not encoded
     int bits;           //!< number of bits used by type
-    QString warning;    //!< warnings about problems with type definition
 
     //! Pull a positive integer value from a string
     int extractPositiveInt(const QString& string, bool* ok = 0);
@@ -33,14 +32,11 @@ public:
     //! Pull a double precision value from a string
     double extractDouble(const QString& string, bool* ok = 0);
 
-    //! Extract the type information from the type string for in memory types
-    void extractInMemoryType(const QString& type);
-
-    //! Extract the type information from the type string for encoded types
-    void extractEncodedType(const QString& type);
+    //! Extract the type information from the type string
+    void extractType(const QString& typeString, const ProtocolSupport& support, const QString& name, bool inMemory);
 
     //! Create the type string
-    QString toTypeString(QString enumName, QString structName);
+    QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
 
 };
 
@@ -71,7 +67,7 @@ public:
     virtual bool isPrimitive(void) const {return true;}
 
     //! True if this encoable is a primitive bitfield
-    virtual bool isBitfield(void) const {return (inMemoryType.isBitfield && !isNull());}
+    virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
     //! True if this encodable has a default value
     virtual bool isDefault(void) const {return !defaultValue.isEmpty();}
@@ -101,22 +97,13 @@ public:
     virtual void clearDefaults(void) {defaultValue.clear();}
 
     //! True if this encodable has a direct child that uses bitfields
-    virtual bool usesBitfields(void) const {return (inMemoryType.isBitfield && !isNull());}
+    virtual bool usesBitfields(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
-    //! True if this encodable has a direct child that uses arrays
-    virtual bool usesArrays(void) const {return (isArray() && !isNull());}
-
-    //! True if this encodable has a direct child that uses a reserved array field
-    virtual bool usesReservedArrays(void) const {return (isReserved() && isArray());}
+    //! True if this encodable has a direct child that needs an iterator
+    virtual bool usesIterator(void) const {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that uses defaults
-    virtual bool usesDefaults(void) const {return (isDefault() && !isNull());}
-
-    //! True if this encodable has a direct child that uses default arrays
-    virtual bool usesDefaultArrays(void) const {return (usesDefaults() && isArray());}
-
-    //! True if this encodable has a direct child that uses strings
-    virtual bool usesStrings(void) const {return (inMemoryType.isString && !isNull());}
+    virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}
 
 public:
     QString enumName;
@@ -124,6 +111,7 @@ public:
     double encodedMax;
     double scaler;
     QString defaultValue;
+    QString constantValue;
     TypeData inMemoryType;
     TypeData encodedType;
 
