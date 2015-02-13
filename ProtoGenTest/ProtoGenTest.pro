@@ -46,7 +46,8 @@ HEADERS += \
     scaledencode.h \
     TelemetryPacket.h \
     VersionPacket.h \
-    KeepAlivePacket.h
+    KeepAlivePacket.h \
+    packetinterface.h
 
 OTHER_FILES += \
     Doxyfile

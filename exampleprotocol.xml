@@ -84,7 +84,7 @@
         </Enum>
             
         <Data name="mode" enum="engineModes" encodedType="unsigned8" comment="Engine control mode of operation"/>
-        <Data name="grain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
+        <Data name="gain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
         <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
     </Packet>
 

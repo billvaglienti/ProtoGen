@@ -1625,7 +1625,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     // If this field has a default value
     if(defaultEnabled && !defaultValue.isEmpty())
     {
-        output += spacing + "if(byteindex + " + lengthString + " >= numBytes)\n";
+        output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
         output += spacing + "    return 1;\n";
         output += spacing + "else\n";
         output += spacing + "{\n";
