@@ -14,6 +14,7 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+QMAKE_CXXFLAGS += -Wno-unused-parameter
 
 SOURCES += main.cpp \
     packetinterface.c \

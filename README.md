@@ -160,7 +160,7 @@ The Structure tag is used to define a structure and the code to encode and decod
     
 Structure tag Attributes:
 
-- `name` : Gives the name of the structure. The structure typename is the `prefix + name + _t`. In this case the structure typename is `Date_t`.
+- `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
 
 - `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
 
