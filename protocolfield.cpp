@@ -115,6 +115,13 @@ void TypeData::extractType(const QString& typeString, const ProtocolSupport& sup
 
         bits = 8;
     }
+    else if(type.startsWith("fixedstring", Qt::CaseInsensitive))
+    {
+        isString = true;
+        isFixedString = true;
+
+        bits = 8;
+    }
     else if(type.startsWith("b", Qt::CaseInsensitive))
     {
         // Get the number of bits, between 1 and 32 inclusive
@@ -148,9 +155,16 @@ void TypeData::extractType(const QString& typeString, const ProtocolSupport& sup
     }
     else if(type.startsWith("e", Qt::CaseInsensitive))
     {
-        isEnum = true;
+        // enumeration types are only for in-memory, never encoded
+        if(inMemory)
+        {
+            isEnum = true;
+        }
+        else
+        {
+            isEnum = false;
+        }
 
-        // bit width is actually not interesting in this case
         bits = 8;
     }
     else
@@ -425,7 +439,13 @@ void ProtocolField::parse(const QDomElement& field)
     // The encoded type string, this can be empty which implies encoded is same as memory
     QString encodedTypeString = field.attribute("encodedType").trimmed();
     if(encodedTypeString.isEmpty())
+    {
         encodedType = inMemoryType;
+
+        // Encoded types are never enums
+        if(encodedType.isEnum)
+            encodedType.isEnum = false;
+    }
     else
         encodedType.extractType(encodedTypeString, support, name, false);
 
@@ -1635,7 +1655,13 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     if(inMemoryType.isNull)
     {
         // Skip over reserved space
-        output += spacing + "byteindex += " + lengthString + ";\n";
+        if(!array.isEmpty())
+        {
+            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            output += spacing + "    byteindex += " + QString().setNum(length) + ";\n";
+        }
+        else
+            output += spacing + "byteindex += " + lengthString + ";\n";
 
     }
     else if(encodedMax > encodedMin)

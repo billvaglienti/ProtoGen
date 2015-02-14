@@ -153,6 +153,8 @@ int testTelemetryPacket(void)
     Telemetry_t telemetry;
     memset(&telemetry, 0, sizeof(telemetry));
 
+    telemetry.insMode = insModeRun;
+
     telemetry.numGPSs = 1;
     fillOutGPSTest(telemetry.gpsData[0]);
 
@@ -185,7 +187,7 @@ int testTelemetryPacket(void)
 
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
+    if(pkt.length != (14 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;
@@ -217,7 +219,7 @@ int testTelemetryPacket(void)
     telemetry.mag[0] = telemetry.mag[1] = telemetry.mag[2] = telemetry.compassHeading = 0;
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
+    if(pkt.length != (14 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;
@@ -243,6 +245,8 @@ int testTelemetryPacket(void)
 
 int verifyTelemetryData(Telemetry_t telemetry)
 {
+    if(telemetry.insMode != insModeRun) return 0;
+
     if(telemetry.numGPSs != 1) return 0;
     if(verifyGPSData(telemetry.gpsData[0]) == 0) return 0;
 
@@ -672,7 +676,7 @@ int testKeepAlivePacket(void)
     testPacket_t pkt;
     KeepAlive_t keepalive;
 
-    if(getKeepAliveMinDataLength() != 3)
+    if(getKeepAliveMinDataLength() != 18)
     {
         std::cout << "KeepAlive packet minimum data length is wrong" << std::endl;
         return 0;
@@ -680,7 +684,7 @@ int testKeepAlivePacket(void)
 
     encodeKeepAlivePacketStructure(&pkt);
 
-    if(pkt.length != (2 + strlen("1.0.0.a") + 1))
+    if(pkt.length != (18))
     {
         std::cout << "KeepAlive packet has the wrong length" << std::endl;
         return 0;

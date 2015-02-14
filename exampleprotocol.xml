@@ -23,7 +23,7 @@
 
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" comment="the API of the sending side"/>
-        <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" encodedType="string" comment="the version of the sending side"/>
+        <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" encodedType="fixedstring" comment="the version of the sending side"/>
     </Packet>
 
     <Structure name="GPS" comment="Information from a GPS including the position, velocity, and quality data.
@@ -144,6 +144,15 @@
     
     <Packet name="Telemetry" comment="GPS and other position telemetry. This packet is transmitted spontaneously 4 times a second.">
         
+        <Enum name="insMode_t" comment="Enumeration for the inertial navigation operational mode">
+            <Value name="insModeInit1" comment="Awaiting first IMU measurement"/>
+            <Value name="insModeInit2" comment="Awaiting IMU stabilization"/>
+            <Value name="insModeAHRS" comment="Running without GPS inputs"/>
+            <Value name="insModeRunHard" comment="Running with forced GPS inputs"/>
+            <Value name="insModeRun" comment="Normal mode of operation"/>
+        </Enum>
+
+        <Data name="insMode" enum="insMode_t" comment="The operational mode of the INS"/>
         <Data name="reserved" inMemoryType="null" encodedType="unsigned64"
               comment="Reserve 8 bytes of space for future expansion"/>
         <Data name="reserved" inMemoryType="null" array="N3D" encodedType="unsigned8"
