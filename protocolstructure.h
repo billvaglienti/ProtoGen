@@ -2,6 +2,7 @@
 #define PROTOCOLSTRUCTURE_H
 
 #include "encodable.h"
+#include "enumcreator.h"
 #include <QString>
 #include <QList>
 
@@ -71,11 +72,17 @@ protected:
     //! Make a structure output be prettily aligned
     QString alignStructureData(const QString& structure) const;
 
+    //! Parse all enumerations which are direct children of a DomNode
+    void parseEnumerations(const QDomNode& node);
+
     //! This list of all children encodables
     QList<Encodable*> encodables;
 
+    //! The list of our enumerations
+    QList<const EnumCreator*> enumList;
+
     bool bitfields;             //!< True if this structure uses bitfields
-    bool needsIterator;                //!< True if this structure uses arrays
+    bool needsIterator;         //!< True if this structure uses arrays
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
 

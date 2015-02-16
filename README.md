@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.1.0. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip).
+This document refers to ProtoGen version 1.1.1. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip).
 
 ---
 
@@ -262,7 +262,7 @@ Notice that a structure can be defined inside a packet. Such an implicit structu
 
 Data subtag attributes:
 
-- `name` : The name of the data, not optional. This is the name that will be referenced in code.
+- `name` : The name of the data, not optional (unless `inMemoryType="null"`). This is the name that will be referenced in code.
 
 - `inMemoryType` : The type information for the data in memory, not optional (unless `struct` or `enum` attribute is present). Options for the in-memory type are:
     - `unsignedX` or `uintX_t`: is a unsigned integer with X bits, where X can be 8, 16, 32, or 64.
@@ -277,7 +277,7 @@ Data subtag attributes:
 
 - `struct` : This attribute replaces the inMemoryType attribute and references a previously defined structure.
 
-- `enum` : This attribute replaces the inMemoryType and references an enumeration. This can be a type name that is defined in an Enum tag above, or is defined by an included file.
+- `enum` : This attribute replaces the inMemoryType and references an enumeration. This can be a type name that is defined in an Enum tag above, or is defined by an included file. If the encodedType is not provided then the encoded size of the enumeration is determined automatically by ProtoGen. If encodedType is provided then the size information provided is used to determine the amount of encoded space the enumeration uses. This includes the ability to specify the enumeration encoded as a bitfield.
 
 - `encodedType` : The type information for the encoded data. If this attribute is not provided then the encoded type is the same as the in-memory type. The encoded type cannot use more bits than the in-memory type. If the in-memory type is a bitfield then the encoded type is forced to be a bitfield of the same size. If either the encoded or in-memory type is a string then both types are interpreted as string (or fixed string). If the in-memory type is a `struct` then the encoded type is ignored. Options for the encoded type are: 
     - `unsignedX` or `uintX_t`: is a unsigned integer with X bits, where X can be 8, 16, 24, 32, 40, 48, 56, or 64.
@@ -304,7 +304,7 @@ Data subtag attributes:
 
 - `default` : The default value for a data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
 
-- `constant` : is used to specify that this field in a packet is to always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-prior known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
+- `constant` : is used to specify that this field in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 

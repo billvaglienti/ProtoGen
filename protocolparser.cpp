@@ -13,7 +13,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.1.0.e testing";
+const QString ProtocolParser::genVersion = "1.1.1.a testing";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -314,7 +314,8 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     outputIncludes(header, docElem);
 
     // Output enumerations
-    outputEnumerations(header, docElem);
+    parseEnumerations(docElem);
+    outputEnumerations(header);
 
     // API functions
     if(!api.isEmpty())
@@ -527,30 +528,54 @@ QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QSt
 
 
 /*!
- * Parse and output all enumerations which are direct children of a DomNode
- * \param file receives the output
+ * Parse all enumerations which are direct children of a DomNode. The
+ * enumerations will be stored in the global list
  * \param node is parent node
  */
-void ProtocolParser::outputEnumerations(ProtocolFile& file, const QDomNode& node)
+void ProtocolParser::parseEnumerations(const QDomNode& node)
 {
     // Build the top level enumerations
     QList<QDomNode>list = childElementsByTagName(node, "Enum");
 
     for(int i = 0; i < list.size(); i++)
     {
-        EnumCreator* Enum = new EnumCreator(list.at(i).toElement());
+        parseEnumeration(list.at(i).toElement());
 
-        if(Enum->output.isEmpty())
-            delete Enum;
-        else
-        {
-            // Output the enumerations to my header
-            file.makeLineSeparator();
-            file.write(Enum->output);
+    }// for all my enum tags
 
-            // Keep track of my enumeration list
-            enums.append(Enum);
-        }
+}// ProtocolParser::parseEnumerations
+
+
+/*!
+ * Parse a single enumeration given by a DOM element. This will also
+ * add the enumeration to the global list which can be searched with
+ * lookUpEnumeration().
+ * \param element is the QDomElement that represents this enumeration
+ * \return a pointer to the newly created enumeration object.
+ */
+const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
+{
+    EnumCreator* Enum = new EnumCreator(element);
+
+    if(!Enum->getOutput().isEmpty())
+        enums.append(Enum);
+
+    return Enum;
+
+}// ProtocolParser::parseEnumeration
+
+
+/*!
+ * Output all enumerations in the global list
+ * \param file receives the output
+ */
+void ProtocolParser::outputEnumerations(ProtocolFile& file)
+{
+    for(int i = 0; i < enums.size(); i++)
+    {
+        // Output the enumerations to my header
+        file.makeLineSeparator();
+        file.write(enums.at(i)->getOutput());
 
     }// for all my enum tags
 
@@ -590,13 +615,32 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName)
 {
     for(int i = 0; i < structures.size(); i++)
     {
-        if(structures[i]->typeName == typeName)
+        if(structures.at(i)->typeName == typeName)
         {
-            return structures[i]->getHeaderFileName();
+            return structures.at(i)->getHeaderFileName();
         }
     }
 
     return "";
+}
+
+
+/*!
+ * Find the enumeration creator and return a constant pointer to it
+ * \param enumName is the name of the enumeration.
+ * \return A pointer to the enumeration creator, or NULL if it cannot be found
+ */
+const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
+{
+    for(int i = 0; i < enums.size(); i++)
+    {
+        if(enums.at(i)->getName() == enumName)
+        {
+            return enums.at(i);
+        }
+    }
+
+    return 0;
 }
 
 

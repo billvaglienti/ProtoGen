@@ -409,10 +409,22 @@ void ProtocolField::parse(const QDomElement& field)
 {
     clear();
 
+    // Pull all the attribute data
     name = field.attribute("name").trimmed();
     QString memoryTypeString = field.attribute("inMemoryType").trimmed();
+    QString maxString = field.attribute("max").trimmed();
+    QString minString = field.attribute("min").trimmed();
+    QString scalerString = field.attribute("scaler").trimmed();
+    QString structName = field.attribute("struct").trimmed();
+    array = field.attribute("array").trimmed();
+    variableArray = field.attribute("variableArray").trimmed();
+    dependsOn = field.attribute("dependsOn").trimmed();
+    enumName = field.attribute("enum").trimmed();
+    defaultValue = field.attribute("default").trimmed();
+    constantValue = field.attribute("constant").trimmed();
+    comment = ProtocolParser::getComment(field);
 
-    if(name.isEmpty())
+    if(name.isEmpty() && (memoryTypeString != "null"))
     {
         name = "notprovided";
         std::cout << "data tag without a name: " << field.text().toStdString() << std::endl;
@@ -449,19 +461,6 @@ void ProtocolField::parse(const QDomElement& field)
     else
         encodedType.extractType(encodedTypeString, support, name, false);
 
-    // Pull all the attribute data
-    QString maxString = field.attribute("max").trimmed();
-    QString minString = field.attribute("min").trimmed();
-    QString scalerString = field.attribute("scaler").trimmed();
-    QString structName = field.attribute("struct").trimmed();
-    array = field.attribute("array").trimmed();
-    variableArray = field.attribute("variableArray").trimmed();
-    dependsOn = field.attribute("dependsOn").trimmed();
-    enumName = field.attribute("enum").trimmed();
-    defaultValue = field.attribute("default").trimmed();
-    constantValue = field.attribute("constant").trimmed();
-    comment = ProtocolParser::getComment(field);
-
     if(inMemoryType.isNull)
     {
         // Null types are not in memory, and cannot have defaults or variable arrays
@@ -484,11 +483,55 @@ void ProtocolField::parse(const QDomElement& field)
         }
     }
 
-    if(inMemoryType.isEnum && enumName.isEmpty())
+    if(inMemoryType.isEnum)
     {
-        std::cout << name.toStdString() << ": " << "enumeration name is missing, type changed to unsigned" << std::endl;
-        inMemoryType.isEnum = encodedType.isEnum = false;
-    }
+        if(enumName.isEmpty())
+        {
+            std::cout << name.toStdString() << ": " << "enumeration name is missing, type changed to unsigned" << std::endl;
+            inMemoryType.isEnum = encodedType.isEnum = false;
+        }
+        else
+        {
+            int minbits = 8;
+
+            // Figure out the minimum number of bits for the enumeration
+            const EnumCreator* creator = ProtocolParser::lookUpEnumeration(enumName);
+            if(creator != 0)
+                minbits = creator->getMinBitWidth();
+
+            if(encodedTypeString.isEmpty())
+            {
+                // Make it a multiple of 8 bits. The only way to have something
+                // different is to encode as a bitfield, which means the
+                // encoded string won't be empty
+                if(minbits % 8)
+                    minbits = ((minbits/8)+1)*8;
+
+                encodedType.bits = minbits;
+
+            }// if we don't have encoded length data
+            else
+            {
+                // make sure the encoded length data is large enough
+                if(encodedType.bits < minbits)
+                {
+                    std::cout << name.toStdString() << ": " << "enumeration needs at least " << minbits << " bits. Encoded bit length changed." << std::endl;
+                    if(!encodedType.isBitfield)
+                    {
+                        // Make it a multiple of 8 bits
+                        if(minbits % 8)
+                            minbits = ((minbits/8)+1)*8;
+                    }
+
+                    encodedType.bits = minbits;
+
+                }// if not enough encoded bits
+
+            }// else we do have encoded length data
+
+        }// if we have the enumeration name
+
+    }// if in memory data is enumeration
 
     if(inMemoryType.isStruct)
     {
@@ -502,7 +545,10 @@ void ProtocolField::parse(const QDomElement& field)
         }
     }
 
-    if(encodedType.bits > inMemoryType.bits)
+    // In most cases the encoded bits should not be more than the in memory
+    // bits, but enumerations are special, since we don't always know the size
+    // of the enumeration in memory
+    if((encodedType.bits > inMemoryType.bits) && !inMemoryType.isEnum)
     {
         std::cout << name.toStdString() << ": " << "Encoded type cannot use more bits than in-memory" << std::endl;
         encodedType.bits = inMemoryType.bits;
@@ -762,7 +808,7 @@ QString ProtocolField::getDeclaration(void) const
 
     output = "    " + typeName + " " + name;
 
-    if(usesBitfields())
+    if(inMemoryType.isBitfield)
         output += " : " + QString().setNum(inMemoryType.bits);
     else if(isArray())
         output += "[" + array + "]";
@@ -1068,6 +1114,7 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const
 {
     QString output;
+    QString constant = constantValue;
 
     if(encodedType.isNull)
         return output;
@@ -1075,7 +1122,11 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if(!comment.isEmpty())
         output += "    // " + comment + "\n";
 
-    if(constantValue.isEmpty())
+    // Null in memory types are treated as zero constant
+    if(inMemoryType.isNull)
+        constant = "0";
+
+    if(constant.isEmpty())
     {
         if(isStructureMember)
             output += "    encodeBitfield((uint32_t)user->" + name;
@@ -1083,7 +1134,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
             output += "    encodeBitfield((uint32_t)" + name;
     }
     else
-        output += "    encodeBitfield((uint32_t)" + constantValue;
+        output += "    encodeBitfield((uint32_t)" + constant;
 
     output += ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     *bitcount += encodedType.bits;

@@ -37,16 +37,6 @@ void ProtocolStructureModule::clear(void)
     source.clear();
     header.clear();
 
-    for(int i = 0; i < enumList.length(); i++)
-    {
-        if(enumList[i] != NULL)
-        {
-            delete enumList[i];
-            enumList[i] = NULL;
-        }
-    }
-    enumList.clear();
-
     // Note that data set during constructor are not changed
 
 }
@@ -146,7 +136,11 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     header.makeLineSeparator();
 
     // Output enumerations specific to this structure
-    parseEnumerations(e);
+    for(int i = 0; i < enumList.size(); i++)
+    {
+        header.makeLineSeparator();
+        header.write(enumList.at(i)->getOutput());
+    }
 
     // Include the helper files in the source, but only do this once
     if(!source.isAppending())
@@ -197,36 +191,6 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     source.clear();
 
 }// ProtocolStructureModule::parse
-
-
-/*!
- * Parse and output all enumerations which are direct children of a DomNode
- * \param node is parent node
- */
-void ProtocolStructureModule::parseEnumerations(const QDomNode& node)
-{
-    // Build the top level enumerations
-    QList<QDomNode>list = ProtocolParser::childElementsByTagName(node, "Enum");
-
-    for(int i = 0; i < list.size(); i++)
-    {
-        EnumCreator* Enum = new EnumCreator(list.at(i).toElement());
-
-        if(Enum->output.isEmpty())
-            delete Enum;
-        else
-        {
-            // Output the enumerations to my header
-            header.makeLineSeparator();
-            header.write(Enum->output);
-
-            // Keep track of my enumeration list
-            enumList.append(Enum);
-        }
-
-    }// for all my enum tags
-
-}// ProtocolStructureModule::parseEnumerations
 
 
 /*!
@@ -426,11 +390,11 @@ QString ProtocolStructureModule::getTopLevelMarkdown(QString indent) const
 
         for(int i = 0; i < enumList.length(); i++)
         {
-            if(enumList[i] == NULL)
+            if(enumList.at(i) == NULL)
                 continue;
 
 
-            output += enumList[i]->getMarkdown("");
+            output += enumList.at(i)->getMarkdown("");
             output += "\n";
         }
     }

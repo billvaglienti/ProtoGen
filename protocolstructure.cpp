@@ -66,6 +66,9 @@ void ProtocolStructure::clear(void)
     // Empty the list itself
     encodables.clear();
 
+    // Objects in this list are owned by others, we just clear it, don't delete the objects
+    enumList.clear();
+
     // The rest of the metadata
     bitfields = false;
     needsIterator = false;
@@ -114,10 +117,31 @@ void ProtocolStructure::parse(const QDomElement& field)
     // Any user comment about this
     comment = ProtocolParser::getComment(field);
 
+    // Get any enumerations
+    parseEnumerations(field);
+
     // At this point a structure cannot be default, null, or reserved.
     parseChildren(field);
 
 }// ProtocolStructure::parse
+
+
+/*!
+ * Parse and output all enumerations which are direct children of a DomNode
+ * \param node is parent node
+ */
+void ProtocolStructure::parseEnumerations(const QDomNode& node)
+{
+    // Build the top level enumerations
+    QList<QDomNode>list = ProtocolParser::childElementsByTagName(node, "Enum");
+
+    for(int i = 0; i < list.size(); i++)
+    {
+        enumList.append(ProtocolParser::parseEnumeration(list.at(i).toElement()));
+
+    }// for all my enum tags
+
+}// ProtocolStructure::parseEnumerations
 
 
 /*!

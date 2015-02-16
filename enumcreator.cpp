@@ -1,9 +1,10 @@
 #include "enumcreator.h"
 #include "protocolparser.h"
 #include <QStringList>
+#include <math.h>
 
-
-EnumCreator::EnumCreator(const QDomElement& e)
+EnumCreator::EnumCreator(const QDomElement& e):
+    minbitwidth(0)
 {
     parse(e);
 }
@@ -11,12 +12,14 @@ EnumCreator::EnumCreator(const QDomElement& e)
 
 void EnumCreator::clear(void)
 {
+    minbitwidth = 0;
     name.clear();
     comment.clear();
     output.clear();
     nameList.clear();
     commentList.clear();
     valueList.clear();
+    numberList.clear();
 }
 
 
@@ -84,6 +87,9 @@ QString EnumCreator::parse(const QDomElement& e)
 
     }// for all enum entries
 
+    // Figure out the number list we will use for markdown
+    computeNumberList();
+
     // Account for 1 character we will add below
     maxLength += 1;
 
@@ -124,16 +130,14 @@ QString EnumCreator::parse(const QDomElement& e)
 
 
 /*!
- * Get the markdown output that documents this enumeration
- * \param indent is the indent level for the markdown output
- * \return the markdown output string
+ * Go through the list of enum strings and attempt to determine the list of
+ * actual numbers that will be output in markdown. This is also how we
+ * determine the number of bits needed to encode. This is called by parse()
  */
-QString EnumCreator::getMarkdown(QString indent) const
+void EnumCreator::computeNumberList(void)
 {
-    QString output;
-    QStringList numberList;
-
     // Attempt to get a list of numbers that represents the value of each enumeration
+    int maxValue = 1;
     int value = -1;
     QString baseString;
     for(int i = 0; i < valueList.length(); i++)
@@ -168,7 +172,7 @@ QString EnumCreator::getMarkdown(QString indent) const
             else
                 value = stringValue.toUInt(&ok, 10);
 
-            // If we didn't get a number, then this is string has to be resolved
+            // If we didn't get a number, then this string has to be resolved
             // by the compiler, all we can do is track offsets from it
             if(!ok)
             {
@@ -183,10 +187,35 @@ QString EnumCreator::getMarkdown(QString indent) const
 
         }// if we got a string from the xml
 
+        // keep track of maximum value
+        if(value > maxValue)
+            maxValue = value;
+
         // Append to the number list
         numberList.append(stringValue);
 
     }// for the whole list of value strings
+
+    // Its possible we have no idea, so go with 8 bits in that case
+    if(maxValue > 0)
+    {
+        // Figure out the number of bits needed to encode the maximum value
+        minbitwidth = (int)ceil(log2(maxValue + 1));
+    }
+    else
+        minbitwidth = 8;
+
+}// EnumCreator::computeNumberList
+
+
+/*!
+ * Get the markdown output that documents this enumeration
+ * \param indent is the indent level for the markdown output
+ * \return the markdown output string
+ */
+QString EnumCreator::getMarkdown(QString indent) const
+{
+    QString output;
 
     // Add one more space for visibility
     output += indent + "* `" + name + "`";

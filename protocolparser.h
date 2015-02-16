@@ -24,8 +24,11 @@ public:
     //! Output a long string of text which should be wrapped at 80 characters.
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
 
-    //! Output all enumerations which are direct children of a DomNode
-    static void outputEnumerations(ProtocolFile& file, const QDomNode& node);
+    //! Parse all enumerations which are direct children of a DomNode
+    static void parseEnumerations(const QDomNode& node);
+
+    //! Parse all enumerations which are direct children of a DomNode
+    static const EnumCreator* parseEnumeration(const QDomElement& element);
 
     //! Output all includes which are direct children of a DomNode
     static void outputIncludes(ProtocolFile& file, const QDomNode& node);
@@ -42,6 +45,9 @@ public:
     //! Find the include name for a specific type
     static QString lookUpIncludeName(const QString& typeName);
 
+    //! Find the enumeration creator for this enum
+    static const EnumCreator* lookUpEnumeration(const QString& enumName);
+
     //! Get the markdown documentation for a specific global structure type
     static QString getStructureSubMarkdown(const QString& typeName, QString indent);
 
@@ -52,6 +58,9 @@ protected:
 
     //! Wipe any data, including static data
     void clear(void);
+
+    //! Output enumerations in the global list
+    void outputEnumerations(ProtocolFile& file);
 
     //! Create the source and header files that represent a packet
     bool createPacketFiles(const QDomElement& packet);

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" prefix="" api="2" version="1.0.0.a" endian="big"
+<Protocol name="Demolink" prefix="" api="1" version="1.0.0.a" endian="big"
           comment="This is an demonstration protocol definition. This file demonstrates most things 
                    that the ProtoGen application can do regarding automatic protocol packing/upacking
                    code generation.
@@ -152,14 +152,15 @@
             <Value name="insModeRun" comment="Normal mode of operation"/>
         </Enum>
 
-        <Data name="insMode" enum="insMode_t" comment="The operational mode of the INS"/>
-        <Data name="reserved" inMemoryType="null" encodedType="unsigned64"
+        <Data inMemoryType="null" encodedType="unsigned64"
               comment="Reserve 8 bytes of space for future expansion"/>
-        <Data name="reserved" inMemoryType="null" array="N3D" encodedType="unsigned8"
+        <Data inMemoryType="null" array="N3D" encodedType="unsigned8"
               comment="Reserve an array for future expansion"/>
         <Data name="magIncluded" inMemoryType="bitfield1" comment="set if magnetometer data are included in this packet"/>
         <Data name="laserIncluded" inMemoryType="bitfield1" comment="set if laser range finder data are included in this packet"/>
         <Data name="airDataIncluded" inMemoryType="bitfield1" comment="set if air data are included in this packet"/>
+        <Data inMemoryType="null" encodedType="bitfield2" comment="Bits reserved for future use"/>
+        <Data name="insMode" enum="insMode_t" encodedType="bitfield3" comment="The operational mode of the INS"/>
         <Data name="numGPSs" inMemoryType="uint8_t" comment="number of GPS sources"/>
         <Data name="gpsData" struct="GPS" array="3" variableArray="numGPSs" comment="Information from all possible GPS systems"/>
         <Data name="ECEF" inMemoryType="double" array="N3D" encodedType="null"

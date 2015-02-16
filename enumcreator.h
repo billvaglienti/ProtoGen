@@ -23,14 +23,30 @@ public:
     //! Get the markdown documentation for this enumeration
     QString getMarkdown(QString indent) const;
 
-    QString name;       //!< The name of the enumeration
-    QString comment;    //!< The comment of the enumeration
-    QString output;     //!< The header file output string of the enumeration
+    //! Return the enumeration name
+    QString getName(void) const {return name;}
+
+    //! Return the enumeration comment
+    QString getComment(void) const {return comment;}
+
+    //! Return the header file output string
+    QString getOutput(void) const {return output;}
+
+    //! Return the minimum number of bits needed to encode the enumeration
+    int getMinBitWidth(void) const {return minbitwidth;}
 
 protected:
+    void computeNumberList(void);
+
     QStringList nameList;
     QStringList commentList;
     QStringList valueList;
+    QStringList numberList;
+
+    QString name;       //!< The name of the enumeration
+    QString comment;    //!< The comment of the enumeration
+    QString output;     //!< The header file output string of the enumeration
+    int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
 
 
 };

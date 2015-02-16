@@ -187,7 +187,7 @@ int testTelemetryPacket(void)
 
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (14 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
+    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;
@@ -219,7 +219,7 @@ int testTelemetryPacket(void)
     telemetry.mag[0] = telemetry.mag[1] = telemetry.mag[2] = telemetry.compassHeading = 0;
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (14 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
+    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;

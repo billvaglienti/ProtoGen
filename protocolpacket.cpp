@@ -126,7 +126,11 @@ void ProtocolPacket::parse(const QDomElement& e)
     header.makeLineSeparator();
 
     // Output enumerations specific to this packet
-    parseEnumerations(e);
+    for(int i = 0; i < enumList.length(); i++)
+    {
+        header.makeLineSeparator();
+        header.write(enumList.at(i)->getOutput());
+    }
 
     // White space is good
     header.makeLineSeparator();

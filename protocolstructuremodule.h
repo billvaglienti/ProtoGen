@@ -39,11 +39,6 @@ protected:
     //! Write data to the source and header files to encode and decode this structure but not its children
     void createTopLevelStructureFunctions(void);
 
-    //! Parse and output all enumerations which are direct children of a DomNode
-    void parseEnumerations(const QDomNode& node);
-
-    QList<EnumCreator*> enumList;   //!< The list of our enumerations
-
     ProtocolSourceFile source;      //!< The source file (*.c)
     ProtocolHeaderFile header;      //!< The header file (*.c)
     QString api;                    //!< The protocol API enumeration
