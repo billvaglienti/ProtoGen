@@ -21,20 +21,20 @@ void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, i
     while(numbits > 0)
     {
         // Start out with all bits zero
-        if(*bitcount == 0)
+        if((*bitcount) == 0)
             bytes[*index] = 0;
 
         // imagine that bitcount is currently 2, i.e. the 2 left most bits
         // have already been encoded. In that case we want to encode 6 more
         // bits in the current byte.
-        bitstomove = 8 - *bitcount;
+        bitstomove = 8 - (*bitcount);
 
         // shift value to the correct alignment.
         if(bitstomove >= numbits)
         {
             // In this case all the bits in value will fit in the current byte
             bytes[*index] |= (uint8_t)(value << (bitstomove - numbits));
-            *bitcount += numbits;
+            (*bitcount) += numbits;
             numbits = 0;
         }
         else
@@ -42,15 +42,15 @@ void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, i
             // In this case we have too many bits in value to fit in the
             // current byte, encode the most significant bits that fit
             bytes[*index] |= (uint8_t)(value >> (numbits - bitstomove));
-            *bitcount += bitstomove;
+            (*bitcount) += bitstomove;
             numbits -= bitstomove;
         }
 
         // Check if we have moved to the next byte
-        if(*bitcount >= 8)
+        if((*bitcount) >= 8)
         {
             (*index)++;
-            *bitcount = 0;
+            (*bitcount) = 0;
         }
 
     }// while still bits to encode
@@ -70,7 +70,7 @@ void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, i
 uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits)
 {
     uint32_t value = 0;
-    uint32_t byte;
+    uint8_t  byte;
 
     int bitstomove;
     while(numbits > 0)
@@ -79,13 +79,13 @@ uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int num
         byte = bytes[*index];
 
         // Remove any left most bits that we have already decoded
-        byte = byte << *bitcount;
+        byte = byte << (*bitcount);
 
         // Put the remaining bytes back in least significant position
-        byte = byte >> *bitcount;
+        byte = byte >> (*bitcount);
 
         // Number of bits in the current byte that we could move
-        bitstomove = 8 - *bitcount;
+        bitstomove = 8 - (*bitcount);
 
         // It may be that some of the right most bits are not for
         // this bit field, we can tell by looking at numbits
@@ -100,18 +100,18 @@ uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int num
             // OR these bytes into position in value. The position is given by
             // numbits, which identifies the bit position of the most significant
             // bit.
-            value |= byte << (numbits - bitstomove);
+            value |= ((uint32_t)byte) << (numbits - bitstomove);
         }
 
         // Count the bits
         numbits -= bitstomove;
-        *bitcount += bitstomove;
+        (*bitcount) += bitstomove;
 
         // Check if we have moved to the next byte
-        if(*bitcount >= 8)
+        if((*bitcount) >= 8)
         {
             (*index)++;
-            *bitcount = 0;
+            (*bitcount) = 0;
         }
 
     }// while still bits to encode
@@ -119,7 +119,6 @@ uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int num
     return value;
 
 }// decodeBitfield
-
 
 
 /*!
@@ -130,14 +129,15 @@ int testBitfield(void)
 {
     struct
     {
-        uint32_t test1 : 1;
-        uint32_t test2 : 2;
-        uint32_t test3 : 3;
-        uint32_t test12 : 12;
-        uint32_t testa : 1;
-        uint32_t testb : 2;
+        uint32_t test1;     // :1;  1
+        uint32_t test2;     // :2;  3
+        uint32_t test3;     // :3;  6
+        uint32_t test12;    // :12; 18
+        uint32_t testa;     // :1;  19
+        uint32_t testb;     // :2;  20
+        uint32_t testc;     // :4;  24
 
-    }test_t = {1, 2, 5, 0xABC, 0, 3};
+    }test_t = {1, 2, 5, 0xABC, 0, 3, 4};
 
     uint8_t data[10];
     int index = 0;
@@ -149,6 +149,7 @@ int testBitfield(void)
     encodeBitfield(test_t.test12, data, &index, &bitcount, 12);
     encodeBitfield(test_t.testa, data, &index, &bitcount, 1);
     encodeBitfield(test_t.testb, data, &index, &bitcount, 2);
+    encodeBitfield(test_t.testc, data, &index, &bitcount, 4);
 
     index = bitcount = 0;
 
@@ -160,6 +161,7 @@ int testBitfield(void)
     test_t.test12 = decodeBitfield(data, &index, &bitcount, 12);
     test_t.testa = decodeBitfield(data, &index, &bitcount, 1);
     test_t.testb = decodeBitfield(data, &index, &bitcount, 2);
+    test_t.testc = decodeBitfield(data, &index, &bitcount, 4);
 
     if(test_t.test1 != 1)
         return 0;
@@ -172,6 +174,8 @@ int testBitfield(void)
     else if(test_t.testa != 0)
         return 0;
     else if(test_t.testb != 3)
+        return 0;
+    else if(test_t.testc != 4)
         return 0;
     else
         return 1;
