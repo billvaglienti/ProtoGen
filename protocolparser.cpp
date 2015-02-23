@@ -828,7 +828,11 @@ may be repeating information already presented in the packets section\n"));
     ProtocolFile::makeFileWritable(QString(name + ".css"));
 
     arguments << fileName;      // The name of the source file
+    #if defined(__APPLE__) && defined(__MACH__)
+    process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+    #else
     process.start(QString("MultiMarkdown"), arguments);
+    #endif
     process.waitForFinished();
 
 }

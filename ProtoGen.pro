@@ -73,7 +73,7 @@ macx{
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)/ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen)) $$escape_expand(\n\t)
 
         # Build top level documentation
-        QMAKE_POST_LINK += $$quote(MultiMarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.html)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$quote(/usr/local/bin/MultiMarkdown) $$quote($$shell_path($$PWD/README.md)) > $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.html)) $$escape_expand(\n\t)
 
         # ProtoGen depends on QtXML, copy it over, and then reset the paths in both the library and ProtoGen
         QMAKE_POST_LINK += $$QMAKE_COPY_DIR $$quote($$shell_path($$[QT_INSTALL_LIBS]/QtXml.framework/Versions/5/QtXml)) $$quote($$shell_path($$PWD/ProtoGenInstall/QtXml)) $$escape_expand(\n\t)
