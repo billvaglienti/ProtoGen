@@ -64,8 +64,11 @@ public:
     //! Return the string that is used to decode this encoable
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
 
-    //! Return markdown formatted information about this encodables fields
-    virtual QString getMarkdown(QString indent) const;
+    //! Get details needed to produce documentation for this encodable.
+    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+
+    //! Get details needed to produce documentation for this encodables sub-encodables.
+    void getSubDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
 protected:
 

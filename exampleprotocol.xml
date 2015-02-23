@@ -11,7 +11,7 @@
     <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
 
     <Enum name="packetIds" comment="The list of packet identifiers">
-        <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts"/>
+        <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
         <Value name="THROTTLESETTINGS" comment="Throttle settings packet"/>

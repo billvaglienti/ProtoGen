@@ -25,11 +25,8 @@ public:
     //! Get the name of the header file that encompasses this structure definition
     QString getHeaderFileName(void) const {return header.fileName();}
 
-    //! Output the markdown documentation for this structure and its children
-    virtual QString getMarkdown(QString prefix) const;
-
     //! Output the top level markdown documentation for the this structure and its children
-    QString getTopLevelMarkdown(QString indent) const;
+    QString getTopLevelMarkdown(QString outline) const;
 
 protected:
 

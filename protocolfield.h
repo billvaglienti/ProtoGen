@@ -1,6 +1,7 @@
 #ifndef PROTOCOLFIELD_H
 #define PROTOCOLFIELD_H
 
+#include <stdint.h>
 #include <QString>
 #include <QDomElement>
 #include "encodable.h"
@@ -81,8 +82,8 @@ public:
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const;
 
-    //! Return markdown formatted information about this encodables fields
-    virtual QString getMarkdown(QString indent) const;
+    //! Get details needed to produce documentation for this encodable.
+    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const;
@@ -110,6 +111,9 @@ public:
     double encodedMin;
     double encodedMax;
     double scaler;
+    QString maxString;
+    QString minString;
+    QString scalerString;
     QString defaultValue;
     QString constantValue;
     TypeData inMemoryType;
@@ -140,6 +144,9 @@ protected:
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a field, which is not a bitfield or a string
     QString getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled = false) const;
+
+    //! Compute the power of 2 raised to some bits
+    uint64_t pow2(uint8_t bits) const;
 
 };
 

@@ -5,6 +5,6 @@
         <file>prebuiltSources/bitfieldspecial.c</file>
         <file>prebuiltSources/bitfieldspecial.h</file>
         <file>prebuiltSources/Doxyfile</file>
-        <file>Markdown.pl</file>
+        <file>prebuiltSources/markdown.css</file>
     </qresource>
 </RCC>

@@ -1,0 +1,61 @@
+body {
+    text-align:justify;
+    width: 1000px;
+    background-color:#F0F0F0;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+table{
+   border: 3px solid darkred;
+   border-collapse: collapse;
+}
+
+
+th, td {
+   border: 1px solid green;
+   font-family: Courier New, monospace;
+}
+
+td{
+    padding: 2px;
+}
+
+h1 {
+    font-family:Arial;
+    font-size:150%;
+}
+
+h2 {
+    font-family:Arial;
+    font-size:135%;
+}
+
+h3 {
+    font-family:Arial;
+    font-size:120%;
+}
+
+h4 {
+    font-family:Arial;
+    font-size:110%;
+}
+
+h5 {
+    font-family:Arial;
+    font-size:100%;
+}
+
+p {
+    font-family:Verdana;
+}
+
+caption{
+    font-family:Verdana;
+}
+
+code, pre, .codelike {
+    font-family: Courier New, monospace;
+    font-size: 100%;
+    color: darkblue
+}

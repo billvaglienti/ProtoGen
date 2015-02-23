@@ -60,8 +60,8 @@ public:
     //! Return the string that sets this encodable to its default value in code
     virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
 
-    //! Return markdown formatted information about this encodables fields
-    virtual QString getMarkdown(QString indent) const = 0;
+    //! Get details needed to produce documentation for this encodable.
+    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
 
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}

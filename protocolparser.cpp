@@ -13,7 +13,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.1.1.a testing";
+const QString ProtocolParser::genVersion = "1.2.0.a testing";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -23,6 +23,9 @@ QList<ProtocolPacket*> ProtocolParser::packets;
 
 // A static list of parsed enumerations
 QList<EnumCreator*> ProtocolParser::enums;
+
+// A static list of parsed global enumerations
+QList<EnumCreator*> ProtocolParser::globalEnums;
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -91,8 +94,9 @@ void ProtocolParser::clear(void)
         }
     }
 
+    // enums and globalEnums contain the same pointers
     enums.clear();
-
+    globalEnums.clear();
 }
 
 
@@ -238,10 +242,10 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         }
     }
 
-    #ifndef _DEBUG
     if(!nomarkdown)
         outputMarkdown(bigendian);
 
+    #ifndef _DEBUG
     if(!nodoxygen)
         outputDoxygen();
     #endif
@@ -316,6 +320,11 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     // Output enumerations
     parseEnumerations(docElem);
     outputEnumerations(header);
+
+    // At this point the list of enums are the globals, we want to track those
+    // separately from the next set of enums that come from packets and structures
+    for(int i = 0; i < enums.size(); i++)
+        globalEnums.append(enums.at(i));
 
     // API functions
     if(!api.isEmpty())
@@ -645,19 +654,21 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
 
 
 /*!
- * Get the markdown documentation for a specific global structure type.
- * Only return the sub fields documentation.
- * \param typeName is the type to lookup
- * \param indent is the indentation string to use for this list.
- * \return the markdown documentation
+ * Get details needed to produce documentation for a global encodable. The top level details are ommitted.
+ * \param typeName identifies the type of the global encodable.
+ * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
+ * \param names is append for the name of this encodable.
+ * \param encodings is appended for the encoding of this encodable.
+ * \param repeats is appended for the array information of this encodable.
+ * \param comments is appended for the description of this encodable.
  */
-QString ProtocolParser::getStructureSubMarkdown(const QString& typeName, QString indent)
+void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
 {
     for(int i = 0; i < structures.size(); i++)
     {
         if(structures[i]->typeName == typeName)
         {
-            return structures[i]->getMarkdown(indent);
+            return structures[i]->getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
         }
     }
 
@@ -666,11 +677,10 @@ QString ProtocolParser::getStructureSubMarkdown(const QString& typeName, QString
     {
         if(packets[i]->typeName == typeName)
         {
-            return packets[i]->getMarkdown(indent);
+            return packets[i]->getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
         }
     }
 
-    return QString();
 }
 
 
@@ -679,94 +689,72 @@ QString ProtocolParser::getStructureSubMarkdown(const QString& typeName, QString
  */
 void ProtocolParser::outputMarkdown(bool isBigEndian)
 {
+    int paragraph1 = 1, paragraph2 = 1;
     QString fileName = name + ".markdown";
-    QFile file(fileName);
 
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        std::cout << "Failed to open markdown file: " << fileName.toStdString() << std::endl;
-        return;
-    }
+    ProtocolFile file(fileName);
 
-    // Some css to make the html a output a little prettier
-    file.write("\
-<head>\n\
-<style>\n\
-body {\n\
-    text-align:justify;\n\
-    width: 800px;\n\
-    background-color:#F0F0F0;\n\
-    margin-left: auto;\n\
-    margin-right: auto;\n\
-}\n\
-section#text {\n\
-    background-color: #DDD;\n\
-    padding: 5px 20px;\n\
-}\n\
-</style>\n\
-</head>\n\
-<section id=\"text\">\n\n");
+    // Metadata must appear at the top
+    file.write("Title: " + name + " Protocol  \n");
+    file.write("CSS:   " + name + ".css  \n");
+    file.write("\n");
 
-    file.write(qPrintable("# " + name + " Protocol\n"));
+    file.write("# " + QString().setNum(paragraph1++) + ") " + name + " Protocol\n");
     file.write("\n");
 
     if(!comment.isEmpty())
     {
-        file.write(qPrintable(outputLongComment("", comment) + "\n"));
+        file.write(outputLongComment("", comment) + "\n");
         file.write("\n");
     }
 
-    file.write(qPrintable("This is the interface control document for data *on the wire*, \
+    file.write("This is the interface control document for data *on the wire*, \
 not data in memory. This document was automatically generated by the ProtoGen software, \
 version " + ProtocolParser::genVersion + ". ProtoGen also generates C source code for doing \
 most of the hard work of encoding and decoding data from memory to the wire, and vice versa. \
 Documentation for software developers (i.e. data *in memory*) is separately produced as a \
-doxygen product, parsing comments embedded in the automatically generated code.\n"));
+doxygen product, parsing comments embedded in the automatically generated code.\n");
     file.write("\n");
 
     if(isBigEndian)
-        file.write("Data *on the wire* are sent in BIG ENDIAN format. Any field composed of multiple bytes (e.g. `uint32_t`) is sent with the most signficant byte first, and the least significant byte last\n");
+        file.write("Data *on the wire* are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last\n");
     else
-        file.write("Data *on the wire* are sent in LITTLE ENDIAN format. Any field composed of multiple bytes (e.g. `uint32_t`) is sent with the least signficant byte first, and the most significant byte last\n");
+        file.write("Data *on the wire* are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last\n");
     file.write("\n");
 
     if(!version.isEmpty())
     {
-        file.write(qPrintable(name + " Protocol version is " + version + "\n"));
+        file.write(name + " Protocol version is " + version + "\n");
         file.write("\n");
     }
 
     if(!api.isEmpty())
     {
-        file.write(qPrintable(name + " Protocol API is " + api + "\n"));
+        file.write(name + " Protocol API is " + api + "\n");
         file.write("\n");
     }
 
-    if(enums.size() > 0)
+    if(globalEnums.size() > 0)
     {
-        file.write("# Enumerations\n");
+        file.write("# " + QString().setNum(paragraph1) + ") Enumerations\n");
         file.write("\n");
-        file.write(qPrintable(name + " Protocol defines global enumerations. \
-Enumerations are lists of identifiers commonly used as packet \
-identifiers or array indices. Enumerations can also be defined by individual \
-packets or strctures.\n"));
+        file.write(name + " protocol defines the following enumerations.\n");
         file.write("\n");
-        for(int i = 0; i < enums.size(); i++)
+        for(int i = 0; i < globalEnums.size(); i++)
         {
-            if(enums[i] == NULL)
+            if(globalEnums[i] == NULL)
                 continue;
 
-            file.write(qPrintable(enums[i]->getMarkdown(QString())));
+            file.write(globalEnums[i]->getMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++)));
             file.write("\n");
         }
+
+        paragraph1++;
     }
 
     if(packets.size() > 0)
     {
-        file.write("# Packets\n");
-        file.write("\n");
-        file.write(qPrintable(name + " Protocol defines packets. A packet is a \
-hunk of data and the rules for encoding that data for transmission on the wire.\n"));
+        file.write("# " + QString().setNum(paragraph1) + ") Packets\n");
         file.write("\n");
 
         for(int i = 0; i < packets.size(); i++)
@@ -774,16 +762,20 @@ hunk of data and the rules for encoding that data for transmission on the wire.\
             if(packets[i] == NULL)
                 continue;
 
-            file.write(qPrintable(packets[i]->getTopLevelMarkdown(QString())));
+            file.write(packets[i]->getTopLevelMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++)));
             file.write("\n");
         }
+
+        paragraph1++;
     }
 
+    /*
     if(structures.size() > 0)
     {
-        file.write("# Structures");
+        paragraph2 = 1;
+        file.write("# " + QString().setNum(paragraph1) + ") Structures");
         file.write("\n");
-        file.write(qPrintable(name + " Protocol defines global structures. \
+        file.write(name + " Protocol defines global structures. \
 Structures are similar to packets but are intended to be reusable encodings \
 that are contained in one or more packets. The information in this section \
 may be repeating information already presented in the packets section\n"));
@@ -794,33 +786,50 @@ may be repeating information already presented in the packets section\n"));
             if(structures[i] == NULL)
                 continue;
 
-            file.write(qPrintable(structures[i]->getTopLevelMarkdown(QString())));
+            file.write(structures[i]->getTopLevelMarkdown(QString().setNum(paragraph1) + "." + QString.setNum(paragraph2++)));
             file.write("\n");
         }
+
+        paragraph1++;
     }
+    */
 
-
-    // Close out the css section
-    file.write("</section>\n");
-
-    file.close();
-
-    // The markdown perl script
-    QFile::copy(":/files/Markdown.pl", "Markdown.pl");
+    file.flush();
 
     QProcess process;
     QStringList arguments;
-    arguments << "Markdown.pl"; // Markdown perl script
-    arguments << fileName;      // The name of the source file
 
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(name + ".html"));
+
+    /* This commented block is the old markdown perl script support
+    arguments << "Markdown.pl"; // Markdown perl script
+    arguments << fileName;      // The name of the source file
+
+    // The markdown perl script
+    QFile::copy(":/files/Markdown.pl", "Markdown.pl");
 
     process.start(QString("perl"), arguments);
     process.waitForFinished();
 
     // Don't need to leave this one hanging around
     ProtocolFile::deleteFile("Markdown.pl");
+    */
+
+    // This is the MultiMarkdown version
+
+    // Delete the old file
+    ProtocolFile::deleteFile(QString(name + ".css"));
+
+    // Copy the cascaded style sheet
+    QFile::copy(":/files/prebuiltSources/markdown.css", QString(name + ".css"));
+
+    // Make it writable (so we can edit it later)
+    ProtocolFile::makeFileWritable(QString(name + ".css"));
+
+    arguments << fileName;      // The name of the source file
+    process.start(QString("MultiMarkdown"), arguments);
+    process.waitForFinished();
 
 }
 

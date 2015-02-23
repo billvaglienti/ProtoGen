@@ -21,7 +21,7 @@ public:
     QString parse(const QDomElement& e);
 
     //! Get the markdown documentation for this enumeration
-    QString getMarkdown(QString indent) const;
+    QString getMarkdown(QString outline) const;
 
     //! Return the enumeration name
     QString getName(void) const {return name;}
@@ -36,6 +36,7 @@ public:
     int getMinBitWidth(void) const {return minbitwidth;}
 
 protected:
+    //! Parse the enumeration values to build the number list
     void computeNumberList(void);
 
     QStringList nameList;
@@ -50,5 +51,8 @@ protected:
 
 
 };
+
+//! Output a string with specific spacing
+QString spacedString(QString text, int spacing, bool code = false);
 
 #endif // ENUMCREATOR_H

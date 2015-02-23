@@ -757,40 +757,83 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 }
 
 
-//! Return markdown formatted information about this encodables fields
-QString ProtocolStructure::getMarkdown(QString indent) const
+
+/*!
+ * Get details needed to produce documentation for this encodable.
+ * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
+ * \param names is append for the name of this encodable.
+ * \param encodings is appended for the encoding of this encodable.
+ * \param repeats is appended for the array information of this encodable.
+ * \param comments is appended for the description of this encodable.
+ */
+void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
-    QString output = indent;
+    QString description;
 
-    // bulleted list with name in code
-    output += "* `" + name + "`";
+    // The name information
+    if(name.isEmpty())
+        names.append(QString());
+    else
+    {
+        if(parentName.isEmpty())
+            parentName = name;
+        else
+            parentName += ":" + name;
 
-    if(!comment.isEmpty())
-        output += " :   " + comment + ".";
+        names.append(parentName);
+    }
 
-    if(isArray())
+    // Encoding is blank for structures
+    encodings.append(QString());
+
+    // Third column is the repeat/array column
+    if(array.isEmpty())
+    {
+        repeats.append("1");
+    }
+    else
     {
         if(variableArray.isEmpty())
-            output += "  Repeat `" + array + "` times.";
+            repeats.append(array);
         else
-            output += "  Repeat `" + variableArray + "` times, up to `" + array + "` times.";
+            repeats.append(variableArray + ", up to " + array);
     }
+
+    // Fourth column is the commenting
+    description += comment;
 
     if(!dependsOn.isEmpty())
-        output += "  Only included if `" + dependsOn + "` is non-zero.";
-
-    output += "\n";
-
-    // indent to the next level
-    indent += "    ";
-
-    for(int i = 0; i < encodables.length(); i++)
     {
-        output += encodables[i]->getMarkdown(indent);
-        output += "\n";
+        if(!description.endsWith('.'))
+            description += ".";
+
+        description += " Only included if " + dependsOn + " is non-zero.";
     }
 
-    return output;
-}
+    if(description.isEmpty())
+        comments.append(QString());
+    else
+        comments.append(description);
 
+    // Now go get the sub-encodables
+    getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
+
+}// ProtocolStructure::getDocumentationDetails
+
+
+/*!
+ * Get details needed to produce documentation for this encodable.
+ * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
+ * \param names is append for the name of this encodable.
+ * \param encodings is appended for the encoding of this encodable.
+ * \param repeats is appended for the array information of this encodable.
+ * \param comments is appended for the description of this encodable.
+ */
+void ProtocolStructure::getSubDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+{
+    // Go get the sub-encodables
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getDocumentationDetails(parentName, names, encodings, repeats, comments);
+
+}// ProtocolStructure::getSubDocumentationDetails
 

@@ -764,11 +764,12 @@ QString ProtocolPacket::getDataDecodeBriefComment(void) const
 }
 
 
-QString ProtocolPacket::getTopLevelMarkdown(QString indent) const
+QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 {
     QString output;
+    int paragraph = 1;
 
-    output += "## " + name + "\n";
+    output += "## " + outline + ") " + name + "\n";
     output += "\n";
 
     if(!comment.isEmpty())
@@ -782,7 +783,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString indent) const
     if(enumList.size() > 0)
     {
         output += "\n";
-        output += "### Enumerations of packet " + name + "\n";
+        output += "### " + outline + "." + QString().setNum(paragraph++) + ") " + name + " enumerations\n";
         output += "\n";
 
         for(int i = 0; i < enumList.length(); i++)
@@ -790,25 +791,136 @@ QString ProtocolPacket::getTopLevelMarkdown(QString indent) const
             if(enumList[i] == NULL)
                 continue;
 
-
             output += enumList[i]->getMarkdown("");
-            output += "\n";
+            output += "\n";        
         }
+
+        output += "\n";
+
     }
 
     if(encodables.size() > 0)
     {
         output += "\n";
-        output += "### Fields of " + name + "\n";
+        output += "### " + outline + "." + QString().setNum(paragraph++) + ") " + name + " encoding\n";
         output += "\n";
+
+        QStringList names, encodings, repeats, comments;
+
+        // The column headings
+        names.append("Name");
+        encodings.append("Encoding");
+        repeats.append("Repeat");
+        comments.append("Description");
+
+        int nameColumn = 0, encodingColumn = 0, repeatColumn = 0, commentColumn = 0;
+
+        // Get all the details that are going to end up in the table
         for(int i = 0; i < encodables.length(); i++)
         {
-            if(encodables[i] == NULL)
+            if(encodables.at(i) == NULL)
                 continue;
 
-            output += encodables[i]->getMarkdown("");
-            output += "\n";
+            encodables.at(i)->getDocumentationDetails("", names, encodings, repeats, comments);
         }
+
+        // Figure out the column widths, note that we assume all the lists are the same length
+        for(int i = 0; i < names.length(); i++)
+        {
+            if(names.at(i).length() > nameColumn)
+                nameColumn = names.at(i).length();
+
+            if(encodings.at(i).length() > encodingColumn)
+                encodingColumn = encodings.at(i).length();
+
+            if(repeats.at(i).length() > repeatColumn)
+                repeatColumn = repeats.at(i).length();
+
+            if(comments.at(i).length() > commentColumn)
+                commentColumn = comments.at(i).length();
+        }
+
+        // Output the header
+        output += "\n";
+
+        // Table caption
+        output += "[Encoding for packet " + name + "]\n";
+
+        // Table header, notice the column markers lead and follow. We have to do this for merged cells
+        output +=  "| ";
+        output += spacedString(names.at(0), nameColumn);
+        output += " | ";
+        output += spacedString(encodings.at(0), encodingColumn);
+        output += " | ";
+        output += spacedString(repeats.at(0), repeatColumn);
+        output += " | ";
+        output += spacedString(comments.at(0), commentColumn);
+        output += " |\n";
+
+        // Underscore the header
+        output +=  "| ";
+        for(int i = 0; i < nameColumn; i++)
+            output += "-";
+
+        // Encoding column is centered
+        output += " | :";
+        for(int i = 1; i < encodingColumn-1; i++)
+            output += "-";
+
+        // Repeat column is centered
+        output += ": | :";
+        for(int i = 1; i < repeatColumn-1; i++)
+            output += "-";
+
+        output += ": | ";
+        for(int i = 0; i < commentColumn; i++)
+            output += "-";
+        output += " |\n";
+
+        // Now write out the outputs
+        for(int i = 1; i < names.length(); i++)
+        {
+            // Open the line
+            output +=  "| ";
+
+            output += spacedString(names.at(i), nameColumn, true);
+
+            // We support the idea that repeats and or encodings could be empty, causing cells to be merged
+            if(encodings.at(i).isEmpty() && repeats.at(i).isEmpty())
+            {
+                spacedString("", encodingColumn + repeatColumn);
+                output += "     ||| ";
+            }
+            else if(encodings.at(i).isEmpty())
+            {
+                output += spacedString(encodings.at(i), encodingColumn);
+                output += "   || ";
+                output += spacedString(repeats.at(i), repeatColumn);
+                output += " | ";
+            }
+            else if(repeats.at(i).isEmpty())
+            {
+                output += " | ";
+                output += spacedString(encodings.at(i), encodingColumn);
+                output += spacedString(repeats.at(i), repeatColumn);
+                output += "   || ";
+
+            }
+            else
+            {
+                output += " | ";
+                output += spacedString(encodings.at(i), encodingColumn);
+                output += " | ";
+                output += spacedString(repeats.at(i), repeatColumn);
+                output += " | ";
+            }
+
+            output += spacedString(comments.at(i), commentColumn);
+            output += " |\n";
+        }
+
+        output += "\n";
+
     }
 
     return output;

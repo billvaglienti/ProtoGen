@@ -21,7 +21,7 @@ public:
     //! Clear out any data
     virtual void clear(void);
 
-    QString getTopLevelMarkdown(QString indent) const;
+    QString getTopLevelMarkdown(QString outline) const;
 
 protected:
 

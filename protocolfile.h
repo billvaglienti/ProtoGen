@@ -10,6 +10,12 @@ public:
 
     ProtocolFile();
 
+    //! Destructor that performs the actual file write
+    virtual ~ProtocolFile();
+
+    //! Write the file to disc, including any prologue/epilogue
+    virtual bool flush(void);
+
     //! Set the contents of the file, not including any prologue/epilogue
     void clear(void);
 
@@ -26,7 +32,7 @@ public:
     void setVersionOnly(bool onlyversion) {versionOnly = onlyversion;}
 
     //! Return the filename
-    virtual QString fileName(void) const = 0;
+    virtual QString fileName(void) const {return module;}
 
     //! \return true if an append operation is in progress
     bool isAppending(void){return appending;}
@@ -34,10 +40,13 @@ public:
     //! Make sure one blank line at end
     void makeLineSeparator(void);
 
+    //! Make a specific file writable.
+    static void makeFileWritable(const QString& fileName);
+
     //! delete a specific file
     static void deleteFile(const QString& fileName);
 
-    //! delte both the .c and .h file
+    //! delete both the .c and .h file
     static void deleteModule(const QString& moduleName);
 
     //! Make sure one blank line at end
@@ -58,11 +67,8 @@ class ProtocolHeaderFile : public ProtocolFile
 {
 public:
 
-    //! Destroy the protocol file,
-    ~ProtocolHeaderFile();
-
     //! Write the file to disc, including any prologue/epilogue
-    bool flush(void);
+    virtual bool flush(void);
 
     //! Return the filename
     virtual QString fileName(void) const;
@@ -79,9 +85,6 @@ protected:
 class ProtocolSourceFile : public ProtocolFile
 {
 public:
-
-    //! Destroy the protocol file,
-    ~ProtocolSourceFile();
 
     //! Append to the prototype section of the file
     void writePrototype(const QString& text);

@@ -212,7 +212,7 @@ void EnumCreator::computeNumberList(void)
  * Get the markdown output that documents this enumeration
  * \param indent is the indent level for the markdown output
  * \return the markdown output string
- */
+ *
 QString EnumCreator::getMarkdown(QString indent) const
 {
     QString output;
@@ -239,4 +239,101 @@ QString EnumCreator::getMarkdown(QString indent) const
 
     return output;
 
+}// EnumCreator::getMarkdown*/
+
+
+/*!
+ * Get the markdown output that documents this enumeration
+ * \param outline gives the outline number for this heading
+ * \return the markdown output string
+ */
+QString EnumCreator::getMarkdown(QString outline) const
+{
+    QString output;
+
+    if(nameList.length() > 0)
+    {
+        // figure out the column spacing in the tables
+        int firstColumnSpacing = QString("Name").length();
+        int secondColumnSpacing = QString("Value").length();
+        int thirdColumnSpacing = QString("Description").length();
+        for(int i = 0; i < nameList.length(); i++)
+        {
+            if(firstColumnSpacing < nameList.at(i).length() + 2)
+                firstColumnSpacing = nameList.at(i).length() + 2;
+            if(secondColumnSpacing < numberList.at(i).length())
+                secondColumnSpacing = numberList.at(i).length();
+            if(thirdColumnSpacing < commentList.at(i).length())
+                thirdColumnSpacing = commentList.at(i).length();
+        }
+
+
+        if(!outline.isEmpty())
+            output += "## " + outline + ") " + name + "\n\n";
+
+        // Table caption
+        if(!comment.isEmpty())
+            output += "[" + comment + "]\n";
+
+        // Table header
+        output += spacedString("Name", firstColumnSpacing);
+        output += " | ";
+        output += spacedString("Value", secondColumnSpacing);
+        output += " | ";
+        output += spacedString("Description", thirdColumnSpacing);
+        output += "\n";
+
+        // Underscore the header
+        for(int i = 0; i < firstColumnSpacing; i++)
+            output += "-";
+        output += " | :";
+        for(int i = 1; i < secondColumnSpacing-1; i++)
+            output += "-";
+        output += ": | ";
+        for(int i = 0; i < thirdColumnSpacing; i++)
+            output += "-";
+        output += "\n";
+
+        // Now write out the outputs
+        for(int i = 0; i < nameList.length(); i++)
+        {
+            output += spacedString(nameList.at(i), firstColumnSpacing, true);
+            output += " | ";
+            output += spacedString(numberList.at(i), secondColumnSpacing);
+            output += " | ";
+            output += spacedString(commentList.at(i), thirdColumnSpacing);
+            output += "\n";
+
+        }
+
+        output += "\n";
+
+    }
+
+    return output;
+
 }// EnumCreator::getMarkdown
+
+
+/*!
+ * Output a spaced string
+ * \param text is the first part of the string
+ * \param spacing is the total length of the string. The output is padded with
+ *        spaces to reach this length.
+ * \param code should be true to output backticks around the text.
+ * \return The spaced string.
+ */
+QString spacedString(QString text, int spacing, bool code)
+{
+    QString output;
+
+    if(code && !text.isEmpty())
+        output = "`" + text + "`";
+    else
+        output = text;
+
+    while(output.length() < spacing)
+        output += " ";
+
+    return output;
+}

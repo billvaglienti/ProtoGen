@@ -162,6 +162,18 @@ void ProtocolFile::makeLineSeparator(QString& contents)
  */
 void ProtocolFile::deleteFile(const QString& fileName)
 {
+    makeFileWritable(fileName);
+    if(QFile::exists(fileName))
+        QFile::remove(fileName);
+}
+
+
+/*!
+ * Make a specific file writable.
+ * \param fileName identifies the file relative to the current working directory
+ */
+void ProtocolFile::makeFileWritable(const QString& fileName)
+{
     #ifdef WIN32
     // We want to work with permissions...
     qt_ntfs_permission_lookup++;
@@ -175,7 +187,6 @@ void ProtocolFile::deleteFile(const QString& fileName)
         per |= QFileDevice::ReadUser;
         per |= QFileDevice::WriteUser;
         QFile::setPermissions(fileName, per);
-        QFile::remove(fileName);
     }
 
     #ifdef WIN32
@@ -183,6 +194,8 @@ void ProtocolFile::deleteFile(const QString& fileName)
     qt_ntfs_permission_lookup--;
     #endif
 }
+
+
 
 /*!
  * delete both the .c and .h file. The files will be deleted even if they are read-only.
@@ -196,21 +209,59 @@ void ProtocolFile::deleteModule(const QString& moduleName)
 
 
 /*!
+ * Destroy the protocol file making sure to dump the contents to disk if needed
+ */
+ProtocolFile::~ProtocolFile()
+{
+    flush();
+}
+
+
+/*!
+ * Write the file to disc, including any prologue/epilogue
+ * \return true if the file is written, else there is a problem opening\overwriting the file
+ */
+bool ProtocolFile::flush(void)
+{
+    if(!dirty)
+        return false;
+
+    // Got to have a name
+    if(module.isEmpty())
+    {
+        std::cout << "Empty module name when writing protocol file" << std::endl;
+        return false;
+    }
+
+    QFile file(fileName());
+
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        std::cout << "Failed to open " << fileName().toStdString() << std::endl;
+        return false;
+    }
+
+    // The actual interesting contents
+    file.write(qPrintable(contents));
+
+    // And the file
+    file.close();
+
+    // Empty our data
+    clear();
+
+    return true;
+
+}// ProtocolFile::flush
+
+
+/*!
  * Return the filename, which is the module name plus ".h"
  * \return the filename
  */
 QString ProtocolHeaderFile::fileName(void) const
 {
     return module + ".h";
-}
-
-
-/*!
- * Destroy the protocol file making sure to dump the contents to disk if needed
- */
-ProtocolHeaderFile::~ProtocolHeaderFile()
-{
-    flush();
 }
 
 
@@ -334,15 +385,6 @@ void ProtocolHeaderFile::prepareToAppend(void)
 QString ProtocolSourceFile::fileName(void) const
 {
     return module + ".c";
-}
-
-
-/*!
- * Destroy the protocol file making sure to dump the contents to disk if needed
- */
-ProtocolSourceFile::~ProtocolSourceFile()
-{
-    flush();
 }
 
 

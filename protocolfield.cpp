@@ -397,6 +397,9 @@ void ProtocolField::clear(void)
     defaultValue.clear();
     constantValue.clear();
     encodedType = inMemoryType = TypeData();
+    scalerString.clear();
+    minString.clear();
+    maxString.clear();
 
 }// ProtocolField::clear
 
@@ -412,10 +415,10 @@ void ProtocolField::parse(const QDomElement& field)
     // Pull all the attribute data
     name = field.attribute("name").trimmed();
     QString memoryTypeString = field.attribute("inMemoryType").trimmed();
-    QString maxString = field.attribute("max").trimmed();
-    QString minString = field.attribute("min").trimmed();
-    QString scalerString = field.attribute("scaler").trimmed();
     QString structName = field.attribute("struct").trimmed();
+    maxString = field.attribute("max").trimmed();
+    minString = field.attribute("min").trimmed();
+    scalerString = field.attribute("scaler").trimmed();
     array = field.attribute("array").trimmed();
     variableArray = field.attribute("variableArray").trimmed();
     dependsOn = field.attribute("dependsOn").trimmed();
@@ -698,7 +701,10 @@ void ProtocolField::parse(const QDomElement& field)
             encodedMin = ShuntingYard::computeInfix(minString, &ok);
 
             if(!ok)
+            {
                 std::cout << name.toStdString() + ": min is not a number, 0.0 assumed" << std::endl;
+                minString = "0";
+            }
         }
     }
 
@@ -709,19 +715,28 @@ void ProtocolField::parse(const QDomElement& field)
         {
             std::cout << name.toStdString() + ": max is not a number, 1.0 assumed" << std::endl;
             encodedMax = 1.0;
+            maxString = "1";
         }
 
         if(encodedType.isSigned)
         {
             scaler = (powf(2.0, encodedType.bits-1) - 1.0)/encodedMax;
 
+            scalerString = QString().setNum(pow2(encodedType.bits-1)-1)+ "/(" + maxString + ")";
+
             // This is not exactly true, there is one more bit that could be used,
             // but this makes conciser commenting, and is clearer to the user
             encodedMin = -encodedMax;
+            minString = "-" + maxString;
         }
         else
         {
             scaler = (powf(2.0, encodedType.bits) - 1.0)/(encodedMax - encodedMin);
+
+            if(encodedMin == 0.0)
+                scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + maxString + ")";
+            else
+                scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + maxString + " - " + minString + ")";
         }
 
     }
@@ -733,27 +748,37 @@ void ProtocolField::parse(const QDomElement& field)
         {
             std::cout << name.toStdString() + ": scaler is not a number, 1.0 assumed" << std::endl;
             scaler = 1.0;
+            scalerString = "1.0";
         }
         else if(scaler <= 0.0)
         {
             std::cout << name.toStdString() + ": scaler must be greater than zero, 1.0 used" << std::endl;
             scaler = 1.0;
+            scalerString = "1.0";
         }
 
         if(encodedType.isSigned)
         {
             encodedMax = (powf(2.0, encodedType.bits-1) - 1.0)/scaler;
+            maxString = QString().setNum(pow2(encodedType.bits-1)-1)+ "/(" + scalerString + ")";
 
             // This is not exactly true, there is one more bit that could be used,
             // but this makes conciser commenting, and is clearer to the user
             encodedMin = -encodedMax;
+            minString = "-" + maxString;
         }
         else
         {
             encodedMax = encodedMin + (powf(2.0, encodedType.bits) - 1.0)/scaler;
+            maxString = minString + " + " + QString().setNum(pow2(encodedType.bits)-1)+ "/(" + scalerString + ")";
         }
 
     }
+
+    // Change so html will render the pi symbol
+    maxString.replace("pi", "&pi;");
+    minString.replace("pi", "&pi;");
+    scalerString.replace("pi", "&pi;");
 
     // Max must be larger than minimum
     if(encodedMin > encodedMax)
@@ -889,107 +914,145 @@ QString ProtocolField::getEncodeSignature(void) const
 
 
 /*!
- * Return markdown formatted information about this encodables fields. This
- * documents data on the wire. Data encoded null are not documented.
- * \param indent is the spaces to start the line with.
- * \return The markdown text for this field
+ * Get details needed to produce documentation for this encodable.
+ * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
+ * \param names is append for the name of this encodable.
+ * \param encodings is appended for the encoding of this encodable.
+ * \param repeats is appended for the array information of this encodable.
+ * \param comments is appended for the description of this encodable.
  */
-QString ProtocolField::getMarkdown(QString indent) const
+void ProtocolField::getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
-    QString output = indent;
+    QString description;
 
     if(encodedType.isNull)
-        return QString();
-    else if(inMemoryType.isNull)
-    {
-        output += "* reserved space in the packet. ";
-        if(isArray())
-            output += "[`" + array + "`]*";
+        return;
 
-        output += QString().setNum(encodedType.bits) + " bits.";
-
-        if(!constantValue.isEmpty())
-            output += " data are given constant value `" + constantValue + "`.";
-
-    }
-    else if(inMemoryType.isStruct)
-    {
-        // Backtick quotes to make the name be "code"
-        output += "* `" + name + "` :  ";
-
-        if(!comment.isEmpty())
-            output += comment + ".";
-
-        if(isArray())
-        {
-            if(variableArray.isEmpty())
-                output += "  Repeat `" + array + "` times.";
-            else
-                output += "  Repeat `" + variableArray + "` times, up to `" + array + "` times.";
-        }
-
-        if(!dependsOn.isEmpty())
-            output += "  Only included if `" + dependsOn + "` is non-zero.";
-
-        output += "\n";
-        output += ProtocolParser::getStructureSubMarkdown(typeName, indent + "    ");
-        return output;
-    }
+    // The name information
+    if(name.isEmpty())
+        names.append(QString());
     else
     {
-        // Backtick quotes to make the name be "code"
-        output += "* `" + name + "` :  ";
+        if(parentName.isEmpty())
+            parentName = name;
+        else
+            parentName += ":" + name;
 
-        if(!comment.isEmpty())
-            output += comment + ".  ";
+        names.append(parentName);
+    }
 
-        if(encodedType.isString)
+
+    if(inMemoryType.isStruct)
+    {
+        // Encoding is blank for structures
+        encodings.append(QString());
+
+        // Third column is the repeat/array column
+        if(array.isEmpty())
         {
-            if(encodedType.isFixedString)
-                output += "Zero terminated fixed length string of characters with length of " + array + ".";
-            else
-                output += "Zero terminated variable length string of characters with a maximum length of " + array + ".";
+            repeats.append("1");
         }
-        else if(encodedType.isBitfield)
-            output += QString().setNum(encodedType.bits) + " bit bitfield.";
         else
         {
-            if(isArray())
-            {
-                if(variableArray.isEmpty())
-                    output += "[`" + array + "`]*";
-                else
-                    output += "variable length array: [`min(" + variableArray + ", " + array + ")`]*";
-            }
+            if(variableArray.isEmpty())
+                repeats.append(array);
+            else
+                repeats.append(variableArray + ", up to " + array);
+        }
 
-            if(encodedType.isFloat)
-                output += QString().setNum(encodedType.bits) + " bit floating point.";
-            else if(encodedType.isEnum)
-                output += QString().setNum(encodedType.bits) + " bit enumeration.";
+        // Fourth column is the commenting
+        description += comment;
+
+        if(!dependsOn.isEmpty())
+        {
+            if(!description.endsWith('.'))
+                description += ".";
+
+            description += " Only included if " + dependsOn + " is non-zero.";
+        }
+
+        // String cannot be empty
+        if(description.isEmpty())
+            comments.append(QString());
+        else
+            comments.append(description);
+
+        // Now go get the substructure stuff
+        ProtocolParser::getStructureSubDocumentationDetails(typeName, parentName, names, encodings, repeats, comments);
+
+    }// if structure
+    else
+    {
+        // The encoding
+        if(encodedType.isFixedString)
+        {
+            encodings.append("Zero terminated string of exactly " + array + " bytes");
+            repeats.append(QString());
+        }
+        else if( encodedType.isString)
+        {
+            encodings.append("Zero-terminated string up to " + array + " bytes");
+            repeats.append(QString());
+        }
+        else
+        {
+            if(encodedType.isBitfield)
+                encodings.append("B" + QString().setNum(encodedType.bits));
+            else if(encodedType.isFloat)
+                encodings.append("F" + QString().setNum(encodedType.bits));
             else if(encodedType.isSigned)
-            {
-                output += QString().setNum(encodedType.bits) + " bit signed integer.";
+                encodings.append("I" + QString().setNum(encodedType.bits));
+            else
+                encodings.append("U" + QString().setNum(encodedType.bits));
 
-                if(encodedMax != 0.0)
-                    output += "  Scaled by " + getNumberString(scaler) + " from " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) + ".";
+            // Third column is the repeat/array column
+            if(array.isEmpty())
+            {
+                repeats.append("1");
             }
             else
             {
-                output += QString().setNum(encodedType.bits) + " bit unsigned integer.";
-
-                if(encodedMax != 0.0)
-                    output += "  Scaled by " + getNumberString(scaler) + " from " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) + ".";
+                if(variableArray.isEmpty())
+                    repeats.append(array);
+                else
+                    repeats.append(variableArray + ", up to " + array);
             }
         }
 
-        if(!constantValue.isEmpty())
-            output += "  Always has the constant value of `" + constantValue + "` .";
+        // Fourth column is the commenting
+        if(inMemoryType.isNull)
+        {
+            if(!comment.isEmpty())
+                description += comment;
+            else
+            {
+                if(encodedType.isBitfield)
+                    description += "reserved bits in the packet.";
+                else
+                    description += "reserved bytes in the packet.";
+            }
+        }
+        else
+            description += comment;
 
-        if(!dependsOn.isEmpty())
-            output += "  Only included if `" + dependsOn + "` is non-zero.";
-    }
-    return output + "\n";
-}
+        if(!description.endsWith('.'))
+            description += ".";
+
+        if(encodedMax != 0.0)
+            description += " Scaled by " + scalerString + " from " + minString + " to " + maxString + ".";
+
+        if(!constantValue.isEmpty())
+            description += " data are given constant value " + constantValue + ".";
+
+        // String cannot be empty
+        if(description.isEmpty())
+            comments.append(QString());
+        else
+            comments.append(description);
+
+    }// else if not structure
+
+}// ProtocolField::getDocumentationDetails
 
 
 /*!
@@ -1866,4 +1929,24 @@ QString ProtocolField::getNumberString(double number, int bits)
         string += "f";
 
     return string;
+}
+
+
+/*!
+ * Compute the power of 2 raised to some bits
+ * \param bits is the number of bits to raise to
+ * \return the power of 2 raised to bits.
+ */
+uint64_t ProtocolField::pow2(uint8_t bits) const
+{
+    uint64_t output = 2;
+
+    if(bits == 0)
+        return 1;
+
+    // If bits is 1, then 2 is output, if bits is 3 then 2 multiplies occur, yeilding 8
+    for(int i = 1; i < bits; i++)
+        output *= 2;
+
+    return output;
 }

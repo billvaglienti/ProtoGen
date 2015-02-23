@@ -48,8 +48,8 @@ public:
     //! Find the enumeration creator for this enum
     static const EnumCreator* lookUpEnumeration(const QString& enumName);
 
-    //! Get the markdown documentation for a specific global structure type
-    static QString getStructureSubMarkdown(const QString& typeName, QString indent);
+    //! Get the documentation details for a specific global structure type
+    static void getStructureSubDocumentationDetails(QString typeName, QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments);
 
     //! The version of the protocol generator software
     static const QString genVersion;
@@ -81,6 +81,7 @@ protected:
     static QList<ProtocolStructureModule*> structures;
     static QList<ProtocolPacket*> packets;
     static QList<EnumCreator*> enums;
+    static QList<EnumCreator*> globalEnums;
 
 private:
 
