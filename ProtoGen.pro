@@ -111,6 +111,7 @@ unix{
     CONFIG(release, debug|release){
         # Copy key files to the ProtoGenInstall directory
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\ProtoGen.sh)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)\ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
 
         QMAKE_POST_LINK += $$quote(multimarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall/index.html)) $$escape_expand(\n\t)
