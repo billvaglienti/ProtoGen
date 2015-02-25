@@ -107,6 +107,23 @@ macx{
     }
 }
 
+unix{
+    CONFIG(release, debug|release){
+        # Copy key files to the ProtoGenInstall directory
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)\ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+
+        QMAKE_POST_LINK += $$quote(multimarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall/index.html)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libQt5Xml.so.5)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libQt5Core.so.5)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicudata.so.53)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicui18n.so.53)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicuuc.so.53)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
+
+        QMAKE_POST_LINK += tar czvf $$quote($$shell_path($$PWD\ProtoGenLinux.tgz)) $$quote($$shell_path($$PWD\ProtoGenInstall)) --exclude=\.svn$$escape_expand(\n\t)
+    }
+}
+
 OTHER_FILES += \
     ProtoGenInstall/ProtoGen.txt \
     exampleprotocol.xml \
