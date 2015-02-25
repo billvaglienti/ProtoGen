@@ -4,6 +4,11 @@
 #
 #-------------------------------------------------
 
+contains(QT_VERSION, ^4.*) {
+    message("Cannot build ProtoGen with Qt version $${QT_VERSION}.")
+    error("Use at least Qt 5.0")
+}
+
 QT       += core
 QT       += xml
 
