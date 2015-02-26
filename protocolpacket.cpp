@@ -185,9 +185,6 @@ void ProtocolPacket::parse(const QDomElement& e)
     // packet. These need to be declared before the main functions
     createSubStructureFunctions();
 
-    // Remember these for later
-    EncodedLength subEncodedLength = encodedLength;
-
     if(structureFunctions)
     {
         // The functions that encode and decode the structure
@@ -201,9 +198,6 @@ void ProtocolPacket::parse(const QDomElement& e)
 
     if(parameterFunctions)
     {
-        // Don't count the length twice
-        encodedLength = subEncodedLength;
-
         // The functions that encode and decode the packet from parameters
         createPacketFunctions();
     }
@@ -351,13 +345,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         for(int i = 0; i < encodables.length(); i++)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getEncodeString(isBigEndian, encodedLength, &bitcount, true));
-        }
-
-        if(bitcount != 0)
-        {
-            source.makeLineSeparator();
-            source.write(Encodable::getCloseBitfieldString(&bitcount, &encodedLength));
+            source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, true));
         }
 
         source.makeLineSeparator();
@@ -447,13 +435,6 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, true, true));
         }
 
-        // If there was a last bitfield, close it out
-        if(bitcount != 0)
-        {
-            source.makeLineSeparator();
-            source.write(Encodable::getCloseBitfieldString(&bitcount));
-        }
-
         source.makeLineSeparator();
         source.write("    return 1;\n");
         source.write("}\n");
@@ -536,14 +517,7 @@ void ProtocolPacket::createPacketFunctions(void)
         for(i = 0; i < encodables.length(); i++)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getEncodeString(isBigEndian, encodedLength, &bitcount, false));
-        }
-
-        // If there was a last bitfield, close it out
-        if(bitcount != 0)
-        {
-            source.makeLineSeparator();
-            source.write(Encodable::getCloseBitfieldString(&bitcount, &encodedLength));
+            source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, false));
         }
 
         source.makeLineSeparator();
@@ -616,13 +590,6 @@ void ProtocolPacket::createPacketFunctions(void)
         {
             source.makeLineSeparator();
             source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
-        }
-
-        // If there was a last bitfield, close it out
-        if(bitcount != 0)
-        {
-            source.makeLineSeparator();
-            source.write(Encodable::getCloseBitfieldString(&bitcount));
         }
 
         source.makeLineSeparator();
@@ -778,7 +745,17 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         output += "\n";
     }
 
-    output += "packet identifier: `" + id + "`\n";
+    output += "- packet identifier: `" + id + "`\n";
+
+    if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
+    {
+        output += "- data length: " + encodedLength.minEncodedLength + "\n";
+    }
+    else
+    {
+        output += "- minimum data length: " + encodedLength.minEncodedLength + "\n";
+        output += "- maximum data length: " + encodedLength.maxEncodedLength + "\n";
+    }
 
     if(enumList.size() > 0)
     {
@@ -805,15 +782,17 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         output += "### " + outline + "." + QString().setNum(paragraph++) + ") " + name + " encoding\n";
         output += "\n";
 
-        QStringList names, encodings, repeats, comments;
+        QStringList bytes, names, encodings, repeats, comments;
+        QString startByte = "0";
 
         // The column headings
+        bytes.append("Bytes");
         names.append("Name");
         encodings.append("Encoding");
         repeats.append("Repeat");
         comments.append("Description");
 
-        int nameColumn = 0, encodingColumn = 0, repeatColumn = 0, commentColumn = 0;
+        int byteColumn = 0, nameColumn = 0, encodingColumn = 0, repeatColumn = 0, commentColumn = 0;
 
         // Get all the details that are going to end up in the table
         for(int i = 0; i < encodables.length(); i++)
@@ -821,12 +800,15 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
             if(encodables.at(i) == NULL)
                 continue;
 
-            encodables.at(i)->getDocumentationDetails("", names, encodings, repeats, comments);
+            encodables.at(i)->getDocumentationDetails("", startByte, bytes, names, encodings, repeats, comments);
         }
 
         // Figure out the column widths, note that we assume all the lists are the same length
         for(int i = 0; i < names.length(); i++)
         {
+            if(bytes.at(i).length() > byteColumn)
+                byteColumn = bytes.at(i).length();
+
             if(names.at(i).length() > nameColumn)
                 nameColumn = names.at(i).length();
 
@@ -848,6 +830,8 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
         // Table header, notice the column markers lead and follow. We have to do this for merged cells
         output +=  "| ";
+        output += spacedString(bytes.at(0), byteColumn);
+        output += " | ";
         output += spacedString(names.at(0), nameColumn);
         output += " | ";
         output += spacedString(encodings.at(0), encodingColumn);
@@ -859,6 +843,10 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
         // Underscore the header
         output +=  "| ";
+        for(int i = 0; i < byteColumn; i++)
+            output += "-";
+
+        output +=  " | ";
         for(int i = 0; i < nameColumn; i++)
             output += "-";
 
@@ -882,13 +870,14 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         {
             // Open the line
             output +=  "| ";
-
-            output += spacedString(names.at(i), nameColumn, true);
+            output += spacedString(bytes.at(i), byteColumn);
+            output += " | ";
+            output += spacedString(names.at(i), nameColumn);
 
             // We support the idea that repeats and or encodings could be empty, causing cells to be merged
             if(encodings.at(i).isEmpty() && repeats.at(i).isEmpty())
             {
-                spacedString("", encodingColumn + repeatColumn);
+                output += spacedString("", encodingColumn + repeatColumn);
                 output += "     ||| ";
             }
             else if(encodings.at(i).isEmpty())

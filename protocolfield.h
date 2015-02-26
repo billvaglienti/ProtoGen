@@ -70,6 +70,15 @@ public:
     //! True if this encoable is a primitive bitfield
     virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
+    //! Indicate if this bitfield is the last bitfield in this group
+    virtual void setTerminatesBitfield(bool terminate) {lastBitfield = terminate; computeEncodedLength();}
+
+    //! Set the starting bitcount for this fields bitfield
+    virtual void setStartingBitCount(int bitcount) {startingBitCount = bitcount; computeEncodedLength();}
+
+    //! Get the ending bitcount for this fields bitfield
+    virtual int getEndingBitCount(void){return startingBitCount + encodedType.bits;}
+
     //! True if this encodable has a default value
     virtual bool isDefault(void) const {return !defaultValue.isEmpty();}
 
@@ -83,10 +92,10 @@ public:
     virtual QString getEncodeSignature(void) const;
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    virtual void getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
 
     //! Return the string that is used to decode this encoable
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
@@ -121,17 +130,23 @@ public:
 
 protected:
 
+    bool lastBitfield;      //!< True if this is the last bitfield in the local group
+    int startingBitCount;   //!< The starting bit count for this field
+
+    //! Compute the encoded length string
+    void computeEncodedLength(void);
+
     //! Get the next lines(s) of source coded needed to encode a bitfield field
     QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;
 
     //! Get the next lines of source needed to encode a string field
-    QString getEncodeStringForString(EncodedLength& encLength, bool isStructureMember) const;
+    QString getEncodeStringForString(bool isStructureMember) const;
 
     //! Get the next lines of source needed to encode a string field
-    QString getEncodeStringForStructure(EncodedLength& encLength, bool isStructureMember) const;
+    QString getEncodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to encode a field, which is not a bitfield or a string
-    QString getEncodeStringForField(bool isBigEndian, EncodedLength& encLength, bool isStructureMember) const;
+    QString getEncodeStringForField(bool isBigEndian, bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a bitfield field
     QString getDecodeStringForBitfield(int* bitcount, bool isStructureMember) const;
@@ -144,6 +159,9 @@ protected:
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a field, which is not a bitfield or a string
     QString getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled = false) const;
+
+    //! Get the source needed to close out a string of bitfields in the encode function.
+    QString getCloseBitfieldString(int* bitcount) const;
 
     //! Compute the power of 2 raised to some bits
     uint64_t pow2(uint8_t bits) const;

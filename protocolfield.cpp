@@ -361,7 +361,9 @@ ProtocolField::ProtocolField(const QString& protocolName, const QString& protoco
     Encodable(protocolName, protocolPrefix, supported),
     encodedMin(0),
     encodedMax(0),
-    scaler(1)
+    scaler(1),
+    lastBitfield(false),
+    startingBitCount(0)
 {
 
 }
@@ -378,7 +380,9 @@ ProtocolField::ProtocolField(const QString& protocolName, const QString& protoco
     Encodable(protocolName, protocolPrefix, supported),
     encodedMin(0),
     encodedMax(0),
-    scaler(1)
+    scaler(1),
+    lastBitfield(false),
+    startingBitCount(0)
 {
     parse(field);
 }
@@ -400,6 +404,8 @@ void ProtocolField::clear(void)
     scalerString.clear();
     minString.clear();
     maxString.clear();
+    lastBitfield = false;
+    startingBitCount = 0;
 
 }// ProtocolField::clear
 
@@ -817,7 +823,74 @@ void ProtocolField::parse(const QDomElement& field)
     if(!constantValue.isEmpty())
         constant = true;
 
+    computeEncodedLength();
+
 }// ProtocolField::parse
+
+
+/*!
+ * Compute the encoded length of this field
+ */
+void ProtocolField::computeEncodedLength(void)
+{
+    encodedLength.clear();
+
+    if(encodedType.isNull)
+        return;
+
+    if(encodedType.isBitfield)
+    {
+        int length = 0;
+
+        // As a bitfield our length in bytes is given by the number of 8 bit boundaries we cross
+        int bitcount = startingBitCount;
+        while(bitcount < getEndingBitCount())
+        {
+            bitcount++;
+            if((bitcount % 8) == 0)
+                length++;
+        }
+
+        // If we are the last bitfield, and if we have any bits left, then add a byte
+        if(lastBitfield && ((bitcount % 8) != 0))
+            length++;
+
+        encodedLength.addToLength(QString().setNum(length));
+    }
+    else if(inMemoryType.isString)
+        encodedLength.addToLength(array, !inMemoryType.isFixedString, false, !dependsOn.isEmpty(), !defaultValue.isEmpty());
+    else if(inMemoryType.isStruct)
+    {
+        encodedLength.clear();
+
+        const ProtocolStructure* struc = ProtocolParser::lookUpStructure(typeName);
+
+        // Account for array, variable array, and depends on
+        if(struc != NULL)
+            encodedLength.addToLength(struc->encodedLength, array, !variableArray.isEmpty(), !dependsOn.isEmpty());
+        else
+        {
+            if(isArray())
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+            else
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), !defaultValue.isEmpty());
+        }
+    }
+    else
+    {
+        QString lengthString;
+
+        lengthString.setNum(encodedType.bits / 8);
+
+        // Remember that we could be encoding an array
+        if(!array.isEmpty())
+            lengthString += "*" + array;
+
+        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+
+    }
+
+}
 
 
 /*!
@@ -916,17 +989,61 @@ QString ProtocolField::getEncodeSignature(void) const
 /*!
  * Get details needed to produce documentation for this encodable.
  * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
- * \param names is append for the name of this encodable.
+ * \param startByte is the starting byte location of this encodable, which will be updated for the following encodable.
+ * \param bytes is appended for the byte range of this encodable.
+ * \param names is appended for the name of this encodable.
  * \param encodings is appended for the encoding of this encodable.
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolField::getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolField::getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     QString description;
 
     if(encodedType.isNull)
         return;
+
+    // The byte after this one
+    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + encodedLength.maxEncodedLength);
+
+    // The length data
+    if(encodedType.isBitfield)
+    {
+        QString range;
+
+        // the starting bit count is the full count, not the count in the byte
+        int startCount = startingBitCount % 8;
+
+        if(startByte.isEmpty())
+            range = "0:" + QString().setNum(7 - startCount);
+        else
+            range = startByte + ":" + QString().setNum(7 - startCount);
+
+        if(encodedType.bits > 1)
+        {
+            int endCount = (startCount + encodedType.bits - 1);
+
+            int byteCount = endCount / 8;
+
+            QString endByte = EncodedLength::collapseLengthString(startByte + "+" + QString().setNum(byteCount), true);
+
+            range += "..." + endByte + ":" + QString().setNum(7 - (endCount%8));
+        }
+
+        bytes.append(range.replace("*", "&times;"));
+    }
+    else
+    {
+        if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
+            bytes.append(QString(startByte).replace("*", "&times;"));
+        else
+        {
+            QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
+
+            // The range of the data
+            bytes.append(QString(startByte + "..." + endByte).replace("*", "&times;"));
+        }
+    }
 
     // The name information
     if(name.isEmpty())
@@ -938,7 +1055,7 @@ void ProtocolField::getDocumentationDetails(QString parentName, QStringList& nam
         else
             parentName += ":" + name;
 
-        names.append(parentName);
+        names.append("`" + parentName + "`");
     }
 
 
@@ -950,7 +1067,7 @@ void ProtocolField::getDocumentationDetails(QString parentName, QStringList& nam
         // Third column is the repeat/array column
         if(array.isEmpty())
         {
-            repeats.append("1");
+            repeats.append(QString());
         }
         else
         {
@@ -978,11 +1095,14 @@ void ProtocolField::getDocumentationDetails(QString parentName, QStringList& nam
             comments.append(description);
 
         // Now go get the substructure stuff
-        ProtocolParser::getStructureSubDocumentationDetails(typeName, parentName, names, encodings, repeats, comments);
+        ProtocolParser::getStructureSubDocumentationDetails(typeName, parentName, startByte, bytes, names, encodings, repeats, comments);
 
     }// if structure
     else
     {
+        // Update startByte for following encodables
+        startByte = nextStartByte;
+
         // The encoding
         if(encodedType.isFixedString)
         {
@@ -1008,7 +1128,7 @@ void ProtocolField::getDocumentationDetails(QString parentName, QStringList& nam
             // Third column is the repeat/array column
             if(array.isEmpty())
             {
-                repeats.append("1");
+                repeats.append(QString());
             }
             else
             {
@@ -1058,36 +1178,36 @@ void ProtocolField::getDocumentationDetails(QString parentName, QStringList& nam
 /*!
  * Get the next lines(s) of source coded needed to encode this field
  * \param isBigEndian should be true for big endian encoding.
- * \param encLength is appended for length information of this field.
  * \param bitcount points to the running count of bits in a bitfields and should persist between calls
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
  * \return The string to add to the source file that encodes this field.
  */
-QString ProtocolField::getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const
+QString ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
+    QString output;
+
     if(encodedType.isBitfield)
     {
-        return getEncodeStringForBitfield(bitcount, isStructureMember);
+        output = getEncodeStringForBitfield(bitcount, isStructureMember);
+
+        // Close the bitfield if its the last one
+        if(lastBitfield && ((*bitcount) != 0))
+            output += getCloseBitfieldString(bitcount);
     }
     else
     {
-        QString output;
-
-        // If previous output was a bit field, then we need to close it out
-        if(*bitcount != 0)
-            output = getCloseBitfieldString(bitcount, &encLength);
-
         if(inMemoryType.isString)
-            output += getEncodeStringForString(encLength, isStructureMember);
+            output += getEncodeStringForString(isStructureMember);
         else if(inMemoryType.isStruct)
-            output += getEncodeStringForStructure(encLength, isStructureMember);
+            output += getEncodeStringForStructure(isStructureMember);
         else
-            output += getEncodeStringForField(isBigEndian, encLength, isStructureMember);
-
-        return output;
+            output += getEncodeStringForField(isBigEndian, isStructureMember);
     }
+
+    return output;
+
 }
 
 
@@ -1103,27 +1223,27 @@ QString ProtocolField::getEncodeString(bool isBigEndian, EncodedLength& encLengt
  */
 QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
+    QString output;
+
     if(encodedType.isBitfield)
     {
-        return getDecodeStringForBitfield(bitcount, isStructureMember);
+        output += getDecodeStringForBitfield(bitcount, isStructureMember);
+
+        // Close the bitfield if its the last one
+        if(lastBitfield && ((*bitcount) != 0))
+            output += getCloseBitfieldString(bitcount);
     }
     else
     {
-        QString output;
-
-        // If previous output was a bit field, then we need to close it out
-        if(*bitcount != 0)
-            output = getCloseBitfieldString(bitcount);
-
         if(inMemoryType.isString)
             output += getDecodeStringForString(isStructureMember);
         else if(inMemoryType.isStruct)
             output += getDecodeStringForStructure(isStructureMember);
         else
             output += getDecodeStringForField(isBigEndian, isStructureMember, defaultEnabled);
-
-        return output;
     }
+
+    return output;
 }
 
 
@@ -1252,14 +1372,55 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
 
 
 /*!
- * Get the next lines of source needed to encode this string field
- * \param encLength is appended for length information of this field.
+ * Get the source needed to close out a string of bitfields.
+ * \param bitcount points to the running count of bits in this string of
+ *        bitfields, and will be updated by this function.
+ * \return The string to add to the source file that closes the bitfield.
+ */
+QString ProtocolField::getCloseBitfieldString(int* bitcount) const
+{
+    QString output;
+    QString spacing;
+
+    if(*bitcount != 0)
+    {
+        // The number of bytes that the previous sequence of bit fields used up
+        int length = *bitcount / 8;
+
+        // Get the spacing right
+        spacing += "    ";
+
+        // If bitcount is not modulo 8, then the last byte was still in
+        // progress, so increment past that
+        if((*bitcount) % 8)
+        {
+            output += spacing + "bitcount = 0; byteindex++; // close bit field, go to next byte\n";
+            length++;
+        }
+        else
+        {
+           output += spacing + "bitcount = 0; // close bit field, byte index already advanced\n";
+        }
+
+        output += "\n";
+
+        // Reset bit counter
+        *bitcount = 0;
+    }
+
+    return output;
+
+}// ProtocolField::getCloseBitfieldString
+
+
+/*!
+ * Get the next lines of source needed to encode this string field.
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
  * \return The string to add to the source file to that encodes this field
  */
-QString ProtocolField::getEncodeStringForString(EncodedLength& encLength, bool isStructureMember) const
+QString ProtocolField::getEncodeStringForString(bool isStructureMember) const
 {
     QString output;
     QString lhs;
@@ -1292,9 +1453,6 @@ QString ProtocolField::getEncodeStringForString(EncodedLength& encLength, bool i
         output += ", 1);\n";
     else
         output += ", 0);\n";
-
-    // Add to the length as a string. Note that a fixed string is not a string at all as far as the length is concerned
-    encLength.addToLength(array, !inMemoryType.isFixedString, false, !dependsOn.isEmpty(), !defaultValue.isEmpty());
 
     return output;
 
@@ -1338,12 +1496,11 @@ QString ProtocolField::getDecodeStringForString(bool isStructureMember) const
 
 
 /*!
- * Return the string that is used to encode this structure
- * \param encLength is appended for length information of this field.
+ * Return the string that is used to encode this structure.
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to encode this structure
  */
-QString ProtocolField::getEncodeStringForStructure(EncodedLength& encLength, bool isStructureMember) const
+QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
 {
     QString output;
     QString access;
@@ -1367,8 +1524,6 @@ QString ProtocolField::getEncodeStringForStructure(EncodedLength& encLength, boo
 
     if(isArray())
     {
-        encLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
-
         if(variableArray.isEmpty())
         {
             output += spacing + "for(i = 0; i < " + array + "; i++)\n";
@@ -1390,8 +1545,6 @@ QString ProtocolField::getEncodeStringForStructure(EncodedLength& encLength, boo
     }
     else
     {
-        encLength.addToLength("getMinLengthOf" + typeName + "()", false, false, !dependsOn.isEmpty(), !defaultValue.isEmpty());
-
         if(isStructureMember)
             access = "&user->" + name;
         else
@@ -1478,13 +1631,12 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
  * Get the next lines(s) of source coded needed to encode this field, which
  * is not a bitfield or a string
  * \param isBigEndian should be true for big endian encoding.
- * \param encLength is appended for length information of this field.
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
  * \return The string to add to the source file that encodes this field.
  */
-QString ProtocolField::getEncodeStringForField(bool isBigEndian, EncodedLength& encLength, bool isStructureMember) const
+QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructureMember) const
 {
     QString output;
     QString endian;
@@ -1509,8 +1661,6 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, EncodedLength& 
     // Remember that we could be encoding an array
     if(!array.isEmpty())
         lengthString += "*" + array;
-
-    encLength.addToLength(lengthString, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
 
     // The endian string, which is empty for 1 byte, since
     // endian only applies to multi-byte fields

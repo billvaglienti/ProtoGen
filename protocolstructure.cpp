@@ -123,6 +123,17 @@ void ProtocolStructure::parse(const QDomElement& field)
     // At this point a structure cannot be default, null, or reserved.
     parseChildren(field);
 
+    // Sum the length of all the children
+    EncodedLength length;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        length.addToLength(encodables.at(i)->encodedLength);
+    }
+
+    // Account for array, variable array, and depends on
+    encodedLength.clear();
+    encodedLength.addToLength(length, array, !variableArray.isEmpty(), !dependsOn.isEmpty());
+
 }// ProtocolStructure::parse
 
 
@@ -150,6 +161,8 @@ void ProtocolStructure::parseEnumerations(const QDomNode& node)
  */
 void ProtocolStructure::parseChildren(const QDomElement& field)
 {
+    Encodable* prevEncodable = NULL;
+
     // All the direct children, which may themselves be structures or primitive fields
     QDomNodeList children = field.childNodes();
 
@@ -267,7 +280,31 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                 }// if this field depends on another
 
-            }// if not null
+                // If this is a bitfield, assume it terminates the bitfield group until we learn otherwise
+                if(encodable->isBitfield())
+                    encodable->setTerminatesBitfield(true);
+
+                // We need to know when the bitfields end
+                if(prevEncodable != NULL)
+                {
+                    if(prevEncodable->isBitfield())
+                    {
+                        if(encodable->isBitfield())
+                        {
+                            // previous is not the terminator
+                            prevEncodable->setTerminatesBitfield(false);
+
+                            encodable->setStartingBitCount(prevEncodable->getEndingBitCount());
+                        }
+
+                    }// if the previous was a bitfield
+
+                }// if we have a previous encodable
+
+                // Remember who our previous encodable was
+                prevEncodable = encodable;
+
+            }// if is encoded
 
             // Remember this encodable
             encodables.push_back(encodable);
@@ -464,15 +501,11 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
  * Return the string that gives the prototype of the functions used to encode
  * the structure. The encoding is to a simple byte array.
  * \param isBigEndian should be true for big endian encoding.
- * \param encLength is appended for length information of this field.
  * \return The string including the comments and prototypes with linefeeds and semicolons
  */
-QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, EncodedLength* encLength)
+QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian) const
 {
     QString output;
-
-    // Start with no length
-    encodedLength.clear();
 
     if(encodables.length() > 0)
     {
@@ -481,7 +514,7 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, EncodedLen
         {
             if(!encodables[i]->isPrimitive())
             {
-                output += encodables[i]->getPrototypeEncodeString(isBigEndian, &encodedLength);
+                output += encodables[i]->getPrototypeEncodeString(isBigEndian);
                 ProtocolFile::makeLineSeparator(output);
             }
 
@@ -514,13 +547,7 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, EncodedLen
         for(int i = 0; i < encodables.length(); i++)
         {
             ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getEncodeString(isBigEndian, encodedLength, &bitcount, true);
-        }
-
-        if(bitcount != 0)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += Encodable::getCloseBitfieldString(&bitcount, &encodedLength);
+            output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
         }
 
         ProtocolFile::makeLineSeparator(output);
@@ -528,9 +555,6 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, EncodedLen
         output += "}\n";
 
     }
-
-    // Add our length to our parent's length
-    EncodedLength::add(encLength, encodedLength);
 
     return output;
 
@@ -590,12 +614,6 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
             output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
         }
 
-        if(bitcount != 0)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += Encodable::getCloseBitfieldString(&bitcount);
-        }
-
         ProtocolFile::makeLineSeparator(output);
         output += "    return byteindex;\n";
         output += "}\n";
@@ -615,15 +633,11 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to encode this structure
  */
-QString ProtocolStructure::getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const
+QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
     QString output;
     QString access;
     QString spacing = "    ";
-
-    // Close out any bitfields
-    if(*bitcount != 0)
-        output = getCloseBitfieldString(bitcount, &encLength);
 
     // A line between fields
     ProtocolFile::makeLineSeparator(output);
@@ -645,8 +659,6 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, EncodedLength& encL
         output += spacing + "{\n";
         spacing += "    ";
     }
-
-    encLength.addToLength(encodedLength, array, !variableArray.isEmpty(), !dependsOn.isEmpty());
 
     if(isArray())
     {
@@ -699,10 +711,6 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     QString output;
     QString access;
     QString spacing = "    ";
-
-    // Close out any bitfields
-    if(*bitcount != 0)
-        output = getCloseBitfieldString(bitcount);
 
     // A line between fields
     ProtocolFile::makeLineSeparator(output);
@@ -761,14 +769,30 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 /*!
  * Get details needed to produce documentation for this encodable.
  * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
- * \param names is append for the name of this encodable.
+ * \param startByte is the starting byte location of this encodable, which will be updated for the following encodable.
+ * \param bytes is appended for the byte range of this encodable.
+ * \param names is appended for the name of this encodable.
  * \param encodings is appended for the encoding of this encodable.
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     QString description;
+
+    // The byte after this one
+    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + encodedLength.maxEncodedLength);
+
+    // The length data
+    if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
+        bytes.append(QString(startByte).replace("*", "&times;"));
+    else
+    {
+        QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
+
+        // The range of the data
+        bytes.append(QString(startByte + "..." + endByte).replace("*", "&times;"));
+    }
 
     // The name information
     if(name.isEmpty())
@@ -780,16 +804,16 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList&
         else
             parentName += ":" + name;
 
-        names.append(parentName);
+        names.append("`" + parentName + "`");
     }
 
     // Encoding is blank for structures
     encodings.append(QString());
 
-    // Third column is the repeat/array column
+    // The repeat/array column
     if(array.isEmpty())
     {
-        repeats.append("1");
+        repeats.append(QString());
     }
     else
     {
@@ -799,7 +823,7 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList&
             repeats.append(variableArray + ", up to " + array);
     }
 
-    // Fourth column is the commenting
+    // The commenting
     description += comment;
 
     if(!dependsOn.isEmpty())
@@ -816,7 +840,10 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList&
         comments.append(description);
 
     // Now go get the sub-encodables
-    getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
+    getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
+
+    // These two may be the same, but they won't be if this structure is repeated.
+    startByte = nextStartByte;
 
 }// ProtocolStructure::getDocumentationDetails
 
@@ -824,16 +851,18 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QStringList&
 /*!
  * Get details needed to produce documentation for this encodable.
  * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
- * \param names is append for the name of this encodable.
+ * \param startByte is the starting byte location of this encodable, which will be updated for the following encodable.
+ * \param bytes is appended for the byte range of this encodable.
+ * \param names is appended for the name of this encodable.
  * \param encodings is appended for the encoding of this encodable.
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getSubDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getSubDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     // Go get the sub-encodables
     for(int i = 0; i < encodables.length(); i++)
-        encodables.at(i)->getDocumentationDetails(parentName, names, encodings, repeats, comments);
+        encodables.at(i)->getDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
 
 }// ProtocolStructure::getSubDocumentationDetails
 

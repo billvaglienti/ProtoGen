@@ -630,7 +630,43 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName)
         }
     }
 
+    for(int i = 0; i < packets.size(); i++)
+    {
+        if(packets.at(i)->typeName == typeName)
+        {
+            return packets.at(i)->getHeaderFileName();
+        }
+    }
+
     return "";
+}
+
+
+/*!
+ * Find the global structure pointer for a specific type
+ * \param typeName is the type to lookup
+ * \return a pointer to the structure encodable, or NULL if it does not exist
+ */
+const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName)
+{
+    for(int i = 0; i < structures.size(); i++)
+    {
+        if(structures[i]->typeName == typeName)
+        {
+            return structures[i];
+        }
+    }
+
+
+    for(int i = 0; i < packets.size(); i++)
+    {
+        if(packets[i]->typeName == typeName)
+        {
+            return packets[i];
+        }
+    }
+
+    return NULL;
 }
 
 
@@ -657,18 +693,20 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
  * Get details needed to produce documentation for a global encodable. The top level details are ommitted.
  * \param typeName identifies the type of the global encodable.
  * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
- * \param names is append for the name of this encodable.
+ * \param startByte is the starting byte location of this encodable, which will be updated for the following encodable.
+ * \param bytes is appended for the byte range of this encodable.
+ * \param names is appended for the name of this encodable.
  * \param encodings is appended for the encoding of this encodable.
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
+void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
 {
     for(int i = 0; i < structures.size(); i++)
     {
         if(structures[i]->typeName == typeName)
         {
-            return structures[i]->getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
+            return structures[i]->getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 
@@ -677,7 +715,7 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QStri
     {
         if(packets[i]->typeName == typeName)
         {
-            return packets[i]->getSubDocumentationDetails(parentName, names, encodings, repeats, comments);
+            return packets[i]->getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 

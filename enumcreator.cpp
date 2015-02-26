@@ -253,14 +253,19 @@ QString EnumCreator::getMarkdown(QString outline) const
 
     if(nameList.length() > 0)
     {
+        QStringList codeNameList;
+
         // figure out the column spacing in the tables
         int firstColumnSpacing = QString("Name").length();
         int secondColumnSpacing = QString("Value").length();
         int thirdColumnSpacing = QString("Description").length();
         for(int i = 0; i < nameList.length(); i++)
         {
-            if(firstColumnSpacing < nameList.at(i).length() + 2)
-                firstColumnSpacing = nameList.at(i).length() + 2;
+            // Make name as code
+            codeNameList.append("`" + nameList.at(i) + "`");
+
+            if(firstColumnSpacing < codeNameList.at(i).length())
+                firstColumnSpacing = codeNameList.at(i).length();
             if(secondColumnSpacing < numberList.at(i).length())
                 secondColumnSpacing = numberList.at(i).length();
             if(thirdColumnSpacing < commentList.at(i).length())
@@ -295,9 +300,9 @@ QString EnumCreator::getMarkdown(QString outline) const
         output += "\n";
 
         // Now write out the outputs
-        for(int i = 0; i < nameList.length(); i++)
+        for(int i = 0; i < codeNameList.length(); i++)
         {
-            output += spacedString(nameList.at(i), firstColumnSpacing, true);
+            output += spacedString(codeNameList.at(i), firstColumnSpacing);
             output += " | ";
             output += spacedString(numberList.at(i), secondColumnSpacing);
             output += " | ";
@@ -320,17 +325,11 @@ QString EnumCreator::getMarkdown(QString outline) const
  * \param text is the first part of the string
  * \param spacing is the total length of the string. The output is padded with
  *        spaces to reach this length.
- * \param code should be true to output backticks around the text.
  * \return The spaced string.
  */
-QString spacedString(QString text, int spacing, bool code)
+QString spacedString(QString text, int spacing)
 {
-    QString output;
-
-    if(code && !text.isEmpty())
-        output = "`" + text + "`";
-    else
-        output = text;
+    QString output = text;
 
     while(output.length() < spacing)
         output += " ";

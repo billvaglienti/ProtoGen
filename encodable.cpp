@@ -32,53 +32,6 @@ void Encodable::clear(void)
 
 
 /*!
- * Get the source needed to close out a string of bitfields.
- * \param bitcount points to the running count of bits in this string of
- *        bitfields, and will be updated by this function.
- * \param encLength is appended for length information of this field.
- * \return The string to add to the source file that closes the bitfield.
- */
-QString Encodable::getCloseBitfieldString(int* bitcount, EncodedLength* encLength)
-{
-    QString output;
-    QString spacing;
-
-    if(*bitcount != 0)
-    {
-        // The number of bytes that the previous sequence of bit fields used up
-        int length = *bitcount / 8;
-
-        // Get the spacing right
-        spacing += "    ";
-
-        // If bitcount is not modulo 8, then the last byte was still in
-        // progress, so increment past that
-        if((*bitcount) % 8)
-        {
-            output += spacing + "bitcount = 0; byteindex++; // close bit field, go to next byte\n";
-            length++;
-        }
-        else
-        {
-           output += spacing + "bitcount = 0; // close bit field, byte index already advanced\n";
-        }
-
-        output += "\n";
-
-        // Add the length data if we have a place for it
-        if(encLength != NULL)
-            encLength->addToLength(QString().setNum(length));
-
-        // Reset bit counter
-        *bitcount = 0;
-    }
-
-    return output;
-
-}// Encodable::getCloseBitfieldString
-
-
-/*!
  * Return the signature of this field in a encode function signature. The
  * string will start with ", " assuming this field is not the first part of
  * the function signature.

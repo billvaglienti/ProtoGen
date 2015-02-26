@@ -25,13 +25,13 @@ public:
     virtual void clear(void);
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, EncodedLength* encLength = NULL) {return QString();}
+    virtual QString getPrototypeEncodeString(bool isBigEndian) const {return QString();}
 
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
     virtual QString getPrototypeDecodeString(bool isBigEndian) const {return QString();}
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const = 0;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
 
     //! Return the string that is used to decode this encoable
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
@@ -61,7 +61,7 @@ public:
     virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
+    virtual void getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
 
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}
@@ -84,6 +84,15 @@ public:
     //! True if this encodable is a primitive bitfield
     virtual bool isBitfield(void) const {return false;}
 
+    //! Indicate if this bitfield is the last bitfield in this group
+    virtual void setTerminatesBitfield(bool terminate) {;}
+
+    //! Set the starting bitcount for this fields bitfield
+    virtual void setStartingBitCount(int bitcount) {;}
+
+    //! Get the ending bitcount for this fields bitfield
+    virtual int getEndingBitCount(void){return 0;}
+
     //! True if this encodable has a default value
     virtual bool isDefault(void) const {return false;}
 
@@ -101,11 +110,6 @@ public:
 
     //! Add successive length strings
     static void addToLengthString(QString* totalLength, const QString & length);
-
-protected:
-
-    //! Get the source needed to close out a string of bitfields in the encode function.
-    static QString getCloseBitfieldString(int* bitcount, EncodedLength* encLength = NULL);
 
 public:
     ProtocolSupport support;//!< Information about what is supported
