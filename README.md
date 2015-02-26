@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.2.0. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip).
+This document refers to ProtoGen version 1.2.1. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip).
 
 ---
 
@@ -290,7 +290,7 @@ Data subtag attributes:
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by `array`.
     - `null` : indicates no encoding. The data exist in memory but are not encoded in the packet.
 
-- `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields.
+- `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
 
 - `variableArray` : If this data are an array, then the `variableArray` attribute indicates that the array length is variable (up to `array` size). The `variableArray` string indicates which previously defined data item in the encoding gives the size of the array in the encoding. `variableArray` is a powerful tool for efficiently encoding an a-priori unknown range of data. The `variableArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variableArray` attribute. Note: for text it is better to use the encodedType "string", since this will result in a variable length array which is null terminated, and is therefore compatible with C style string functions.
 

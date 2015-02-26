@@ -236,27 +236,73 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero)
 
     }// for all the fragments
 
-    totalLength = "";
 
-    // Add the others into the string first
+    QList<QStringList> pairlist;
     for(int i = 0; i < others.size(); i++)
     {
-        if(totalLength.isEmpty())
-            totalLength = others.at(i);
-        else
-            totalLength += "+" + others.at(i);
+        // Separate a string like "1*N3D" into "1" and "N3D"
+        pairlist.append(others.at(i).split("*"));
+    }
+
+    others.clear();
+    QString output;
+    for(int i = 0; i < pairlist.size(); i++)
+    {
+        // Each entry should have two elements and the first should be a number,
+        // if not then somehting weird happened, just put it back the way it was
+        if((pairlist.at(i).size() != 2) || !isNumber(pairlist.at(i).at(0)))
+        {
+            if(pairlist.at(i).size() != 0)
+            {
+                if(!output.isEmpty())
+                    output += "+";
+
+                output += pairlist.at(i).join("*");
+            }
+            continue;
+        }
+
+        int counter = pairlist.at(i).at(0).toInt();
+
+        // Now go through all entries after this one to find anyone that is common
+        for(int j = i + 1; j < pairlist.size(); j++)
+        {
+            // if its not a number, then we can't do anything with it,
+            // we'll catch it in the outer loop when we get to it
+            if((pairlist.at(j).size() != 2) || !isNumber(pairlist.at(j).at(0)))
+                continue;
+
+            // If the comparison is exactly the same, then we can add this one up
+            if(pairlist.at(i).at(1).compare(pairlist.at(j).at(1)) == 0)
+            {
+                // These two are multiples of the same thing
+                counter += pairlist.at(j).at(0).toInt();
+
+                // Clear this element, no contribution in the future.
+                pairlist[j].clear();
+            }
+        }
+
+        // finally include this in the output
+        if(counter != 0)
+        {
+            if(!output.isEmpty())
+                output += "+";
+
+            output += QString().setNum(counter) + "*" + pairlist.at(i).at(1);
+        }
     }
 
     // These are the numbers we could directly add
     if((number != 0) || keepZero)
     {
-        if(totalLength.isEmpty())
-            totalLength = QString().setNum(number);
+        if(output.isEmpty())
+            output = QString().setNum(number);
         else
-            totalLength += "+" + QString().setNum(number);
+            output += "+" + QString().setNum(number);
     }
 
-    return totalLength;
+    return output;
 
 }// EncodedLength::collapseLengthString
 

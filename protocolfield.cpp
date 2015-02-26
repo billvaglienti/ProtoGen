@@ -1030,18 +1030,18 @@ void ProtocolField::getDocumentationDetails(QString parentName, QString& startBy
             range += "..." + endByte + ":" + QString().setNum(7 - (endCount%8));
         }
 
-        bytes.append(range.replace("*", "&times;"));
+        bytes.append(range.replace("1*", "").replace("*", "&times;"));
     }
     else
     {
         if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
-            bytes.append(QString(startByte).replace("*", "&times;"));
+            bytes.append(QString(startByte).replace("1*", "").replace("*", "&times;"));
         else
         {
             QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
 
             // The range of the data
-            bytes.append(QString(startByte + "..." + endByte).replace("*", "&times;"));
+            bytes.append(QString(startByte + "..." + endByte).replace("1*", "").replace("*", "&times;"));
         }
     }
 

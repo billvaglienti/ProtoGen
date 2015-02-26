@@ -785,13 +785,13 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QString& sta
 
     // The length data
     if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
-        bytes.append(QString(startByte).replace("*", "&times;"));
+        bytes.append(QString(startByte).replace("1*", "").replace("*", "&times;"));
     else
     {
         QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
 
         // The range of the data
-        bytes.append(QString(startByte + "..." + endByte).replace("*", "&times;"));
+        bytes.append(QString(startByte + "..." + endByte).replace("1*", "").replace("*", "&times;"));
     }
 
     // The name information
