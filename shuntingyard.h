@@ -38,6 +38,12 @@ public:
     //! Compute a properly delimited postfix expression
     static double computePostfix(const QString& postfix, bool* ok = 0);
 
+    //! Test if input string is a number
+    static bool isNumber(const QString& input);
+
+    //! Test if input character is a number
+    static bool isNumber(const QChar& input);
+
     //! Test the ShartingYard class
     static bool test();
 
@@ -54,12 +60,6 @@ private:
 
     //! Test if operator is left associative
     static bool isLeftAssociative(const QString& op);
-
-    //! Test if input string is a number
-    static bool isNumber(const QString& input);
-
-    //! Test if input character is a number
-    static bool isNumber(const QChar& input);
 
     //! Test if input string is an operator
     static bool isOperator(const QString& input);

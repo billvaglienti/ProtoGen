@@ -749,12 +749,12 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
     if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
     {
-        output += "- data length: " + encodedLength.minEncodedLength + "\n";
+        output += "- data length: " + EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
     }
     else
     {
-        output += "- minimum data length: " + encodedLength.minEncodedLength + "\n";
-        output += "- maximum data length: " + encodedLength.maxEncodedLength + "\n";
+        output += "- minimum data length: " + EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
+        output += "- maximum data length: " + EncodedLength::collapseLengthString(encodedLength.maxEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
     }
 
     if(enumList.size() > 0)
@@ -788,7 +788,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         // The column headings
         bytes.append("Bytes");
         names.append("Name");
-        encodings.append("Encoding");
+        encodings.append("[Enc](#Enc)");
         repeats.append("Repeat");
         comments.append("Description");
 

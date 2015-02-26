@@ -742,7 +742,21 @@ void ProtocolField::parse(const QDomElement& field)
             if(encodedMin == 0.0)
                 scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + maxString + ")";
             else
-                scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + maxString + " - " + minString + ")";
+            {
+                // If the user gives us something like 145 for max and -5 for min, I would rather just put 150 in the documentation
+                QString denominator = "(" + maxString + " - " + minString + ")";
+
+                // Documentation is only improved if maxString and minString are simple numbers, not formulas
+                if(ShuntingYard::isNumber(maxString) && ShuntingYard::isNumber(minString))
+                {
+                    bool ok;
+                    double number = ShuntingYard::computeInfix(denominator, &ok);
+                    if(ok)
+                        denominator = getNumberString(number);
+                }
+
+                scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/" + denominator;
+            }
         }
 
     }
