@@ -1010,7 +1010,7 @@ QString ProtocolField::getEncodeSignature(void) const
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolField::getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     QString description;
 
@@ -1044,34 +1044,29 @@ void ProtocolField::getDocumentationDetails(QString parentName, QString& startBy
             range += "..." + endByte + ":" + QString().setNum(7 - (endCount%8));
         }
 
-        bytes.append(range.replace("1*", "").replace("*", "&times;"));
+        bytes.append(range);
     }
     else
     {
         if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
-            bytes.append(QString(startByte).replace("1*", "").replace("*", "&times;"));
+            bytes.append(startByte);
         else
         {
-            QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
+            QString endByte = EncodedLength::subtractOneFromLengthString(nextStartByte);
 
             // The range of the data
-            bytes.append(QString(startByte + "..." + endByte).replace("1*", "").replace("*", "&times;"));
+            bytes.append(startByte + "..." + endByte);
         }
     }
 
     // The name information
-    if(name.isEmpty())
-        names.append(QString());
-    else
-    {
-        if(parentName.isEmpty())
-            parentName = name;
-        else
-            parentName += ":" + name;
-
-        names.append("`" + parentName + "`");
-    }
-
+    outline.last() += 1;
+    QString outlineString;
+    outlineString.setNum(outline.at(0));
+    for(int i = 1; i < outline.size(); i++)
+        outlineString += "." + QString().setNum(outline.at(i));
+    outlineString += ")" + name;
+    names.append(outlineString);
 
     if(inMemoryType.isStruct)
     {
@@ -1102,14 +1097,13 @@ void ProtocolField::getDocumentationDetails(QString parentName, QString& startBy
             description += " Only included if " + dependsOn + " is non-zero.";
         }
 
-        // String cannot be empty
         if(description.isEmpty())
             comments.append(QString());
         else
             comments.append(description);
 
         // Now go get the substructure stuff
-        ProtocolParser::getStructureSubDocumentationDetails(typeName, parentName, startByte, bytes, names, encodings, repeats, comments);
+        ProtocolParser::getStructureSubDocumentationDetails(typeName, outline, startByte, bytes, names, encodings, repeats, comments);
 
     }// if structure
     else
@@ -1177,6 +1171,9 @@ void ProtocolField::getDocumentationDetails(QString parentName, QString& startBy
 
         if(!constantValue.isEmpty())
             description += " data are given constant value " + constantValue + ".";
+
+        if(!dependsOn.isEmpty())
+            description += " Only included if " + dependsOn + " is non-zero.";
 
         // String cannot be empty
         if(description.isEmpty())

@@ -135,7 +135,6 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
     if(ok)
     {
         // round to nearest integer
-        int inumber;
         if(number >= 0)
             inumber = (int)(number + 0.5);
         else
@@ -151,6 +150,10 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
         totalLength = length;
     else
     {
+        // Add them up
+        totalLength = collapseLengthString(totalLength + "+" + length);
+
+        /*
         if(totalLength.endsWith(")") || !ok)
         {
             totalLength += "+" + length;
@@ -197,6 +200,7 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
                 totalLength += "+" + length;
 
         }// if length is something we can compute
+        */
 
     }// if totalLength previously had data
 
@@ -206,13 +210,19 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
 /*!
  * Collapse a length string as best we can by summing terms
  * \param totalLength is the existing length string.
- * \param keepZero should be true keep "0" in the output
+ * \param keepZero should be true keep "0" in the output.
+ * \param minusOne should be true to subtract 1 from the output.
  * \return an equivalent collapsed string
  */
-QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero)
+QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, bool minusOne)
 {
     if(totalLength.contains("(") || totalLength.contains(")"))
-        return totalLength;
+    {
+        if(minusOne)
+            return totalLength + "-1";
+        else
+            return totalLength;
+    }
 
     // Split according to the pluses
     QStringList list = totalLength.split("+");
@@ -236,6 +246,9 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero)
 
     }// for all the fragments
 
+    // Handle the minus one here
+    if(minusOne)
+        number--;
 
     QList<QStringList> pairlist;
     for(int i = 0; i < others.size(); i++)
@@ -293,18 +306,38 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero)
         }
     }
 
-    // These are the numbers we could directly add
-    if((number != 0) || keepZero)
+    // A negative number outputs the "-" by default
+    if(number < 0)
+        output += QString().setNum(number);
+    else
     {
-        if(output.isEmpty())
-            output = QString().setNum(number);
-        else
-            output += "+" + QString().setNum(number);
+        if(number != 0)
+        {
+            if(output.isEmpty())
+                output = QString().setNum(number);
+            else
+                output += "+" + QString().setNum(number);
+        }
     }
+
+    if((keepZero) && output.isEmpty())
+        output = "0";
 
     return output;
 
 }// EncodedLength::collapseLengthString
+
+
+/*!
+* Subtract one from a length string
+* \param totalLength is the existing length string.
+* \param keepZero should be true keep "0" in the output.
+* \return the string with one less
+*/
+QString EncodedLength::subtractOneFromLengthString(QString totalLength, bool keepZero)
+{
+    return EncodedLength::collapseLengthString(totalLength, keepZero, true);
+}
 
 
 /*!

@@ -795,19 +795,35 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         int byteColumn = 0, nameColumn = 0, encodingColumn = 0, repeatColumn = 0, commentColumn = 0;
 
         // Get all the details that are going to end up in the table
-        for(int i = 0; i < encodables.length(); i++)
+        QList<int>prefix;
+        for(int i = 0, j = 0; i < encodables.length(); i++)
         {
             if(encodables.at(i) == NULL)
                 continue;
 
-            encodables.at(i)->getDocumentationDetails("", startByte, bytes, names, encodings, repeats, comments);
+            if(encodables.at(i)->isNotEncoded())
+                continue;
+
+            // Prefix is the outline marker for the names in the table
+            prefix.append(j++);
+            encodables.at(i)->getDocumentationDetails(prefix, startByte, bytes, names, encodings, repeats, comments);
+            prefix.clear();
         }
 
         // Figure out the column widths, note that we assume all the lists are the same length
         for(int i = 0; i < names.length(); i++)
         {
+            // replace a "1*" with nothing, since that won't change the value but
+            // is clearer. Also replace "*" with the html time symbol. This
+            // looks better and does not cause markdown to emphasize the text
+            // if there are multiple "*".
+            bytes[i].replace("1*", "").replace("*", "&times;");
+
             if(bytes.at(i).length() > byteColumn)
                 byteColumn = bytes.at(i).length();
+
+            // Place a soft hypen after the ")" so the text can wrap in the table
+            // names[i].replace(")", ")&shy;");
 
             if(names.at(i).length() > nameColumn)
                 nameColumn = names.at(i).length();

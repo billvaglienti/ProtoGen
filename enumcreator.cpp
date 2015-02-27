@@ -281,14 +281,16 @@ QString EnumCreator::getMarkdown(QString outline) const
             output += "[" + comment + "]\n";
 
         // Table header
+        output += "| ";
         output += spacedString("Name", firstColumnSpacing);
         output += " | ";
         output += spacedString("Value", secondColumnSpacing);
         output += " | ";
         output += spacedString("Description", thirdColumnSpacing);
-        output += "\n";
+        output += " |\n";
 
         // Underscore the header
+        output += "| ";
         for(int i = 0; i < firstColumnSpacing; i++)
             output += "-";
         output += " | :";
@@ -297,17 +299,18 @@ QString EnumCreator::getMarkdown(QString outline) const
         output += ": | ";
         for(int i = 0; i < thirdColumnSpacing; i++)
             output += "-";
-        output += "\n";
+        output += " |\n";
 
         // Now write out the outputs
         for(int i = 0; i < codeNameList.length(); i++)
         {
+            output += "| ";
             output += spacedString(codeNameList.at(i), firstColumnSpacing);
             output += " | ";
             output += spacedString(numberList.at(i), secondColumnSpacing);
             output += " | ";
             output += spacedString(commentList.at(i), thirdColumnSpacing);
-            output += "\n";
+            output += " |\n";
 
         }
 

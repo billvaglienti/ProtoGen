@@ -33,7 +33,10 @@ public:
     QString nonDefaultEncodedLength;
 
     //! Collapse a length string as best we can by summing terms
-    static QString collapseLengthString(QString totalLength, bool keepZero = false);
+    static QString collapseLengthString(QString totalLength, bool keepZero = false, bool minusOne = false);
+
+    //! Subtract one from a length string
+    static QString subtractOneFromLengthString(QString totalLength, bool keepZero = false);
 
 private:
 

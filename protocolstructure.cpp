@@ -776,7 +776,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     QString description;
 
@@ -785,27 +785,23 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QString& sta
 
     // The length data
     if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
-        bytes.append(QString(startByte).replace("1*", "").replace("*", "&times;"));
+        bytes.append(startByte);
     else
     {
-        QString endByte = EncodedLength::collapseLengthString(nextStartByte + "+-1");
+        QString endByte = EncodedLength::subtractOneFromLengthString(nextStartByte);
 
         // The range of the data
-        bytes.append(QString(startByte + "..." + endByte).replace("1*", "").replace("*", "&times;"));
+        bytes.append(startByte + "..." + endByte);
     }
 
     // The name information
-    if(name.isEmpty())
-        names.append(QString());
-    else
-    {
-        if(parentName.isEmpty())
-            parentName = name;
-        else
-            parentName += ":" + name;
-
-        names.append("`" + parentName + "`");
-    }
+    outline.last() += 1;
+    QString outlineString;
+    outlineString.setNum(outline.at(0));
+    for(int i = 1; i < outline.size(); i++)
+        outlineString += "." + QString().setNum(outline.at(i));
+    outlineString += ")" + name;
+    names.append(outlineString);
 
     // Encoding is blank for structures
     encodings.append(QString());
@@ -840,7 +836,7 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QString& sta
         comments.append(description);
 
     // Now go get the sub-encodables
-    getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
+    getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
 
     // These two may be the same, but they won't be if this structure is repeated.
     startByte = nextStartByte;
@@ -858,11 +854,15 @@ void ProtocolStructure::getDocumentationDetails(QString parentName, QString& sta
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getSubDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
+    outline.append(0);
+
     // Go get the sub-encodables
     for(int i = 0; i < encodables.length(); i++)
-        encodables.at(i)->getDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
+        encodables.at(i)->getDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
+
+    outline.removeLast();
 
 }// ProtocolStructure::getSubDocumentationDetails
 

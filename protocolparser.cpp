@@ -13,7 +13,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.2.1.a testing";
+const QString ProtocolParser::genVersion = "1.2.1.b testing";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -700,13 +700,13 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
+void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
 {
     for(int i = 0; i < structures.size(); i++)
     {
         if(structures[i]->typeName == typeName)
         {
-            return structures[i]->getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
+            return structures[i]->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 
@@ -715,7 +715,7 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QStri
     {
         if(packets[i]->typeName == typeName)
         {
-            return packets[i]->getSubDocumentationDetails(parentName, startByte, bytes, names, encodings, repeats, comments);
+            return packets[i]->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 

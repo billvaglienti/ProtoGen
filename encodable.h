@@ -61,7 +61,7 @@ public:
     virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QString parentName, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
+    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
 
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}
