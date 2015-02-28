@@ -107,7 +107,7 @@ macx{
     }
 }
 
-unix{
+unix:!macx{
     CONFIG(release, debug|release){
         # Copy key files to the ProtoGenInstall directory
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
