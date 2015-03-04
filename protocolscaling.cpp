@@ -414,10 +414,10 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
         case 2: max = "65535u"; break;
         case 3: max = "16777215u"; break;
         case 4: max = "4294967295uL"; break;
-        case 5: max = "1099511627775u"; break;
-        case 6: max = "281474976710655u"; break;
-        case 7: max = "72057594037927935u"; break;
-        case 8: max = "18446744073709551615u"; break;
+        case 5: max = "1099511627775ull"; break;
+        case 6: max = "281474976710655ull"; break;
+        case 7: max = "72057594037927935ull"; break;
+        case 8: max = "18446744073709551615ull"; break;
         }
 
         function += "    " + floatType + " scaledvalue = (" + floatType + ")((value - min)*scaler);\n";
@@ -444,10 +444,10 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
         case 2: max = "32767"; break;
         case 3: max = "8388607"; break;
         case 4: max = "2147483647"; break;
-        case 5: max = "549755813887"; break;
-        case 6: max = "140737488355327"; break;
-        case 7: max = "36028797018963967"; break;
-        case 8: max = "9223372036854775807"; break;
+        case 5: max = "549755813887ll"; break;
+        case 6: max = "140737488355327ll"; break;
+        case 7: max = "36028797018963967ll"; break;
+        case 8: max = "9223372036854775807ll"; break;
         }
 
         switch(length)
@@ -457,10 +457,10 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
         case 2: min = "(-32767 - 1)"; break;
         case 3: min = "(-8388607 - 1)"; break;
         case 4: min = "(-2147483647 - 1)"; break;
-        case 5: min = "(-549755813887 - 1)"; break;
-        case 6: min = "(-140737488355327 - 1)"; break;
-        case 7: min = "(-36028797018963967 - 1)"; break;
-        case 8: min = "(-9223372036854775807 - 1)"; break;
+        case 5: min = "(-549755813887ll - 1)"; break;
+        case 6: min = "(-140737488355327ll - 1)"; break;
+        case 7: min = "(-36028797018963967ll - 1)"; break;
+        case 8: min = "(-9223372036854775807ll - 1)"; break;
         }
 
         function += "    " + floatType + " scaledvalue = (" + floatType + ")(value*scaler);\n";
