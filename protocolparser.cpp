@@ -904,7 +904,7 @@ description column of the table.\n");
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
     #else
-    process.start(QString("MultiMarkdown"), arguments);
+    process.start(QString("multimarkdown"), arguments);
     #endif
     process.waitForFinished();
 
