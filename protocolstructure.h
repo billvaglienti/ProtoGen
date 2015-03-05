@@ -53,22 +53,22 @@ public:
     virtual QString getStructureDeclaration(bool alwaysCreate) const;
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, EncodedLength* encLength = NULL);
+    virtual QString getPrototypeEncodeString(bool isBigEndian) const;
 
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
     virtual QString getPrototypeDecodeString(bool isBigEndian) const;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, EncodedLength& encLength, int* bitcount, bool isStructureMember) const;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
 
     //! Return the string that is used to decode this encoable
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! Get details needed to produce documentation for this encodables sub-encodables.
-    void getSubDocumentationDetails(QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    void getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
 protected:
 

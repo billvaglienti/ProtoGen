@@ -64,6 +64,7 @@ CONFIG(debug, debug|release){
 win32{
     CONFIG(release, debug|release){
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall\exampleprotocol.xml)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD\ProtoGenInstall\LICENSE.txt)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)\release\ProtoGen.exe)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.exe)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$[QT_INSTALL_BINS]\windeployqt $$shell_path($$quote($$PWD\ProtoGenInstall\ProtoGen.exe)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$quote(MultiMarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen.html)) $$escape_expand(\n\t)
@@ -75,6 +76,7 @@ macx{
     CONFIG(release, debug|release){
         # Copy key files to the ProtoGenInstall directory
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall\exampleprotocol.xml)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD\ProtoGenInstall\LICENSE.txt)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)/ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen)) $$escape_expand(\n\t)
 
         # Build top level documentation
@@ -107,14 +109,15 @@ macx{
     }
 }
 
-unix{
+unix:!macx{
     CONFIG(release, debug|release){
         # Copy key files to the ProtoGenInstall directory
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\ProtoGen.sh)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)\ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
 
-        QMAKE_POST_LINK += $$quote(multimarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall/index.html)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$quote(multimarkdown) $$quote($$shell_path($$PWD\README.md)) > $$quote($$shell_path($$PWD\ProtoGenInstall/ProtoGen.html)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libQt5Xml.so.5)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libQt5Core.so.5)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicudata.so.53)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
@@ -126,6 +129,6 @@ unix{
 }
 
 OTHER_FILES += \
-    ProtoGenInstall/ProtoGen.txt \
     exampleprotocol.xml \
-    README.md
+    README.md \
+    LICENSE.txt

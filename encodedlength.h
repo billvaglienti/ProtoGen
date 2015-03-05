@@ -32,10 +32,19 @@ public:
     //! The maximum encoded length of everything except default fields
     QString nonDefaultEncodedLength;
 
+    //! Collapse a length string as best we can by summing terms
+    static QString collapseLengthString(QString totalLength, bool keepZero = false, bool minusOne = false);
+
+    //! Subtract one from a length string
+    static QString subtractOneFromLengthString(QString totalLength, bool keepZero = false);
+
 private:
 
     //! Create a length string like "4 + 3 + N3D*2" by adding successive length strings
-    static void addToLengthString(QString & totalLength, const QString & length);
+    static void addToLengthString(QString & totalLength, QString length);
+
+    //! Determine if text is a number for our cases
+    static bool isNumber(const QString& text);
 
 };
 

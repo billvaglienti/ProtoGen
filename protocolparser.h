@@ -48,8 +48,11 @@ public:
     //! Find the enumeration creator for this enum
     static const EnumCreator* lookUpEnumeration(const QString& enumName);
 
+    //! Find the global structure point for a specific type
+    static const ProtocolStructure* lookUpStructure(const QString& typeName);
+
     //! Get the documentation details for a specific global structure type
-    static void getStructureSubDocumentationDetails(QString typeName, QString parentName, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments);
+    static void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments);
 
     //! The version of the protocol generator software
     static const QString genVersion;

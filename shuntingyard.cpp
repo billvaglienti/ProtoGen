@@ -104,6 +104,12 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
             operatorStack.push(o1);
 
         }// if new operator
+        else
+        {
+            // A character we don't recognize
+            Return = false;
+        }
+
 
     }// for all input tokens
 
@@ -388,6 +394,8 @@ QString ShuntingYard::tokenize(const QString& raw)
             // Add a separator
             output += ' ';
 
+            // And output the character, this is going to be a failure
+            output += character;
         }
 
     }// for all input characters

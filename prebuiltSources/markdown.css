@@ -50,6 +50,11 @@ p {
     font-family:Verdana;
 }
 
+li {
+    font-family:Verdana;
+    font-size:100%;
+}
+
 caption{
     font-family:Verdana;
 }

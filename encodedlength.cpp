@@ -1,4 +1,6 @@
 #include "encodedlength.h"
+#include "shuntingyard.h"
+#include <QStringList>
 
 EncodedLength::EncodedLength() :
     minEncodedLength(),
@@ -79,21 +81,21 @@ void EncodedLength::addToLength(const EncodedLength& rightLength, const QString&
 {
     if(array.isEmpty())
     {
-        EncodedLength::addToLengthString(maxEncodedLength, rightLength.maxEncodedLength);
-        EncodedLength::addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength);
+        addToLengthString(maxEncodedLength, rightLength.maxEncodedLength);
+        addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength);
 
         // If not variable or dependent, then add to minimum length
         if(!isVariable && !isDependent)
-            EncodedLength::addToLengthString(minEncodedLength, rightLength.minEncodedLength);
+            addToLengthString(minEncodedLength, rightLength.minEncodedLength);
     }
     else
     {
-        EncodedLength::addToLengthString(maxEncodedLength, array + "*(" + rightLength.maxEncodedLength + ")");
-        EncodedLength::addToLengthString(nonDefaultEncodedLength, array + "*(" + rightLength.nonDefaultEncodedLength + ")");
+        addToLengthString(maxEncodedLength, array + "*(" + rightLength.maxEncodedLength + ")");
+        addToLengthString(nonDefaultEncodedLength, array + "*(" + rightLength.nonDefaultEncodedLength + ")");
 
         // If not variable or dependent, then add to minimum length
         if(!isVariable && !isDependent)
-            EncodedLength::addToLengthString(minEncodedLength, array + "*(" + rightLength.minEncodedLength + ")");
+            addToLengthString(minEncodedLength, array + "*(" + rightLength.minEncodedLength + ")");
 
     }
 }
@@ -119,10 +121,241 @@ void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLen
  * \param totalLength is the total length string
  * \param length is the new length to add
  */
-void EncodedLength::addToLengthString(QString & totalLength, const QString & length)
+void EncodedLength::addToLengthString(QString & totalLength, QString length)
 {
+    bool ok;
+    double number;
+    int inumber;
+
+    if(length.isEmpty())
+        return;
+
+    // Its possible that length represents something like 24*(6), which we can resolve easily, so lets try
+    number = ShuntingYard::computeInfix(length, &ok);
+    if(ok)
+    {
+        // round to nearest integer
+        if(number >= 0)
+            inumber = (int)(number + 0.5);
+        else
+            inumber = (int)(number - 0.5);
+
+        length = QString().setNum(inumber);
+    }
+
+    if(length == "0")
+        return;
+
     if(totalLength.isEmpty())
         totalLength = length;
-    else if(!length.isEmpty())
-        totalLength += " + " + length;
+    else
+    {
+        // Add them up
+        totalLength = collapseLengthString(totalLength + "+" + length);
+
+        /*
+        if(totalLength.endsWith(")") || !ok)
+        {
+            totalLength += "+" + length;
+        }
+        else
+        {
+            QString trailingArgument;
+
+            // find the last addition operator
+            int index = totalLength.lastIndexOf("+");
+
+            // Get the trailing argument
+            if(index <= 0)
+                trailingArgument = totalLength;
+            else
+                trailingArgument = totalLength.right(totalLength.size() - index - 1);
+
+            if(isNumber(trailingArgument))
+            {
+                number = ShuntingYard::computeInfix(trailingArgument + "+" + length, &ok);
+                if(ok)
+                {
+                    // round to nearest integer
+                    if(number >= 0)
+                        inumber = (int)(number + 0.5);
+                    else
+                        inumber = (int)(number - 0.5);
+
+                    if(index >= 0)
+                    {
+                        // Remove the previous trailing argument
+                        totalLength.remove(index+1, totalLength.size());
+
+                        // Replace with our new one
+                        totalLength += QString().setNum(inumber);
+                    }
+                    else
+                        totalLength = QString().setNum(inumber);
+                }
+                else
+                    totalLength += "+" + length;
+            }
+            else
+                totalLength += "+" + length;
+
+        }// if length is something we can compute
+        */
+
+    }// if totalLength previously had data
+
+}// EncodedLength::addToLengthString
+
+
+/*!
+ * Collapse a length string as best we can by summing terms
+ * \param totalLength is the existing length string.
+ * \param keepZero should be true keep "0" in the output.
+ * \param minusOne should be true to subtract 1 from the output.
+ * \return an equivalent collapsed string
+ */
+QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, bool minusOne)
+{
+    if(totalLength.contains("(") || totalLength.contains(")"))
+    {
+        if(minusOne)
+            return totalLength + "-1";
+        else
+            return totalLength;
+    }
+
+    // Split according to the pluses
+    QStringList list = totalLength.split("+");
+    QStringList others;
+
+    // Some of these groups are simple numbers, some of them are not. We are going to re-order to put the numbers together
+    int number = 0;
+    for(int i = 0; i < list.size(); i++)
+    {
+        if(list.at(i).isEmpty())
+            continue;
+
+        if(isNumber(list.at(i)))
+        {
+            number += list.at(i).toInt();
+        }
+        else
+        {
+            others.append(list.at(i));
+        }
+
+    }// for all the fragments
+
+    // Handle the minus one here
+    if(minusOne)
+        number--;
+
+    QList<QStringList> pairlist;
+    for(int i = 0; i < others.size(); i++)
+    {
+        // Separate a string like "1*N3D" into "1" and "N3D"
+        pairlist.append(others.at(i).split("*"));
+    }
+
+    others.clear();
+    QString output;
+    for(int i = 0; i < pairlist.size(); i++)
+    {
+        // Each entry should have two elements and the first should be a number,
+        // if not then somehting weird happened, just put it back the way it was
+        if((pairlist.at(i).size() != 2) || !isNumber(pairlist.at(i).at(0)))
+        {
+            if(pairlist.at(i).size() != 0)
+            {
+                if(!output.isEmpty())
+                    output += "+";
+
+                output += pairlist.at(i).join("*");
+            }
+            continue;
+        }
+
+        int counter = pairlist.at(i).at(0).toInt();
+
+        // Now go through all entries after this one to find anyone that is common
+        for(int j = i + 1; j < pairlist.size(); j++)
+        {
+            // if its not a number, then we can't do anything with it,
+            // we'll catch it in the outer loop when we get to it
+            if((pairlist.at(j).size() != 2) || !isNumber(pairlist.at(j).at(0)))
+                continue;
+
+            // If the comparison is exactly the same, then we can add this one up
+            if(pairlist.at(i).at(1).compare(pairlist.at(j).at(1)) == 0)
+            {
+                // These two are multiples of the same thing
+                counter += pairlist.at(j).at(0).toInt();
+
+                // Clear this element, no contribution in the future.
+                pairlist[j].clear();
+            }
+        }
+
+        // finally include this in the output
+        if(counter != 0)
+        {
+            if(!output.isEmpty())
+                output += "+";
+
+            output += QString().setNum(counter) + "*" + pairlist.at(i).at(1);
+        }
+    }
+
+    // A negative number outputs the "-" by default
+    if(number < 0)
+        output += QString().setNum(number);
+    else
+    {
+        if(number != 0)
+        {
+            if(output.isEmpty())
+                output = QString().setNum(number);
+            else
+                output += "+" + QString().setNum(number);
+        }
+    }
+
+    if((keepZero) && output.isEmpty())
+        output = "0";
+
+    return output;
+
+}// EncodedLength::collapseLengthString
+
+
+/*!
+* Subtract one from a length string
+* \param totalLength is the existing length string.
+* \param keepZero should be true keep "0" in the output.
+* \return the string with one less
+*/
+QString EncodedLength::subtractOneFromLengthString(QString totalLength, bool keepZero)
+{
+    return EncodedLength::collapseLengthString(totalLength, keepZero, true);
+}
+
+
+/*!
+ * Determine if a segment of text contains only decimal digits
+ * \param text is the text to check
+ * \return true if only decimal digits, else false
+ */
+bool EncodedLength::isNumber(const QString& text)
+{
+    if(text.size() <= 0)
+        return false;
+
+    for(int i = 0; i < text.size(); i++)
+    {
+        // Minus signs are OK
+        if(!text.at(i).isDigit() && (text.at(i) != '-'))
+            return false;
+    }
+
+    return true;
 }

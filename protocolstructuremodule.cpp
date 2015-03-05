@@ -199,9 +199,6 @@ void ProtocolStructureModule::parse(const QDomElement& e)
  */
 void ProtocolStructureModule::createStructureFunctions(void)
 {
-    // Start with no length
-    encodedLength.clear();
-
     // The encoding and decoding prototypes of my children, if any. I want these to appear before me, because I'm going to call them
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -280,13 +277,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     for(int i = 0; i < encodables.length(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
-        output += encodables[i]->getEncodeString(isBigEndian, encodedLength, &bitcount, true);
-    }
-
-    if(bitcount != 0)
-    {
-        ProtocolFile::makeLineSeparator(output);
-        output += Encodable::getCloseBitfieldString(&bitcount, &encodedLength);
+        output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
     }
 
     ProtocolFile::makeLineSeparator(output);
@@ -322,12 +313,6 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
         output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
     }
 
-    if(bitcount != 0)
-    {
-        ProtocolFile::makeLineSeparator(output);
-        output += Encodable::getCloseBitfieldString(&bitcount);
-    }
-
     ProtocolFile::makeLineSeparator(output);
     output += "    return byteindex;\n";
     output += "}\n";
@@ -346,6 +331,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
  */
 QString ProtocolStructureModule::getTopLevelMarkdown(QString outline) const
 {
+    /*
     QString output;
     int paragraph = 1;
 
@@ -502,4 +488,6 @@ QString ProtocolStructureModule::getTopLevelMarkdown(QString outline) const
     }
 
     return output;
+    */
+    return QString();
 }

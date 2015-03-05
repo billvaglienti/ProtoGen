@@ -53,6 +53,6 @@ protected:
 };
 
 //! Output a string with specific spacing
-QString spacedString(QString text, int spacing, bool code = false);
+QString spacedString(QString text, int spacing);
 
 #endif // ENUMCREATOR_H
