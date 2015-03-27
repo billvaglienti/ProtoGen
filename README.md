@@ -3,17 +3,17 @@ Introduction
 
 ProtoGen is short for "protocol generation". ProtoGen owes its provenance to an often repeated problem: how to efficiently and in a cross platform way communicate information from one computer to another. This problem appears in many places, but most commonly in connecting microcontroller-based peripheral devices (GPSs, Autopilots, IMUs, etc) together. These devices maintain a sophisticated internal state representation in memory; and communicating this data efficiently and in a cross platform way is non-obvious. By efficient I mean: efficient in the amount of bandwidth used. By cross platform I mean: different computer architectures, memory order, compilers, and register bit widths should not cause problems for the communication.
 
-The naive way of doing this is to copy the data in memory into a packet which is sent to the other computer. As an example consider a GPS: it outputs a three dimensional position estimate. Internally the position is represented as three double precision numbers (latitude, longitude, altitude, or perhaps ECEF x, y, z), occupying a total of 24 bytes of memory. When using LLA or ECEF the position number needs enough dynamic range to represent the position to a resolution which is better than the GPS accuracy. As an example if we want ECEF position resolution of 0.01 meters, then we need approximately log2(7,000,000/0.01) ~ 30 bits. This is why double precision is required, since single precision floating point only gives 23 bits of resolution.
+The naive way of doing this is to copy the data in memory into a packet which is sent to the other computer. As an example consider a GPS: it outputs a three dimensional position estimate. Internally the position is represented as three double precision numbers (latitude, longitude, altitude, or perhaps ECEF x, y, z), occupying a total of 24 bytes of memory. When using LLA or ECEF the position number needs enough dynamic range to represent the position to a resolution which is better than the GPS accuracy. If we want ECEF position resolution of 0.01 meters, then we need approximately log2(7,000,000/0.01) ~ 30 bits. This is why double precision is required, since single precision only gives 23 bits of resolution.
 
 If one were to simply `memcpy()` the double precision representation into a packet there are a number of negative consequences:
 
 1. The number can fit in a dynamic range of 32-bits, but 64 bits are used; doubling the amount of bandwidth required.
-2. The receiver may use a different byte order then the sender (little versus big endian).
-3. The receiver may use different structure packing rules then the sender.
-4. The receiver may have different memory alignment rules then the sender.
+2. The receiver may use a different byte order than the sender (little versus big endian).
+3. The receiver may use different structure packing rules than the sender.
+4. The receiver may have different memory alignment rules than the sender.
 5. The receiver's definition of floating point numbers may be different from the sender. (To be fair, most systems now use [IEEE-754 for floating point](http://grouper.ieee.org/groups/754/), so this is unlikely).
 
-These problems can be averted if the internal data representation is converted to a common representation as given by an interface control document (ICD) before transmission. The receiver then un-converts the received data according to the same ICD. The conversion can account for all of the problems that can occur when using simple copying. Most peripheral devices use some version of this idea: the device comes with an ICD that defines how to interpret the transmitted data. Software is then written according to this ICD to implement the encoding/decoding rules. However this creates new problems:
+These problems can be averted if the internal data representation is converted to a common representation as given by an interface control document (ICD) before transmission. The receiver then un-converts the received data according to the same ICD. The conversion can account for all of the problems of simple copying. Most peripheral devices use some version of this idea: the device comes with an ICD that defines how to interpret the transmitted data. Software is then written according to this ICD to implement the encoding/decoding rules. However this creates new problems:
 
 1. Implementing communications now requires a lot more software development. You cannot just `memcpy()` to or from the packet data buffer.
 2. CPU time is spent at both the receiver and transmitter to perform the ICD interpretation.
@@ -33,7 +33,9 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 Dependencies
 ------------
 
-ProtoGen contains the [Qt dependencies](http://qt-project.org/) in its distribution, so Qt does not need to be installed on the host system. ProtoGen outputs documentation for protocol users in [MultiMarkdown](http://fletcherpenney.net/multimarkdown/) format. The host system must have MultiMarkdown installed for ProtoGen to create the html output. On windows MultiMarkdown is invoked simply as "MultiMarkdown". On mac it is invoked as "/usr/local/bin/MultiMarkdown". The code generated by ProtoGen also contains doxygen markup comments. If the host system has [doxygen](http://www.stack.nl/~dimitri/doxygen/index.html) installed ProtoGen can output html documentation for protocol developers. On windows doxygen is invoked by ProtoGen as simply "doxygen". On mac doxygen is invoked by ProtoGen as "/Applications/Doxygen.app/Contents/Resources/doxygen"; this is because doxygen for the mac is provided as a .app bundle containing both the GUI and the binary.
+ProtoGen contains the [Qt dependencies](http://qt-project.org/) in its distribution, so Qt does not need to be installed on the host system. ProtoGen outputs documentation for protocol users in [MultiMarkdown](http://fletcherpenney.net/multimarkdown/) format. The host system must have MultiMarkdown installed for ProtoGen to create the html output. On windows and linux MultiMarkdown is invoked simply as "multimarkdown". On mac it is invoked as "/usr/local/bin/MultiMarkdown".
+
+The source code generated by ProtoGen also contains doxygen markup comments. If the host system has [doxygen](http://www.stack.nl/~dimitri/doxygen/index.html) installed ProtoGen can output html documentation for protocol developers. On windows and linux doxygen is invoked by ProtoGen as simply "doxygen". On mac doxygen is invoked by ProtoGen as "/Applications/Doxygen.app/Contents/Resources/doxygen"; this is because doxygen for the mac is provided as a .app bundle containing both the GUI and the binary.
 
 Protocol ICD
 ================
@@ -111,18 +113,6 @@ Enum tag
 The Enum tag is used to create a named C language typedef enumeration. As with the Include tag the enumeration is created in the header file that represents the parent of this tag. An example Enum tag is:
 
     <Enum name="packetIds" comment="The list of packet identifiers">
-
-Enum tag attributes:
-  
-- `name` : gives the typedef name of the enumeration
-
-- `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
-
-###Enum : Value subtag attributes:
-
-The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. An example is:
-
-    <Enum name="packetIds" comment="The list of packet identifiers">
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
         <Value name="THROTTLESETTINGS" comment="Throttle settings packet"/>
@@ -144,6 +134,16 @@ which produces this output:
         TELEMETRY            //!< Regular elemetry packet
     }packetIds;
 
+Enum tag attributes:
+  
+- `name` : gives the typedef name of the enumeration
+
+- `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
+
+###Enum : Value subtag attributes:
+
+The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. Attributes of the Value subtag are:
+
 - `name` : gives the name of the enumeration element. This is the name that will be referenced in code.
 
 - `value` : is an optional attribute that sets the value of this enumeration element. If value is left out the element will get its value in the normal C language way (by incrementing from the previous element, or starting at 0). Note that non numeric values may be used, as long as those strings are resolved by an include directive or previous enumeration.
@@ -156,20 +156,6 @@ Structure tag
 -------------
 The Structure tag is used to define a structure and the code to encode and decode the structure. Structures can appear under the Protocol tag, in which case they are not associated with any one packet, but can be referenced by any following packet.
 
-    <Structure name="Date" file="Calendar" comment="Calendar date information">
-    
-Structure tag Attributes:
-
-- `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
-
-- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
-
-- `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once.) 
-
-###Structure : Data subtags
-
-The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. In the Date structure example the Data tags are simple. The data tags are explained in more detail in the section on packets.
-    
     <Structure name="Date" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" comment="month of the year, from 1 to 12"/>
@@ -188,6 +174,18 @@ which produces this output:
         uint8_t  day;   //!< day of the month, from 1 to 31
     }Date_t;
 
+Structure tag Attributes:
+
+- `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
+
+- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
+
+- `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once).
+
+###Structure : Data subtags
+
+The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. In the Date structure example the Data tags are simple. The data tags are explained in more detail in the section on packets.
+    
 Packet tag
 ----------
 The Packet tag is used to define all the code to encode and decode one packet of information. A packet is a superset of a structure. It has all the properties of a structure, and has other capabilities.
@@ -212,11 +210,11 @@ Packet tag attributes:
 
 - `parameterInterface` : If this attribute is set to `true` then a parameter based interface to the packet functions will be created. This is useful for simpler packets that do not have too many parameters and using a structure as the interface method is unwieldy. If neither `structureInterface` or `parameterInterface` are specified as `true` ProtoGen will output parameter based interfaces if the number of fields in the packet is 1 or less, otherwise it will output structure based interfaces.
 
-- `comment` : The comment for the Packet tag will be placed at the top of the packets header file as a multi-line doxygen comment. The comment will be wrapped at 80 characters using spaces as the separator.
+- `comment` : The comment for the Packet tag will be placed at the top of the packets header file (or the top of the appended text if the file is used more than once) as a multi-line doxygen comment. The comment will be wrapped at 80 characters using spaces as the separator.
 
 ###Packet : Data subtags
 
-The Packet tag supports data subtags. The data tag is the most complex part of the packet definition. Each Data tag represents one line in the packets structure definition, and one hunk of data in the packets encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
+The Packet tag supports Data subtags. The Data tag is the most complex part of the packet definition. Each Data tag represents one line in the packets structure definition, and one hunk of data in the packets encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
 	        
     <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
     <Data name="reserved" inMemoryType="bitfield3"/>
@@ -271,40 +269,40 @@ Data subtag attributes:
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
     - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to 32 bits.
-    - `string` : is a variable length null terminated string of bytes. The maximum length is given by `array`.
-    - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by `array`.
+    - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
+    - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates empty (i.e. reserved for future expansion) space in the packet.
 
 - `struct` : This attribute replaces the inMemoryType attribute and references a previously defined structure.
 
 - `enum` : This attribute replaces the inMemoryType and references an enumeration. This can be a type name that is defined in an Enum tag above, or is defined by an included file. If the encodedType is not provided then the encoded size of the enumeration is determined automatically by ProtoGen. If encodedType is provided then the size information provided is used to determine the amount of encoded space the enumeration uses. This includes the ability to specify the enumeration encoded as a bitfield.
 
-- `encodedType` : The type information for the encoded data. If this attribute is not provided then the encoded type is the same as the in-memory type. The encoded type cannot use more bits than the in-memory type. If the in-memory type is a bitfield then the encoded type is forced to be a bitfield of the same size. If either the encoded or in-memory type is a string then both types are interpreted as string (or fixed string). If the in-memory type is a `struct` then the encoded type is ignored. Options for the encoded type are: 
+- `encodedType` : The type information for the encoded data. If this attribute is not provided then the encoded type is the same as the in-memory type. The encoded type cannot use more bits than the in-memory type. If the in-memory type is a bitfield then the encoded type is forced to be a bitfield of the same size. If either the encoded or in-memory type is a string then both types are interpreted as string (or fixed string). If the in-memory type is a `struct` then the encoded type is ignored, since the structure defines its own encding. Options for the encoded type are:
     - `unsignedX` or `uintX_t`: is a unsigned integer with X bits, where X can be 8, 16, 24, 32, 40, 48, 56, or 64.
     - `signedX` or `intX_t` : is a signed integer with X bits, where X can be 8, 16, 24, 32, 40, 48, 56, or 64.
     - `floatX` : is a floating point with X bits, where X can be 16, 24, 32, or 64.
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
     - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to 32 bits.
-    - `string` : is a variable length null terminated string of bytes. The maximum length is given by `array`.
-    - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by `array`.
+    - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
+    - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates no encoding. The data exist in memory but are not encoded in the packet.
 
 - `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
 
-- `variableArray` : If this data are an array, then the `variableArray` attribute indicates that the array length is variable (up to `array` size). The `variableArray` string indicates which previously defined data item in the encoding gives the size of the array in the encoding. `variableArray` is a powerful tool for efficiently encoding an a-priori unknown range of data. The `variableArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variableArray` attribute. Note: for text it is better to use the encodedType "string", since this will result in a variable length array which is null terminated, and is therefore compatible with C style string functions.
+- `variableArray` : If this Data are an array, then the `variableArray` attribute indicates that the array length is variable (up to `array` size). The `variableArray` attribute indicates which previously defined data item in the encoding gives the size of the array in the encoding. `variableArray` is a powerful tool for efficiently encoding an a-priori unknown range of data. The `variableArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variableArray` attribute. Note: for text it is better to use the encodedType "string", since this will result in a variable length array which is null terminated, and is therefore compatible with C-style string functions.
 
-- `dependsOn` : The `dependsOn` string indicates that the presence of this Data item is dependent on a previously defined data item. If the previous data item evaluates as zero then this data item is skipped in the encoding. `dependsOn` is useful for encodings that do not know a-priori if a particular data item is available. For example consider a telemetry packet that reports data from all sensors connected to a device: if one of the sensors is not connected or not working then the space in the packet used to report that data can be saved. The `dependsOn` data item will typically be a single bit bitfield, but can be any previous data item which is not a structure or an array. Bitfields cannot be dependent on other data items. ProtoGen will verify that the `dependsOn` variable exists as a primitive non-array member of the encoding, *before* the definition of this data item. If the referenced data item does not exist ProtoGen will ignore the `dependsOn` attribute.
+- `dependsOn` : The `dependsOn` attribute indicates that the presence of this Data item is dependent on a previously defined data item. If the previous data item evaluates as zero then this data item is skipped in the encoding. `dependsOn` is useful for encodings that do not know a-priori if a particular data item is available. For example consider a telemetry packet that reports data from all sensors connected to a device: if one of the sensors is not connected or not working then the space in the packet used to report that data can be saved. The `dependsOn` data item will typically be a single bit bitfield, but can be any previous data item which is not a structure or an array. Bitfields cannot be dependent on other data items. ProtoGen will verify that the `dependsOn` variable exists as a primitive non-array member of the encoding, *before* the definition of this data item. If the referenced data item does not exist ProtoGen will ignore the `dependsOn` attribute.
 
 - `min` : The minimum value that can be encoded. Typically encoded types take up less space than in-memory types. This is usually accomplished by scaling the data. `min`, along with `max` and the number of bits of the encoded type, is used to determine the scaling factor. `min` is ignored if the encoded type is floating, signed, bitfield, or string. If `min` is not given, but `max` is, then `min` is assumed to be 0. `min` can be input as a mathematical expression in infix notation. For example -10000/2^15 would be correctly evaluated as -.30517578125. In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values. For example 180/pi would be evaluated as 57.295779513082321.
 
-- `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, bitfield or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaer` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
+- `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, bitfield or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaler` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
 
-- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` by: `((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` by: `min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is floating, bitfield or string. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`.
+- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is floating, bitfield or string. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`.
 
-- `default` : The default value for a data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
+- `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
 
-- `constant` : is used to specify that this field in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
+- `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
@@ -313,7 +311,7 @@ Data subtag attributes:
 The generated top level code
 ============================
 
-ProtoGen will create a header file with the same name as the protocol. This module will defines any enumeration that is a direct child of the Protocol tag. Most commonly this will be an enumerated list of packet identifiers. It will include any files that the protocol xml indicates (again that is not a sub of a packet definition). Since the generated protocol header file is included in every structure and packet file this implies that the files included here will also be part of every other header. You do not have to add any include files. However it is common that an include file is used for things like array enumerations (X, Y, Z, N3D; for example). If you do not want the protocol ICD to define these enumerations, but you do want to use them in the packet definitions, then including a file is the easiest way to achieve that. The top level module will also provide functions to retrieve information about the protocol. These functions are only included if the protocol ICD includes API or Version information:
+ProtoGen will create a header file with the same name as the protocol. This module defines any enumeration that is a direct child of the Protocol tag. Most commonly this will be an enumerated list of packet identifiers. It will include any files that the protocol xml indicates (that are not a sub of a packet definition). Since the generated protocol header file is included in every structure and packet file this implies that the files included here will also be part of every other header. The top level module will also provide functions to retrieve information about the protocol. These functions are only included if the protocol ICD includes `API` and/or `Version` attributes:
 
     //! Return the protocol API enumeration
     int getDemolinkApi(void);
@@ -326,7 +324,7 @@ In the example above the string "Demolink" is the name of the protocol and comes
 Generic Packets
 ---------------
 
-Despite the name ProtoGen is not really a protocol or packet generator. It is instead an encode/decode generator. ProtoGen does not know (or care) about specific packet details. This is by design. The low level packet routines do not often change and therefore do not realize the same auto-coding advantages as the encoding/decoding code. ProtoGen assumes the following about packets: Packets transport a hunk of data which is internally represented as an array of bytes. Packets have an identifier number that designates their function. Packets have a size, which describes the number of bytes of data they transport. These assumptions are represented by five functions whose prototypes are created by ProtoGen and which the generated code calls (you provide the implementation):
+Despite the name ProtoGen is not really a protocol or packet generator. It is instead an encode/decode generator. By design ProtoGen does not know (or care) about specific packet details. The low level packet routines do not often change and therefore do not realize the same auto-coding advantages as the encoding/decoding code. ProtoGen assumes the following about packets: Packets transport a hunk of data which is internally represented as an array of bytes. Packets have an identifier number that designates their function. Packets have a size, which describes the number of bytes of data they transport. These assumptions are represented by five functions whose prototypes are created by ProtoGen and which the generated code calls (you provide the implementation):
 
     //! Return the packet data pointer from the packet
     uint8_t* getDemolinkPacketData(void* pkt);
@@ -343,7 +341,7 @@ Despite the name ProtoGen is not really a protocol or packet generator. It is in
     //! Return the ID of a packet from the packet header
     uint32_t getDemolinkPacketID(const void* pkt);
 
-Each function takes a pointer to a packet. The implementation of the function will cast this void pointer to the correct packet structure type. When the generated encode routine encodes data into a packet it will first call `getDemolinkPacketData()` to retrieve a pointer to the start of the packets data payload. When the generated code finishes the data encoding it will call `finishProtocolPacket()`, which can then perform any work to complete the packet (such as filling out the header and or generating the CRC). In the reverse direction the decode routine checks a packets ID by comparing the return of `getDemolinkPacketID()` with the ID indicated by the protocol ICD. The decode routine will also verify the packet size meets the minimum requirements.
+Each function takes a pointer to a packet. The implementation of the function will cast this void pointer to the correct packet structure type. When the generated encode routine encodes data into a packet it will first call `getDemolinkPacketData()` to retrieve a pointer to the start of the packets data buffer. When the generated code finishes the data encoding it will call `finishProtocolPacket()`, which can then perform any work to complete the packet (such as filling out the header and or generating the CRC). In the reverse direction the decode routine checks a packets ID by comparing the return of `getDemolinkPacketID()` with the ID indicated by the protocol ICD. The decode routine will also verify the packet size meets the minimum requirements.
 
 Some packet interfaces use multiple ID values. An example would be the uBlox GPS protocol, each packet of which includes a "group" as well as an "ID". For this reason ProtoGen gives 32-bits for the ID value. The intent is that multiple IDs (which are typically less than 32-bits) can be concatenated into a single value for ProtoGens purposes.  
 
@@ -353,7 +351,7 @@ The generated packet code
 The packet structure
 --------------------
 
-Each packet defined in the protocol xml will produce code (typically in its own source and header files) that defines a structure to represent the data-in-memory that the packet transports. In some implementations you may write interface glue code to copy the actual in memory data to this structure before passing it to the generated routines. In other implementations the structures defined by ProtoGen will be used directly in the rest of the project. This is the intended use case and is the purpose of defining separate "in memory" and "encoded" data types. You can use whatever in memory data type best fits your use case without worrying (much) about the impact on the protocol efficiency. The structure defined by a packets autogenerated code will have a typedef name like "prefixPacket_t" where "prefix" is the protocol prefix (if any) given in the xml and "Packet" is the name of the packet from the xml.
+Each packet defined in the protocol xml will produce code that defines a structure to represent the data-in-memory that the packet transports. In some implementations you may write interface glue code to copy the actual in memory data to this structure before passing it to the generated routines. In other implementations the structures defined by ProtoGen will be used directly in the rest of the project. This is the intended use case and is the purpose of defining separate "in memory" and "encoded" data types. You can use whatever in memory data type best fits your use case without worrying (much) about the impact on the protocol efficiency. The structure defined by a packets generated code will have a typedef name like "prefixPacket_t" where "prefix" is the protocol prefix (if any) given in the xml and "Packet" is the name of the packet from the xml.
 
     /*!
      * Version information for the software and hardware. Send this packet with zero
@@ -375,18 +373,18 @@ The packet length and ID
 
 The autogenerated code will define any named enumeration given in the protocol xml for the packet. It will define functions to determine the packet ID and the minimum length of the encoded data of the packet. The packet lengths are given in numbers of bytes. ProtoGen refers to "minimum length", rather than "length" because packets can include default data, variable length arrays, or strings, any of which can cause the packet length to vary.
 
-Variable length packets are a great tool for optimizing bandwidth utilization without limiting the in-memory capabilities of the code. However the correct length of a variable length packet cannot be determined until the packet has been mostly decoded; therefore the autogenerated code will check the length of such a packet twice. The first check occurs before any decoding is done to verify the packet meets the minimum length. The second check occurs when the packet decoding is complete (or only default fields are left) to verify that there were enough bytes to complete the variable length fields.
-
     //! return the minimum data length for the  Version packet
     int getVersionMinDataLength(void);
 
     //! return the packet ID for the  Version packet
     uint32_t getVersionPacketID(void);
 
+Variable length packets are a great tool for optimizing bandwidth utilization without limiting the in-memory capabilities of the code. However the correct length of a variable length packet cannot be determined until the packet has been mostly decoded; therefore the generated code will check the length of such a packet twice. The first check occurs before any decoding is done to verify the packet meets the minimum length. The second check occurs when the packet decoding is complete (or only default fields are left) to verify that there were enough bytes to complete the variable length fields.
+
 Packet encoding and decoding functions
 ------------------------------------------
 
-The autogenerated code will define functions to encode and decode the packets. These functions convert the in-memory representation to and from the encoded representation. These are the functions that your code will most likely interface with. Notice that there are two forms to the packet functions. The form that ends in "Structure" takes a pointer to a structure (`Version_t` in this example) defined by this packets module. The other form allows you to specify individual data fields as parameters. Which form you use is up to you based on how you want to keep the data in memory. Note that the parameter interfaced function will not be output unless the `parameterInterface` attribute is set to `true`.
+The autogenerated code will define functions to encode and decode the packets. These functions convert the in-memory representation to and from the encoded representation. These are the functions that your code will most likely interface with. Notice that there are two forms to the packet functions. The form that ends in "Structure" takes a pointer to a structure (`Version_t` in this example) defined by this packets module. The other form allows you to specify individual data fields as parameters. Which form you use is up to you based on how you want to keep the data in memory. Which form is output in the generated code is a function of the attributes `parameterInterface` and `structureInterface`.
 
     //! Create the Version packet
     void encodeVersionPacketStructure(void* pkt, const Version_t* user);
@@ -402,12 +400,12 @@ The autogenerated code will define functions to encode and decode the packets. T
     int decodeVersionPacket(const void* pkt, Board_t* board, uint8_t* major, uint8_t* minor,
                  uint8_t* sub, uint8_t* patch, Date_t* date, char description[64]);
 
-The packet is allocated by the caller and passed in via void pointer (pkt). Using void pointer means that the generated code does not need to know anything about the low level packet details. See the section on Generic Packets for the means by which the generated code will interface to the packet definition. Notice that the decode function returns `int`. If you attempt to decode a packet whose ID does not match the xml description, or whose size is not sufficient, then `0` will be returned. In that case the `user` structure will be unchanged if the packet is a fixed length; but if the packet is variable length the structure may have been modified with bogus data. Hence the return value from the decode function *must* be checked.
+The packet is allocated by the caller and passed in via void pointer. Using void pointer means that the generated code does not need to know the low level packet details. See the section on Generic Packets for the means by which the generated code will interface to the packet definition. Notice that the decode function returns `int`. If you attempt to decode a packet whose ID does not match the xml description, or whose size is not sufficient, then `0` will be returned. In that case the `user` structure will be unchanged if the packet is a fixed length; but if the packet is variable length the structure may have been modified with bogus data. Hence the return value from the decode function *must* be checked.
 
 Structure encoding and decoding functions
 ---------------------------------------------
 
-In addition to the packet functions the autogenerated code can include functions to encode and decode a structure to a byte array. These functions can be used if you do not want the generated code to interact with packet routines. Perhaps because your data are not being encoded in packets, or the simple packet interfaces that ProtoGen supports are not sophisticated enough. These functions will only be generated for Structure tags, not Packet tags. If you want to simultaneously have a structure with generic encoding functions and packet functions; then create both a structure tag and a packet tag which references the structure (see the GPS example).
+In addition to the packet functions the generated code can include functions to encode and decode a structure to a byte array. These functions can be used if you do not want the generated code to interact with packet routines. Perhaps because your data are not being encoded in packets, or the simple packet interfaces that ProtoGen supports are not sophisticated enough. These functions will only be generated for Structure tags, not Packet tags. If you want to simultaneously have a structure with generic encoding functions and packet functions; then create both a structure tag and a packet tag which references the structure (see the GPS packet in exampleprotocol.xml).
 
     //! Encode a Version_t structure into a byte array
     int encodeVersion_t(uint8_t* data, int byteCount, const Version_t* user);
@@ -418,7 +416,7 @@ In addition to the packet functions the autogenerated code can include functions
 Other generated code
 ====================
 
-ProtoGen also creates other files that are not specified by the xml, but are used as helper functions for the generated packet code. These are the modules: bitfieldspecial, floatspecial, fieldencode, fielddecode, scaledencode, scaleddecode. Although these modules are not specified by the xml they are still auto-generated. Much of the code in these modules is tedious and repetitive, so it was ultimatley simpler and less error prone to auto generate it. More importantly automatically generating this code makes it easier for future versions of ProtoGen to take advantage of changes or advances in the routines these modules provide.
+ProtoGen also creates other files that are not specified by the xml, but are used as helper functions for the generated packet code. These are the modules: bitfieldspecial, floatspecial, fieldencode, fielddecode, scaledencode, scaleddecode. Although these modules are not specified by the xml they are still generated. Much of the code in these modules is tedious and repetitive, so it was ultimatley simpler and less error prone to auto generate it. More importantly automatically generating this code makes it easier for future versions of ProtoGen to take advantage of changes or advances in the routines these modules provide.
 
 floatspecial
 ------------
@@ -427,9 +425,9 @@ floatspecial provides routines to convert to and from normal floating point type
 
 The 16 and 24 bit float formats use the same layout as IEEE-754: the most signficant bit is a sign bit, the next bits are the biased exponent, the least significant bits are the significand with an implied leading 1. The 24-bit format uses the same number of exponent bits as float32 (8 bits of exponent). Hence float24 covers the same range as a float32, but with 15 bits of resolution rather than 23 bits. The 16-bit format uses 6 bits for exponent, so it has a range that is 1/4 of float32 (aproximately -2^31 to 2^31), but with 9 bits of resolution rather than 23 bits.
 
-floatspecial also provides routines to determine if a pattern of 32 bits is a valid `float`, and if a pattern of 64 bits is a valid `double`. In the case where a native floating point type is decoded directly from the byte stream (as opposed to being scaled from integer) these functions are used to make sure the floating point number is not infinity, NaN, or denormalized prior to loading the value into a floating point register. This is important for many embedded processors which have limited floating point environments that will throw an exception in the event of an invalid floating point. Any invalid floating point that is decoded is replaced with 0.
+floatspecial also provides routines to determine if a pattern of 32 or 64 bits is a valid `float` or `double`. In the case where a native floating point type is decoded directly from the byte stream (as opposed to being scaled from integer) these functions are used to make sure the floating point number is not infinity, NaN, or denormalized prior to loading the value into a floating point register. This is important for many embedded processors which have limited floating point environments that will throw an exception in the event of an invalid floating point. Any invalid floating point that is decoded is replaced with 0.
 
-ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to IEEE-754. ProtoGen's assumption of the layout of the `float` and `double` types is only a factor in two cases: 1) if the protocol you specify uses 16 or 24 bit floating point types (i.e. if a conversion between the types is needed) and 2) if a native 32 or 64 bit float type is encoded without scaling by integer, which will trigger the check to determine if the float is valid when it is decoded. If any of your processors do not adhere to the IEEE-754 spec for floating point, do not use 16 or 24 bit floats in your protocol ICD. If you set the protocol attribute `supportSpecialFloat="false"` then the floatspecial module will not be emitted and any reference to float16 or float24 in the protocol will generate a warning. In addition setting `supportSpecialFloat="false"` will cause ProtoGen to skip the valid float check on decode.
+ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to IEEE-754. ProtoGen's assumption of the layout of the `float` and `double` types is only a factor in two cases: 1) if the protocol you specify uses 16 or 24 bit floating point types (i.e. if a conversion between the types is needed) and 2) if a native 32 or 64 bit float type is encoded without scaling by integer, which will trigger the check to determine if the float is valid when it is decoded. If any of your processors do not adhere to the IEEE-754 spec for floating point, do not use 16 or 24 bit floats in your protocol ICD. If you set the protocol attribute `supportSpecialFloat="false"` then the floatspecial module will not be emitted and any reference to float16 or float24 in the protocol will generate a warning and the type will be changed to float32. In addition setting `supportSpecialFloat="false"` will cause ProtoGen to skip the valid float check on decode.
 
 bitfieldspecial
 ---------------
@@ -439,9 +437,9 @@ bitfieldspecial provides routines for encoding and decoding bitfields into and o
 fieldencode and fielddecode
 ---------------------------
 
-fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order (big or little endian) and memory alignment requirements. For example, if the processor is little endian (x86) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packets data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
+fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order (big or little endian) and memory alignment requirements. For example, if the processor is little endian (e.g. x86 or ARM) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packets data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
 
-The way to handle both these issues is to copy the data byte by byte. There are numerous methods by which this can be done. ProtoGen does it using leftshift (`<<`) and rightshift (`>>`) operators. This has the advantage of (potentially) leaving the native type in a register during the copy, and not needing to know the local endianness. Even this operation has room for interpretation. The maximum number of bits that can be shifted is architecture dependent; but is typically the number of bits of an `int`. Hence the process of shifting the bits from the field to the data array (and vice versa) is ordered such that only 8 bit shifts are used, allowing ProtoGen code to run on 8 bit microcontrollers.
+The way to handle both these issues is to copy the data byte by byte. There are numerous methods by which this can be done. ProtoGen does it using leftshift (`<<`) and rightshift (`>>`) operators. This has the advantage of (potentially) leaving the native type in a register during the copy, and not needing to know the local endianness. Even this operation has room for interpretation. The maximum number of bits that can be shifted is architecture dependent; but is typically the number of bits of an `int`. Hence the process of shifting the bits from the field to the data array (and vice versa) is ordered such that only 8 bit shifts are used, allowing ProtoGen code to run on 8 bit processors.
 
 fieldencode also provides the routines to encode non native types, such as `int24_t`. `int24_t` is a 24 bit signed type, which does not exist in most computer architectures. Instead fieldencode provides routines to take a `int32_t` and encode it as a `int24_t`, by discarding the most significant byte. Routines are provided for every byte width from 1 byte to 8 bytes, for both signed and unsigned numbers. If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a lot of functions from this module. Note that you can still encode double precision floating points in this case. To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
 
@@ -450,16 +448,24 @@ fielddecode provides the decoding routines that are the corollary to the routine
 scaledencode and scaleddecode
 -----------------------------
 
-scaledencode and scaleddecode provide routines to take an in memory number (like a `double` for example) and scale it to any smaller size integer. An example use case would be to take a double precision geodetic latitude in radians and encode it as a 32-bit signed integer number. Doing so would provide better than centimeter resolution for the encoded type, while using only half the space in the encoded format as the in memory format. Routines are not provided to inflate the size of an in memory type. For example there is no routine to take a float and encode it in a 64-bit integer. This would simply waste datalink bandwidth without providing any resolution improvement.
+scaledencode and scaleddecode provide routines to take an in-memory number (like a `double` for example) and scale it to any smaller size integer. An example use case would be to take a double precision geodetic latitude in radians and encode it as a 32-bit signed integer number. Doing so would provide better than centimeter resolution for the encoded type, while using only half the space in the encoded format as the in-memory format. Routines are not provided to inflate the size of an in-memory type. For example there is no routine to take a float and encode it in a 64-bit integer. This would simply waste datalink bandwidth without providing any resolution improvement.
 
 If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a *lot* of functions from this module. Note that you can still encode scaled double precision floating points in this case (as long as you scale them to 32 bits or less). To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
 
 Generation of documentation
 ===========================
 
-Documentation for a protocol is often the last task undertaken by a developer, but arguably should be the first. The usefulness of a protocol is largely dictated by the quality of its documentation (unless you plan to be the only one to ever use it!). ProtoGen attempts to provide automatic documentation. The emitted code will be decorated with doxygen style comments. If doxygen is installed ProtoGen can use it to generate html documentation for the code. This documentation is useful for developers who are coding against the API provided by the generated code.
+Documentation for a protocol is often the last task undertaken by a developer, but arguably should be the first. The usefulness of a protocol is largely dictated by the quality of its documentation (unless you plan to be the only one to ever use it!). ProtoGen provides automatic documentation. The emitted code will be decorated with doxygen style comments. If doxygen is installed ProtoGen can use it to generate html documentation for the code. This documentation is useful for developers who are coding against the API provided by the generated code.
 
-ProtoGen will also output a Demolink.markdown file which provides a MultiMarkdown formatted document of the protocol. ProtoGen can feed this file to MultiMarkdown (if it is installed) in order to create a Demolink.html file. This file is intended as a master document for the protocol that is suitable for developers and users alike. The author of the protocol xml is encouraged to be verbose in the comment attributes. Remember: the better you document your protocol the less users will bug you for help!
+ProtoGen will also output a Demolink.markdown file which provides a MultiMarkdown formatted document of the protocol. ProtoGen can feed this file to MultiMarkdown (if it is installed) in order to create a Demolink.html file. This file is intended as a master document for the protocol that is suitable for developers and users alike. The author of the protocol xml is encouraged to be verbose in the comment attributes. The better you document your protocol the less users will bug you for help!
+
+###Documentation consequences of using the `Include` tag
+
+The `Include` tag is most useful when integrating ProtoGen code with pre-existing software. However using it reduces the usefulness of ProtoGen's documentation. ProtoGen is not a compiler; it will not read the referenced include file and resolve all strings contained therein. For example if you define an array length enumeration (e.g. "#define N3D 3") in an included file and then use that as an array attribute (`array="N3D"`) ProtoGen will not *know* that the array is 3 elements long. The generated code will be perfectly readable and correct; however the ambiguous array length means that ProtoGen will not be able to document the exact byte location of the data in the packet.
+
+A similar situation occurs if you use an external file to specify packet IDs, or enumerations. Externally defined IDs mean that ProtoGen cannot document the exact ID value, only the string that is given in the protocol xml. The documentation is therefore incomplete, and any user of the protocol will need to refer to the externally included file.
+
+Note that the reverse situation does not occur. If you use ProtoGen to define enumerations and IDs then other code can easily utilize them by including the header file(s) output by ProtoGen. This is the best way to integrate ProtoGen with external code as it results in better documentation.
 
 ---
 
