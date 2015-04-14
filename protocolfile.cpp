@@ -71,7 +71,7 @@ void ProtocolFile::write(const QString& text)
  * \param include is the module name to include
  * \param comment is a trailing comment for the include directive, can be empty
  */
-void ProtocolFile::writeIncludeDirective(const QString& include, const QString& comment)
+void ProtocolFile::writeIncludeDirective(const QString& include, const QString& comment, bool Global)
 {
     if(include.isEmpty())
         return;
@@ -86,8 +86,11 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
     if(directive == fileName())
         return;
 
+    if (Global == false)
     // Build the include directive with quotes
-    directive = "#include \"" + directive + "\"";
+        directive = "#include \"" + directive + "\"";
+    else
+        directive = "#include <" + directive + ">";
 
     // See if this include directive is already present, in which case we don't need to add it again
     if(contents.contains(directive))

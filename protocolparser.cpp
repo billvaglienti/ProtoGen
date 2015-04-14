@@ -609,7 +609,7 @@ void ProtocolParser::outputIncludes(ProtocolFile& file, const QDomNode& node)
         if(!include.isEmpty())
         {
             QString comment = ProtocolParser::getComment(e);
-            file.writeIncludeDirective(include, comment);
+            file.writeIncludeDirective(include, comment, e.attribute("global") == "true");
         }
     }
 
