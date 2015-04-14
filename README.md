@@ -101,9 +101,11 @@ which produces this output:
 
 The Include tag supports the following attributes:
 
-- `name` : gives the name of the file to include, with the extension. The name will be wrapped in quotes ("") when emitted as part of the #include directive.
+- `name` : gives the name of the file to include, with the extension. The name will be wrapped in quotes ("") or angle braces (<>), depending on the `global` attribute, when emitted as part of the #include directive.
 
 - `comment` : Gives a one line comment that follows the #include directive.
+
+- `global` : Set to `true` to use a global header file (e.g., #include <stdio.h>) or `false` to use a local include (e.g., #include "indices.h"). The default is `false`.
 
 Enum tag
 --------

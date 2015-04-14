@@ -23,7 +23,7 @@ public:
     void write(const QString& text);
 
     //! Output an include directive
-    void writeIncludeDirective(const QString& include, const QString& comment = QString());
+    void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool Global = false);
 
     //! Set the name of the module
     void setModuleName(const QString& name);
