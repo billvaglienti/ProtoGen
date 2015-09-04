@@ -31,6 +31,13 @@ interpretation
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
     </Enum>
 
+    <Enum name="ThreeD" comment="3D axis enumeration">
+        <Value name="X"/>
+        <Value name="Y"/>
+        <Value name="Z"/>
+        <Value name="N3D"/>
+    </Enum>
+
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" comment="the API of the sending side"/>
         <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" encodedType="fixedstring" comment="the version of the sending side"/>

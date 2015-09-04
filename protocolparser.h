@@ -48,6 +48,9 @@ public:
     //! Find the enumeration creator for this enum
     static const EnumCreator* lookUpEnumeration(const QString& enumName);
 
+    //! Replace any text that matches an enumeration name with the value of that enumeration
+    static QString& replaceEnumerationNameWithValue(QString& text);
+
     //! Find the global structure point for a specific type
     static const ProtocolStructure* lookUpStructure(const QString& typeName);
 

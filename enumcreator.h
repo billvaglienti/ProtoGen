@@ -21,7 +21,7 @@ public:
     QString parse(const QDomElement& e);
 
     //! Get the markdown documentation for this enumeration
-    QString getMarkdown(QString outline) const;
+    QString getMarkdown(QString outline, const QStringList& ids = QStringList()) const;
 
     //! Return the enumeration name
     QString getName(void) const {return name;}
@@ -31,6 +31,9 @@ public:
 
     //! Return the header file output string
     QString getOutput(void) const {return output;}
+
+    //! Replace any text that matches an enumeration name with the value of that enumeration
+    QString& replaceEnumerationNameWithValue(QString& text) const;
 
     //! Return the minimum number of bits needed to encode the enumeration
     int getMinBitWidth(void) const {return minbitwidth;}

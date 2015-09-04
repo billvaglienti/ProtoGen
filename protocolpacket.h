@@ -21,7 +21,11 @@ public:
     //! Clear out any data
     virtual void clear(void);
 
+    //! Return top level markdown documentation for this packet
     QString getTopLevelMarkdown(QString outline) const;
+
+    //! Get the ID string of this packet
+    QString getId(void) const {return id;}
 
 protected:
 

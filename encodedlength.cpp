@@ -262,7 +262,7 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
     for(int i = 0; i < pairlist.size(); i++)
     {
         // Each entry should have two elements and the first should be a number,
-        // if not then somehting weird happened, just put it back the way it was
+        // if not then something weird happened, just put it back the way it was
         if((pairlist.at(i).size() != 2) || !isNumber(pairlist.at(i).at(0)))
         {
             if(pairlist.at(i).size() != 0)
@@ -322,6 +322,20 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
 
     if((keepZero) && output.isEmpty())
         output = "0";
+
+    // It might be that we can compute a value now, give it a try
+    bool ok;
+    double dnumber = ShuntingYard::computeInfix(output, &ok);
+    if(ok)
+    {
+        // round to nearest integer
+        if(dnumber >= 0)
+            number = (int)(dnumber + 0.5);
+        else
+            number = (int)(dnumber - 0.5);
+
+        output = QString().setNum(number);
+    }
 
     return output;
 

@@ -735,8 +735,10 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 {
     QString output;
     int paragraph = 1;
+    QString idvalue = id;
 
-    output += "## " + outline + ") " + name + "\n";
+    // Put a tag in the idenfifier line which is the same as the ID. We'll link to it if we can
+    output += "## " + outline + ") <a name=\"" + id + "\"></a>" + name + "\n";
     output += "\n";
 
     if(!comment.isEmpty())
@@ -745,7 +747,13 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         output += "\n";
     }
 
-    output += "- packet identifier: `" + id + "`\n";
+    // In case the packet identifer is an enumeration we know
+    ProtocolParser::replaceEnumerationNameWithValue(idvalue);
+
+    if(id == idvalue)
+        output += "- packet identifier: `" + id + "`\n";
+    else
+        output += "- packet identifier: `" + id + "` : " + idvalue + "\n";
 
     if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
     {

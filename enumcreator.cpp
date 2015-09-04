@@ -245,9 +245,10 @@ QString EnumCreator::getMarkdown(QString indent) const
 /*!
  * Get the markdown output that documents this enumeration
  * \param outline gives the outline number for this heading
+ * \param packetids is the list of packet identifiers, used to determine if a link should be added
  * \return the markdown output string
  */
-QString EnumCreator::getMarkdown(QString outline) const
+QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) const
 {
     QString output;
 
@@ -261,8 +262,23 @@ QString EnumCreator::getMarkdown(QString outline) const
         int thirdColumnSpacing = QString("Description").length();
         for(int i = 0; i < nameList.length(); i++)
         {
-            // Make name as code
-            codeNameList.append("`" + nameList.at(i) + "`");
+            bool link = false;
+
+            // Check to see if this enumeration is a packet identifier
+            for(int j = 0; j < packetids.size(); j++)
+            {
+                if(packetids.at(j) == nameList.at(i))
+                {
+                    link = true;
+                    break;
+                }
+            }
+
+            // Make name as code, with or without a link
+            if(link)
+                codeNameList.append("[`" + nameList.at(i) + "`](#" + nameList.at(i) + ")");
+            else
+                codeNameList.append("`" + nameList.at(i) + "`");
 
             if(firstColumnSpacing < codeNameList.at(i).length())
                 firstColumnSpacing = codeNameList.at(i).length();
@@ -321,6 +337,35 @@ QString EnumCreator::getMarkdown(QString outline) const
     return output;
 
 }// EnumCreator::getMarkdown
+
+
+/*!
+ * Replace any text that matches an enumeration name with the value of that enumeration
+ * \param text is modified to replace names with numbers
+ * \return a reference to text
+ */
+QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
+{
+    for(int i = 0; i < nameList.length(); i++)
+    {
+        // If we don't have a name there is no point
+        if(nameList.at(i).isEmpty())
+            continue;
+
+        // If we don't have a value there is no point
+        if(valueList.at(i) == numberList.at(i))
+            continue;
+
+        if(text.contains(nameList.at(i)))
+        {
+            text.replace(nameList.at(i), numberList.at(i));
+        }
+
+    }
+
+    return text;
+
+}// EnumCreator::replaceEnumerationNameWithValue
 
 
 /*!

@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.2.1. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.2.2. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -81,7 +81,8 @@ A large part of the value of ProtoGen is the documentation it outputs. To that e
      * This is a multi-line comment. It appears before the object it documents
      *
      * It supports multiple paragraphs and will be automatically wrapped at 80
-     * characters using spaces as separators.
+     * characters using spaces as separators. It can also contain text that is
+     * not reflowed if that text is surrounded with "\verbatim".
      */
 
 Other comments are output as single line doxygen comments:
@@ -152,7 +153,7 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
 
-In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice).
+In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice). Enumerations are also a good choice when creating arrays. If an array length is given by an enumeration that is defined in the protocol xml then ProtoGen will attempt to compute the enumeration value, and use that to compute the length of the array in bytes. This substantially improves the protocol documentation that ProtoGen will output.
 
 Structure tag
 -------------

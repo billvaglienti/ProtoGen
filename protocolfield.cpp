@@ -701,7 +701,10 @@ void ProtocolField::parse(const QDomElement& field)
     if(!minString.isEmpty())
     {
         if(encodedType.isSigned)
+        {
             std::cout << name.toStdString() << ": min value ignored because encoded type is signed" << std::endl;
+            minString.clear();
+        }
         else
         {
             encodedMin = ShuntingYard::computeInfix(minString, &ok);
@@ -740,7 +743,10 @@ void ProtocolField::parse(const QDomElement& field)
             scaler = (powf(2.0, encodedType.bits) - 1.0)/(encodedMax - encodedMin);
 
             if(encodedMin == 0.0)
+            {
+                minString = "0";
                 scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + maxString + ")";
+            }
             else
             {
                 // If the user gives us something like 145 for max and -5 for min, I would rather just put 150 in the documentation
@@ -790,7 +796,15 @@ void ProtocolField::parse(const QDomElement& field)
         else
         {
             encodedMax = encodedMin + (powf(2.0, encodedType.bits) - 1.0)/scaler;
-            maxString = minString + " + " + QString().setNum(pow2(encodedType.bits)-1)+ "/(" + scalerString + ")";
+
+            // Make sure minString isn't empty
+            if(encodedMin == 0)
+            {
+                minString = "0";
+                maxString = QString().setNum(pow2(encodedType.bits)-1)+ "/(" + scalerString + ")";
+            }
+            else
+                maxString = minString + " + " + QString().setNum(pow2(encodedType.bits)-1)+ "/(" + scalerString + ")";
         }
 
     }
@@ -800,10 +814,17 @@ void ProtocolField::parse(const QDomElement& field)
     minString.replace("pi", "&pi;");
     scalerString.replace("pi", "&pi;");
 
+    // Change to get rid of * multiply symbol, which plays havoc with markdown
+    maxString.replace("*", "&times;");
+    minString.replace("*", "&times;");
+    scalerString.replace("*", "&times;");
+
     // Max must be larger than minimum
     if(encodedMin > encodedMax)
     {
         encodedMin = encodedMax = 0.0;
+        minString.clear();
+        maxString.clear();
         scaler = 1.0;
         std::cout << name.toStdString() << ": max is not more than min, encoding not scaled" << std::endl;
     }
@@ -1013,12 +1034,16 @@ QString ProtocolField::getEncodeSignature(void) const
 void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     QString description;
+    QString maxEncodedLength = encodedLength.maxEncodedLength;
 
     if(encodedType.isNull)
         return;
 
+    // See if we can replace any enumeration names with values
+    ProtocolParser::replaceEnumerationNameWithValue(maxEncodedLength);
+
     // The byte after this one
-    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + encodedLength.maxEncodedLength);
+    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
 
     // The length data
     if(encodedType.isBitfield)
@@ -1048,7 +1073,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
     }
     else
     {
-        if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
+        if(maxEncodedLength.isEmpty() || (maxEncodedLength.compare("1") == 0))
             bytes.append(startByte);
         else
         {
