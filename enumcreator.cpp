@@ -33,7 +33,7 @@ QString EnumCreator::parse(const QDomElement& e)
     clear();
 
     name = e.attribute("name");
-    comment = ProtocolParser::getComment(e);
+    comment = e.attribute("comment");
 
     QDomNodeList list = e.elementsByTagName("Value");
 

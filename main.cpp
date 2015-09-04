@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                std::cout << "failed to valid xml from file: " << filename.toStdString() << std::endl;
+                std::cout << "failed to validate xml from file: " << filename.toStdString() << std::endl;
                 Return = 0;
             }
 

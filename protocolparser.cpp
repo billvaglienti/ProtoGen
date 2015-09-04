@@ -13,7 +13,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.2.1.c testing";
+const QString ProtocolParser::genVersion = "1.2.2.a testing";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -269,7 +269,7 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     header.setModuleName(nameex);
     header.setVersionOnly(true);
 
-    comment = ProtocolParser::getComment(docElem);
+    comment = docElem.attribute("comment");
 
     // Comment block at the top of the header file
     header.write("/*!\n");
@@ -397,56 +397,85 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
     // Convert to unix style line endings, just in case
     output.replace("\r\n", "\n");
 
-    // Separate the paragraphs, as given by dual line feeds
-    QStringList paragraphs = output.split("\n\n", QString::SkipEmptyParts);
+    // Separate by blocks that have \verbatim surrounding them
+    QStringList blocks = output.split("\\verbatim", QString::SkipEmptyParts);
 
     // Empty the output string so we can build the output up
     output.clear();
 
-    for(int i = 0; i < paragraphs.size(); i++)
+    for(int b = 0; b < blocks.size(); b++)
     {
-        // Replace line feeds with spaces
-        paragraphs[i].replace("\n", " ");
-
-        int length = 0;
-
-        // Break it apart into words
-        QStringList list = paragraphs[i].split(' ', QString::SkipEmptyParts);
-
-        // Now write the words one at a time, wrapping at 80 character length
-        for (int j = 0; j < list.size(); j++)
+        // odd blocks are "verbatim", even blocks are not
+        if((b & 0x01) == 1)
         {
-            // Length of the word plus the preceding space
-            int wordLength = list.at(j).length() + 1;
+            // Separate the paragraphs, as given by single line feeds
+            QStringList paragraphs = blocks[b].split("\n", QString::KeepEmptyParts);
 
-            if((length != 0) && (length + wordLength > 80))
+            if(prefix.isEmpty())
             {
-                // Terminate the previous line
-                output += "\n";
-                length = 0;
+                for(int i = 0; i < paragraphs.size(); i++)
+                    output += paragraphs[i] + "\n";
             }
-
-            // All lines in the header comment block start with this spacing
-            if(length == 0)
+            else
             {
-                output += prefix;
-                length += prefix.length();
+                // Output with the prefix
+                for(int i = 0; i < paragraphs.size(); i++)
+                    output += prefix + " " + paragraphs[i] + "\n";
             }
+        }
+        else
+        {
+            // Separate the paragraphs, as given by dual line feeds
+            QStringList paragraphs = blocks[b].split("\n\n", QString::SkipEmptyParts);
 
-            // prefix could be zero length
-            if(length != 0)
-                output += " ";
+            for(int i = 0; i < paragraphs.size(); i++)
+            {
+                // Replace line feeds with spaces
+                paragraphs[i].replace("\n", " ");
 
-            output += list.at(j);
-            length += wordLength;
+                int length = 0;
 
-        }// for all words in the comment
+                // Break it apart into words
+                QStringList list = paragraphs[i].split(' ', QString::SkipEmptyParts);
 
-        // Paragraph break, except for the last paragraph
-        if(i < paragraphs.size() - 1)
-            output += "\n" + prefix + "\n";
+                // Now write the words one at a time, wrapping at 80 character length
+                for (int j = 0; j < list.size(); j++)
+                {
+                    // Length of the word plus the preceding space
+                    int wordLength = list.at(j).length() + 1;
 
-    }// for all paragraphs
+                    if((length != 0) && (length + wordLength > 80))
+                    {
+                        // Terminate the previous line
+                        output += "\n";
+                        length = 0;
+                    }
+
+                    // All lines in the header comment block start with this spacing
+                    if(length == 0)
+                    {
+                        output += prefix;
+                        length += prefix.length();
+                    }
+
+                    // prefix could be zero length
+                    if(length != 0)
+                        output += " ";
+
+                    output += list.at(j);
+                    length += wordLength;
+
+                }// for all words in the comment
+
+                // Paragraph break, except for the last paragraph
+                if(i < paragraphs.size() - 1)
+                    output += "\n" + prefix + "\n";
+
+            }// for all paragraphs
+
+        }// if block is not verbatim
+
+    }// for all blocks
 
     return output;
 
@@ -502,7 +531,8 @@ QString ProtocolParser::reflowComment(const QString& text)
         // If we have multiple paragraphs, put the paragraph separator back in
         if(i < paragraphs.size() - 1)
             output += "\n\n";
-    }
+
+    }// for all paragraphs in a block
 
     return output;
 }

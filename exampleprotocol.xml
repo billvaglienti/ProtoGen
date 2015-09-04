@@ -1,12 +1,21 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" prefix="" api="1" version="1.0.0.a" endian="big"
-          comment="This is an demonstration protocol definition. This file demonstrates most things 
-                   that the ProtoGen application can do regarding automatic protocol packing/upacking
-                   code generation.
+<Protocol name="Demolink" prefix="" api="1" version="1.0.0.a" endian="big" comment=
+"This is an demonstration protocol definition. This file demonstrates most things
+that the ProtoGen application can do regarding automatic protocol packing/upacking
+code generation.
 
-                   ProtoGen can handle bitfields, enumerations, arrays, and can 
-                   efficiently encode data for little or big endian architectures.">
+ProtoGen can handle bitfields, enumerations, arrays, and can
+efficiently encode data for little or big endian architectures.
+
+\verbatim
+
+Text between the verbatim escapes will appear without
+reflow
+-or-
+interpretation
+
+\verbatim">
 
     <Include name="string.h" comment="C string manipulation function header" global="true"/>
     <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
