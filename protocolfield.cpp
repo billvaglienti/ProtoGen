@@ -1023,7 +1023,7 @@ QString ProtocolField::getEncodeSignature(void) const
 
 /*!
  * Get details needed to produce documentation for this encodable.
- * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
+ * \param outline gives the paragraph numbers for all the fields up to this one.
  * \param startByte is the starting byte location of this encodable, which will be updated for the following encodable.
  * \param bytes is appended for the byte range of this encodable.
  * \param names is appended for the name of this encodable.
@@ -1090,7 +1090,15 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
     outlineString.setNum(outline.at(0));
     for(int i = 1; i < outline.size(); i++)
         outlineString += "." + QString().setNum(outline.at(i));
-    outlineString += ")" + name;
+
+    if(inMemoryType.isEnum)
+    {
+        // Link to the enumeration
+        outlineString += ")[" + name +"](#" + enumName + ")";
+    }
+    else
+        outlineString += ")" + name;
+
     names.append(outlineString);
 
     if(inMemoryType.isStruct)

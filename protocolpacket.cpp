@@ -737,7 +737,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     int paragraph = 1;
     QString idvalue = id;
 
-    // Put a tag in the idenfifier line which is the same as the ID. We'll link to it if we can
+    // Put an anchor in the identifier line which is the same as the ID. We'll link to it if we can
     output += "## " + outline + ") <a name=\"" + id + "\"></a>" + name + "\n";
     output += "\n";
 
@@ -750,19 +750,68 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     // In case the packet identifer is an enumeration we know
     ProtocolParser::replaceEnumerationNameWithValue(idvalue);
 
-    if(id == idvalue)
+    if(id.compare(idvalue) == 0)
         output += "- packet identifier: `" + id + "`\n";
     else
         output += "- packet identifier: `" + id + "` : " + idvalue + "\n";
 
     if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
     {
-        output += "- data length: " + EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
+        // The length strings, which may include enumerated identiers such as "N3D"
+        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "");
+
+        // The same quantities, but here we'll try and evaluate to a fixed number
+        QString minLengthValue = minLength;
+
+        // Replace any defined enumerations with their actual value
+        ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
+
+        // Re-collapse, perhaps we can solve it now
+        minLengthValue = EncodedLength::collapseLengthString(minLengthValue);
+
+        output += "- data length: " + minLength.replace("*", "&times;");
+
+        // See if we made it any simpler
+        if(minLengthValue.compare(minLength) != 0)
+            output += " : " + minLengthValue.replace("*", "&times;");
+
+        output += "\n";
+
     }
     else
     {
-        output += "- minimum data length: " + EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
-        output += "- maximum data length: " + EncodedLength::collapseLengthString(encodedLength.maxEncodedLength).replace("1*", "").replace("*", "&times;") + "\n";
+        // The length strings, which may include enumerated identiers such as "N3D"
+        QString maxLength = EncodedLength::collapseLengthString(encodedLength.maxEncodedLength).replace("1*", "");
+        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "");
+
+        // The same quantities, but here we'll try and evaluate to a fixed number
+        QString maxLengthValue = maxLength;
+        QString minLengthValue = minLength;
+
+        // Replace any defined enumerations with their actual value
+        ProtocolParser::replaceEnumerationNameWithValue(maxLengthValue);
+        ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
+
+        // Re-collapse, perhaps we can solve it now
+        maxLengthValue = EncodedLength::collapseLengthString(maxLengthValue);
+        minLengthValue = EncodedLength::collapseLengthString(minLengthValue);
+
+        output += "- minimum data length: " + minLength.replace("*", "&times;");
+
+        // See if we made it any simpler
+        if(minLengthValue.compare(minLength) != 0)
+            output += " : " + minLengthValue.replace("*", "&times;");
+
+        output += "\n";
+
+        output += "- maximum data length: " + maxLength.replace("*", "&times;");
+
+        // See if we made it any simpler
+        if(maxLengthValue.compare(maxLength) != 0)
+            output += " : " + maxLengthValue.replace("*", "&times;");
+
+        output += "\n";
+
     }
 
     if(enumList.size() > 0)

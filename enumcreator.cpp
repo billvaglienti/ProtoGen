@@ -274,7 +274,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
                 }
             }
 
-            // Make name as code, with or without a link
+            // Make name as code, with or without a link to an anchor elsewhere
             if(link)
                 codeNameList.append("[`" + nameList.at(i) + "`](#" + nameList.at(i) + ")");
             else
@@ -289,12 +289,15 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         }
 
 
+        // The outline paragraph
         if(!outline.isEmpty())
             output += "## " + outline + ") " + name + "\n\n";
 
-        // Table caption
-        if(!comment.isEmpty())
-            output += "[" + comment + "]\n";
+        // Table caption, with an anchor for the enumeration name
+        if(comment.isEmpty())
+            output += "[<a name=\""+name+"\"></a>" + name + "]\n";
+        else
+            output += "[<a name=\""+name+"\"></a>" + name + ": " + comment + "]\n";
 
         // Table header
         output += "| ";
