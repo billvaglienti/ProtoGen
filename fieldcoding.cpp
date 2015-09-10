@@ -568,10 +568,10 @@ bool FieldCoding::generateDecodeSource(void)
  */\n\
 void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
 {\n\
+    int i;\n\
+\n\
     // increment byte pointer for starting point\n\
     bytes += *index;\n\
-\n\
-    int i;\n\
 \n\
     for(i = 0; i < maxLength - 1; i++)\n\
     {\n\
@@ -793,16 +793,6 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
             if((typeSizes[type] == 7) || (typeSizes[type] == 6) || (typeSizes[type] == 5) || (typeSizes[type] == 3))
                 signextend = true;
 
-        function += "    // increment byte pointer for starting point\n";
-
-        // The byte pointer starts at different points depending on the byte order
-        if(bigendian)
-            function += "    bytes += *index;\n";
-        else
-            function += "    bytes += (*index) + " + QString().setNum(typeSizes[type]-1) + ";\n";
-
-        function += "\n";
-
         if(signextend)
         {
             function += "    // A bitfield is a fast portable way to get the compiler to sign extend a non standard size\n";
@@ -815,6 +805,16 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
             function += "    " + typeNames[type] + " number;\n";
             variable = "number";
         }
+
+        function += "\n";
+
+        function += "    // increment byte pointer for starting point\n";
+
+        // The byte pointer starts at different points depending on the byte order
+        if(bigendian)
+            function += "    bytes += *index;\n";
+        else
+            function += "    bytes += (*index) + " + QString().setNum(typeSizes[type]-1) + ";\n";
 
         function += "\n";
 
