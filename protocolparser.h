@@ -16,7 +16,7 @@ public:
     ~ProtocolParser();
 
     //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
-    bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false);
+    bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "");
 
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag);
@@ -51,6 +51,9 @@ public:
     //! Replace any text that matches an enumeration name with the value of that enumeration
     static QString& replaceEnumerationNameWithValue(QString& text);
 
+    //! Determine if text is part of an enumeration.
+    static QString getEnumerationNameForEnumValue(const QString& text);
+
     //! Find the global structure point for a specific type
     static const ProtocolStructure* lookUpStructure(const QString& typeName);
 
@@ -59,6 +62,9 @@ public:
 
     //! The version of the protocol generator software
     static const QString genVersion;
+
+    //! Get the string used for inline css.
+    static QString getDefaultInlinCSS(void);
 
 protected:
 
@@ -72,7 +78,7 @@ protected:
     bool createPacketFiles(const QDomElement& packet);
 
     //! Create markdown documentation
-    void outputMarkdown(bool isBigEndian);
+    void outputMarkdown(bool isBigEndian, QString inlinecss);
 
     //! Output the doxygen HTML documentation
     void outputDoxygen(void);

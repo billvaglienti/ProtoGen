@@ -1109,14 +1109,30 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         // Third column is the repeat/array column
         if(array.isEmpty())
         {
-            repeats.append(QString());
+            repeats.append("1");
         }
         else
         {
-            if(variableArray.isEmpty())
-                repeats.append(array);
+            QString arrayLink = ProtocolParser::getEnumerationNameForEnumValue(array);
+
+            if(arrayLink.isEmpty())
+                arrayLink = array;
             else
-                repeats.append(variableArray + ", up to " + array);
+                arrayLink = "["+array+"](#"+arrayLink+")";
+
+            if(variableArray.isEmpty())
+                repeats.append(arrayLink);
+            else
+            {
+                QString variablearrayLink = ProtocolParser::getEnumerationNameForEnumValue(variableArray);
+
+                if(variablearrayLink.isEmpty())
+                    variablearrayLink = variableArray;
+                else
+                    variablearrayLink = "["+variableArray+"](#"+variablearrayLink+")";
+
+                repeats.append(variablearrayLink + ", up to " + arrayLink);
+            }
         }
 
         // Fourth column is the commenting
@@ -1169,14 +1185,30 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             // Third column is the repeat/array column
             if(array.isEmpty())
             {
-                repeats.append(QString());
+                repeats.append("1");
             }
             else
             {
-                if(variableArray.isEmpty())
-                    repeats.append(array);
+                QString arrayLink = ProtocolParser::getEnumerationNameForEnumValue(array);
+
+                if(arrayLink.isEmpty())
+                    arrayLink = array;
                 else
-                    repeats.append(variableArray + ", up to " + array);
+                    arrayLink = "["+array+"](#"+arrayLink+")";
+
+                if(variableArray.isEmpty())
+                    repeats.append(arrayLink);
+                else
+                {
+                    QString variablearrayLink = ProtocolParser::getEnumerationNameForEnumValue(variableArray);
+
+                    if(variablearrayLink.isEmpty())
+                        variablearrayLink = variableArray;
+                    else
+                        variablearrayLink = "["+variableArray+"](#"+variablearrayLink+")";
+
+                    repeats.append(variablearrayLink + ", up to " + arrayLink);
+                }
             }
         }
 
@@ -1200,15 +1232,18 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             description += ".";
 
         if(encodedMax != 0.0)
-            description += " Scaled by " + scalerString + " from " + minString + " to " + maxString + ".";
+            description += " Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
 
         if(!constantValue.isEmpty())
-            description += " data are given constant value " + constantValue + ".";
+            description += " Data are given constant value " + constantValue + ".";
 
         if(!dependsOn.isEmpty())
             description += " Only included if " + dependsOn + " is non-zero.";
 
-        // String cannot be empty
+        if(!defaultValue.isEmpty())
+            description += " This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+
+        // StringList cannot be empty
         if(description.isEmpty())
             comments.append(QString());
         else
@@ -2123,6 +2158,45 @@ QString ProtocolField::getNumberString(double number, int bits)
         string += "f";
 
     return string;
+}
+
+
+/*!
+ * Get a properly formatted number string for a floating point number. If the
+ * number is one of these multiples of pi (-2, -1, -.5, .5, 1, 2), then return
+ * a string that includes the html pi token.
+ * \param number is the number to turn into a string
+ * \return the string.
+ */
+QString ProtocolField::getDisplayNumberString(double number)
+{
+    if(number == -2*3.14159265358979323846)
+    {
+        return "-2&pi;";
+    }
+    else if(number == -3.14159265358979323846)
+    {
+        return "-&pi;";
+    }
+    else if(number == -0.5*3.14159265358979323846)
+    {
+        return "-&pi;/2";
+    }
+    else if(number == 0.5*3.14159265358979323846)
+    {
+        return "&pi;/2";
+    }
+    else if(number == 3.14159265358979323846)
+    {
+        return "&pi;";
+    }
+    else if(number == 2*3.14159265358979323846)
+    {
+        return "2&pi;";
+    }
+    else
+        return getNumberString(number);
+
 }
 
 

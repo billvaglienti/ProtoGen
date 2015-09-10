@@ -372,6 +372,29 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
 
 
 /*!
+ * Determine if text is part of an enumeration. This will compare against all
+ * elements in this enumeration and return true if any of them match.
+ * \param text is the enumeration value string to compare.
+ * \return true if text is a value in this enumeration.
+ */
+bool EnumCreator::isEnumerationValue(const QString& text) const
+{
+    for(int i = 0; i < nameList.length(); i++)
+    {
+        // If we don't have a name there is no point
+        if(nameList.at(i).isEmpty())
+            continue;
+
+        if(text.compare(nameList.at(i)) == 0)
+            return true;
+    }
+
+    return false;
+
+}// EnumCreator::isEnumerationValue
+
+
+/*!
  * Output a spaced string
  * \param text is the first part of the string
  * \param spacing is the total length of the string. The output is padded with

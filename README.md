@@ -21,14 +21,14 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.2.2. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.2.3. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]`. `Protocol.xml` is the file that defines the protocol details. `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run. `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. `-no-helper-files` will cause ProtoGen to skip the output of files not directly specified by the protocol.xml.
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css]`. `Protocol.xml` is the file that defines the protocol details. `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run. `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. `-no-helper-files` will cause ProtoGen to skip the output of files not directly specified by the protocol.xml. `Style.css` will replace the default inline css in the markdown documentation with the contents of the Style.css file.
 
 Dependencies
 ------------

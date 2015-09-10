@@ -35,6 +35,9 @@ public:
     //! Replace any text that matches an enumeration name with the value of that enumeration
     QString& replaceEnumerationNameWithValue(QString& text) const;
 
+    //! Determine if text is an enumeration name
+    bool isEnumerationValue(const QString& text) const;
+
     //! Return the minimum number of bits needed to encode the enumeration
     int getMinBitWidth(void) const {return minbitwidth;}
 

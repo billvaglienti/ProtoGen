@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     bool nodoxygen = false;
     bool nomarkdown = false;
     bool nohelperfiles = false;
+    QString inlinecss;
 
     // The list of arguments
     QStringList arguments = a.arguments();
@@ -24,7 +25,6 @@ int main(int argc, char *argv[])
         std::cout << "ProtoGen input.xml [outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
         return 0;
     }
-
 
     // We expect the input file here
     QString filename = a.arguments().at(1);
@@ -44,6 +44,17 @@ int main(int argc, char *argv[])
             nohelperfiles = true;
         else if(arg.endsWith(".xml"))
             filename = arg;
+        else if(arg.endsWith(".css"))
+        {
+            QFile file(arg);
+            if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                inlinecss = file.readAll();
+                file.close();
+            }
+            else
+                std::cout << "Failed to open " << arg.toStdString() << "; using default css" << std::endl;
+        }
         else if(arg != filename)
             path = arg;
     }
@@ -74,7 +85,7 @@ int main(int argc, char *argv[])
                     QDir::setCurrent(path);
                 }
 
-                if(parser.parse(doc, nodoxygen, nomarkdown, nohelperfiles))
+                if(parser.parse(doc, nodoxygen, nomarkdown, nohelperfiles, inlinecss))
                     Return = 1;
 
             }

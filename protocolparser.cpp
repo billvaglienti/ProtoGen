@@ -13,7 +13,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.2.3.a";
+const QString ProtocolParser::genVersion = "1.2.3.b";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -106,9 +106,10 @@ void ProtocolParser::clear(void)
  * \param nodoxygen should be true to skip the doxygen generation.
  * \param nomarkdown should be true to skip the markdown generation.
  * \param nohelperfiles should be true to skip generating helper source files.
+ * \param inlinecss is the css to use for the markdown output, if blank use default.
  * \return true if something was written to a file
  */
-bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles)
+bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles, QString inlinecss)
 {
     ProtocolSupport support;
 
@@ -243,7 +244,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     }
 
     if(!nomarkdown)
-        outputMarkdown(bigendian);
+        outputMarkdown(bigendian, inlinecss);
 
     #ifndef _DEBUG
     if(!nodoxygen)
@@ -737,6 +738,25 @@ QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text)
 
 
 /*!
+ * Determine if text is part of an enumeration. This will compare against all
+ * elements in all enumerations and return the enumeration name if a match is found.
+ * \param text is the enumeration value string to compare.
+ * \return The enumeration name if a match is found, or an empty string for no match.
+ */
+QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text)
+{
+    for(int i = 0; i < enums.size(); i++)
+    {
+        if(enums.at(i)->isEnumerationValue(text))
+            return enums.at(i)->getName();
+    }
+
+    return QString();
+
+}
+
+
+/*!
  * Get details needed to produce documentation for a global encodable. The top level details are ommitted.
  * \param typeName identifies the type of the global encodable.
  * \param parentName is the name of the parent which will be pre-pended to the name of this encodable
@@ -771,8 +791,10 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 
 /*!
  * Ouptut documentation for the protocol as a markdown file
+ * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
+ * \param inlinecss is the css to use for the markdown output, if blank use default.
  */
-void ProtocolParser::outputMarkdown(bool isBigEndian)
+void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
     int paragraph1 = 1, paragraph2 = 1;
     QString fileName = name + ".markdown";
@@ -781,9 +803,20 @@ void ProtocolParser::outputMarkdown(bool isBigEndian)
 
     // Metadata must appear at the top
     file.write("Title: " + name + " Protocol  \n");
-    file.write("CSS:   " + name + ".css  \n");
     file.write("\n");
 
+    // Open the style tag
+    file.write("<style>\n");
+
+    if(inlinecss.isEmpty())
+        file.write(getDefaultInlinCSS());
+    else
+        file.write(inlinecss);
+
+    // Close the style tag
+    file.write("</style>\n");
+
+    file.write("\n");
     file.write("# " + QString().setNum(paragraph1) + ") " + name + " Protocol\n");
     file.write("\n");
 
@@ -850,18 +883,18 @@ doxygen product, parsing comments embedded in the automatically generated code.\
     file.write("The encoding tables give the bytes for each field as X...Y; \
 where X is the first byte (counting from 0) and Y is the last byte. For example \
 a 4 byte field at the beginning of a packet will give 0...3. If the field is 1 \
-byte long then only the starting byte is given. Bitfields are more complex they \
-are displayed as Byte:Bit. Hence a 3 bit bitfield at the beginning of a packet \
+byte long then only the starting byte is given. Bitfields are more complex, they \
+are displayed as Byte:Bit. A 3-bit bitfield at the beginning of a packet \
 will give 0:7...0:5, indicating that the bitfield uses bits 7, 6, and 5 of byte \
 0. Note that the most signficant bit of a byte is 7, and the least signficant \
-bit is 0. If the bitfield is 1 bit long then only the stating bit is given.\n");
+bit is 0. If the bitfield is 1 bit long then only the starting bit is given.\n");
     file.write("\n");
 
     file.write("The byte count in the encoding tables are based on the maximum \
 length of the field(s). If a field is variable length then the actual byte \
 location of the data may be different depending on the value of the variable \
 field. If the field is a variable length character string this will be indicated \
-in the encoding column of the table. If the field is a varialbe length array \
+in the encoding column of the table. If the field is a variable length array \
 this will be indicated in the repeat column of the encoding table. If the field \
 depends on the non-zero value of another field then will be indicated in the \
 description column of the table.\n");
@@ -901,6 +934,8 @@ description column of the table.\n");
     if(packets.size() > 0)
     {
         file.write("# " + QString().setNum(paragraph1) + ") Packets\n");
+        file.write("\n");
+        file.write("This section describes the data payloads of the packets; and how those data are represented in the bytes of the packets.\n");
         file.write("\n");
 
         for(int i = 0; i < packets.size(); i++)
@@ -953,15 +988,6 @@ may be repeating information already presented in the packets section\n"));
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(name + ".html"));
 
-    // Delete the old file
-    ProtocolFile::deleteFile(QString(name + ".css"));
-
-    // Copy the cascaded style sheet
-    QFile::copy(":/files/prebuiltSources/markdown.css", QString(name + ".css"));
-
-    // Make it writable (so we can edit it later)
-    ProtocolFile::makeFileWritable(QString(name + ".css"));
-
     arguments << fileName;      // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
@@ -972,6 +998,50 @@ may be repeating information already presented in the packets section\n"));
 
 }
 
+
+/*!
+ * Get the string used for inline css. This must be bracketed in <style> tags in the html
+ * \return the inline csss string
+ */
+QString ProtocolParser::getDefaultInlinCSS(void)
+{
+    QString inlinecss("\
+    body {\n\
+        text-align:justify;\n\
+        width: 1000px;\n\
+        background-color:#eee;\n\
+        margin-left: auto;\n\
+        margin-right: auto;\n\
+        font-family:Verdana;\n\
+    }\n\
+\n\
+    table {\n\
+       border: 3px solid darkred;\n\
+       border-collapse: collapse;\n\
+    }\n\
+\n\
+    th, td {\n\
+       border: 1px solid green;\n\
+       font-family: Courier New, monospace;\n\
+    }\n\
+\n\
+    td{ padding: 2px; }\n\
+    h1, h2, h3, h4, h5 { font-family: Arial; }\n\
+    h1 { font-size:150%; }\n\
+    h2 { font-size:135%; }\n\
+    h3 { font-size:120%; }\n\
+    h4 { font-size:110%; }\n\
+    h5, li { font-size:100%; }\n\
+    caption{ font-family:Verdana; }\n\
+\n\
+    code, pre, .codelike {\n\
+        font-family: Courier New, monospace;\n\
+        font-size: 100%;\n\
+        color: darkblue;\n\
+    }\n");
+
+    return inlinecss;
+}
 
 /*!
  * Output the doxygen HTML documentation

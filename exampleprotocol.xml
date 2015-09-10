@@ -47,7 +47,7 @@ interpretation
                                    This is a generic GPS description that should suffice for most GPS devices">
 
         <Structure name="PositionLLA" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
-            <Data name="latitude" inMemoryType="float64" encodedType="signed32" scaler="2^31/(pi/2)" comment="The latitude of the position in radians, positive North"/>
+            <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="pi/2" comment="The latitude of the position in radians, positive North"/>
             <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="pi" comment="The longitude of the position in radians, positive East"/>
             <Data name="altitude" inMemoryType="float64" encodedType="unsigned24" min="-1000" scaler="1000" comment="The altitude above the WGS-84 ellipsoid of the position in meters"/>
         </Structure>

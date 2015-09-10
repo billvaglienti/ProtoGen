@@ -55,6 +55,9 @@ public:
     //! Get a properly formatted number string for a double precision number
     static QString getNumberString(double number, int bits = 64);
 
+    //! Get a properly formatted number string for a double precision number, with special care for pi
+    static QString getDisplayNumberString(double number);
+
     //! Destroy the protocol field
     virtual ~ProtocolField(){}
 
