@@ -16,13 +16,15 @@ int main(int argc, char *argv[])
     bool nohelperfiles = false;
     QString inlinecss;
 
+    QString docs;
+
     // The list of arguments
     QStringList arguments = a.arguments();
 
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
         return 0;
     }
 
@@ -36,6 +38,7 @@ int main(int argc, char *argv[])
     for(int i = 1; i < arguments.size(); i++)
     {
         QString arg = arguments.at(i);
+
         if(arg.contains("-no-doxygen", Qt::CaseInsensitive))
             nodoxygen = true;
         else if(arg.contains("-no-markdown", Qt::CaseInsensitive))
@@ -55,7 +58,23 @@ int main(int argc, char *argv[])
             else
                 std::cout << "Failed to open " << arg.toStdString() << "; using default css" << std::endl;
         }
-        else if(arg != filename)
+        else if (arg.startsWith("-docs")) {
+            //Is there an argument following this?
+            if (arguments.size() > (i + 1)) {
+                docs = arguments.at(i+1);
+
+                QDir docDir(QDir::current());
+
+                if (docDir.exists() || docDir.mkdir(docs)) //Markdown directory is sane
+                {
+                    //Skip the next argument;
+                    i++;
+                } else {
+                    docs = "";
+                }
+            }
+        }
+        else if((path.isEmpty()) && (arg != filename))
             path = arg;
     }
 
@@ -69,6 +88,9 @@ int main(int argc, char *argv[])
             if (doc.setContent(&file))
             {
                 ProtocolParser parser;
+
+                if (!docs.isEmpty())
+                    parser.setDocsPath(docs);
 
                 // Set our working directory
                 if(!path.isEmpty())

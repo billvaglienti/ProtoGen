@@ -6,6 +6,7 @@
 #include "protocolsupport.h"
 #include <QDomDocument>
 #include <QFile>
+#include <QDir>
 #include <QFileDevice>
 #include <QDateTime>
 #include <QStringList>
@@ -788,7 +789,6 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 
 }
 
-
 /*!
  * Ouptut documentation for the protocol as a markdown file
  * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
@@ -797,9 +797,15 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
     int paragraph1 = 1, paragraph2 = 1;
-    QString fileName = name + ".markdown";
 
-    ProtocolFile file(fileName);
+    QString filename = name + ".markdown";
+
+    if (!docsDir.isEmpty()) {
+
+        filename = docsDir + QDir::separator() + filename;
+    }
+
+    ProtocolFile file(filename);
 
     // Metadata must appear at the top
     file.write("Title: " + name + " Protocol  \n");
@@ -985,10 +991,17 @@ may be repeating information already presented in the packets section\n"));
     QProcess process;
     QStringList arguments;
 
-    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
-    process.setStandardOutputFile(QString(name + ".html"));
+    QString htmlfile = name + ".html";
 
-    arguments << fileName;      // The name of the source file
+    if (!docsDir.isEmpty()) {
+
+        htmlfile = docsDir + QDir::separator() + htmlfile;
+    }
+
+    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
+    process.setStandardOutputFile(QString(htmlfile));
+
+    arguments << filename;   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
     #else
@@ -1044,11 +1057,26 @@ QString ProtocolParser::getDefaultInlinCSS(void)
 }
 
 /*!
+ * \brief ProtocolParser::setDocsPath
+ * Set the target path for writing output markdown documentation files
+ * If no output path is set, then QDir::Current() is used
+ * \param path
+ */
+void ProtocolParser::setDocsPath(QString path) {
+    if (QDir(path).exists()) {
+        docsDir = path;
+    } else {
+        docsDir = "";
+    }
+}
+
+/*!
  * Output the doxygen HTML documentation
  */
 void ProtocolParser::outputDoxygen(void)
 {
     QString fileName = "ProtocolDoxyfile";
+
     QFile file(fileName);
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
