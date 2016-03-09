@@ -66,6 +66,8 @@ public:
     //! Get the string used for inline css.
     static QString getDefaultInlinCSS(void);
 
+    void setDocsPath(QString path);
+
 protected:
 
     //! Wipe any data, including static data
@@ -89,6 +91,8 @@ protected:
     QString comment;//!< Comment description of the protocol
     QString version;//!< The version string
     QString api;    //!< The protocol API enumeration
+
+    QString docsDir;    //!< Directory target for storing documentation markdown
 
     static QList<ProtocolStructureModule*> structures;
     static QList<ProtocolPacket*> packets;
