@@ -384,6 +384,27 @@ void ProtocolParser::outputLongComment(ProtocolFile& file, const QString& prefix
 
 
 /*!
+ * \brief ProtocolParser::isFieldSet
+ * Determine if the element has the given field set to "true" or "yes" or "1"
+ * \param element
+ * \param field
+ * \return true if field is one of the allowed values, else false
+ */
+bool ProtocolParser::isFieldSet(const QDomElement &element, QString field) {
+
+    QString attr = element.attribute(field).toLower();
+
+    if (attr.compare("yes") == 0)
+        return true;
+    if (attr.compare("true") == 0)
+        return true;
+    if (attr.compare("1") == 0)
+        return true;
+
+    return false;
+}
+
+/*!
  * Output a long string of text which should be wrapped at 80 characters.
  * \param prefix precedes each line (for example "//" or " *"
  * \param text is the long text string to output. If text is empty

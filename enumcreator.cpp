@@ -36,7 +36,7 @@ QString EnumCreator::parse(const QDomElement& e)
     comment = e.attribute("comment");
 
     //If the enum struct has the attribute 'hidden="true"', it won't be displayed in the documentation
-    hidden = (e.attribute("hidden").toLower().compare("true") == 0);
+    hidden = ProtocolParser::isFieldSet(e,"hidden");
 
     QDomNodeList list = e.elementsByTagName("Value");
 

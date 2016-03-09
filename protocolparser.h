@@ -33,6 +33,9 @@ public:
     //! Output all includes which are direct children of a DomNode
     static void outputIncludes(ProtocolFile& file, const QDomNode& node);
 
+    //! Determine a particular element has a given field set
+    static bool isFieldSet(const QDomElement& element, QString field);
+
     //! Format a long string of text which should be wrapped at 80 characters.
     static QString outputLongComment(const QString& prefix, const QString& text);
 
