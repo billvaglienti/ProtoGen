@@ -786,10 +786,8 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
             output += "- This packet is both received and transmitted by the device\n";
         }
 
-        if ((direction.compare("both") == 0) || (direction.compare("in") == 0)) {
-            if (broadcast) {
-                output += "- This packet can be broacast to all devices using the BROADCAST CAN address identifier\n";
-            }
+        if (broadcast) {
+            output += "- This packet can be broacast to all devices using the BROADCAST CAN address identifier\n";
         }
 
         //If the packet is transmittable by the device, is it telemetry or polled?
