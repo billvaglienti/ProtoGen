@@ -301,7 +301,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         if (!description.isEmpty()) {
             output += "**Description:**\n";
             output += description;
-            output += "\n";
+            output += "\n\n";
         }
 
         // Table caption, with an anchor for the enumeration name
