@@ -4,7 +4,6 @@
 #include <QFile>
 #include <QDir>
 #include <iostream>
-
 #include "protocolparser.h"
 
 int main(int argc, char *argv[])
@@ -18,13 +17,15 @@ int main(int argc, char *argv[])
 
     QString docs;
 
+    bool latexSupportOn = false;
+
     // The list of arguments
     QStringList arguments = a.arguments();
 
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-verbose] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
         return 0;
     }
 
@@ -47,6 +48,8 @@ int main(int argc, char *argv[])
             nohelperfiles = true;
         else if(arg.endsWith(".xml"))
             filename = arg;
+        else if (arg.contains("-latex", Qt::CaseInsensitive))
+            latexSupportOn = true;
         else if(arg.endsWith(".css"))
         {
             QFile file(arg);
@@ -88,6 +91,8 @@ int main(int argc, char *argv[])
             if (doc.setContent(&file))
             {
                 ProtocolParser parser;
+
+                parser.setLaTeXSupport(latexSupportOn);
 
                 if (!docs.isEmpty())
                     parser.setDocsPath(docs);
@@ -131,6 +136,9 @@ int main(int argc, char *argv[])
         std::cout << "must provide a protocol file." << std::endl;
         Return = 0;
     }
+
+    if (Return == 1)
+        std::cout << "Generated protocol files in " << path.toStdString() << std::endl;
 
     return Return;
 }

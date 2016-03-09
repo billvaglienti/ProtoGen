@@ -61,6 +61,8 @@ void ProtocolParser::clear(void)
     version.clear();
     api.clear();
 
+    latexEnabled = false; //Needs the -latex switch to enable
+
     // Empty the static list
     for(int i = 0; i < structures.size(); i++)
     {
@@ -1005,6 +1007,8 @@ may be repeating information already presented in the packets section\n"));
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(htmlfile));
 
+    std::cout << "Writing HTML documentation to " << htmlfile.toStdString() << std::endl;
+
     arguments << filename;   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
@@ -1012,6 +1016,28 @@ may be repeating information already presented in the packets section\n"));
     process.start(QString("multimarkdown"), arguments);
     #endif
     process.waitForFinished();
+
+    if (latexEnabled) {
+        //Write LaTeX documentation
+        QString latexFile = basepath + name + ".tex";
+
+        std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
+
+        QProcess latexProcess;
+
+        latexProcess.setStandardOutputFile(latexFile);
+
+        arguments.clear();
+        arguments << filename;
+        arguments << "--to=latex";
+
+        #if defined(__APPLE__) && defined(__MACH__)
+        latexProcess.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+        #else
+        latexProcess.start(QString("multimarkdown"), arguments);
+        #endif
+        latexProcess.waitForFinished();
+    }
 }
 
 

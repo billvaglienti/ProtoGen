@@ -66,7 +66,11 @@ public:
     //! Get the string used for inline css.
     static QString getDefaultInlinCSS(void);
 
+    //! Configure a documentation path separate to the main protocol output directory
     void setDocsPath(QString path);
+
+    //! Set LaTeX support
+    void setLaTeXSupport(bool on) {latexEnabled = on;}
 
 protected:
 
@@ -93,6 +97,8 @@ protected:
     QString api;    //!< The protocol API enumeration
 
     QString docsDir;    //!< Directory target for storing documentation markdown
+
+    bool latexEnabled;  //!< Generate LaTeX markdown automagically
 
     static QList<ProtocolStructureModule*> structures;
     static QList<ProtocolPacket*> packets;
