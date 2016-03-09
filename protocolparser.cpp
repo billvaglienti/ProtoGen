@@ -798,12 +798,12 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
     int paragraph1 = 1, paragraph2 = 1;
 
-    QString filename = name + ".markdown";
+    QString basepath;
 
-    if (!docsDir.isEmpty()) {
+    if (!docsDir.isEmpty())
+        basepath = docsDir + QDir::separator();
 
-        filename = docsDir + QDir::separator() + filename;
-    }
+    QString filename = basepath + name + ".markdown";
 
     ProtocolFile file(filename);
 
@@ -991,12 +991,8 @@ may be repeating information already presented in the packets section\n"));
     QProcess process;
     QStringList arguments;
 
-    QString htmlfile = name + ".html";
-
-    if (!docsDir.isEmpty()) {
-
-        htmlfile = docsDir + QDir::separator() + htmlfile;
-    }
+    //Write html documentation
+    QString htmlfile = basepath + name + ".html";
 
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(htmlfile));
@@ -1008,7 +1004,6 @@ may be repeating information already presented in the packets section\n"));
     process.start(QString("multimarkdown"), arguments);
     #endif
     process.waitForFinished();
-
 }
 
 
