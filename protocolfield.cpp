@@ -1234,24 +1234,24 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             description += ".";
 
         if(encodedMax != 0.0)
-            description += " Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
+            description += "<br>Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
 
         if(!constantValue.isEmpty())
-            description += " Data are given constant value " + constantValue + ".";
+            description += "<br>Data are given constant value " + constantValue + ".";
 
         if(!dependsOn.isEmpty())
-            description += " Only included if " + dependsOn + " is non-zero.";
+            description += "<br>Only included if " + dependsOn + " is non-zero.";
 
         if(!defaultValue.isEmpty())
-            description += " This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+            description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
 
         if (!unitsValue.isEmpty()) {
 
-            description += " Units: " + unitsValue + ".";
+            description += " <br>Units: " + unitsValue + ".";
         }
 
         if (!rangeValue.isEmpty()) {
-            description += " Range: " + rangeValue + ".";
+            description += " <br>Range: " + rangeValue + ".";
         }
 
         // StringList cannot be empty
