@@ -34,6 +34,7 @@ QString EnumCreator::parse(const QDomElement& e)
 
     name = e.attribute("name");
     comment = e.attribute("comment");
+    description = e.attribute("description");
 
     //If the enum struct has the attribute 'hidden="true"', it won't be displayed in the documentation
     hidden = ProtocolParser::isFieldSet(e,"hidden");
@@ -258,6 +259,13 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
     if(nameList.length() > 0)
     {
         QStringList codeNameList;
+
+        //If a longer description exists for this enum, display it in the documentation
+        if (!description.isEmpty()) {
+            output += "**Description:**\n";
+            output += description;
+            output += "\n";
+        }
 
         // figure out the column spacing in the tables
         int firstColumnSpacing = QString("Name").length();

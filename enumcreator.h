@@ -54,6 +54,7 @@ protected:
 
     QString name;       //!< The name of the enumeration
     QString comment;    //!< The comment of the enumeration
+    QString description;//!< A longer description is possible for enums (will be displayed in the documentation)
     QString output;     //!< The header file output string of the enumeration
     int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
 
