@@ -128,7 +128,8 @@ public:
     QString scalerString;
     QString defaultValue;
     QString constantValue;
-    QString unitsValue;
+    QString unitsValue; //!< String describing the unit type of each data type (for documentation purposes only)
+    QString rangeValue; //!< String describing the 'allowable range' of each data type (for documentation purposes only!)
     TypeData inMemoryType;
     TypeData encodedType;
 
