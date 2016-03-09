@@ -777,6 +777,30 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
         output += "\n";
 
+        //Direction of the packet!
+        if (direction.compare("in") == 0) {
+            output += "- This packet is only recevied by the device - it will not be transmitted by the device\n";
+        } else if (direction.compare("out") == 0) {
+            output += "- This packet is only transmitted by the device - it will not do anything with this packet if it receives it\n";
+        } else if (direction.compare("both") == 0) {
+            output += "- This packet is both received and transmitted by the device\n";
+        }
+
+        //If the packet is transmittable by the device, is it telemetry or polled?
+        if ((direction.compare("both") == 0) || (direction.compare("out")) == 0) {
+
+            //If this packet is 'telemetry' say so here
+            if (telemetry) {
+                output += "- This packet is automatically transmitted at (user-configurable) fixed intervals\n";
+            }
+
+            //If this packet can be 'polled' say so here
+            if (polled) {
+                output += "- To request (poll) this packet, send a zero-length packet with ID ";
+                output += idvalue + "\n";
+            }
+        }
+
     }
     else
     {
