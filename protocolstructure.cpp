@@ -93,6 +93,7 @@ void ProtocolStructure::parse(const QDomElement& field)
     hidden = ProtocolParser::isFieldSet(field, "hidden");
     polled = ProtocolParser::isFieldSet(field, "polled");
     telemetry = ProtocolParser::isFieldSet(field, "telemetry");
+    broadcast = ProtocolParser::isFieldSet(field, "broadcast");
 
     direction = field.attribute("direction").toLower();
 

@@ -94,6 +94,7 @@ protected:
     bool hidden;                //!< True if this structure is to be hidden from the documentation
     bool telemetry;             //!< True if this structure is 'telemetry' (is transmitted automatically by the device)
     bool polled;                //!< True if the packet can be polled from the device by sending a zero-length msg
+    bool broadcast;             //!< True if the packet can be 'broadcast' (i.e. the device will accept packets with 0xFF broadcast ID)
 
     QString direction;          //!< Data direction of this packet
 };
