@@ -41,6 +41,8 @@ public:
     //! Return the minimum number of bits needed to encode the enumeration
     int getMinBitWidth(void) const {return minbitwidth;}
 
+    bool isHidden() {return hidden;}
+
 protected:
     //! Parse the enumeration values to build the number list
     void computeNumberList(void);
@@ -55,7 +57,7 @@ protected:
     QString output;     //!< The header file output string of the enumeration
     int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
 
-
+    bool hidden;        //!< Determines if this enum will be hidden from the documentation
 };
 
 //! Output a string with specific spacing
