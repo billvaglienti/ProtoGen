@@ -779,11 +779,11 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
         //Direction of the packet!
         if (direction.compare("in") == 0) {
-            output += "- This packet is only recevied by the device - it will not be transmitted by the device\n";
+            output += "- Direction: IN - This packet is only recevied by the device - it will not be transmitted by the device\n";
         } else if (direction.compare("out") == 0) {
-            output += "- This packet is only transmitted by the device - it will not do anything with this packet if it receives it\n";
+            output += "- Direction: OUT - This packet is only transmitted by the device - it will not do anything with this packet if it receives it\n";
         } else if (direction.compare("both") == 0) {
-            output += "- This packet is both received and transmitted by the device\n";
+            output += "- Direction: BOTH - This packet is both received and transmitted by the device\n";
         }
 
         if (broadcast) {
