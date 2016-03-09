@@ -430,6 +430,8 @@ void ProtocolField::parse(const QDomElement& field)
     dependsOn = field.attribute("dependsOn").trimmed();
     enumName = field.attribute("enum").trimmed();
     defaultValue = field.attribute("default").trimmed();
+    unitsValue = field.attribute("units").trimmed();
+    rangeValue = field.attribute("range").trimmed();
     constantValue = field.attribute("constant").trimmed();
     comment = ProtocolParser::getComment(field);
 
@@ -1228,7 +1230,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         else
             description += comment;
 
-        if(!description.endsWith('.'))
+        if(!description.isEmpty() && !description.endsWith('.'))
             description += ".";
 
         if(encodedMax != 0.0)
@@ -1242,6 +1244,15 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
 
         if(!defaultValue.isEmpty())
             description += " This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+
+        if (!unitsValue.isEmpty()) {
+
+            description += " Units: " + unitsValue + ".";
+        }
+
+        if (!rangeValue.isEmpty()) {
+            description += " Range: " + rangeValue + ".";
+        }
 
         // StringList cannot be empty
         if(description.isEmpty())
