@@ -260,13 +260,6 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
     {
         QStringList codeNameList;
 
-        //If a longer description exists for this enum, display it in the documentation
-        if (!description.isEmpty()) {
-            output += "**Description:**\n";
-            output += description;
-            output += "\n";
-        }
-
         // figure out the column spacing in the tables
         int firstColumnSpacing = QString("Name").length();
         int secondColumnSpacing = QString("Value").length();
@@ -303,6 +296,13 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         // The outline paragraph
         if(!outline.isEmpty())
             output += "## " + outline + ") " + name + "\n\n";
+
+        //If a longer description exists for this enum, display it in the documentation
+        if (!description.isEmpty()) {
+            output += "**Description:**\n";
+            output += description;
+            output += "\n";
+        }
 
         // Table caption, with an anchor for the enumeration name
         if(comment.isEmpty())
