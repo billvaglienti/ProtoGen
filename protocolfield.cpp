@@ -302,7 +302,7 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
     if(isString)
         typeName = "char";
     else if(isBitfield)
-        typeName = "uint32_t";
+        typeName = "unsigned";
     else if(isEnum)
     {
         typeName = enumName;
@@ -1440,12 +1440,12 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if(constantstring.isEmpty())
     {
         if(isStructureMember)
-            output += "    encodeBitfield((uint32_t)user->" + name;
+            output += "    encodeBitfield((unsigned int)user->" + name;
         else
-            output += "    encodeBitfield((uint32_t)" + name;
+            output += "    encodeBitfield((unsigned int)" + name;
     }
     else
-        output += "    encodeBitfield((uint32_t)" + constantstring;
+        output += "    encodeBitfield((unsigned int)" + constantstring;
 
     output += ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     *bitcount += encodedType.bits;
@@ -1488,7 +1488,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         else
             output += "    *";      // Access via direct pointer
 
-        // we cast here, because the inMemoryType might not be a uint32_t
+        // we cast here, because the inMemoryType might not be a unsigned int
         output += name + " = (" + typeName + ")decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     }
 

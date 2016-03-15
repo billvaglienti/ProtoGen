@@ -14,10 +14,10 @@ extern "C" {
 #include <stdint.h>
 
 //! Add a bit field to a byte stream.
-void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, int numbits);
+void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits);
 
 //! Decode a bit field from a byte stream.
-uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits);
+unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits);
 
 //! Test the bit fields
 int testBitfield(void);
