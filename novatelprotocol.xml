@@ -1,0 +1,358 @@
+<?xml version="1.0"?>
+
+<Protocol name="Novatel" prefix="" api="1" version="1.0.0.a" endian="little" comment=
+"Novatel interface protocol for deocding binary logs">
+
+    <Enum name="packetIds" comment="The list of packet identifiers">
+        <Value name="LOG" value="1" comment="Used to configure log outputs."/>
+        <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
+        <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
+        <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
+        <Value name="SERIALCONFIG" value="1246" comment="Used to configure serial port settings on the receiver."/>
+    </Enum>
+
+    <Enum name="Formats_t" comment="Types of message formats">
+        <Value name="Binary" comment="Novatel binary message format"/>
+        <Value name="ASCII" comment="Novatel ASCII message format"/>
+        <Value name="NMEA" comment="National Marine Electronics Association format"/>
+        <Value name="Reserved"/>
+    </Enum>
+
+    <Enum name="Ports_t" comment="Communication port enumerations">
+        <Value name="NO_PORTS" value="0" comment="No ports specified."/>
+        <Value name="COM1_ALL" value="1" comment="All virtual ports for COM1."/>
+        <Value name="COM2_ALL" value="2" comment="All virtual ports for COM2."/>
+        <Value name="COM3_ALL" value="3" comment="All virtual ports for COM3."/>
+        <Value name="THISPORT_ALL" value="6" comment="All virtual ports for the current port."/>
+        <Value name="FILE_ALL" value="7" comment="All virtual ports for logging to file b."/>
+        <Value name="ALL_PORTS" value="8" comment="All virtual ports for all ports."/>
+        <Value name="XCOM1_ALL" value="9" comment="All virtual ports for XCOM1."/>
+        <Value name="XCOM2_ALL" value="10" comment="All virtual ports for XCOM2."/>
+        <Value name="USB1_ALL" value="13" comment="All virtual ports for USB1."/>
+        <Value name="USB2_ALL" value="14" comment="All virtual ports for USB2."/>
+        <Value name="USB3_ALL" value="15" comment="All virtual ports for USB3."/>
+        <Value name="AUX_ALL" value="16" comment="All virtual ports for the AUXc."/>
+        <Value name="XCOM3_ALL" value="17" comment="All virtual XCOM3."/>
+        <Value name="COM4_ALL" value="19" comment="All virtual ports for COM4 b."/>
+        <Value name="ETH1_ALL" value="20" comment="All virtual ports for ETH1."/>
+        <Value name="IMU_ALL" value="21" comment="All virtual ports for IMU."/>
+        <Value name="ICOM1_ALL" value="23" comment="All virtual ports for ICOM1."/>
+        <Value name="ICOM2_ALL" value="24" comment="All virtual ports for ICOM2."/>
+        <Value name="ICOM3_ALL" value="25" comment="All virtual ports for ICOM3."/>
+        <Value name="NCOM1_ALL" value="26" comment="All virtual ports for NCOM1."/>
+        <Value name="NCOM2_ALL" value="27" comment="All virtual ports for NCOM2."/>
+        <Value name="NCOM3_ALL" value="28" comment="All virtual ports for NCOM3."/>
+        <Value name="WCOM1_ALL" value="30" comment="All virtual ports for WCOM1."/>
+        <Value name="COM1" value="32" comment="COM1 virtual port 0."/>
+        <Value name="COM1_1" value="33" comment="COM1 virtual port 1."/>
+        <Value name="COM1_31" value="63" comment="COM1 virtual port 31."/>
+        <Value name="COM2" value="64" comment="COM2 virtual port 0."/>
+        <Value name="COM2_31" value="95" comment="COM2 virtual port 31."/>
+        <Value name="COM3" value="96" comment="COM3 virtual port 0."/>
+        <Value name="COM3_31" value="127" comment="COM3 virtual port 31."/>
+        <Value name="SPECIAL" value="160" comment="Unknown port virtual port 0."/>
+        <Value name="SPECIAL_31" value="191" comment="Unknown port virtual port 31."/>
+        <Value name="THISPORT" value="192" comment="Current COM port virtual port 0."/>
+        <Value name="THISPORT_31" value="223" comment="Current COM port virtual port 31."/>
+        <Value name="FILE" value="224" comment="Virtual port 0 for logging to file b."/>
+        <Value name="FILE_31" value="255" comment="Virtual port 31 for logging to file b."/>
+        <Value name="XCOM1" value="416" comment="XCOM1 virtual port 0."/>
+        <Value name="XCOM1_1" value="417" comment="XCOM1 virtual port 1."/>
+        <Value name="XCOM1_31" value="447" comment="XCOM1 virtual port 31."/>
+        <Value name="XCOM2" value="672" comment="XCOM2 virtual port 0."/>
+        <Value name="XCOM2_1" value="673" comment="XCOM2 virtual port 1."/>
+        <Value name="XCOM2_31" value="703" comment="XCOM2 virtual port 31."/>
+        <Value name="USB1" value="1440" comment="USB1 virtual port 0."/>
+        <Value name="USB1_1" value="1441" comment="USB1 virtual port 1."/>
+        <Value name="USB1_31" value="1471" comment="USB1 virtual port 31."/>
+        <Value name="USB2" value="1696" comment="USB2 virtual port 0."/>
+        <Value name="USB2_31" value="1727" comment="USB2 virtual port 31."/>
+        <Value name="USB3" value="1952" comment="USB3 virtual port 0."/>
+        <Value name="USB3_31" value="1983" comment="USB port 3 virtual port 31."/>
+        <Value name="AUX" value="2208" comment="AUX port virtual port 0."/>
+        <Value name="AUX_31" value="2239" comment="AUX port virtual port 31."/>
+        <Value name="XCOM3" value="2464" comment="XCOM3 virtual port 0."/>
+        <Value name="XCOM3_31" value="2495" comment="XCOM3 virtual port 31."/>
+        <Value name="COM4" value="2976" comment="COM4 virtual port 0."/>
+        <Value name="COM4_31" value="3007" comment="COM4 virtual port 31."/>
+        <Value name="ICOM1" value="4000" comment="ICOM1 virtual port 0."/>
+        <Value name="PORT_ADDR_ETH1" value="3232" comment="ETH1 virtual port 0."/>
+        <Value name="PORT_ADDR_ETH1_31" value="3263" comment="ETH1 virtual port 31."/>
+        <Value name="PORT_ADDR_IMU" value="3488" comment="IMU virtual port 0."/>
+        <Value name="PORT_ADDR_IMU_31" value="3519" comment="IMU virtual port 31."/>
+        <Value name="ICOM1_31" value="4031" comment="ICOM1 virtual port 31."/>
+        <Value name="ICOM2" value="4256" comment="ICOM2 virtual port 0."/>
+        <Value name="ICOM2_31" value="4287" comment="ICOM2 virtual port 31."/>
+        <Value name="ICOM3" value="4512" comment="ICOM3 virtual port 0."/>
+        <Value name="ICOM3_31" value="4543" comment="ICOM3 virtual port 31."/>
+        <Value name="NCOM1" value="4768" comment="NCOM1 virtual port 0."/>
+        <Value name="NCOM1_31" value="4799" comment="NCOM1 virtual port 31."/>
+        <Value name="NCOM2" value="5024" comment="NCOM2 virtual port 0."/>
+        <Value name="NCOM2_31" value="5055" comment="NCOM2 virtual port 31."/>
+        <Value name="NCOM3" value="5280" comment="NCOM3 virtual port 0."/>
+        <Value name="PORT_ADDR_WCOM1" value="5792" comment="WCOM1 virtual port 0."/>
+        <Value name="NCOM3_31" value="5311" comment="NCOM3 virtual port 31."/>
+        <Value name="PORT_ADDR_WCOM1_31" value="5823" comment="WCOM1 virtual port 31."/>
+        <Value name="COM5_ALL" value="5824" comment="All virtual ports for COM5 b."/>
+        <Value name="COM6_ALL" value="5825" comment="All virtual ports for COM6 b."/>
+        <Value name="BT1_ALL" value="5826" comment="All virtual ports for the Bluetooth device b."/>
+        <Value name="COM5" value="6048" comment="COM5 virtual port 0 b."/>
+        <Value name="COM5_31" value="6079" comment="COM5 virtual port 31 b."/>
+        <Value name="COM6" value="6304" comment="COM6 virtual port 0 b."/>
+        <Value name="COM6_31" value="6335" comment="COM6 virtual port 31 b."/>
+        <Value name="BT1" value="6560" comment="Bluetooth device virtual port 0 b."/>
+        <Value name="BT1_31" value="6591" comment="Bluetooth device virtual port 31 b."/>
+        <Value name="COM7_ALL" value="6720" comment="All virtual ports for COM7."/>
+        <Value name="COM8_ALL" value="6721" comment="All virtual ports for COM8."/>
+        <Value name="COM9_ALL" value="6722" comment="All virtual ports for COM9."/>
+        <Value name="COM10_ALL" value="6723" comment="All virtual ports for COM10."/>
+        <Value name="PORT_ADDR_COM7" value="6816" comment="COM7 virtual port 0."/>
+        <Value name="PORT_ADDR_COM7_31" value="6847" comment="COM7 virtual port 31."/>
+    </Enum>
+
+    <Enum name="TimeStatus_t" comment="Time status information">
+        <Value name="UNKNOWN" value="20" comment="Time validity is unknown"/>
+        <Value name="APPROXIMATE" value="60" comment="Time is set approximately"/>
+        <Value name="COARSEADJUSTING" value="80" comment="Time is approaching coarse precision"/>
+        <Value name="COARSE" value="100" comment="This time is valid to coarse precision"/>
+        <Value name="COARSESTEERING" value="120" comment="Time is coarse set and is being steered"/>
+        <Value name="FREEWHEELING" value="130" comment="Position is lost and the range bias cannot be calculated"/>
+        <Value name="FINEADJUSTING" value="140" comment="Time is adjusting to fine precision"/>
+        <Value name="FINE" value="160" comment="Time has fine precision"/>
+        <Value name="FINEBACKUPSTEERING" value="170" comment="Time is fine set and is being steered by the backup system"/>
+        <Value name="FINESTEERING" value="180" comment="Time is fine set and is being steered"/>
+        <Value name="SATTIME" value="200" comment="Time from satellite. Only used in logs containing satellite data such as ephemeris and almanac"/>
+    </Enum>
+
+    <Enum name="PositionType_t" comment="Type of position or velocity">
+        <Value name="NOSOL" value="0" comment="No solution"/>
+        <Value name="FIXEDPOS" value="1" comment="Position has been fixed by the FIX POSITION command"/>
+        <Value name="FIXEDHEIGHT" value="2" comment="Position has been fixed by the FIX HEIGHT/AUTO command"/>
+        <Value name="DOPPLER_VELOCITY" value="8" comment="Velocity computed using instantaneous Doppler"/>
+        <Value name="SINGLE" value="16" comment="Single point position"/>
+        <Value name="PSRDIFF" value="17" comment="Pseudorange differential solution"/>
+        <Value name="WAAS" value="18" comment="Solution calculated using corrections from an WAAS"/>
+        <Value name="PROPAGATED" value="19" comment="Propagated by a Kalman filter without new observations"/>
+        <Value name="OMNISTAR" value="20" comment="a OmniSTAR VBS position"/>
+        <Value name="L1_FLOAT" value="32" comment="Floating L1 ambiguity solution"/>
+        <Value name="IONOFREE_FLOAT" value="33" comment="Floating ionospheric-free ambiguity solution"/>
+        <Value name="NARROW_FLOAT" value="34" comment="Floating narrow-lane ambiguity solution"/>
+        <Value name="L1_INT" value="48" comment="Integer L1 ambiguity solution"/>
+        <Value name="NARROW_INT" value="50" comment="Integer narrow-lane ambiguity solution"/>
+        <Value name="OMNISTAR_HP" value="64" comment="a OmniSTAR HP position"/>
+        <Value name="OMNISTAR_XP" value="65" comment="a OmniSTAR XP or G2 position"/>
+        <Value name="PPP_CONVERGING" value="68" comment="Converging PPP solution"/>
+        <Value name="PPP" value="69" comment="Converged PPP solution"/>
+        <Value name="OPERATIONAL" value="70" comment="Solution accuracy is within UAL operational limit"/>
+        <Value name="WARNING" value="71" comment="Solution accuracy is outside UAL operational limit but within warning limit"/>
+        <Value name="OUT_OF_BOUNDS" value="72" comment="Solution accuracy is outside UAL limits"/>
+    </Enum>
+
+    <Enum name="SolutionStatus_t" comment="Status of solution">
+        <Value name="SOL_COMPUTED" value="0" comment="Solution computed."/>
+        <Value name="INSUFFICIENT_OBS" value="1" comment="Insufficient observations."/>
+        <Value name="NO_CONVERGENCE" value="2" comment="No convergence."/>
+        <Value name="SINGULARITY" value="3" comment="Singularity at parameters matrix."/>
+        <Value name="COV_TRACE" value="4" comment="Covariance trace exceeds maximum (trace > 1000 m)."/>
+        <Value name="TEST_DIST" value="5" comment="Test distance exceeded (maximum of 3 rejections if distance >10 km)."/>
+        <Value name="COLD_START" value="6" comment="Not yet converged from cold start."/>
+        <Value name="V_H_LIMIT" value="7" comment="Height or velocity limits exceeded (in accordance with export licensing restrictions)."/>
+        <Value name="VARIANCE" value="8" comment="Variance exceeds limits."/>
+        <Value name="RESIDUALS" value="9" comment="Residuals are too large."/>
+        <Value name="INTEGRITY_WARNING" value="13" comment="Large residuals make position unreliable."/>
+        <Value name="PENDING" value="18" comment="When a FIX POSITION command is entered, the receiver computes its own position and determines if the fixed position is valid."/>
+        <Value name="INVALID_FIX" value="19" comment="The fixed position, entered using the FIX POSITION command, is not valid."/>
+        <Value name="UNAUTHORIZED" value="20" comment="Position type is unauthorized - HP or XP on a receiver not authorized for it."/>
+    </Enum>
+
+    <Structure name="Header" file="NovatelBinaryStructure" comment="Information common to the header of all Novatel binary logs">
+        <Data name="sync0" inMemoryType="null" encodedType="unsigned8" constant="0xAA" comment="First synchronization byte."/>
+        <Data name="sync1" inMemoryType="null" encodedType="unsigned8" constant="0x44" comment="Second synchronization byte."/>
+        <Data name="sync2" inMemoryType="null" encodedType="unsigned8" constant="0x12" comment="Third synchronization byte."/>
+        <Data name="headerLength" inMemoryType="unsigned8" encodeconstant="28" comment="Number of bytes in the header."/>
+        <Data name="messageID" inMemoryType="unsigned16" comment="This is the Message ID number of the log."/>
+        <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
+        <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of this message."/>
+        <Data name="source" inMemoryType="bitfield5" comment="Source of this message."/>
+        <Data name="portAddress" inMemoryType="unsigned8" comment="Port identifier."/>
+        <Data name="messageLength" inMemoryType="unsigned16" comment="Length of the message, not including the header or CRC."/>
+        <Data name="sequence" inMemoryType="unsigned16" comment="Used for multiple related logs. It is a number that counts down from N-1 to 0 where N is the number of related logs and 0 means it is the last one of the set. Most logs only come out one at a time in which case this number is 0."/>
+        <Data name="idleTime" inMemoryType="float32" encodedType="unsigned8" scaler="2" comment="Percentage of time the processor is idle, calculated once per second"/>
+        <Data name="timeStatus" enum="TimeStatus_t" encodedType="unsigned8" comment="Indicates the quality of the GPS reference time."/>
+        <Data name="Week" inMemoryType="unsigned16" comment="GPS reference week number"/>
+        <Data name="ITOW" inMemoryType="unsigned32" comment="Milliseconds from the beginning of the GPS reference week"/>
+        <Data name="receiverStatus" inMemoryType="unsigned32" comment="32-bits representing the status of various hardware and software components of the receiver"/>
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned16" constant="0" comment="Reserved for internal use."/>
+        <Data name="receiverSwVersion" inMemoryType="unsigned16" comment="A value (0 - 65535) representing the receiver software build number."/>
+    </Structure>
+
+    <Structure name="ExtendedSolStatus" file="NovatelBinaryStructure" comment="Extended solution status bits">
+        <Enum name="IonoCorrection_t" comment="types of ionospheric correction">
+            <Value name="Default" comment="Unknownn or default Klobuchar model"/>
+            <Value name="Klobuchar" comment="Klobuchar Broadcast"/>
+            <Value name="SBAS" comment="SBAS Broadcast"/>
+            <Value name="MultiFreq" comment="Multi-frequency Computed"/>
+            <Value name="Differential" comment="PSRDiff Correction"/>
+            <Value name="NovAtel" comment="Blended Iono Value"/>
+        </Enum>
+        <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
+        <Data name="antInfoMission" inMemoryType="bitfield1" comment="Set if antenna information is missing, see RTKANTENNA command."/>
+        <Data name="reserved4" inMemoryType="null" encodedType="bitfield1" constant="0" comment="Reserved bit."/>
+        <Data name="ionoCorrection" enum="IonoCorrection_t" encodedType="bitfield3" comment="Type of ionospheric correction."/>
+        <Data name="correctionStatus" inMemoryType="bitfield1" comment="If an RTK solution: NovAtel CORRECT solution has been verified. If a PDP solution: solution is GLIDE Otherwise: Reserved."/>
+    </Structure>
+
+    <Structure name="GalileoAndBeiDouSignalsUsed" file="NovatelBinaryStructure" comment="Types of signals used from Galileo and BeiDou">
+        <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
+        <Data name="beidouB2" inMemoryType="bitfield1" comment="Set if BeiDou B2 used in solution."/>
+        <Data name="beidouB1" inMemoryType="bitfield1" comment="Set if BeiDou B1 used in solution."/>
+        <Data name="reserved13" inMemoryType="null" encodedType="bitfield3" constant="0" comment="Reserved bits."/>
+        <Data name="galileoE1" inMemoryType="bitfield1" comment="Set if Galileo E1 used in solution."/>
+    </Structure>
+
+    <Structure name="GpsAndGlonassSignalsUsed" file="NovatelBinaryStructure" comment="Types of signals used from GPS and GLONASS">
+        <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
+        <Data name="glonassL2" inMemoryType="bitfield1" comment="Set if GLONASS L2 used in solution."/>
+        <Data name="glonassL1" inMemoryType="bitfield1" comment="Set if GLONASS L1 used in solution."/>
+        <Data name="reserved3" inMemoryType="null" encodedType="bitfield1" constant="0" comment="Reserved bit."/>
+        <Data name="gpsL5" inMemoryType="bitfield1" comment="Set if GPS L5 used in solution."/>
+        <Data name="gpsL2" inMemoryType="bitfield1" comment="Set if GPS L2 used in solution."/>
+        <Data name="gpsL1" inMemoryType="bitfield1" comment="Set if GPS L1 used in solution."/>
+    </Structure>
+
+    <Structure name="POS" file="NovatelBinaryStructure" comment="Latitude, Longitude, Altitude position information">
+        <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
+        <Data name="type" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
+        <Data name="lat" inMemoryType="float64" encodedType="float64" scaler="180/pi" comment="Geodetic latitude in radians. Scaled from encoded degrees."/>
+        <Data name="lon" inMemoryType="float64" encodedType="float64" scaler="180/pi" comment="Longitude in radians. Scaled from encoded degrees."/>
+        <Data name="alt" inMemoryType="float64" encodedType="null" comment="Altitude above the datum in meters. This value is not transmitted in the packet but is constructed locally."/>
+        <Data name="hgtmsl" inMemoryType="float64" comment="Altitude above mean sea level in meters."/>
+        <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
+        <Data name="datumid" inMemoryType="unsigned32" comment="Enumeration ID of the datum in use, WGS-84 is default. See Novatel manual for details."/>
+        <Data name="latDeviation" inMemoryType="float32" comment="Standard deviation in the North direction in meters."/>
+        <Data name="lonDeviation" inMemoryType="float32" comment="Standard deviation in the East direction in meters."/>
+        <Data name="altDeviation" inMemoryType="float32" comment="Standard deviation in the Up direction in meters."/>
+        <Data name="stnID" inMemoryType="unsigned8" array="4" comment="Base station identification."/>
+        <Data name="diffAge" inMemoryType="float32" comment="Differential age in seconds."/>
+        <Data name="solAge" inMemoryType="float32" comment="Solution age in seconds."/>
+        <Data name="numSVs" inMemoryType="unsigned8" comment="Number of satellites tracked."/>
+        <Data name="numSolutionSVs" inMemoryType="unsigned8" comment="Number of satellites used in solution."/>
+        <Data name="solL1SVs" inMemoryType="unsigned8" comment="Number of satellites with L1/E1/B1 signals used in solution."/>
+        <Data name="numsolnMultiSVs" inMemoryType="unsigned8" comment="Number of satellites with multi-frequency signals used in solution."/>
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned8" constant="0" comment="Reserved."/>
+        <Data name="extendedSolStatus" struct="ExtendedSolStatus" comment="Extended solution status bits"/>
+        <Data name="galileoAndBeiDouSignalsUsed" struct="GalileoAndBeiDouSignalsUsed" comment="Types of signals used from Galileo and BeiDou"/>
+        <Data name="gpsAndGlonassSignalsUsed" struct="GpsAndGlonassSignalsUsed" comment="Types of signals used from GPS and GLONASS"/>
+        <Code name="ConstructAlt" decode="user->alt = user->hgtmsl + user->undulation;" comment="Construct the altitude with respect to the datum."/>
+    </Structure>
+
+    <Structure name="XYZ" file="NovatelBinaryStructure" comment="Cartesian position and velocity information">
+        <Data name="posSolStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
+        <Data name="posType" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
+        <Data name="posECEF" inMemoryType="float64" array="3" comment="Position X, Y, Z in meters ECEF."/>
+        <Data name="posDeviation" inMemoryType="float32" array="3" comment="Standard deviation of position X, Y, Z in meters ECEF."/>
+        <Data name="velSolStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the velocity solution"/>
+        <Data name="velType" enum="PositionType_t" encodedType="unsigned32" comment="Type of velocity information"/>
+        <Data name="velECEF" inMemoryType="float64" array="3" comment="Velocity X, Y, Z in m/s ECEF."/>
+        <Data name="velDeviation" inMemoryType="float32" array="3" comment="Standard deviation of velocity X, Y, Z in m/s ECEF."/>
+        <Data name="stnID" inMemoryType="unsigned8" array="4" comment="Base station identification."/>
+        <Data name="velLatency" inMemoryType="float32" comment="Latency of the velocity solution in seconds."/>
+        <Data name="diffAge" inMemoryType="float32" comment="Differential age in seconds."/>
+        <Data name="solAge" inMemoryType="float32" comment="Solution age in seconds."/>
+        <Data name="numSVs" inMemoryType="unsigned8" comment="Number of satellites tracked."/>
+        <Data name="numSolutionSVs" inMemoryType="unsigned8" comment="Number of satellites used in solution."/>
+        <Data name="numggL1" inMemoryType="unsigned8" comment="Number of GPS plus GLONASS plus BDS L1/B1 used in solution."/>
+        <Data name="numsolnMultiSVs" inMemoryType="unsigned8" comment="Number of satellites with multi-frequency signals used in solution."/>
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned8" constant="0" comment="Reserved."/>
+        <Data name="extendedSolStatus" struct="ExtendedSolStatus" comment="Extended solution status bits"/>
+        <Data name="galileoAndBeiDouSignalsUsed" struct="GalileoAndBeiDouSignalsUsed" comment="Types of signals used from Galileo and BeiDou"/>
+        <Data name="gpsAndGlonassSignalsUsed" struct="GpsAndGlonassSignalsUsed" comment="Types of signals used from GPS and GLONASS"/>
+    </Structure>
+
+    <Packet name="BinaryResponse" file="NovatelBinaryPacket" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Data name="responseID" inMemoryType="unsigned32" comment="ID of the message that triggered this number"/>
+        <Data name="response" inMemoryType="string" array="32" comment="String containing the ASCII response"/>
+    </Packet>
+
+    <Packet name="Log" file="NovatelBinaryPacket" ID="LOG" comment="Request a specific message log">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+
+        <Enum name="Trigger_t" comment="Log trigger">
+            <Value name="ONNEW" comment="Does not output current message but outputs when the message is updated (not necessarily changed)"/>
+            <Value name="ONCHANGED" comment="Outputs the current message and then continues to output when the message is changed"/>
+            <Value name="ONTIME" comment="Output on a time interval"/>
+            <Value name="ONNEXT" comment="Output only the next message"/>
+            <Value name="ONCE" comment="Output only the current message"/>
+            <Value name="ONMARK" comment="Output when a pulse isdetected on the mark 1 input"/>
+        </Enum>
+
+        <Data name="port" enum="Ports_t" encodedType="unsigned32" comment="Communications port this log output should appear on."/>
+        <Data name="message" inMemoryType="unsigned16" comment="Message ID to be logged."/>
+        <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
+        <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of the log."/>
+        <Data name="reserved0" inMemoryType="null" constant="0" encodedType="bitfield5"/>
+        <Data name="reserved1" inMemoryType="null" constant="0" encodedType="unsigned8"/>
+        <Data name="trigger" enum="Trigger_t" encodedType="unsigned32" comment="Trigger event for the log."/>
+        <Data name="period" inMemoryType="float64" comment="Logging period in seconds for logging ONTIME. Options are 0.05, 0.1, 0.2, 0.25 and 0.5. For logging slower than 1 Hz any integer value is accepted."/>
+    </Packet>
+
+    <Packet name="InterfaceMode" file="NovatelBinaryPacket" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receve on a port">
+            <Value name="NOINTERFACE" value="0" comment="The port accepts/generates nothing. The port is disabled"/>
+            <Value name="NOVATEL" value="1" comment="The port accepts/generates NovAtel commands and logs"/>
+            <Value name="RTCM" value="2" comment="The port accepts/generates RTCM corrections"/>
+            <Value name="RTCA" value="3" comment="The port accepts/generates RTCA corrections"/>
+            <Value name="CMR" value="4" comment="The port accepts/generates CMR corrections"/>
+            <Value name="OMNISTAR_INT" value="5" comment="The port accepts OMNISTAR corrections"/>
+            <Value name="RTCMNOCR" value="8" comment="RTCM with no CR/LF appended"/>
+            <Value name="TCOM1" value="10" comment="INTERFACEMODE tunnel modes."/>
+            <Value name="TCOM2" value="11" comment=""/>
+            <Value name="TCOM3" value="12" comment=""/>
+            <Value name="TAUX" value="13" comment=""/>
+            <Value name="RTCMV3" value="14" comment="The port accepts/generates RTCM Version 3.0 corrections"/>
+            <Value name="NOVATELBINARY" value="15" comment="The port only accepts/generates binary messages. If an ASCII command is entered when the mode is set to binary only, the command is ignored. Only properly formatted binary messages are responded to and the response is a binary message"/>
+            <Value name="GENERIC" value="18" comment="The port accepts/generates nothing. SEND/SENDHEX commands from another port generate data on this port. Any incoming data on this port can be seen with PASSCOM logs on another port, see page 558"/>
+            <Value name="MRTCA" value="20" comment="The port accepts/generates Modified Radio Technical Commission for Aeronautics (MRTCA) corrections"/>
+            <Value name="AUTO" value="27" comment="For auto-detecting different RTK correction formats"/>
+            <Value name="NOVATELX" value="35" comment="The port accepts/generates NOVATELX corrections"/>
+        </Enum>
+        <Data name="port" enum="Ports_t" encodedType="unsigned32" comment="Communications port this interface mode applies to."/>
+        <Data name="rxtype" enum="InterfaceProtocols_t" encodedType="unsigned32" comment="Receive (input to receiver) interface mode"/>
+        <Data name="txtype" enum="InterfaceProtocols_t" encodedType="unsigned32" comment="Transmit (output from receiver) interface mode"/>
+        <Data name="response" inMemoryType="unsigned32" comment="1 to enable response messages, 0 to disable."/>
+    </Packet>
+
+    <Packet name="BestXYZ" file="NovatelBinaryPacket" ID="BESTXYZ" comment="Best available cartesian position and velocity">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
+    </Packet>
+
+    <Packet name="SerialConfig" file="NovatelBinaryPacket" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Enum name="Parity_t" comment="Parity options for a serial port">
+            <Value name="NOPARITY" comment="No parity"/>
+            <Value name="EVENPARITY" comment="Even parity"/>
+            <Value name="ODDPARITY" comment="Odd parity"/>
+        </Enum>
+        <Enum name="HandShaking_t" comment="Handshake options for a serial port">
+            <Value name="NOHANDSHAKE" comment="No handshaking"/>
+            <Value name="SOFTHANDSHAKE" comment="Software handshaking (XON/XOFF)"/>
+            <Value name="HARDHANDSHAKE" comment="Hardware handshaking (CTS/RTS)"/>
+        </Enum>
+        <Data name="port" enum="Ports_t" encodedType="unsigned32" comment="Port to configure."/>
+        <Data name="buad" inMemoryType="unsigned32" comment="Baud rate of the port in bits per second."/>
+        <Data name="parity" enum="Parity_t" encodedType="unsigned32" comment="Parity setting of the port."/>
+        <Data name="databits" inMemoryType="unsigned32" comment="Data bits per byte, either 7 or 8."/>
+        <Data name="stopbits" inMemoryType="unsigned32" comment="Stop bits per byte, either 1 or 2."/>
+        <Data name="handshake" enum="HandShaking_t" encodedType="unsigned32" comment="Handshake setting of the port."/>
+        <Data name="enablebreak" inMemoryType="unsigned32" comment="1 to enable break detection, 0 to disable break detection."/>
+    </Packet>
+
+</Protocol>
