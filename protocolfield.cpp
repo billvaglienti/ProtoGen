@@ -972,9 +972,9 @@ QString ProtocolField::getDeclaration(void) const
     if(notInMemory)
         return output;
 
-    //If bitfield, override the memory type to "unsigned"
+    //If bitfield, override the memory type to "unsigned int" to avoid compiler issues
     if (inMemoryType.isBitfield) {
-        output = "    unsigned " + name;
+        output = "    unsigned int " + name;
         output += " : " + QString().setNum(inMemoryType.bits);
     } else {
         output = "    " + typeName + " " + name;
