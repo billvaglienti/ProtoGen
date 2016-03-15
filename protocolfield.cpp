@@ -972,11 +972,15 @@ QString ProtocolField::getDeclaration(void) const
     if(notInMemory)
         return output;
 
-    output = "    " + typeName + " " + name;
-
-    if(inMemoryType.isBitfield)
+    //If bitfield, override the memory type to "unsigned"
+    if (inMemoryType.isBitfield) {
+        output = "    unsigned " + name;
         output += " : " + QString().setNum(inMemoryType.bits);
-    else if(isArray())
+    } else {
+        output = "    " + typeName + " " + name;
+    }
+
+    if(isArray())
         output += "[" + array + "]";
 
     output += ";";
