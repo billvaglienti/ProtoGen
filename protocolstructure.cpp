@@ -89,6 +89,9 @@ void ProtocolStructure::parse(const QDomElement& field)
     if(name.isEmpty())
         name = "_unknown";
 
+    //set attribute 'hidden="true"' to hide the packet from the docs
+    hidden = ProtocolParser::isFieldSet(field, "hidden");
+
     // for now the typename is derived from the name
     typeName = prefix + name + "_t";
 

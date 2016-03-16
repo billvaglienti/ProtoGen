@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <QString>
+#include <QStringList>
 #include <QDomElement>
 #include "encodable.h"
 
@@ -133,6 +134,9 @@ public:
     QString decodeConstantValue;
     TypeData inMemoryType;
     TypeData encodedType;
+
+    QStringList extraInfoNames; //!< List of extra fields that can be appended to a <Data> tag within a packet description
+    QStringList extraInfoValues;
 
 protected:
 

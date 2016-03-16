@@ -437,6 +437,20 @@ void ProtocolField::parse(const QDomElement& field)
     decodeConstantValue = field.attribute("decodeconstant").trimmed();
     comment = ProtocolParser::getComment(field);
 
+    //Decode any extra information from the tag that can be used to expand upon documentation
+    extraInfoNames.clear();
+    extraInfoValues.clear();
+
+    //Add in a list of extra fields that will be accepted (for documentation purposes only)
+    //These will show up in the Packet table where appropriate
+    //These do NOT affect the generated code, they are only for extra clarity in docs
+    extraInfoNames << "Units" << "Range" << "Notes";
+
+    foreach (QString extraInfo, extraInfoNames)
+    {
+        extraInfoValues.append(field.attribute(extraInfo.toLower()));
+    }
+
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
         name = "notprovided";
@@ -1290,19 +1304,19 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         else
             description += comment;
 
-        if(!description.endsWith('.'))
+        if(!description.isEmpty() && !description.endsWith('.'))
             description += ".";
 
         if(scaler != 1.0)
         {
             if(encodedType.isFloat)
-                description += " Scaled by " + scalerString + ".";
+                description += "<br>Scaled by " + scalerString + ".";
             else
-                description += " Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
+                description += "<br>Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
         }
 
         if(!constantValue.isEmpty())
-            description += " Data are given constant value " + constantValue + ".";
+            description += "<br>Data are given constant value " + constantValue + ".";
 
         if(!encodeConstantValue.isEmpty())
             description += " Data are given constant value on encode " + encodeConstantValue + ".";
@@ -1311,10 +1325,16 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             description += " Data are given constant value on encode " + decodeConstantValue + ".";
 
         if(!dependsOn.isEmpty())
-            description += " Only included if " + dependsOn + " is non-zero.";
+            description += "<br>Only included if " + dependsOn + " is non-zero.";
 
         if(!defaultValue.isEmpty())
-            description += " This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+            description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+
+        for (int i=0;i<extraInfoNames.count();i++)
+        {
+            if ((extraInfoValues.count() > i) && (!extraInfoValues.at(i).isEmpty()))
+                description += "<br>" + extraInfoNames.at(i) + ": " + extraInfoValues.at(i) + ".";
+        }
 
         // StringList cannot be empty
         if(description.isEmpty())

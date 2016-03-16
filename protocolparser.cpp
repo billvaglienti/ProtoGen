@@ -939,6 +939,10 @@ description column of the table.\n");
             if(globalEnums[i] == NULL)
                 continue;
 
+            //If the particular enum is to be hidden
+            if (globalEnums[i]->isHidden())
+                continue;
+
             file.write(globalEnums[i]->getMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++), packetids));
             file.write("\n");
         }
@@ -957,6 +961,10 @@ description column of the table.\n");
         for(int i = 0; i < packets.size(); i++)
         {
             if(packets[i] == NULL)
+                continue;
+
+            //If the .xml file describes this particular packet as 'hidden', don't include it in the docs
+            if (packets[i]->isHidden())
                 continue;
 
             file.write(packets[i]->getTopLevelMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++)));
@@ -1038,6 +1046,29 @@ may be repeating information already presented in the packets section\n"));
         #endif
         latexProcess.waitForFinished();
     }
+}
+
+/*!
+ * \brief ProtocolParser::isFieldSet - Determine if the field contains the given label, and the value is either {'true','yes','1'}
+ * \param e
+ * \param label
+ * \return
+ */
+bool ProtocolParser::isFieldSet(const QDomElement &e, QString label) {
+
+    bool result = false;
+    label = label.toLower();
+
+    QString value = e.attribute(label);
+
+    if (value.compare("true",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("yes",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("1",Qt::CaseInsensitive) == 0)
+        result = true;
+
+    return result;
 }
 
 
