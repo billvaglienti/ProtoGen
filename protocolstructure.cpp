@@ -14,7 +14,8 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
     needsIterator(false),
-    defaults(false)
+    defaults(false),
+    hidden(false)
 {
 
 }
@@ -29,7 +30,8 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
     needsIterator(false),
-    defaults(false)
+    defaults(false),
+    hidden(false)
 {
     parse(field);
 
@@ -73,6 +75,7 @@ void ProtocolStructure::clear(void)
     bitfields = false;
     needsIterator = false;
     defaults = false;
+    hidden = false;
 
 }// ProtocolStructure::clear
 
@@ -89,7 +92,7 @@ void ProtocolStructure::parse(const QDomElement& field)
     if(name.isEmpty())
         name = "_unknown";
 
-    //set attribute 'hidden="true"' to hide the packet from the docs
+    // set attribute 'hidden="true"' to hide the packet from the docs
     hidden = ProtocolParser::isFieldSet(field, "hidden");
 
     // for now the typename is derived from the name
@@ -766,7 +769,6 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 
     return output;
 }
-
 
 
 /*!

@@ -4,7 +4,8 @@
 #include <math.h>
 
 EnumCreator::EnumCreator(const QDomElement& e):
-    minbitwidth(0)
+    minbitwidth(0),
+    hidden(false)
 {
     parse(e);
 }
@@ -13,8 +14,10 @@ EnumCreator::EnumCreator(const QDomElement& e):
 void EnumCreator::clear(void)
 {
     minbitwidth = 0;
+    hidden = false;
     name.clear();
     comment.clear();
+    description.clear();
     output.clear();
     nameList.clear();
     commentList.clear();
@@ -36,7 +39,8 @@ QString EnumCreator::parse(const QDomElement& e)
     comment = e.attribute("comment");
     description = e.attribute("description");
 
-    //If the enum struct has the attribute 'hidden="true"', it won't be displayed in the documentation
+    // If the enum struct has the attribute 'hidden="true"',
+    // it won't be displayed in the documentation
     hidden = ProtocolParser::isFieldSet(e,"hidden");
 
     QDomNodeList list = e.elementsByTagName("Value");
@@ -266,7 +270,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         if(!outline.isEmpty())
             output += "## " + outline + ") " + name + "\n\n";
 
-        //If a longer description exists for this enum, display it in the documentation
+        // If a longer description exists for this enum, display it in the documentation
         if (!description.isEmpty()) {
             output += "**Description:**\n";
             output += description;

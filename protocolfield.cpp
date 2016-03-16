@@ -1478,7 +1478,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
         output += "    // " + comment + "\n";
 
     // Null in memory types are treated as zero constant
-    if(inMemoryType.isNull)
+    if((inMemoryType.isNull) && constantstring.isEmpty())
         constantstring = "0";
 
     if(constantstring.isEmpty())
@@ -2133,7 +2133,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         //If the constant value needs to be decoded too
         else if (!decodeConstantValue.isEmpty())
         {
-            output += spacing + "//Decoded value must be " + constantstring + "\n";
+            output += spacing + "// Decoded value must be " + constantstring + "\n";
 
             output += spacing + "if (";
 
@@ -2153,7 +2153,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         }
         else
         {
-            output += spacing + "//Skip over constant value\n";
+            output += spacing + "// Skip over constant value\n";
             output += spacing + "byteindex += " + lengthString + ";\n";
         }
 

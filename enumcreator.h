@@ -41,7 +41,8 @@ public:
     //! Return the minimum number of bits needed to encode the enumeration
     int getMinBitWidth(void) const {return minbitwidth;}
 
-    bool isHidden() {return hidden;}
+    //! Return true if this enumeration is hidden from the documentation
+    bool isHidden(void) const {return hidden;}
 
 protected:
     //! Parse the enumeration values to build the number list

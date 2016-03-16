@@ -14,7 +14,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.3.0.a";
+const QString ProtocolParser::genVersion = "1.3.1.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -939,7 +939,7 @@ description column of the table.\n");
             if(globalEnums[i] == NULL)
                 continue;
 
-            //If the particular enum is to be hidden
+            // If the particular enum is to be hidden
             if (globalEnums[i]->isHidden())
                 continue;
 
@@ -963,7 +963,7 @@ description column of the table.\n");
             if(packets[i] == NULL)
                 continue;
 
-            //If the .xml file describes this particular packet as 'hidden', don't include it in the docs
+            // If the .xml file describes this particular packet as 'hidden', don't include it in the docs
             if (packets[i]->isHidden())
                 continue;
 
@@ -1025,8 +1025,9 @@ may be repeating information already presented in the packets section\n"));
     #endif
     process.waitForFinished();
 
-    if (latexEnabled) {
-        //Write LaTeX documentation
+    if (latexEnabled)
+    {
+        // Write LaTeX documentation
         QString latexFile = basepath + name + ".tex";
 
         std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
@@ -1048,11 +1049,12 @@ may be repeating information already presented in the packets section\n"));
     }
 }
 
+
 /*!
- * \brief ProtocolParser::isFieldSet - Determine if the field contains the given label, and the value is either {'true','yes','1'}
- * \param e
- * \param label
- * \return
+ * Determine if the field contains a given label, and the value is either {'true','yes','1'}
+ * \param e is the element from the DOM to test
+ * \param label is the name of the attribute form the element to test
+ * \return true if the attribute value is "true", "yes", or "1"
  */
 bool ProtocolParser::isFieldSet(const QDomElement &e, QString label) {
 

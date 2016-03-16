@@ -70,7 +70,8 @@ public:
     //! Get details needed to produce documentation for this encodables sub-encodables.
     void getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
-    bool isHidden() {return hidden;}
+    //! Return true if this structure should be hidden from the documentation
+    bool isHidden(void) const {return hidden;}
 
 protected:
 
@@ -90,7 +91,6 @@ protected:
     bool needsIterator;         //!< True if this structure uses arrays
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
-
     bool hidden;                //!< True if this structure is to be hidden from the documentation
 };
 
