@@ -431,11 +431,23 @@ void ProtocolField::parse(const QDomElement& field)
     dependsOn = field.attribute("dependsOn").trimmed();
     enumName = field.attribute("enum").trimmed();
     defaultValue = field.attribute("default").trimmed();
-    unitsValue = field.attribute("units").trimmed();
-    rangeValue = field.attribute("range").trimmed();
     constantValue = field.attribute("constant").trimmed();
     encodeConstantValue = field.attribute("encodeconstant").trimmed();
     comment = ProtocolParser::getComment(field);
+
+    //Decode any extra information from the tag that can be used to expand upon documentation
+    extraInfoNames.clear();
+    extraInfoValues.clear();
+
+    //Add in a list of extra fields that will be accepted (for documentation purposes only)
+    //These will show up in the Packet table where appropriate
+    //These do NOT affect the generated code, they are only for extra clarity in docs
+    extraInfoNames << "Units" << "Range" << "Notes";
+
+    foreach (QString extraInfo, extraInfoNames)
+    {
+        extraInfoValues.append(field.attribute(extraInfo.toLower()));
+    }
 
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
@@ -1291,13 +1303,10 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         if(!defaultValue.isEmpty())
             description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
 
-        if (!unitsValue.isEmpty()) {
-
-            description += " <br>Units: " + unitsValue + ".";
-        }
-
-        if (!rangeValue.isEmpty()) {
-            description += " <br>Range: " + rangeValue + ".";
+        for (int i=0;i<extraInfoNames.count();i++)
+        {
+            if ((extraInfoValues.count() > i) && (!extraInfoValues.at(i).isEmpty()))
+                description += "<br>" + extraInfoNames.at(i) + ": " + extraInfoValues.at(i) + ".";
         }
 
         // StringList cannot be empty

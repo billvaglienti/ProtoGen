@@ -321,7 +321,6 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
 }// EnumCreator::getMarkdown
 
-
 /*!
  * Replace any text that matches an enumeration name with the value of that enumeration
  * \param text is modified to replace names with numbers
@@ -339,7 +338,7 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
         if(valueList.at(i) == numberList.at(i))
             continue;
 
-        if(text.contains(nameList.at(i)))
+        if(text.compare(nameList.at(i)) == 0)
         {
             text.replace(nameList.at(i), numberList.at(i));
         }
