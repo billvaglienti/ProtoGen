@@ -6,6 +6,7 @@
 #include "protocolsupport.h"
 #include <QDomDocument>
 #include <QFile>
+#include <QDir>
 #include <QFileDevice>
 #include <QDateTime>
 #include <QStringList>
@@ -59,6 +60,8 @@ void ProtocolParser::clear(void)
     prefix.clear();
     version.clear();
     api.clear();
+
+    latexEnabled = false; //Needs the -latex switch to enable
 
     // Empty the static list
     for(int i = 0; i < structures.size(); i++)
@@ -788,7 +791,6 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 
 }
 
-
 /*!
  * Ouptut documentation for the protocol as a markdown file
  * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
@@ -797,12 +799,26 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
     int paragraph1 = 1, paragraph2 = 1;
-    QString fileName = name + ".markdown";
 
-    ProtocolFile file(fileName);
+    QString basepath;
+
+    if (!docsDir.isEmpty())
+        basepath = docsDir + QDir::separator();
+
+    QString filename = basepath + name + ".markdown";
+
+    ProtocolFile file(filename);
+
+    //Adding this metadata improves LaTeX support
+    file.write("latex input: mmd-article-header \n");
 
     // Metadata must appear at the top
     file.write("Title: " + name + " Protocol  \n");
+
+    //Adding this metadata improves LaTeX support
+    file.write("Base Header Level: 2 \n");
+    file.write("latex input: mmd-article-begin-doc\n");
+
     file.write("\n");
 
     // Open the style tag
@@ -985,10 +1001,15 @@ may be repeating information already presented in the packets section\n"));
     QProcess process;
     QStringList arguments;
 
-    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
-    process.setStandardOutputFile(QString(name + ".html"));
+    //Write html documentation
+    QString htmlfile = basepath + name + ".html";
 
-    arguments << fileName;      // The name of the source file
+    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
+    process.setStandardOutputFile(QString(htmlfile));
+
+    std::cout << "Writing HTML documentation to " << htmlfile.toStdString() << std::endl;
+
+    arguments << filename;   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
     #else
@@ -996,6 +1017,27 @@ may be repeating information already presented in the packets section\n"));
     #endif
     process.waitForFinished();
 
+    if (latexEnabled) {
+        //Write LaTeX documentation
+        QString latexFile = basepath + name + ".tex";
+
+        std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
+
+        QProcess latexProcess;
+
+        latexProcess.setStandardOutputFile(latexFile);
+
+        arguments.clear();
+        arguments << filename;
+        arguments << "--to=latex";
+
+        #if defined(__APPLE__) && defined(__MACH__)
+        latexProcess.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+        #else
+        latexProcess.start(QString("multimarkdown"), arguments);
+        #endif
+        latexProcess.waitForFinished();
+    }
 }
 
 
@@ -1044,11 +1086,26 @@ QString ProtocolParser::getDefaultInlinCSS(void)
 }
 
 /*!
+ * \brief ProtocolParser::setDocsPath
+ * Set the target path for writing output markdown documentation files
+ * If no output path is set, then QDir::Current() is used
+ * \param path
+ */
+void ProtocolParser::setDocsPath(QString path) {
+    if (QDir(path).exists()) {
+        docsDir = path;
+    } else {
+        docsDir = "";
+    }
+}
+
+/*!
  * Output the doxygen HTML documentation
  */
 void ProtocolParser::outputDoxygen(void)
 {
     QString fileName = "ProtocolDoxyfile";
+
     QFile file(fileName);
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))

@@ -16,13 +16,17 @@ int main(int argc, char *argv[])
     bool nohelperfiles = false;
     QString inlinecss;
 
+    QString docs;
+
+    bool latexSupportOn = false;
+
     // The list of arguments
     QStringList arguments = a.arguments();
 
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
         return 0;
     }
 
@@ -36,6 +40,7 @@ int main(int argc, char *argv[])
     for(int i = 1; i < arguments.size(); i++)
     {
         QString arg = arguments.at(i);
+
         if(arg.contains("-no-doxygen", Qt::CaseInsensitive))
             nodoxygen = true;
         else if(arg.contains("-no-markdown", Qt::CaseInsensitive))
@@ -44,6 +49,8 @@ int main(int argc, char *argv[])
             nohelperfiles = true;
         else if(arg.endsWith(".xml"))
             filename = arg;
+        else if (arg.contains("-latex", Qt::CaseInsensitive))
+            latexSupportOn = true;
         else if(arg.endsWith(".css"))
         {
             QFile file(arg);
@@ -55,7 +62,23 @@ int main(int argc, char *argv[])
             else
                 std::cout << "Failed to open " << arg.toStdString() << "; using default css" << std::endl;
         }
-        else if(arg != filename)
+        else if (arg.startsWith("-docs")) {
+            //Is there an argument following this?
+            if (arguments.size() > (i + 1)) {
+                docs = arguments.at(i+1);
+
+                QDir docDir(QDir::current());
+
+                if (docDir.exists() || docDir.mkdir(docs)) //Markdown directory is sane
+                {
+                    //Skip the next argument;
+                    i++;
+                } else {
+                    docs = "";
+                }
+            }
+        }
+        else if((path.isEmpty()) && (arg != filename))
             path = arg;
     }
 
@@ -69,6 +92,11 @@ int main(int argc, char *argv[])
             if (doc.setContent(&file))
             {
                 ProtocolParser parser;
+
+                parser.setLaTeXSupport(latexSupportOn);
+
+                if (!docs.isEmpty())
+                    parser.setDocsPath(docs);
 
                 // Set our working directory
                 if(!path.isEmpty())
@@ -109,6 +137,9 @@ int main(int argc, char *argv[])
         std::cout << "must provide a protocol file." << std::endl;
         Return = 0;
     }
+
+    if (Return == 1)
+        std::cout << "Generated protocol files in " << path.toStdString() << std::endl;
 
     return Return;
 }
