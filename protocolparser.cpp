@@ -998,6 +998,29 @@ may be repeating information already presented in the packets section\n"));
 
 }
 
+/*!
+ * \brief ProtocolParser::isFieldSet
+ * \param e
+ * \param label
+ * \return
+ */
+bool ProtocolParser::isFieldSet(const QDomElement &e, QString label) {
+
+    bool result = false;
+    label = label.toLower();
+
+    QString value = e.attribute(label);
+
+    if (value.compare("true",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("yes",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("1",Qt::CaseInsensitive) == 0)
+        result = true;
+
+    return result;
+}
+
 
 /*!
  * Get the string used for inline css. This must be bracketed in <style> tags in the html
