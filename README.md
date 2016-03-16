@@ -143,6 +143,10 @@ Enum tag attributes:
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
 
+- `description` : If provided, a long-form description can be prepended to the given enumeration (in the documentation markdown). This allows for a more verbose description of the particular enumeration to be added to the docs. NOTE: This description will NOT appear in the generated code.
+
+- `hidden` : is used to specify that this particular enumeration will NOT appear in the generated documentation markdown. NOTE: This enumeartion will still appear in the generated code.
+
 ###Enum : Value subtag attributes:
 
 The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. Attributes of the Value subtag are:
@@ -153,9 +157,7 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
 
-- `description` : If provided, a long-form description can be prepended to the given enumeration (in the documentation markdown). This allows for a more verbose description of the particular enumeration to be added to the docs. NOTE: This description will NOT appear in the generated code
 
-- `hidden` : is used to specify that this particular enumeration will NOT appear in the generated documentation markdown. NOTE: This enumeartion will still appear in the generated code.
 
 In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice). Enumerations are also a good choice when creating arrays. If an array length is given by an enumeration that is defined in the protocol xml then ProtoGen will attempt to compute the enumeration value, and use that to compute the length of the array in bytes. This substantially improves the protocol documentation that ProtoGen will output.
 
