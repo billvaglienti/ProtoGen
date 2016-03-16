@@ -12,8 +12,7 @@ Encodable::Encodable(const QString& protocolName, const QString& protocolPrefix,
     prefix(protocolPrefix),
     notEncoded(false),
     notInMemory(false),
-    constant(false),
-    required(false)
+    constant(false)
 {
 }
 
@@ -30,7 +29,6 @@ void Encodable::clear(void)
     notEncoded = false;
     notInMemory = false;
     constant = false;
-    required = false;
 }
 
 

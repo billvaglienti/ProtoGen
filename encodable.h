@@ -125,7 +125,6 @@ public:
     bool notEncoded;        //!< True if this encodable is NOT encoded
     bool notInMemory;       //!< True if this encodable is NOT in memory
     bool constant;          //!< True if this encodable is a constant
-    bool required;          //!< True if this (constant) encodable is required in the decode function
 };
 
 #endif // ENCODABLE_H

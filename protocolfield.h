@@ -118,6 +118,7 @@ public:
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}
 
+
 public:
     QString enumName;
     double encodedMin;
@@ -128,8 +129,8 @@ public:
     QString scalerString;
     QString defaultValue;
     QString constantValue;
-    QString requiredValue;
     QString encodeConstantValue;
+    QString decodeConstantValue;
     TypeData inMemoryType;
     TypeData encodedType;
 
@@ -137,6 +138,9 @@ protected:
 
     bool lastBitfield;      //!< True if this is the last bitfield in the local group
     int startingBitCount;   //!< The starting bit count for this field
+
+    //! Return the constant value string, sourced from either constantValue, encodeConstantValue, decodeConstantValue
+    QString getConstantString() const;
 
     //! Compute the encoded length string
     void computeEncodedLength(void);
