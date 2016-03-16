@@ -14,7 +14,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.3.1.a";
+const QString ProtocolParser::genVersion = "1.3.1.b";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;

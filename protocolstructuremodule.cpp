@@ -270,7 +270,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     if(bitfields)
         output += "    int bitcount = 0;\n";
 
-    if(needsIterator)
+    if(needsEncodeIterator)
         output += "    int i = 0;\n";
 
     int bitcount = 0;
@@ -302,8 +302,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     if(bitfields)
         output += "    int bitcount = 0;\n";
 
-    // Reserved arrays are handled here differently, don't need the iterator
-    if(needsIterator)
+    if(needsDecodeIterator)
         output += "    int i = 0;\n";
 
     bitcount = 0;

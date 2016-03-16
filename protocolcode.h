@@ -55,8 +55,11 @@ class ProtocolCode : public Encodable
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const {return false;}
 
-    //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesIterator(void) const {return false;}
+    //! True if this encodable has a direct child that needs an iterator on encode
+    virtual bool usesEncodeIterator(void) const {return false;}
+
+    //! True if this encodable has a direct child that needs an iterator on decode
+    virtual bool usesDecodeIterator(void) const {return false;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return false;}

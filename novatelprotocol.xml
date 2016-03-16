@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 
-<Protocol name="Novatel" prefix="" api="1" version="1.0.0.a" endian="little" comment=
-"Novatel interface protocol for deocding binary logs">
+<Protocol name="Novatel" prefix="" version="1.0.0.a" endian="little" comment=
+"Novatel interface protocol for sending binary commands and decoding binary logs.
+
+ Since the novatel header includes information which is interesting to the
+ decoded data, the header is included as part of the ProtoGen defined data.
+ This implies that a *packet* is just a hunk of bytes, there is no seaprate
+ header from ProtoGen's persepctive. Hence the *size* of a packet includes
+ everything except the crc; i.e the sync bytes, the header data, and the body
+ data. The size of a packet is computed by summing the header length and the
+ body length.">
 
     <Enum name="packetIds" comment="The list of packet identifiers">
         <Value name="LOG" value="1" comment="Used to configure log outputs."/>
@@ -111,6 +119,7 @@
     </Enum>
 
     <Enum name="TimeStatus_t" comment="Time status information">
+        <Value name="INVALID" value="0" comment="Time is invalid"/>
         <Value name="UNKNOWN" value="20" comment="Time validity is unknown"/>
         <Value name="APPROXIMATE" value="60" comment="Time is set approximately"/>
         <Value name="COARSEADJUSTING" value="80" comment="Time is approaching coarse precision"/>
@@ -123,6 +132,27 @@
         <Value name="FINESTEERING" value="180" comment="Time is fine set and is being steered"/>
         <Value name="SATTIME" value="200" comment="Time from satellite. Only used in logs containing satellite data such as ephemeris and almanac"/>
     </Enum>
+
+    <Structure name="Header" file="NovatelStructures" comment="Information common to the header of all Novatel binary logs">
+        <Data name="sync0" inMemoryType="null" encodedType="unsigned8" constant="0xAA" comment="First synchronization byte."/>
+        <Data name="sync1" inMemoryType="null" encodedType="unsigned8" constant="0x44" comment="Second synchronization byte."/>
+        <Data name="sync2" inMemoryType="null" encodedType="unsigned8" constant="0x12" comment="Third synchronization byte."/>
+        <Data name="headerLength" inMemoryType="unsigned8" encodeconstant="28" comment="Number of bytes in the header."/>
+        <Data name="messageID" inMemoryType="unsigned16" comment="This is the Message ID number of the log."/>
+        <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
+        <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of this message."/>
+        <Data name="source" inMemoryType="bitfield5" comment="Source of this message."/>
+        <Data name="portAddress" inMemoryType="unsigned8" encodeconstant="THISPORT" comment="Port identifier."/>
+        <Data name="messageLength" inMemoryType="unsigned16" comment="Length of the message, not including the header or CRC."/>
+        <Data name="sequence" inMemoryType="unsigned16" encodeconstant="0" comment="Used for multiple related logs. It is a number that counts down from N-1 to 0 where N is the number of related logs and 0 means it is the last one of the set. Most logs only come out one at a time in which case this number is 0."/>
+        <Data name="idleTime" inMemoryType="float32" encodedType="unsigned8" scaler="2" comment="Percentage of time the processor is idle, calculated once per second"/>
+        <Data name="timeStatus" enum="TimeStatus_t" encodedType="unsigned8" encodeconstant="INVALID" comment="Indicates the quality of the GPS reference time."/>
+        <Data name="Week" inMemoryType="unsigned16" encodeconstant="0" comment="GPS reference week number"/>
+        <Data name="ITOW" inMemoryType="unsigned32" encodeconstant="0" comment="Milliseconds from the beginning of the GPS reference week"/>
+        <Data name="receiverStatus" inMemoryType="unsigned32" comment="32-bits representing the status of various hardware and software components of the receiver"/>
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned16" constant="0" comment="Reserved for internal use."/>
+        <Data name="receiverSwVersion" inMemoryType="unsigned16" comment="A value (0 - 65535) representing the receiver software build number."/>
+    </Structure>
 
     <Enum name="PositionType_t" comment="Type of position or velocity">
         <Value name="NOSOL" value="0" comment="No solution"/>
@@ -165,28 +195,7 @@
         <Value name="UNAUTHORIZED" value="20" comment="Position type is unauthorized - HP or XP on a receiver not authorized for it."/>
     </Enum>
 
-    <Structure name="Header" file="NovatelBinaryStructure" comment="Information common to the header of all Novatel binary logs">
-        <Data name="sync0" inMemoryType="null" encodedType="unsigned8" constant="0xAA" comment="First synchronization byte."/>
-        <Data name="sync1" inMemoryType="null" encodedType="unsigned8" constant="0x44" comment="Second synchronization byte."/>
-        <Data name="sync2" inMemoryType="null" encodedType="unsigned8" constant="0x12" comment="Third synchronization byte."/>
-        <Data name="headerLength" inMemoryType="unsigned8" encodeconstant="28" comment="Number of bytes in the header."/>
-        <Data name="messageID" inMemoryType="unsigned16" comment="This is the Message ID number of the log."/>
-        <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
-        <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of this message."/>
-        <Data name="source" inMemoryType="bitfield5" comment="Source of this message."/>
-        <Data name="portAddress" inMemoryType="unsigned8" comment="Port identifier."/>
-        <Data name="messageLength" inMemoryType="unsigned16" comment="Length of the message, not including the header or CRC."/>
-        <Data name="sequence" inMemoryType="unsigned16" comment="Used for multiple related logs. It is a number that counts down from N-1 to 0 where N is the number of related logs and 0 means it is the last one of the set. Most logs only come out one at a time in which case this number is 0."/>
-        <Data name="idleTime" inMemoryType="float32" encodedType="unsigned8" scaler="2" comment="Percentage of time the processor is idle, calculated once per second"/>
-        <Data name="timeStatus" enum="TimeStatus_t" encodedType="unsigned8" comment="Indicates the quality of the GPS reference time."/>
-        <Data name="Week" inMemoryType="unsigned16" comment="GPS reference week number"/>
-        <Data name="ITOW" inMemoryType="unsigned32" comment="Milliseconds from the beginning of the GPS reference week"/>
-        <Data name="receiverStatus" inMemoryType="unsigned32" comment="32-bits representing the status of various hardware and software components of the receiver"/>
-        <Data name="reserved" inMemoryType="null" encodedType="unsigned16" constant="0" comment="Reserved for internal use."/>
-        <Data name="receiverSwVersion" inMemoryType="unsigned16" comment="A value (0 - 65535) representing the receiver software build number."/>
-    </Structure>
-
-    <Structure name="ExtendedSolStatus" file="NovatelBinaryStructure" comment="Extended solution status bits">
+    <Structure name="ExtendedSolStatus" file="NovatelStructures" comment="Extended solution status bits">
         <Enum name="IonoCorrection_t" comment="types of ionospheric correction">
             <Value name="Default" comment="Unknownn or default Klobuchar model"/>
             <Value name="Klobuchar" comment="Klobuchar Broadcast"/>
@@ -202,7 +211,7 @@
         <Data name="correctionStatus" inMemoryType="bitfield1" comment="If an RTK solution: NovAtel CORRECT solution has been verified. If a PDP solution: solution is GLIDE Otherwise: Reserved."/>
     </Structure>
 
-    <Structure name="GalileoAndBeiDouSignalsUsed" file="NovatelBinaryStructure" comment="Types of signals used from Galileo and BeiDou">
+    <Structure name="GalileoAndBeiDouSignalsUsed" file="NovatelStructures" comment="Types of signals used from Galileo and BeiDou">
         <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
         <Data name="beidouB2" inMemoryType="bitfield1" comment="Set if BeiDou B2 used in solution."/>
         <Data name="beidouB1" inMemoryType="bitfield1" comment="Set if BeiDou B1 used in solution."/>
@@ -210,7 +219,7 @@
         <Data name="galileoE1" inMemoryType="bitfield1" comment="Set if Galileo E1 used in solution."/>
     </Structure>
 
-    <Structure name="GpsAndGlonassSignalsUsed" file="NovatelBinaryStructure" comment="Types of signals used from GPS and GLONASS">
+    <Structure name="GpsAndGlonassSignalsUsed" file="NovatelStructures" comment="Types of signals used from GPS and GLONASS">
         <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
         <Data name="glonassL2" inMemoryType="bitfield1" comment="Set if GLONASS L2 used in solution."/>
         <Data name="glonassL1" inMemoryType="bitfield1" comment="Set if GLONASS L1 used in solution."/>
@@ -220,7 +229,7 @@
         <Data name="gpsL1" inMemoryType="bitfield1" comment="Set if GPS L1 used in solution."/>
     </Structure>
 
-    <Structure name="POS" file="NovatelBinaryStructure" comment="Latitude, Longitude, Altitude position information">
+    <Structure name="Pos" file="NovatelStructures" comment="Latitude, Longitude, Altitude position information">
         <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
         <Data name="type" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
         <Data name="lat" inMemoryType="float64" encodedType="float64" scaler="180/pi" comment="Geodetic latitude in radians. Scaled from encoded degrees."/>
@@ -246,7 +255,7 @@
         <Code name="ConstructAlt" decode="user->alt = user->hgtmsl + user->undulation;" comment="Construct the altitude with respect to the datum."/>
     </Structure>
 
-    <Structure name="XYZ" file="NovatelBinaryStructure" comment="Cartesian position and velocity information">
+    <Structure name="XYZ" file="NovatelStructures" comment="Cartesian position and velocity information">
         <Data name="posSolStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
         <Data name="posType" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
         <Data name="posECEF" inMemoryType="float64" array="3" comment="Position X, Y, Z in meters ECEF."/>
@@ -267,16 +276,17 @@
         <Data name="extendedSolStatus" struct="ExtendedSolStatus" comment="Extended solution status bits"/>
         <Data name="galileoAndBeiDouSignalsUsed" struct="GalileoAndBeiDouSignalsUsed" comment="Types of signals used from Galileo and BeiDou"/>
         <Data name="gpsAndGlonassSignalsUsed" struct="GpsAndGlonassSignalsUsed" comment="Types of signals used from GPS and GLONASS"/>
+        <Data name="undulation" inMemoryType="float32" encodedType="null" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation. This is not part of the XYZ log, but must be set from a POS log."/>
     </Structure>
 
-    <Packet name="BinaryResponse" file="NovatelBinaryPacket" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
+    <Packet name="BinaryResponse" file="NovatelPackets" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
         <Data name="responseID" inMemoryType="unsigned32" comment="ID of the message that triggered this number"/>
         <Data name="response" inMemoryType="string" array="32" comment="String containing the ASCII response"/>
     </Packet>
 
-    <Packet name="Log" file="NovatelBinaryPacket" ID="LOG" comment="Request a specific message log">
+    <Packet name="Log" file="NovatelPackets" ID="LOG" comment="Request a specific message log">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
 
@@ -293,13 +303,13 @@
         <Data name="message" inMemoryType="unsigned16" comment="Message ID to be logged."/>
         <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
         <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of the log."/>
-        <Data name="reserved0" inMemoryType="null" constant="0" encodedType="bitfield5"/>
-        <Data name="reserved1" inMemoryType="null" constant="0" encodedType="unsigned8"/>
+        <Data name="reserved0" inMemoryType="null" constant="0" encodedType="bitfield5" comment="reserved bits."/>
+        <Data name="reserved1" inMemoryType="null" constant="0" encodedType="unsigned8" comment="reserved byte."/>
         <Data name="trigger" enum="Trigger_t" encodedType="unsigned32" comment="Trigger event for the log."/>
         <Data name="period" inMemoryType="float64" comment="Logging period in seconds for logging ONTIME. Options are 0.05, 0.1, 0.2, 0.25 and 0.5. For logging slower than 1 Hz any integer value is accepted."/>
     </Packet>
 
-    <Packet name="InterfaceMode" file="NovatelBinaryPacket" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
+    <Packet name="InterfaceMode" file="NovatelPackets" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
         <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receve on a port">
@@ -327,13 +337,27 @@
         <Data name="response" inMemoryType="unsigned32" comment="1 to enable response messages, 0 to disable."/>
     </Packet>
 
-    <Packet name="BestXYZ" file="NovatelBinaryPacket" ID="BESTXYZ" comment="Best available cartesian position and velocity">
+    <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" comment="Best available cartesian position and velocity">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Data name="pos" struct="Pos" comment="Latitude, Longitude, Altitude position information."/>
+    </Packet>
+
+    <Packet name="Undulation" file="NovatelPackets" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value.">
+        <Data name="skipped0" inMemoryType="null" array="28" encodedType="unsigned8" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (data[3] - 28);" comment="Account for extended Novatel headers"/>
+        <Data name="skipped1" inMemoryType="null" array="32" encodedType="unsigned8" comment="Data before the undulation that we ignore."/>
+        <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
+        <Data name="skipped2" inMemoryType="null" array="36" encodedType="unsigned8" comment="Data after the undulation that we ignore."/>
+    </Packet>
+
+    <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
         <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
     </Packet>
 
-    <Packet name="SerialConfig" file="NovatelBinaryPacket" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
+    <Packet name="SerialConfig" file="NovatelPackets" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
         <Enum name="Parity_t" comment="Parity options for a serial port">

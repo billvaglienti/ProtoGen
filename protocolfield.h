@@ -113,8 +113,11 @@ public:
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
-    //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesIterator(void) const {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
+    //! True if this encodable has a direct child that needs an iterator on encode
+    virtual bool usesEncodeIterator(void) const {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
+
+    //! True if this encodable has a direct child that needs an iterator on decode
+    virtual bool usesDecodeIterator(void) const {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}

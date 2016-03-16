@@ -13,7 +13,8 @@
 ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
-    needsIterator(false),
+    needsEncodeIterator(false),
+    needsDecodeIterator(false),
     defaults(false),
     hidden(false)
 {
@@ -29,7 +30,8 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
 ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field) :
     Encodable(protocolName, protocolPrefix, supported),
     bitfields(false),
-    needsIterator(false),
+    needsEncodeIterator(false),
+    needsDecodeIterator(false),
     defaults(false),
     hidden(false)
 {
@@ -73,7 +75,8 @@ void ProtocolStructure::clear(void)
 
     // The rest of the metadata
     bitfields = false;
-    needsIterator = false;
+    needsEncodeIterator = false;
+    needsDecodeIterator = false;
     defaults = false;
     hidden = false;
 
@@ -188,8 +191,11 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     if(encodable->usesBitfields())
                         bitfields = true;
 
-                    if(encodable->usesIterator())
-                        needsIterator = true;
+                    if(encodable->usesEncodeIterator())
+                        needsEncodeIterator = true;
+
+                    if(encodable->usesDecodeIterator())
+                        needsDecodeIterator = true;
 
                     if(encodable->usesDefaults())
                         defaults = true;
@@ -212,7 +218,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                 {
                     // Structures can be arrays as well.
                     if(encodable->isArray())
-                        needsIterator = true;
+                        needsDecodeIterator = needsEncodeIterator = true;
                 }
 
 
@@ -546,7 +552,7 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian) const
         if(bitfields)
             output += "    int bitcount = 0;\n";
 
-        if(needsIterator)
+        if(needsEncodeIterator)
             output += "    int i = 0;\n";
 
         int bitcount = 0;
@@ -610,7 +616,7 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
         if(bitfields)
             output += "    int bitcount = 0;\n";
 
-        if(needsIterator)
+        if(needsDecodeIterator)
             output += "    int i = 0;\n";
 
         int bitcount = 0;

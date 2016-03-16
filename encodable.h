@@ -99,8 +99,11 @@ public:
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const = 0;
 
-    //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesIterator(void) const = 0;
+    //! True if this encodable has a direct child that needs an iterator for encoding
+    virtual bool usesEncodeIterator(void) const = 0;
+
+    //! True if this encodable has a direct child that needs an iterator for decoding
+    virtual bool usesDecodeIterator(void) const = 0;
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const = 0;

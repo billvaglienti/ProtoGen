@@ -338,7 +338,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(needsIterator)
+        if(needsEncodeIterator)
             source.write("    int i = 0;\n");
 
         int bitcount = 0;
@@ -377,7 +377,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(needsIterator)
+        if(needsDecodeIterator)
             source.write("    int i = 0;\n");
         source.write("\n");
         source.write("    // Verify the packet identifier\n");
@@ -509,7 +509,7 @@ void ProtocolPacket::createPacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
-        if(needsIterator)
+        if(needsEncodeIterator)
             source.write("    int i = 0;\n");
 
         // Keep our own track of the bitcount so we know what to do when we close the bitfield
@@ -540,7 +540,7 @@ void ProtocolPacket::createPacketFunctions(void)
         source.write("{\n");
         if(bitfields)
             source.write("    int bitcount = 0;\n");
-        if(needsIterator)
+        if(needsDecodeIterator)
             source.write("    int i = 0;\n");
         source.write("    int byteindex = 0;\n");
         source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");

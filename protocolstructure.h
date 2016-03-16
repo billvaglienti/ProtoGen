@@ -35,7 +35,10 @@ public:
     virtual bool usesBitfields(void ) const {return bitfields;}
 
     //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesIterator(void) const {return needsIterator;}
+    virtual bool usesEncodeIterator(void) const {return needsEncodeIterator;}
+
+    //! True if this encodable has a direct child that needs an iterator
+    virtual bool usesDecodeIterator(void) const {return needsDecodeIterator;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return defaults;}
@@ -88,7 +91,8 @@ protected:
     QList<const EnumCreator*> enumList;
 
     bool bitfields;             //!< True if this structure uses bitfields
-    bool needsIterator;         //!< True if this structure uses arrays
+    bool needsEncodeIterator;   //!< True if this structure uses arrays iterators on encode
+    bool needsDecodeIterator;   //!< True if this structure uses arrays iterators on decode
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
     bool hidden;                //!< True if this structure is to be hidden from the documentation

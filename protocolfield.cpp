@@ -925,9 +925,8 @@ void ProtocolField::parse(const QDomElement& field)
         notInMemory = true;
 
     // Check for data that is constant, which does not appear in the structure
-    if(!constantValue.isEmpty()) {
+    if(!constantValue.isEmpty())
         constant = true;
-    }
 
     computeEncodedLength();
 
@@ -1477,10 +1476,6 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if(!comment.isEmpty())
         output += "    // " + comment + "\n";
 
-    // Null in memory types are treated as zero constant
-    if((inMemoryType.isNull) && constantstring.isEmpty())
-        constantstring = "0";
-
     if(constantstring.isEmpty())
     {
         if(isStructureMember)
@@ -1806,16 +1801,19 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
  * 1. constantValue
  * 2. encodeConstantValue
  * 3. decodeConstantValue
+ * 4. If in memory type is null use "0"
  * \return constantValue
  */
 QString ProtocolField::getConstantString() const
 {
     if (!constantValue.isEmpty())
         return constantValue;
-    if (!encodeConstantValue.isEmpty())
+    else if (!encodeConstantValue.isEmpty())
         return encodeConstantValue;
-    if (!decodeConstantValue.isEmpty())
+    else if (!decodeConstantValue.isEmpty())
         return decodeConstantValue;
+    else if(inMemoryType.isNull)
+        return "0";
 
     return QString();
 }
@@ -1866,14 +1864,6 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     }
     else
         endian = "";
-
-    // A null encoding is the same as a constant encoding for our purposes
-    // here, the only difference is what number gets put in.
-    if(inMemoryType.isNull)
-    {
-        if(constantstring.isEmpty())
-            constantstring = "0";
-    }
 
     QString spacing = "    ";
 
@@ -1978,6 +1968,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         // More of the encode call signature, including endian
         output += endian + "Bytes(";
 
+        // Scaling a constant would be really weird...
         if(constantstring.isEmpty())
         {
             // The reference to the data
@@ -2127,8 +2118,8 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         // Skip over reserved space
         if(!array.isEmpty())
         {
-            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
-            output += spacing + "    byteindex += " + QString().setNum(length) + ";\n";
+            QString math = EncodedLength::collapseLengthString(array + "*" + QString().setNum(length), true);
+            output += spacing + "byteindex += " + math + ";\n";
         }
         //If the constant value needs to be decoded too
         else if (!decodeConstantValue.isEmpty())
@@ -2153,7 +2144,6 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         }
         else
         {
-            output += spacing + "// Skip over constant value\n";
             output += spacing + "byteindex += " + lengthString + ";\n";
         }
 
