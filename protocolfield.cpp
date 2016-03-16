@@ -891,6 +891,10 @@ void ProtocolField::parse(const QDomElement& field)
     if(!constantValue.isEmpty())
         constant = true;
 
+    if(!requiredValue.isEmpty() && requiredValue.toLower().contains("true")) {
+        required = true;
+    }
+
     computeEncodedLength();
 
 }// ProtocolField::parse
@@ -2009,6 +2013,11 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     QString spacing = "    ";
     QString lhs;
 
+    QString constantstring = constantValue;
+
+    if(constantstring.isEmpty())
+        constantstring = encodeConstantValue;
+
     if(encodedType.isNull)
         return output;
 
@@ -2071,8 +2080,33 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             output += spacing + "for(i = 0; i < " + array + "; i++)\n";
             output += spacing + "    byteindex += " + QString().setNum(length) + ";\n";
         }
+        else if (required)
+        {
+            output += spacing + "//Decoded value must be " + constantstring + "\n";
+
+            //TODO - for now we only accommodate for integer inMemoryType data
+
+            output += spacing + "if (";
+
+            if (encodedType.isFloat) {
+                if (inMemoryType.bits > 32)
+                    output += "float64";
+                else
+                    output += "float32";
+            }
+            else if (encodedType.isSigned)
+                output += "int";
+            else
+                output += "uint";
+
+            output += QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex)" + " != " + constantstring + ")\n";
+            output += spacing + spacing + "return 0;";
+        }
         else
+        {
+            output += spacing + "//Skip over constant value\n";
             output += spacing + "byteindex += " + lengthString + ";\n";
+        }
 
     }
     else if(encodedType.isFloat)
