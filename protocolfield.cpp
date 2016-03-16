@@ -302,7 +302,7 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
     if(isString)
         typeName = "char";
     else if(isBitfield)
-        typeName = "uint32_t";
+        typeName = "unsigned";
     else if(isEnum)
     {
         typeName = enumName;
@@ -400,6 +400,7 @@ void ProtocolField::clear(void)
     scaler = 1;
     defaultValue.clear();
     constantValue.clear();
+    encodeConstantValue.clear();
     encodedType = inMemoryType = TypeData();
     scalerString.clear();
     minString.clear();
@@ -431,6 +432,7 @@ void ProtocolField::parse(const QDomElement& field)
     enumName = field.attribute("enum").trimmed();
     defaultValue = field.attribute("default").trimmed();
     constantValue = field.attribute("constant").trimmed();
+    encodeConstantValue = field.attribute("encodeconstant").trimmed();
     comment = ProtocolParser::getComment(field);
 
     if(name.isEmpty() && (memoryTypeString != "null"))
@@ -642,13 +644,19 @@ void ProtocolField::parse(const QDomElement& field)
             minString.clear();
             scalerString.clear();
         }
-        else if(encodedType.isFloat)
+
+    }
+
+
+    if(!maxString.isEmpty() || !minString.isEmpty())
+    {
+        if(encodedType.isFloat)
         {
-            std::cout << name.toStdString() << ": min, max, and scaler are ignored because encoded type is float, which are never scaled" << std::endl;
+            std::cout << name.toStdString() << ": min, max, are ignored because encoded type is float" << std::endl;
             maxString.clear();
             minString.clear();
-            scalerString.clear();
         }
+
     }
 
     if(inMemoryType.isString)
@@ -675,12 +683,21 @@ void ProtocolField::parse(const QDomElement& field)
 
     }// if string
 
+
+    if(!constantValue.isEmpty() && !encodeConstantValue.isEmpty())
+    {
+        std::cout << name.toStdString() << ": \"constant\" and \"encodeconstant\" should not be used together, encodeconstant ignored" << std::endl;
+        encodeConstantValue.clear();
+    }
+
+
     if(encodedType.isNull)
     {
-        if(!constantValue.isEmpty())
+        if(!constantValue.isEmpty() || !encodeConstantValue.isEmpty())
         {
             std::cout << name.toStdString() << ": constant value does not make sense for types that are not encoded (null)" << std::endl;
-            variableArray.clear();
+            constantValue.clear();
+            encodeConstantValue.clear();
         }
 
         if(!variableArray.isEmpty())
@@ -764,7 +781,6 @@ void ProtocolField::parse(const QDomElement& field)
                 scalerString = QString().setNum(pow2(encodedType.bits)-1)+ "/" + denominator;
             }
         }
-
     }
     else if(!scalerString.isEmpty())
     {
@@ -783,7 +799,13 @@ void ProtocolField::parse(const QDomElement& field)
             scalerString = "1.0";
         }
 
-        if(encodedType.isSigned)
+        if(encodedType.isFloat)
+        {
+            // Floating point scaling does not have min and max.
+            encodedMax = encodedMin = 0;
+            minString = maxString = "";
+        }
+        else if(encodedType.isSigned)
         {
             encodedMax = (powf(2.0, encodedType.bits-1) - 1.0)/scaler;
             maxString = QString().setNum(pow2(encodedType.bits-1)-1)+ "/(" + scalerString + ")";
@@ -807,7 +829,7 @@ void ProtocolField::parse(const QDomElement& field)
                 maxString = minString + " + " + QString().setNum(pow2(encodedType.bits)-1)+ "/(" + scalerString + ")";
         }
 
-    }
+    }// if scaler string
 
     // Change so html will render the pi symbol
     maxString.replace("pi", "&pi;");
@@ -846,6 +868,17 @@ void ProtocolField::parse(const QDomElement& field)
         }
     }
 
+
+    if(!encodeConstantValue.isEmpty())
+    {
+        if(inMemoryType.isStruct)
+        {
+            std::cout << name.toStdString() << ": structure cannot have a constant value" << std::endl;
+            encodeConstantValue.clear();
+        }
+
+    }
+
     // Check for data not encoded
     if(encodedType.isNull)
         notEncoded = true;
@@ -854,7 +887,7 @@ void ProtocolField::parse(const QDomElement& field)
     if(inMemoryType.isNull)
         notInMemory = true;
 
-    // Check for data that is encoded constant
+    // Check for data that is constant, which does not appear in the structure
     if(!constantValue.isEmpty())
         constant = true;
 
@@ -952,12 +985,17 @@ QString ProtocolField::getDeclaration(void) const
     {
         if(!constantValue.isEmpty())
             output += " //!< Field is constant.";
+        else if(!encodeConstantValue.isEmpty())
+            output += " //!< Field is encoded constant.";
+
     }
     else
     {
         output += " //!< " + comment;
         if(!constantValue.isEmpty())
             output += ". Field is constant.";
+        else if(!encodeConstantValue.isEmpty())
+            output += ". Field is encoded constant.";
     }
 
     output += "\n";
@@ -1010,7 +1048,7 @@ QString ProtocolField::getIncludeDirective(void)
  */
 QString ProtocolField::getEncodeSignature(void) const
 {
-    if(notEncoded || notInMemory || !constantValue.isEmpty())
+    if(notEncoded || notInMemory || !constantValue.isEmpty() || !encodeConstantValue.isEmpty())
         return "";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
@@ -1231,11 +1269,19 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         if(!description.endsWith('.'))
             description += ".";
 
-        if(encodedMax != 0.0)
-            description += " Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
+        if(scaler != 1.0)
+        {
+            if(encodedType.isFloat)
+                description += " Scaled by " + scalerString + ".";
+            else
+                description += " Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
+        }
 
         if(!constantValue.isEmpty())
             description += " Data are given constant value " + constantValue + ".";
+
+        if(!encodeConstantValue.isEmpty())
+            description += " Data are given constant value on encode " + encodeConstantValue + ".";
 
         if(!dependsOn.isEmpty())
             description += " Only included if " + dependsOn + " is non-zero.";
@@ -1376,7 +1422,10 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const
 {
     QString output;
-    QString constant = constantValue;
+    QString constantstring = constantValue;
+
+    if(constantstring.isEmpty())
+        constantstring = encodeConstantValue;
 
     if(encodedType.isNull)
         return output;
@@ -1386,17 +1435,17 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
 
     // Null in memory types are treated as zero constant
     if(inMemoryType.isNull)
-        constant = "0";
+        constantstring = "0";
 
-    if(constant.isEmpty())
+    if(constantstring.isEmpty())
     {
         if(isStructureMember)
-            output += "    encodeBitfield((uint32_t)user->" + name;
+            output += "    encodeBitfield((unsigned int)user->" + name;
         else
-            output += "    encodeBitfield((uint32_t)" + name;
+            output += "    encodeBitfield((unsigned int)" + name;
     }
     else
-        output += "    encodeBitfield((uint32_t)" + constant;
+        output += "    encodeBitfield((unsigned int)" + constantstring;
 
     output += ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     *bitcount += encodedType.bits;
@@ -1439,7 +1488,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         else
             output += "    *";      // Access via direct pointer
 
-        // we cast here, because the inMemoryType might not be a uint32_t
+        // we cast here, because the inMemoryType might not be a unsigned int
         output += name + " = (" + typeName + ")decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     }
 
@@ -1504,6 +1553,11 @@ QString ProtocolField::getEncodeStringForString(bool isStructureMember) const
     QString output;
     QString lhs;
 
+    QString constantstring = constantValue;
+
+    if(constantstring.isEmpty())
+        constantstring = encodeConstantValue;
+
     if(encodedType.isNull)
         return output;
 
@@ -1515,17 +1569,17 @@ QString ProtocolField::getEncodeStringForString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += "    // " + comment + "\n";
 
-    if(constantValue.isEmpty())
+    if(constantstring.isEmpty())
         output += "    stringToBytes(" + lhs + name + ", data, &byteindex, " + array;
     else
     {
         // constantValue is a string literal, so include the quotes. Except for
         // a special case. If constantValue ends in "()" then we assume its a
         // function or macro call
-        if(constantValue.contains("(") && constantValue.contains(")"))
-            output += "    stringToBytes(" + constantValue + ", data, &byteindex, " + array;
+        if(constantstring.contains("(") && constantstring.contains(")"))
+            output += "    stringToBytes(" + constantstring + ", data, &byteindex, " + array;
         else
-            output += "    stringToBytes(\"" + constantValue + "\", data, &byteindex, " + array;
+            output += "    stringToBytes(\"" + constantstring + "\", data, &byteindex, " + array;
     }
 
     if(inMemoryType.isFixedString)
@@ -1721,7 +1775,10 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     QString endian;
     QString lengthString;
     QString lhs;
-    QString constantValue = this->constantValue;
+    QString constantstring = constantValue;
+
+    if(constantstring.isEmpty())
+        constantstring = encodeConstantValue;
 
     if(encodedType.isNull)
         return output;
@@ -1757,8 +1814,8 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     // here, the only difference is what number gets put in.
     if(inMemoryType.isNull)
     {
-        if(constantValue.isEmpty())
-            constantValue = "0";
+        if(constantstring.isEmpty())
+            constantstring = "0";
     }
 
     QString spacing = "    ";
@@ -1773,10 +1830,50 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         spacing += "    ";
     }
 
-    if(encodedMax > encodedMin)
+    if(encodedType.isFloat)
     {
-        // The scaled outputs. Note that scaled outputs never encode
-        // in floating point, since floats carry their scaling with them
+        // In this case we are encoding as a floating point. Typically we
+        // would not scale here, but there are cases where scaling is
+        // interesting.
+        QString scalestring;
+
+        if(scaler != 1.0)
+        {
+            scalestring = "*" + getNumberString(scaler, inMemoryType.bits);
+
+            // Additional commenting to describe the scaling
+            output += spacing + "// " + name + " is scaled by " + getNumberString(scaler) +  ".\n";
+
+        }
+
+        // Notice that we have to cast to the
+        // input parameter type, since the user might (for example) have
+        // the in-memory type as a double, but the encoded as a float
+        QString cast = "(" + encodedType.toTypeString() + ")";
+
+        if(array.isEmpty())
+        {
+            if(constantstring.isEmpty())
+                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + scalestring + ", data, &byteindex);\n";
+            else
+                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+        }
+        else
+        {
+            if(variableArray.isEmpty())
+                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            else
+                output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
+
+            if(constantstring.isEmpty())
+                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i], data, &byteindex);\n";
+            else
+                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+        }
+    }
+    else if(encodedMax > encodedMin)
+    {
+        // The scaled outputs
 
         // Additional commenting to describe the scaling
         output += spacing + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
@@ -1824,7 +1921,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         // More of the encode call signature, including endian
         output += endian + "Bytes(";
 
-        if(constantValue.isEmpty())
+        if(constantstring.isEmpty())
         {
             // The reference to the data
             output += lhs + name;
@@ -1833,7 +1930,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                 output += "[i]";
         }
         else
-            output += constantValue;
+            output += constantstring;
 
         output += ", data, &byteindex";
 
@@ -1845,36 +1942,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         output += ");\n";
 
-    }// if scaled
-    else if(encodedType.isFloat)
-    {
-        // In this case we are encoding as a floating point. No scaling
-        // here, because floats carry their scaling with them, but we can
-        // choose different bit widths. Notice that we have to cast to the
-        // input parameter type, since the user might (for example) have
-        // the in-memory type as a double, but the encoded as a float
-        QString cast = "(" + encodedType.toTypeString() + ")";
-
-        if(array.isEmpty())
-        {
-            if(constantValue.isEmpty())
-                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + ", data, &byteindex);\n";
-            else
-                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantValue + ", data, &byteindex);\n";
-        }
-        else
-        {
-            if(variableArray.isEmpty())
-                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
-            else
-                output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
-
-            if(constantValue.isEmpty())
-                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + "[i], data, &byteindex);\n";
-            else
-                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantValue + ", data, &byteindex);\n";
-        }
-    }
+    }// if scaled to integer
     else
     {
         // Here we are not scaling, and we are not encoding a float. It may
@@ -1896,10 +1964,10 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         if(array.isEmpty())
         {
-            if(constantValue.isEmpty())
+            if(constantstring.isEmpty())
                 output += opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + ", data, &byteindex);\n";
             else
-                output += opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantValue + ", data, &byteindex);\n";
+                output += opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
         }
         else
         {
@@ -1908,10 +1976,10 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             else
                 output += "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
 
-            if(constantValue.isEmpty())
+            if(constantstring.isEmpty())
                 output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + "[i], data, &byteindex);\n";
             else
-                output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantValue + ", data, &byteindex);\n";
+                output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
         }
 
     }// else not scaled and not float
@@ -2007,6 +2075,38 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             output += spacing + "byteindex += " + lengthString + ";\n";
 
     }
+    else if(encodedType.isFloat)
+    {
+        // In this case we are encoding as a floating point. Typically we
+        // would not scale here, but there are cases where scaling is
+        // interesting.
+        QString scalestring;
+
+        if(scaler != 1.0)
+        {
+            scalestring = "(" + getNumberString(1.0, inMemoryType.bits) + "/" + getNumberString(scaler, inMemoryType.bits) + ")*" ;
+
+            // Additional commenting to describe the scaling
+            output += spacing + "// " + name + " is scaled by " + getNumberString(scaler) +  ".\n";
+        }
+
+        if(array.isEmpty())
+            output += spacing + lhs + name + " = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+        else
+        {
+            if(variableArray.isEmpty())
+                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            else
+            {
+                if(isStructureMember)
+                    output += spacing + "for(i = 0; i < (int)user->" + variableArray + " && i < " + array + "; i++)\n";
+                else
+                    output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
+            }
+
+            output += spacing + "    " + lhs + name + "[i] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+        }
+    }
     else if(encodedMax > encodedMin)
     {
         // Additional commenting to describe the scaling
@@ -2062,29 +2162,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 
         output +=  ");\n";
 
-    }// if scaled
-    else if(encodedType.isFloat)
-    {
-        // In this case we are decoding as a floating point. No scaling
-        // here, because floats carry their scaling with them, but we can
-        // choose different bit widths.
-        if(array.isEmpty())
-            output += spacing + lhs + name + " = float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
-        else
-        {
-            if(variableArray.isEmpty())
-                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
-            else
-            {
-                if(isStructureMember)
-                    output += spacing + "for(i = 0; i < (int)user->" + variableArray + " && i < " + array + "; i++)\n";
-                else
-                    output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
-            }
-
-            output += spacing + "    " + lhs + name + "[i] = float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
-        }
-    }
+    }// if scaled to integer
     else
     {
         // Here we are not scaling, and we are not encoding a float. It may

@@ -37,7 +37,8 @@ SOURCES += main.cpp \
     protocolstructuremodule.cpp \
     protocolsupport.cpp \
     encodedlength.cpp \
-    shuntingyard.cpp
+    shuntingyard.cpp \
+    protocolcode.cpp
 
 HEADERS += \
     protocolparser.h \
@@ -52,7 +53,8 @@ HEADERS += \
     protocolstructuremodule.h \
     protocolsupport.h \
     encodedlength.h \
-    shuntingyard.h
+    shuntingyard.h \
+    protocolcode.h
 
 RESOURCES += \
     ProtoGen.qrc
@@ -132,3 +134,6 @@ OTHER_FILES += \
     exampleprotocol.xml \
     README.md \
     LICENSE.txt
+
+DISTFILES += \
+    novatelprotocol.xml

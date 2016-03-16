@@ -786,7 +786,6 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
     else
     {
         bool signextend = false;
-        QString variable;
 
         // We have to perform sign extension for signed types that are nonstandard lengths
         if(typeUnsigneds[type] == false)
@@ -795,16 +794,21 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
 
         if(signextend)
         {
-            function += "    // A bitfield is a fast portable way to get the compiler to sign extend a non standard size\n";
-            function += "    // Courtesty of: https://graphics.stanford.edu/~seander/bithacks.html\n";
-            function += "    struct{" + typeNames[type] + " number: " + QString().setNum(typeSizes[type]*8) + ";}s;\n";
-            variable = "s.number";
+            function += "    // Signed value in non-native size, requires sign extension. Algorithm\n";
+            function += "    // courtesty of: https://graphics.stanford.edu/~seander/bithacks.html\n";
+
+            function += "    const " + typeNames[type] + " m = ";
+            switch(typeSizes[type])
+            {
+            default:
+            case 3: function += "0x00800000;\n"; break;
+            case 5: function += "0x0000008000000000;\n"; break;
+            case 6: function += "0x0000800000000000;\n"; break;
+            case 7: function += "0x0080000000000000;\n"; break;
+            }
         }
-        else
-        {
-            function += "    " + typeNames[type] + " number;\n";
-            variable = "number";
-        }
+
+        function += "    " + typeNames[type] + " number;\n";
 
         function += "\n";
 
@@ -822,16 +826,16 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
         if(bigendian)
         {
             // Start with the most significant byte
-            function += "    " + variable + " = *(bytes++);\n";
+            function += "    number = *(bytes++);\n";
 
             offset = 1;
             while(offset < typeSizes[type] - 1)
             {
-                function += "    " + variable + " = (" + variable + " << 8) | *(bytes++);\n";
+                function += "    number = (number << 8) | *(bytes++);\n";
                 offset++;
             }
 
-            function += "    " + variable + " = (" + variable + " << 8) | *bytes;\n";
+            function += "    number = (number << 8) | *bytes;\n";
 
         }// if big endian encoding
         else
@@ -839,17 +843,17 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
             offset = typeSizes[type] - 1;
 
             // Start with the most significant byte
-            function += "    " + variable + " = *(bytes--);\n";
+            function += "    number = *(bytes--);\n";
             offset--;
 
             while(offset > 0)
             {
-                function += "    " + variable + " = (" + variable + " << 8) | *(bytes--);\n";
+                function += "    number = (number << 8) | *(bytes--);\n";
                 offset--;
             }
 
             // Finish with the least significant byte
-            function += "    " + variable + " = (" + variable + " << 8) | *bytes;\n";
+            function += "    number = (number << 8) | *bytes;\n";
 
         }// if little endian encoding
 
@@ -857,7 +861,11 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
         function += "    (*index) += " + QString().setNum(typeSizes[type]) + ";\n";
 
         function += "\n";
-        function += "    return " + variable + ";\n";
+
+        if(signextend)
+            function += "    return (number ^ m) - m;\n";
+        else
+            function += "    return number;\n";
 
     }// if multi-byte fields
 
