@@ -120,7 +120,10 @@ QString EnumCreator::parse(const QDomElement& e)
             output += " ";
 
         // Output the comment
-        output += "//!< " + commentList.at(i) + "\n";
+        if(commentList.at(i).isEmpty())
+            output += "\n";
+        else
+            output += "//!< " + commentList.at(i) + "\n";
 
     }// for all enumerators
 
@@ -210,40 +213,6 @@ void EnumCreator::computeNumberList(void)
         minbitwidth = 8;
 
 }// EnumCreator::computeNumberList
-
-
-/*!
- * Get the markdown output that documents this enumeration
- * \param indent is the indent level for the markdown output
- * \return the markdown output string
- *
-QString EnumCreator::getMarkdown(QString indent) const
-{
-    QString output;
-
-    // Add one more space for visibility
-    output += indent + "* `" + name + "`";
-    if(!comment.isEmpty())
-        output += " :  " + comment + ".";
-    output += "\n";
-    output += "\n";
-
-    indent += "    ";
-    for(int i = 0; i < nameList.length(); i++)
-    {
-        output += indent;
-
-        // bulleted list with name and value in code
-        output += "* `" + nameList.at(i) + " = " + numberList.at(i) + "`";
-        if(!commentList.at(i).isEmpty())
-            output += " :  " +  commentList.at(i) + ".";
-        output += "\n";
-        output += "\n";
-    }
-
-    return output;
-
-}// EnumCreator::getMarkdown*/
 
 
 /*!

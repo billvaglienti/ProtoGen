@@ -1,6 +1,7 @@
 #include "encodable.h"
 #include "protocolfield.h"
 #include "protocolstructure.h"
+#include "protocolcode.h"
 
 /*!
  * Constructor for encodable
@@ -111,6 +112,8 @@ Encodable* Encodable::generateEncodable(const QString& protocolName, const QStri
         return new ProtocolStructure(protocolName, protocolPrefix, supported, field);
     else if(field.tagName().contains("Data", Qt::CaseInsensitive))
         return new ProtocolField(protocolName, protocolPrefix, supported, field);
+    else if(field.tagName().contains("Code", Qt::CaseInsensitive))
+        return new ProtocolCode(protocolName, protocolPrefix, supported, field);
 
     return NULL;
 }

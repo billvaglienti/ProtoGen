@@ -15,7 +15,7 @@
  *        will be incremented as needed.
  * \param numbits is the number of bits in value to encode
  */
-void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, int numbits)
+void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits)
 {
     int bitstomove;
     while(numbits > 0)
@@ -67,9 +67,9 @@ void encodeBitfield(uint32_t value, uint8_t* bytes, int* index, int* bitcount, i
  * \param numbits is the number of bits to pull from the byte stream
  * \return the decoded unsigned bitfield integer
  */
-uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits)
+unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits)
 {
-    uint32_t value = 0;
+    unsigned int value = 0;
     uint8_t  byte;
 
     int bitstomove;
@@ -100,7 +100,7 @@ uint32_t decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int num
             // OR these bytes into position in value. The position is given by
             // numbits, which identifies the bit position of the most significant
             // bit.
-            value |= ((uint32_t)byte) << (numbits - bitstomove);
+            value |= ((unsigned int)byte) << (numbits - bitstomove);
         }
 
         // Count the bits

@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.2.3. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.3.0. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -108,7 +108,7 @@ The Include tag supports the following attributes:
 
 - `comment` : Gives a one line comment that follows the #include directive.
 
-- `global` : Set to `true` to use a global header file (e.g., #include <stdio.h>) or `false` to use a local include (e.g., #include "indices.h"). The default is `false`.
+- `global` : Set to `true` to use a global header file (e.g., #include \<stdio.h\>) or `false` to use a local include (e.g., #include "indices.h"). The default is `false`.
 
 Enum tag
 --------
@@ -187,8 +187,18 @@ Structure tag Attributes:
 
 ###Structure : Data subtags
 
-The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. In the Date structure example the Data tags are simple. The data tags are explained in more detail in the section on packets.
-    
+The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. The data tags are explained in more detail in the section on packets.
+
+###Structure : Code subtags
+
+The Structure tag supports Code subtags. Each code tag represents verbatim code that is inserted in either the encode or decode function. In most cases the code tags are not needed, but they can be useful in some cases.
+
+Code subtag attributes:
+
+- `encode` : A verbatim code snippet that is inserted in the encode function.
+- `decode` : A verbatim code snippet that is inserted in the decode function.
+- `comment` : A one line comment above the code snippet.
+
 Packet tag
 ----------
 The Packet tag is used to define all the code to encode and decode one packet of information. A packet is a superset of a structure. It has all the properties of a structure, and has other capabilities.
@@ -301,11 +311,13 @@ Data subtag attributes:
 
 - `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, bitfield or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaler` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
 
-- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is floating, bitfield or string. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`.
+- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is bitfield, string, or structure. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`. Although it is unusual `scaler` can be used with floating point encoded types. This would be useful for cases where the units of the floating point encoded type do not match the desired units of the data in memory.
 
 - `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
 
 - `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
+
+- `encodeconstant` : similar to the `constant` attribute; however `encodeconstant` is only applied in the encode function. The decode function simply decodes the value from the byte stream, as with a normal non-constant field.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
