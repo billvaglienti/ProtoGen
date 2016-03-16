@@ -401,6 +401,7 @@ void ProtocolField::clear(void)
     defaultValue.clear();
     constantValue.clear();
     encodeConstantValue.clear();
+    decodeConstantValue.clear();
     encodedType = inMemoryType = TypeData();
     scalerString.clear();
     minString.clear();
@@ -433,6 +434,7 @@ void ProtocolField::parse(const QDomElement& field)
     defaultValue = field.attribute("default").trimmed();
     constantValue = field.attribute("constant").trimmed();
     encodeConstantValue = field.attribute("encodeconstant").trimmed();
+    decodeConstantValue = field.attribute("decodeconstant").trimmed();
     comment = ProtocolParser::getComment(field);
 
     if(name.isEmpty() && (memoryTypeString != "null"))
@@ -690,14 +692,27 @@ void ProtocolField::parse(const QDomElement& field)
         encodeConstantValue.clear();
     }
 
+    if (!constantValue.isEmpty() && !decodeConstantValue.isEmpty())
+    {
+        std::cout << name.toStdString() << ": \"constant\" and \"decodeconstant\" should not be used together, decodeconstant ignored" << std::endl;
+        decodeConstantValue.clear();
+    }
+
+    if (!encodeConstantValue.isEmpty() & !decodeConstantValue.isEmpty())
+    {
+        std::cout << name.toStdString() << ": \"encodeconstant\" and \"decodeconstant\" should not be used together, decodeconstant ignored" << std::endl;
+        decodeConstantValue.clear();
+    }
+
 
     if(encodedType.isNull)
     {
-        if(!constantValue.isEmpty() || !encodeConstantValue.isEmpty())
+        if(!constantValue.isEmpty() || !encodeConstantValue.isEmpty() || !decodeConstantValue.isEmpty())
         {
             std::cout << name.toStdString() << ": constant value does not make sense for types that are not encoded (null)" << std::endl;
             constantValue.clear();
             encodeConstantValue.clear();
+            decodeConstantValue.clear();
         }
 
         if(!variableArray.isEmpty())
@@ -876,7 +891,15 @@ void ProtocolField::parse(const QDomElement& field)
             std::cout << name.toStdString() << ": structure cannot have a constant value" << std::endl;
             encodeConstantValue.clear();
         }
+    }
 
+    if (!decodeConstantValue.isEmpty())
+    {
+        if (inMemoryType.isStruct)
+        {
+            std::cout << name.toStdString() << ": structure cannot have a constant value" << std::endl;
+            decodeConstantValue.clear();
+        }
     }
 
     // Check for data not encoded
@@ -888,8 +911,9 @@ void ProtocolField::parse(const QDomElement& field)
         notInMemory = true;
 
     // Check for data that is constant, which does not appear in the structure
-    if(!constantValue.isEmpty())
+    if(!constantValue.isEmpty()) {
         constant = true;
+    }
 
     computeEncodedLength();
 
@@ -985,7 +1009,7 @@ QString ProtocolField::getDeclaration(void) const
     {
         if(!constantValue.isEmpty())
             output += " //!< Field is constant.";
-        else if(!encodeConstantValue.isEmpty())
+        else if(!encodeConstantValue.isEmpty() || !decodeConstantValue.isEmpty())
             output += " //!< Field is encoded constant.";
 
     }
@@ -994,7 +1018,7 @@ QString ProtocolField::getDeclaration(void) const
         output += " //!< " + comment;
         if(!constantValue.isEmpty())
             output += ". Field is constant.";
-        else if(!encodeConstantValue.isEmpty())
+        else if(!encodeConstantValue.isEmpty() || !decodeConstantValue.isEmpty())
             output += ". Field is encoded constant.";
     }
 
@@ -1048,7 +1072,7 @@ QString ProtocolField::getIncludeDirective(void)
  */
 QString ProtocolField::getEncodeSignature(void) const
 {
-    if(notEncoded || notInMemory || !constantValue.isEmpty() || !encodeConstantValue.isEmpty())
+    if(notEncoded || notInMemory || !constantValue.isEmpty() || !encodeConstantValue.isEmpty() || !decodeConstantValue.isEmpty())
         return "";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
@@ -1283,6 +1307,9 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         if(!encodeConstantValue.isEmpty())
             description += " Data are given constant value on encode " + encodeConstantValue + ".";
 
+        if (!decodeConstantValue.isEmpty())
+            description += " Data are given constant value on encode " + decodeConstantValue + ".";
+
         if(!dependsOn.isEmpty())
             description += " Only included if " + dependsOn + " is non-zero.";
 
@@ -1422,10 +1449,7 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const
 {
     QString output;
-    QString constantstring = constantValue;
-
-    if(constantstring.isEmpty())
-        constantstring = encodeConstantValue;
+    QString constantstring = getConstantString();
 
     if(encodedType.isNull)
         return output;
@@ -1553,10 +1577,7 @@ QString ProtocolField::getEncodeStringForString(bool isStructureMember) const
     QString output;
     QString lhs;
 
-    QString constantstring = constantValue;
-
-    if(constantstring.isEmpty())
-        constantstring = encodeConstantValue;
+    QString constantstring = getConstantString();
 
     if(encodedType.isNull)
         return output;
@@ -1759,6 +1780,25 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
 
 }// ProtocolField::getDecodeStringForStructure
 
+/*!
+ * \brief ProtocolField::getConstantString
+ * Look for a constantValue, in order of preference:
+ * 1. constantValue
+ * 2. encodeConstantValue
+ * 3. decodeConstantValue
+ * \return constantValue
+ */
+QString ProtocolField::getConstantString() const
+{
+    if (!constantValue.isEmpty())
+        return constantValue;
+    if (!encodeConstantValue.isEmpty())
+        return encodeConstantValue;
+    if (!decodeConstantValue.isEmpty())
+        return decodeConstantValue;
+
+    return QString();
+}
 
 /*!
  * Get the next lines(s) of source coded needed to encode this field, which
@@ -1775,10 +1815,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     QString endian;
     QString lengthString;
     QString lhs;
-    QString constantstring = constantValue;
-
-    if(constantstring.isEmpty())
-        constantstring = encodeConstantValue;
+    QString constantstring = getConstantString();
 
     if(encodedType.isNull)
         return output;
@@ -2009,6 +2046,8 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     QString spacing = "    ";
     QString lhs;
 
+    QString constantstring = getConstantString();
+
     if(encodedType.isNull)
         return output;
 
@@ -2071,8 +2110,32 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             output += spacing + "for(i = 0; i < " + array + "; i++)\n";
             output += spacing + "    byteindex += " + QString().setNum(length) + ";\n";
         }
+        //If the constant value needs to be decoded too
+        else if (!decodeConstantValue.isEmpty())
+        {
+            output += spacing + "//Decoded value must be " + constantstring + "\n";
+
+            output += spacing + "if (";
+
+            if (encodedType.isFloat) {
+                if (inMemoryType.bits > 32)
+                    output += "float64";
+                else
+                    output += "float32";
+            }
+            else if (encodedType.isSigned)
+                output += "int";
+            else
+                output += "uint";
+
+            output += QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex)" + " != (" + encodedType.toTypeString() + ") " + constantstring + ")\n";
+            output += spacing + spacing + "return 0;";
+        }
         else
+        {
+            output += spacing + "//Skip over constant value\n";
             output += spacing + "byteindex += " + lengthString + ";\n";
+        }
 
     }
     else if(encodedType.isFloat)

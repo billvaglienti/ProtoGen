@@ -319,6 +319,8 @@ Data subtag attributes:
 
 - `encodeconstant` : similar to the `constant` attribute; however `encodeconstant` is only applied in the encode function. The decode function simply decodes the value from the byte stream, as with a normal non-constant field.
 
+- `decodeconstant` : similar to the `constant` attribute; however `decodeconstant` is also applied to the decode function. The decode function evaluates the received data and returns a fail state if the value is not equal to the supplied constant.
+
 - `comment` : A one line doxygen comment that follows the data declaration.
 
 ---
