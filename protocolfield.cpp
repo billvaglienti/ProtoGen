@@ -432,6 +432,7 @@ void ProtocolField::parse(const QDomElement& field)
     enumName = field.attribute("enum").trimmed();
     defaultValue = field.attribute("default").trimmed();
     constantValue = field.attribute("constant").trimmed();
+    requiredValue = field.attribute("required").trimmed();
     encodeConstantValue = field.attribute("encodeconstant").trimmed();
     comment = ProtocolParser::getComment(field);
 
@@ -888,11 +889,11 @@ void ProtocolField::parse(const QDomElement& field)
         notInMemory = true;
 
     // Check for data that is constant, which does not appear in the structure
-    if(!constantValue.isEmpty())
+    if(!constantValue.isEmpty()) {
         constant = true;
 
-    if(!requiredValue.isEmpty() && requiredValue.toLower().contains("true")) {
-        required = true;
+        if(!requiredValue.isEmpty() && requiredValue.contains("true",Qt::CaseInsensitive))
+            required = true;
     }
 
     computeEncodedLength();

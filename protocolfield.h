@@ -128,6 +128,7 @@ public:
     QString scalerString;
     QString defaultValue;
     QString constantValue;
+    QString requiredValue;
     QString encodeConstantValue;
     TypeData inMemoryType;
     TypeData encodedType;
