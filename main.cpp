@@ -67,10 +67,11 @@ int main(int argc, char *argv[])
             if (arguments.size() > (i + 1)) {
                 docs = arguments.at(i+1);
 
-                QDir docDir(QDir::current());
+                QDir docDir(docs);
 
-                if (docDir.exists() || docDir.mkdir(docs)) //Markdown directory is sane
+                if (docDir.exists() || QDir::current().mkdir(docs)) //Markdown directory is sane
                 {
+                    docs = docDir.absolutePath();
                     //Skip the next argument;
                     i++;
                 } else {
