@@ -730,7 +730,6 @@ QString ProtocolPacket::getDataDecodeBriefComment(void) const
     return QString("Decode the data from the " + protoName + " " + name + " structure");
 }
 
-
 QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 {
     QString output;
@@ -776,7 +775,6 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
             output += " : " + minLengthValue.replace("*", "&times;");
 
         output += "\n";
-
     }
     else
     {

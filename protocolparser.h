@@ -72,6 +72,9 @@ public:
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 
+    //! Return true if the element has a particular attribute set to {'true','yes','1'}
+    static bool isFieldSet(const QDomElement &e, QString label);
+
 protected:
 
     //! Wipe any data, including static data

@@ -70,6 +70,8 @@ public:
     //! Get details needed to produce documentation for this encodables sub-encodables.
     void getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
+    bool isHidden() {return hidden;}
+
 protected:
 
     //! Make a structure output be prettily aligned
@@ -89,6 +91,7 @@ protected:
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
 
+    bool hidden;                //!< True if this structure is to be hidden from the documentation
 };
 
 #endif // PROTOCOLSTRUCTURE_H

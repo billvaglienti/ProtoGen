@@ -34,6 +34,10 @@ QString EnumCreator::parse(const QDomElement& e)
 
     name = e.attribute("name");
     comment = e.attribute("comment");
+    description = e.attribute("description");
+
+    //If the enum struct has the attribute 'hidden="true"', it won't be displayed in the documentation
+    hidden = ProtocolParser::isFieldSet(e,"hidden");
 
     QDomNodeList list = e.elementsByTagName("Value");
 
@@ -262,6 +266,13 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         if(!outline.isEmpty())
             output += "## " + outline + ") " + name + "\n\n";
 
+        //If a longer description exists for this enum, display it in the documentation
+        if (!description.isEmpty()) {
+            output += "**Description:**\n";
+            output += description;
+            output += "\n\n";
+        }
+
         // Table caption, with an anchor for the enumeration name
         if(comment.isEmpty())
             output += "[<a name=\""+name+"\"></a>" + name + "]\n";
@@ -310,7 +321,6 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
 }// EnumCreator::getMarkdown
 
-
 /*!
  * Replace any text that matches an enumeration name with the value of that enumeration
  * \param text is modified to replace names with numbers
@@ -328,7 +338,7 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
         if(valueList.at(i) == numberList.at(i))
             continue;
 
-        if(text.contains(nameList.at(i)))
+        if(text.compare(nameList.at(i)) == 0)
         {
             text.replace(nameList.at(i), numberList.at(i));
         }
