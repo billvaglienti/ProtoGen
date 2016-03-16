@@ -91,11 +91,6 @@ void ProtocolStructure::parse(const QDomElement& field)
 
     //set attribute 'hidden="true"' to hide the packet from the docs
     hidden = ProtocolParser::isFieldSet(field, "hidden");
-    polled = ProtocolParser::isFieldSet(field, "polled");
-    telemetry = ProtocolParser::isFieldSet(field, "telemetry");
-    broadcast = ProtocolParser::isFieldSet(field, "broadcast");
-
-    direction = field.attribute("direction").toLower();
 
     // for now the typename is derived from the name
     typeName = prefix + name + "_t";

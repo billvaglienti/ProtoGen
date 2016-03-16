@@ -153,6 +153,10 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
 
+- `description` : If provided, a long-form description can be prepended to the given enumeration (in the documentation markdown). This allows for a more verbose description of the particular enumeration to be added to the docs. NOTE: This description will NOT appear in the generated code
+
+- `hidden` : is used to specify that this particular enumeration will NOT appear in the generated documentation markdown. NOTE: This enumeartion will still appear in the generated code.
+
 In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice). Enumerations are also a good choice when creating arrays. If an array length is given by an enumeration that is defined in the protocol xml then ProtoGen will attempt to compute the enumeration value, and use that to compute the length of the array in bytes. This substantially improves the protocol documentation that ProtoGen will output.
 
 Structure tag
@@ -224,6 +228,8 @@ Packet tag attributes:
 - `parameterInterface` : If this attribute is set to `true` then a parameter based interface to the packet functions will be created. This is useful for simpler packets that do not have too many parameters and using a structure as the interface method is unwieldy. If neither `structureInterface` or `parameterInterface` are specified as `true` ProtoGen will output parameter based interfaces if the number of fields in the packet is 1 or less, otherwise it will output structure based interfaces.
 
 - `comment` : The comment for the Packet tag will be placed at the top of the packets header file (or the top of the appended text if the file is used more than once) as a multi-line doxygen comment. The comment will be wrapped at 80 characters using spaces as the separator.
+
+- `hidden` : is used to specify that this particular packet will NOT appear in the documentation markdown. Useful if a particular packet is not to be revealed to others reading the documentation. NOTE: The packet will still be present in the generated code.
 
 ###Packet : Data subtags
 
@@ -320,6 +326,8 @@ Data subtag attributes:
 - `encodeconstant` : similar to the `constant` attribute; however `encodeconstant` is only applied in the encode function. The decode function simply decodes the value from the byte stream, as with a normal non-constant field.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
+
+- `range | units | notes` : If specified, each of these attributes will be added (as single-line comments) to the packet description table in the documentation markdown. These comments will appear next to this <Data> tag, and can be used if extra specificity is required. Note that these fields apply ONLY to the documentation, and will NOT appear anywhere in the generated code.
 
 ---
 
