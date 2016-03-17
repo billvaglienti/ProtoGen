@@ -134,10 +134,16 @@
     </Enum>
 
     <Structure name="Header" file="NovatelStructures" comment="Information common to the header of all Novatel binary logs">
-        <Data name="sync0" inMemoryType="null" encodedType="unsigned8" constant="0xAA" comment="First synchronization byte."/>
-        <Data name="sync1" inMemoryType="null" encodedType="unsigned8" constant="0x44" comment="Second synchronization byte."/>
-        <Data name="sync2" inMemoryType="null" encodedType="unsigned8" constant="0x12" comment="Third synchronization byte."/>
-        <Data name="headerLength" inMemoryType="unsigned8" encodeconstant="28" comment="Number of bytes in the header."/>
+        <Enum name="HeaderConstants_t" comment="Constants used in Novatel headers">
+            <Value name="Sync0" value="0xAA" comment="First synchronization byte."/>
+            <Value name="Sync1" value="0x44" comment="Second synchronization byte."/>
+            <Value name="Sync2" value="0x12" comment="Third synchronization byte."/>
+            <Value name="MinHeaderLength" value="28" comment="Minimum header length in bytes."/>
+        </Enum>
+        <Data name="sync0" inMemoryType="null" encodedType="unsigned8" constant="Sync0" comment="First synchronization byte."/>
+        <Data name="sync1" inMemoryType="null" encodedType="unsigned8" constant="Sync1" comment="Second synchronization byte."/>
+        <Data name="sync2" inMemoryType="null" encodedType="unsigned8" constant="Sync2" comment="Third synchronization byte."/>
+        <Data name="headerLength" inMemoryType="unsigned8" encodeconstant="MinHeaderLength" comment="Number of bytes in the header."/>
         <Data name="messageID" inMemoryType="unsigned16" comment="This is the Message ID number of the log."/>
         <Data name="responseBit" inMemoryType="bitfield1" comment="Set if this message is a binary response, else it is an original message."/>
         <Data name="format" enum="Formats_t" encodedType="bitfield2" comment="Format of this message."/>
@@ -281,14 +287,14 @@
 
     <Packet name="BinaryResponse" file="NovatelPackets" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="responseID" inMemoryType="unsigned32" comment="ID of the message that triggered this number"/>
         <Data name="response" inMemoryType="string" array="32" comment="String containing the ASCII response"/>
     </Packet>
 
     <Packet name="Log" file="NovatelPackets" ID="LOG" comment="Request a specific message log">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
 
         <Enum name="Trigger_t" comment="Log trigger">
             <Value name="ONNEW" comment="Does not output current message but outputs when the message is updated (not necessarily changed)"/>
@@ -311,7 +317,7 @@
 
     <Packet name="InterfaceMode" file="NovatelPackets" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receve on a port">
             <Value name="NOINTERFACE" value="0" comment="The port accepts/generates nothing. The port is disabled"/>
             <Value name="NOVATEL" value="1" comment="The port accepts/generates NovAtel commands and logs"/>
@@ -339,13 +345,13 @@
 
     <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="pos" struct="Pos" comment="Latitude, Longitude, Altitude position information."/>
     </Packet>
 
     <Packet name="Undulation" file="NovatelPackets" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value.">
-        <Data name="skipped0" inMemoryType="null" array="28" encodedType="unsigned8" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (data[3] - 28);" comment="Account for extended Novatel headers"/>
+        <Data name="skipped0" inMemoryType="null" array="MinHeaderLength" encodedType="unsigned8" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (data[3] - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="skipped1" inMemoryType="null" array="32" encodedType="unsigned8" comment="Data before the undulation that we ignore."/>
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
         <Data name="skipped2" inMemoryType="null" array="36" encodedType="unsigned8" comment="Data after the undulation that we ignore."/>
@@ -353,13 +359,13 @@
 
     <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
     </Packet>
 
     <Packet name="SerialConfig" file="NovatelPackets" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - 28);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Enum name="Parity_t" comment="Parity options for a serial port">
             <Value name="NOPARITY" comment="No parity"/>
             <Value name="EVENPARITY" comment="Even parity"/>

@@ -1,12 +1,104 @@
+#include "NovatelPacket.h"
 #include "NovatelProtocol.h"
+#include "NovatelStructures.h"
 #include "fielddecode.h"
 #include "fieldencode.h"
 
 //! Generate CRC from a single word of data
 static unsigned long CRC32Value(int i);
 
-//! Generate CRC from a block of bytes
+//! Generate CRC from a block of data
 static unsigned long CalculateBlockCRC32(unsigned long ulCount, unsigned char *ucBuffer );
+
+/*!
+ * Look for a Novatel packet in a series of bytes provided one at a time.
+ * \param byte is the next byte in the series to evaluate
+ * \param pkt receives the Novatel packet. pkt *must* persist between calls
+ *        to this function
+ * \return 1 if a packet with a valid CRC is found, else 0.
+ */
+int lookForNovatelPacketInByte(uint8_t byte, NovatelPkt_t* pkt)
+{
+    // Protect against array bounds
+    if(pkt->rxstate >= MAX_NOV_PKT_SIZE)
+        pkt->rxstate = 0;
+
+    // record byte in packet
+    pkt->data[pkt->rxstate] = byte;
+
+    // Look for packet synchronization bytes
+    switch(pkt->rxstate)
+    {
+    case 0:
+        if(byte == Sync0)
+            pkt->rxstate++;
+        break;
+
+    case 1:
+        if(byte == Sync1)
+            pkt->rxstate++;
+        else if(byte == Sync0)
+            pkt->rxstate = 1;
+        else
+            pkt->rxstate = 0;
+        break;
+
+    case 2:
+        if(byte == Sync2)
+            pkt->rxstate++;
+        else if(byte == Sync0)
+            pkt->rxstate = 1;
+        else
+            pkt->rxstate = 0;
+        break;
+
+    // If we get past the synchronization bytes,
+    // then simply count the number of bytes
+    default:
+        pkt->rxstate++;
+        break;
+
+    }// switch on receive state
+
+    if(pkt->rxstate >= MinHeaderLength+4)
+    {
+        // Size of the CRC
+        pkt->totalSize = 4;
+
+        // Size of the message body, 16 bits little endian
+        pkt->totalSize += 256*pkt->data[9];
+        pkt->totalSize += pkt->data[8];
+
+        // Size of the header
+        pkt->totalSize += pkt->data[3];
+
+        // Check to make sure the size is OK
+        if(pkt->totalSize > MAX_NOV_PKT_SIZE)
+            pkt->rxstate = 0;
+
+        // If we have the bytes, check the crc
+        if(pkt->rxstate >= pkt->totalSize)
+        {
+            // The byte index where the crc starts
+            int byteindex = pkt->totalSize - 4;
+
+            // The crc that was transmitted in the data stream
+            uint32_t crc = uint32FromLeBytes(pkt->data, &byteindex);
+
+            // Win or lose, we are starting over with this packet
+            pkt->rxstate = 0;
+
+            // Compare the crc against the computed value
+            if(crc == CalculateBlockCRC32(pkt->totalSize - 4, pkt->data))
+                return 1;
+
+        }// if we have all the bytes we expect
+
+    }// if we have the minimum bytes for a packet
+
+    return 0;
+
+}// lookForNovatelPacketInByte
 
 
 /*!
@@ -99,6 +191,9 @@ uint32_t getNovatelPacketID(const void* pkt)
     return uint16FromLeBytes(data, &byteindex);
 }
 
+/*
+ * Code below here was taken directly from the Novatle manual.
+ */
 
 #define CRC32_POLYNOMIAL 0xEDB88320L
 /* --------------------------------------------------------------------------

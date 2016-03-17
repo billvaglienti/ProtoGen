@@ -12,7 +12,7 @@ SOURCES += main.cpp \
     scaledencode.c \
     NovatelPackets.c \
     NovatelStructures.c \
-    NovatelProtocol.c
+    NovatelPacket.c
 
 HEADERS += \
     bitfieldspecial.h \
@@ -23,4 +23,5 @@ HEADERS += \
     scaledencode.h \
     NovatelPackets.h \
     NovatelProtocol.h \
-    NovatelStructures.h
+    NovatelStructures.h \
+    NovatelPacket.h
