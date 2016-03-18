@@ -15,6 +15,7 @@
         <Value name="LOG" value="1" comment="Used to configure log outputs."/>
         <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
+        <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
         <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
         <Value name="SERIALCONFIG" value="1246" comment="Used to configure serial port settings on the receiver."/>
     </Enum>
@@ -285,6 +286,17 @@
         <Data name="undulation" inMemoryType="float32" encodedType="null" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation. This is not part of the XYZ log, but must be set from a POS log."/>
     </Structure>
 
+    <Structure name="DOP" file="NovatelStructures" comment="Dilution of precision information">
+        <Data name="gdop" inMemoryType="float32" comment="Geometric dilution of precision - assumes 3D position and receiver clock offset (all 4 parameters) are unknown."/>
+        <Data name="pdop" inMemoryType="float32" comment="Position dilution of precision - assumes 3D position is unknown and receiver clock offset is known."/>
+        <Data name="hdop" inMemoryType="float32" comment="Horizontal dilution of precision."/>
+        <Data name="htdop" inMemoryType="float32" comment="Horizontal position and time dilution of precision."/>
+        <Data name="tdop" inMemoryType="float32" comment="Time dilution of precision - assumes 3D position is known and only the receiver clock offset is unknown."/>
+        <Data name="cutoff" inMemoryType="float32" scaler="180/pi" comment="GPS elevation cut-off angle in radians."/>
+        <Data name="numPRN" inMemoryType="float32" comment="Number of satellites PRNs to follow."/>
+        <Data name="prn" inMemoryType="uint8_t" encodedType="unsigned32" array="32" variableArray="numPRN" comment="Satellite PRNs that are in the position and DOP calculation."/>
+    </Structure>
+
     <Packet name="BinaryResponse" file="NovatelPackets" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
@@ -349,12 +361,17 @@
         <Data name="pos" struct="Pos" comment="Latitude, Longitude, Altitude position information."/>
     </Packet>
 
-    <Packet name="Undulation" file="NovatelPackets" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value.">
+    <Packet name="UndulationFromBestPos" file="NovatelPackets" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value. This packet can only be used for decode, not encode.">
         <Data name="skipped0" inMemoryType="null" array="MinHeaderLength" encodedType="unsigned8" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (data[3] - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="skipped1" inMemoryType="null" array="32" encodedType="unsigned8" comment="Data before the undulation that we ignore."/>
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
-        <Data name="skipped2" inMemoryType="null" array="36" encodedType="unsigned8" comment="Data after the undulation that we ignore."/>
+    </Packet>
+
+    <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" comment="Pseudo range dilution of precision">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="dop" struct="DOP" comment="Dilution of precision data."/>
     </Packet>
 
     <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" comment="Best available cartesian position and velocity">

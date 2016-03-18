@@ -572,15 +572,6 @@ void ProtocolField::parse(const QDomElement& field)
         }
     }
 
-    // In most cases the encoded bits should not be more than the in memory
-    // bits, but enumerations are special, since we don't always know the size
-    // of the enumeration in memory
-    if((encodedType.bits > inMemoryType.bits) && !inMemoryType.isEnum)
-    {
-        std::cout << name.toStdString() << ": " << "Encoded type cannot use more bits than in-memory" << std::endl;
-        encodedType.bits = inMemoryType.bits;
-    }
-
     if(inMemoryType.isBitfield)
     {
         if(!encodedTypeString.isEmpty() && !encodedType.isBitfield)
