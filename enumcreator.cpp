@@ -268,7 +268,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
         // The outline paragraph
         if(!outline.isEmpty())
-            output += "## " + outline + ") " + name + "\n\n";
+            output += "## " + name + "\n\n";
 
         // If a longer description exists for this enum, display it in the documentation
         if (!description.isEmpty()) {

@@ -816,7 +816,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     file.write("Title: " + name + " Protocol  \n");
 
     //Adding this metadata improves LaTeX support
-    file.write("Base Header Level: 2 \n");
+    file.write("Base Header Level: 1 \n");
     file.write("latex input: mmd-article-begin-doc\n");
 
     file.write("\n");
@@ -833,7 +833,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     file.write("</style>\n");
 
     file.write("\n");
-    file.write("# " + QString().setNum(paragraph1) + ") " + name + " Protocol\n");
+    file.write("# " + name + " Protocol\n");
     file.write("\n");
 
     if(!comment.isEmpty())
@@ -864,7 +864,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     paragraph2 = 1;
     file.write("----------------------------\n\n");
 
-    file.write("# " + QString().setNum(paragraph1) + ") About this ICD\n");
+    file.write("# About this ICD\n");
     file.write("\n");
 
     file.write("This is the interface control document for data *on the wire*, \
@@ -875,7 +875,7 @@ Documentation for software developers (i.e. data *in memory*) is separately prod
 doxygen product, parsing comments embedded in the automatically generated code.\n");
     file.write("\n");
 
-    file.write("# " + QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++) + ") Encodings\n");
+    file.write("# Encodings\n");
     file.write("\n");
 
     file.write("Data can be encoded as unsigned integers, signed integers (two's complement), bitfields, and floating point.\n");
@@ -893,7 +893,7 @@ doxygen product, parsing comments embedded in the automatically generated code.\
 | F64                          | 64 bit floating point (IEEE-754)      | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n");
     file.write("\n");
 
-    file.write("# " + QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++) + ") Size of fields");
+    file.write("# Size of fields");
     file.write("\n");
 
     file.write("The encoding tables give the bytes for each field as X...Y; \
@@ -930,7 +930,7 @@ description column of the table.\n");
             packetids.append(packets.at(i)->getId());
         }
 
-        file.write("# " + QString().setNum(paragraph1) + ") Enumerations\n");
+        file.write("# Enumerations\n");
         file.write("\n");
         file.write(name + " protocol defines these global enumerations.\n");
         file.write("\n");
@@ -953,7 +953,7 @@ description column of the table.\n");
     file.write("----------------------------\n\n");
     if(packets.size() > 0)
     {
-        file.write("# " + QString().setNum(paragraph1) + ") Packets\n");
+        file.write("# Packets\n");
         file.write("\n");
         file.write("This section describes the data payloads of the packets; and how those data are represented in the bytes of the packets.\n");
         file.write("\n");
@@ -982,7 +982,7 @@ description column of the table.\n");
     if(structures.size() > 0)
     {
         paragraph2 = 1;
-        file.write("# " + QString().setNum(paragraph1) + ") Structures");
+        file.write("# Structures");
         file.write("\n");
         file.write(name + " Protocol defines global structures. \
 Structures are similar to packets but are intended to be reusable encodings \
@@ -1088,6 +1088,7 @@ QString ProtocolParser::getDefaultInlinCSS(void)
         margin-left: auto;\n\
         margin-right: auto;\n\
         font-family:Verdana;\n\
+        counter-reset: h1counter;\
     }\n\
 \n\
     table {\n\
@@ -1113,7 +1114,24 @@ QString ProtocolParser::getDefaultInlinCSS(void)
         font-family: Courier New, monospace;\n\
         font-size: 100%;\n\
         color: darkblue;\n\
-    }\n");
+    }\n\
+    h1:before {\n\
+      content: counter(h1counter) \"\\00a0 \";\n\
+      counter-increment: h1counter;\n\
+      counter-reset: h2counter;\n\
+    }\n\
+    h1 {\n\
+      counter-reset: h2counter;\n\
+    }\n\
+    h2:before {\n\
+      content: counter(h1counter) \".\" counter(h2counter) \"\\00a0 \";\n\
+      counter-increment: h2counter;\n\
+      counter-reset: h3counter;\n\
+    }\n\
+    h3:before {\n\
+      content: counter(h1counter) \".\" counter(h2counter) \".\" counter(h3counter) \"\\00a0 \";\n\
+      counter-increment: h3counter;\n\
+    }");
 
     return inlinecss;
 }

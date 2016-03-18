@@ -737,7 +737,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     QString idvalue = id;
 
     // Put an anchor in the identifier line which is the same as the ID. We'll link to it if we can
-    output += "## " + outline + ") <a name=\"" + id + "\"></a>" + name + "\n";
+    output += "## <a name=\"" + id + "\"></a>" + name + "\n";
     output += "\n";
 
     if(!comment.isEmpty())
@@ -815,7 +815,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     if(enumList.size() > 0)
     {
         output += "\n";
-        output += "### " + outline + "." + QString().setNum(paragraph++) + ") " + name + " enumerations\n";
+        output += "### " + name + " enumerations\n";
         output += "\n";
 
         for(int i = 0; i < enumList.length(); i++)
@@ -834,7 +834,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     if(encodables.size() > 0)
     {
         output += "\n";
-        output += "### " + outline + "." + QString().setNum(paragraph++) + ") " + name + " encoding\n";
+        output += "### " + name + " encoding\n";
         output += "\n";
 
         QStringList bytes, names, encodings, repeats, comments;
