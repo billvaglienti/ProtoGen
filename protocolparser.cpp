@@ -1088,6 +1088,7 @@ QString ProtocolParser::getDefaultInlinCSS(void)
         margin-left: auto;\n\
         margin-right: auto;\n\
         font-family:Verdana;\n\
+        counter-reset: h1counter;\
     }\n\
 \n\
     table {\n\
@@ -1113,7 +1114,24 @@ QString ProtocolParser::getDefaultInlinCSS(void)
         font-family: Courier New, monospace;\n\
         font-size: 100%;\n\
         color: darkblue;\n\
-    }\n");
+    }\n\
+    h1:before {\n\
+      content: counter(h1counter) \"\\00a0 \";\n\
+      counter-increment: h1counter;\n\
+      counter-reset: h2counter;\n\
+    }\n\
+    h1 {\n\
+      counter-reset: h2counter;\n\
+    }\n\
+    h2:before {\n\
+      content: counter(h1counter) \".\" counter(h2counter) \"\\00a0 \";\n\
+      counter-increment: h2counter;\n\
+      counter-reset: h3counter;\n\
+    }\n\
+    h3:before {\n\
+      content: counter(h1counter) \".\" counter(h2counter) \".\" counter(h3counter) \"\\00a0 \";\n\
+      counter-increment: h3counter;\n\
+    }");
 
     return inlinecss;
 }
