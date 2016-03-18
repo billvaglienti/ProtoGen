@@ -816,7 +816,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     file.write("Title: " + name + " Protocol  \n");
 
     //Adding this metadata improves LaTeX support
-    file.write("Base Header Level: 2 \n");
+    file.write("Base Header Level: 1 \n");
     file.write("latex input: mmd-article-begin-doc\n");
 
     file.write("\n");
