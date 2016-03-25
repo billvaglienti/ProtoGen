@@ -67,6 +67,12 @@ public:
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
     virtual QString getPrototypeDecodeString(bool isBigEndian) const;
 
+    //! Return the string that gives the function used to encode this encodable, may be empty
+    virtual QString getFunctionEncodeString(bool isBigEndian) const;
+
+    //! Return the string that gives the function used to decode this encodable, may be empty
+    virtual QString getFunctionDecodeString(bool isBigEndian) const;
+
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
 

@@ -41,9 +41,6 @@ protected:
     //! Create the function that encodes the structure
     void createStructureEncodeFunction(const QDomElement& e);
 
-    //! Create the functions that encode/decode sub stuctures.
-    void createSubStructureFunctions(void);
-
     //! Create the functions that encode and decode the structure
     void createUtilityFunctions(const QDomElement& e);
 

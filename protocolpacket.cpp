@@ -70,7 +70,7 @@ void ProtocolPacket::parse(const QDomElement& e)
     }
 
     // The file directive allows us to override the file name
-    QString moduleName = e.attribute("file");
+    QString moduleName = e.attribute("file").trimmed();
 
     if(moduleName.isEmpty())
     {
@@ -135,8 +135,8 @@ void ProtocolPacket::parse(const QDomElement& e)
     // White space is good
     header.makeLineSeparator();
 
-    bool structureFunctions = e.attribute("structureInterface").contains("true", Qt::CaseInsensitive);
-    bool parameterFunctions = e.attribute("parameterInterface").contains("true", Qt::CaseInsensitive);
+    bool structureFunctions = ProtocolParser::isFieldSet(e, "structureInterface");
+    bool parameterFunctions = ProtocolParser::isFieldSet(e, "parameterInterface");
 
     if((structureFunctions == false) && (parameterFunctions == false))
     {
@@ -202,28 +202,6 @@ void ProtocolPacket::parse(const QDomElement& e)
     source.clear();
 
 }// ProtocolPacket::parse
-
-
-/*!
- * Create the functions that encode/decode sub stuctures.
- * These functions are local to the source module
- */
-void ProtocolPacket::createSubStructureFunctions(void)
-{
-    // The embedded structures functions
-    for(int i = 0; i < encodables.size(); i++)
-    {
-        if(encodables[i]->isPrimitive())
-            continue;
-
-        source.makeLineSeparator();
-        source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
-
-        source.makeLineSeparator();
-        source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
-    }
-
-}// ProtocolPacket::createSubStructureFunctions
 
 
 /*!

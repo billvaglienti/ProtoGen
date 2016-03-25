@@ -1464,6 +1464,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
 
     QString constantstring = getConstantString();
 
+    // The actual decode code is the same no matter the trimmings around it
     QString decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
 
     if(inMemoryType.isNull)
@@ -1680,7 +1681,7 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
         else
             access = "&" + name + "[i]";
 
-        output += spacing + "    byteindex = encode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
     else
     {
@@ -1689,7 +1690,7 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "byteindex = encode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
 
     if(!dependsOn.isEmpty())
@@ -1741,12 +1742,17 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
                 output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
         }
 
+        output += spacing + "{\n";
+
         if(isStructureMember)
             access = "&user->" + name + "[i]";
         else
             access = "&" + name + "[i]";
 
-        output += spacing + "    byteindex = decode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+        output += spacing + "        return 0;\n";
+        output += spacing + "}\n";
+
     }
     else
     {
@@ -1755,7 +1761,8 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "byteindex = decode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+        output += spacing + "    return 0;\n";
     }
 
     if(!dependsOn.isEmpty())
@@ -2126,7 +2133,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 output += "uint";
 
             output += QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex)" + " != (" + encodedType.toTypeString() + ") " + constantstring + ")\n";
-            output += spacing + spacing + "return 0;\n";
+            output += spacing + "    return 0;\n";
         }
         else
         {

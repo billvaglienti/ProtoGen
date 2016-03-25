@@ -33,6 +33,9 @@ protected:
     //! Write data to the source and header files to encode and decode this structure and all its children
     void createStructureFunctions(void);
 
+    //! Create the functions that encode/decode sub stuctures.
+    void createSubStructureFunctions(void);
+
     //! Write data to the source and header files to encode and decode this structure but not its children
     void createTopLevelStructureFunctions(void);
 

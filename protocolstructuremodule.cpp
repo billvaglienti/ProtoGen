@@ -199,21 +199,9 @@ void ProtocolStructureModule::parse(const QDomElement& e)
  */
 void ProtocolStructureModule::createStructureFunctions(void)
 {
-    // The encoding and decoding prototypes of my children, if any. I want these to appear before me, because I'm going to call them
-    for(int i = 0; i < encodables.length(); i++)
-    {
-        if(!encodables[i]->isPrimitive())
-        {
-            source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
-            source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
-        }
-
-    }
-
-    // Write these to the source file
-    source.makeLineSeparator();
+    // The encoding and decoding prototypes of my children, if any.
+    // I want these to appear before me, because I'm going to call them
+    createSubStructureFunctions();
 
     // Now build the top level function
     createTopLevelStructureFunctions();
@@ -222,104 +210,52 @@ void ProtocolStructureModule::createStructureFunctions(void)
 
 
 /*!
+ * Create the functions that encode/decode sub stuctures.
+ * These functions are local to the source module
+ */
+void ProtocolStructureModule::createSubStructureFunctions(void)
+{
+    // The embedded structures functions
+    for(int i = 0; i < encodables.size(); i++)
+    {
+        if(encodables[i]->isPrimitive())
+            continue;
+
+        source.makeLineSeparator();
+        source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
+        source.makeLineSeparator();
+        source.write(encodables[i]->getFunctionEncodeString(isBigEndian));
+
+        source.makeLineSeparator();
+        source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
+        source.makeLineSeparator();
+        source.write(encodables[i]->getFunctionDecodeString(isBigEndian));
+    }
+
+    source.makeLineSeparator();
+
+}// ProtocolStructureModule::createSubStructureFunctions
+
+
+/*!
  * Write data to the source and header files to encode and decode this structure
  * but not its children. This will add to the length strings, but not reset them
  */
 void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 {
-    QString output;
-
-    int numEncodes = getNumberOfEncodeParameters();
-    int numDecodes = getNumberOfDecodeParameters();
-
+    // My encoding and decoding prototypes in the header file
+    header.makeLineSeparator();
+    header.write(getPrototypeEncodeString(isBigEndian));
+    header.makeLineSeparator();
+    header.write(getPrototypeDecodeString(isBigEndian));
     header.makeLineSeparator();
 
-    // My encoding and decoding prototypes in the header file
-    output += "//! Encode a " + typeName + " structure into a byte array\n";
-    if(numEncodes > 0)
-        output += "int encode" + typeName + "(uint8_t* data, int byteCount, const " + typeName + "* user);\n";
-    else
-        output += "int encode" + typeName + "(uint8_t* data, int byteCount);\n";
-    output += "\n";
-    output += "//! Decode a " + typeName + " structure from a byte array\n";
-
-    if(numDecodes > 0)
-        output += "int decode" + typeName + "(const uint8_t* data, int byteindex, " + typeName + "* user);\n";
-    else
-        output += "int decode" + typeName + "(const uint8_t* data, int byteindex);\n";
-
-    header.write(output);
-    output.clear();
-
+    // My encoding and decoding functions in the source file
     source.makeLineSeparator();
-
-    // My encoding function
-    output += "/*!\n";
-    output += " * \\brief Encode a " + typeName + " structure into a byte array\n";
-    output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-    output += " * \\param data points to the byte array to add encoded data to\n";
-    output += " * \\param byteindex is the starting location in the byte array\n";
-    if(numEncodes > 0)
-        output += " * \\param user is the data to encode in the byte array\n";
-    output += " * \\return the location for the next data to be encoded in the byte array\n";
-    output += " */\n";
-    if(numEncodes > 0)
-        output += "int encode" + typeName + "(uint8_t* data, int byteindex, const " + typeName + "* user)\n";
-    else
-        output += "int encode" + typeName + "(uint8_t* data, int byteindex)\n";
-    output += "{\n";
-
-    if(bitfields)
-        output += "    int bitcount = 0;\n";
-
-    if(needsEncodeIterator)
-        output += "    int i = 0;\n";
-
-    int bitcount = 0;
-    for(int i = 0; i < encodables.length(); i++)
-    {
-        ProtocolFile::makeLineSeparator(output);
-        output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
-    }
-
-    ProtocolFile::makeLineSeparator(output);
-    output += "    return byteindex;\n";
-    output += "}\n";
-
-    // My decoding function
-    output += "\n";
-    output += "/*!\n";
-    output += " * \\brief Decode a " + typeName + " structure from a byte array\n";
-    output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-    output += " * \\param data points to the byte array to decoded data from\n";
-    output += " * \\param byteindex is the starting location in the byte array\n";
-    output += " * \\param user is the data to decode from the byte array\n";
-    output += " * \\return the location for the next data to be decoded in the byte array\n";
-    output += " */\n";
-    output += "int decode" + typeName + "(const uint8_t* data, int byteindex, " + typeName + "* user)\n";
-    output += "{\n";
-
-    if(bitfields)
-        output += "    int bitcount = 0;\n";
-
-    if(needsDecodeIterator)
-        output += "    int i = 0;\n";
-
-    bitcount = 0;
-    for(int i = 0; i < encodables.length(); i++)
-    {
-        ProtocolFile::makeLineSeparator(output);
-        output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
-    }
-
-    ProtocolFile::makeLineSeparator(output);
-    output += "    return byteindex;\n";
-    output += "}\n";
-
-    // Write to the source file
-    source.write(output);
+    source.write(getFunctionEncodeString(isBigEndian));
+    source.makeLineSeparator();
+    source.write(getFunctionDecodeString(isBigEndian));
+    source.makeLineSeparator();
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
 

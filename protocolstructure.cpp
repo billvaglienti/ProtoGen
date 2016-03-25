@@ -448,22 +448,22 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
     QString structure;
 
     if(getNumberInMemory() > 0)
-    {
-        // Declare our childrens structures first
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            if(!encodables[i]->isPrimitive())
-            {
-                output += encodables[i]->getStructureDeclaration(true);
-                output += "\n";
-            }
-
-        }// for all children
-
+    {        
         // We don't generate the structure if there is only one element, whats
         // the point? Unless the the caller tells us to always create it
         if((getNumberInMemory() > 1) || alwaysCreate)
         {
+            // Declare our childrens structures first
+            for(int i = 0; i < encodables.length(); i++)
+            {
+                if(!encodables[i]->isPrimitive())
+                {
+                    output += encodables[i]->getStructureDeclaration(true);
+                    ProtocolFile::makeLineSeparator(output);
+                }
+
+            }// for all children
+
             // The top level comment for the structure definition
             if(!comment.isEmpty())
             {
@@ -560,58 +560,68 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian) const
 {
     QString output;
 
-    if(encodables.length() > 0)
-    {
-        // The encoding prototypes of my children, if any. I want these to appear before me, because I'm going to call them
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            if(!encodables[i]->isPrimitive())
-            {
-                output += encodables[i]->getPrototypeEncodeString(isBigEndian);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-
-        // My encoding prototype and function
-        output += "/*!\n";
-        output += " * \\brief Encode a " + typeName + " structure into a byte array\n";
-        output += " *\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-        output += " * \\param data points to the byte array to add encoded data to\n";
-        output += " * \\param byteindex is the starting location in the byte array\n";
-        output += " * \\param user is the data to encode in the byte array\n";
-        output += " * \\return the location for the next data to be encoded in the byte array\n";
-        output += " */\n";
-        output += "static int encode" + typeName + "(uint8_t* data, int byteCount, const " + typeName + "* user);\n";
-        output += "\n";
-        output += "int encode" + typeName + "(uint8_t* data, int byteindex, const " + typeName + "* user)\n";
-        output += "{\n";
-
-        if(bitfields)
-            output += "    int bitcount = 0;\n";
-
-        if(needsEncodeIterator)
-            output += "    int i = 0;\n";
-
-        int bitcount = 0;
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-        output += "    return byteindex;\n";
-        output += "}\n";
-
-    }
+    // My encoding and decoding prototypes in the header file
+    output += "//! Encode a " + typeName + " structure into a byte array\n";
+    if(getNumberOfEncodeParameters() > 0)
+        output += "void encode" + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user);\n";
+    else
+        output += "void encode" + typeName + "(uint8_t* data, int* bytecount);\n";
 
     return output;
 
 }// ProtocolStructure::getPrototypeEncodeString
+
+
+/*!
+ * Return the string that gives the function used to encode this structure.
+ * The encoding is to a simple byte array.
+ * \param isBigEndian should be true for big endian encoding.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian) const
+{
+    QString output;
+
+    int numEncodes = getNumberOfEncodeParameters();
+
+    // My encoding function
+    output += "/*!\n";
+    output += " * \\brief Encode a " + typeName + " structure into a byte array\n";
+    output += " *\n";
+    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += " * \\param data points to the byte array to add encoded data to\n";
+    output += " * \\param bytecount points to the starting location in the byte array, and will be incremented by the number of encoded bytes.\n";
+    if(numEncodes > 0)
+        output += " * \\param user is the data to encode in the byte array\n";
+    output += " */\n";
+    if(numEncodes > 0)
+        output += "void encode" + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user)\n";
+    else
+        output += "void encode" + typeName + "(uint8_t* data, int* bytecount)\n";
+    output += "{\n";
+
+    output += "    int byteindex = *bytecount;";
+
+    if(bitfields)
+        output += "    int bitcount = 0;\n";
+
+    if(needsEncodeIterator)
+        output += "    int i = 0;\n";
+
+    int bitcount = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += "    *bytecount = byteindex;\n";
+    output += "}\n";
+
+    return output;
+
+}// ProtocolStructure::getFunctionEncodeString
 
 
 /*!
@@ -624,58 +634,70 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
 {
     QString output;
 
-    if(encodables.length() > 0)
-    {
-        // The decoding prototypes of my children, if any. I want these to appear before me, because I'm going to call them
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            if(!encodables[i]->isPrimitive())
-            {
-                output += encodables[i]->getPrototypeDecodeString(isBigEndian);
-                ProtocolFile::makeLineSeparator(output);
-            }
+    output += "//! Decode a " + typeName + " structure from a byte array\n";
 
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-
-        // My decoding prototype and function
-        output += "/*!\n";
-        output += " * \\brief Decode a " + typeName + " structure from a byte array\n";
-        output += " *\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-        output += " * \\param data points to the byte array to decoded data from\n";
-        output += " * \\param byteindex is the starting location in the byte array\n";
-        output += " * \\param user is the data to decode from the byte array\n";
-        output += " * \\return the location for the next data to be decoded in the byte array\n";
-        output += " */\n";
-        output += "static int decode" + typeName + "(const uint8_t* data, int byteCount, " + typeName + "* user);\n";
-        output += "\n";
-        output += "int decode" + typeName + "(const uint8_t* data, int byteindex, " + typeName + "* user)\n";
-        output += "{\n";
-
-        if(bitfields)
-            output += "    int bitcount = 0;\n";
-
-        if(needsDecodeIterator)
-            output += "    int i = 0;\n";
-
-        int bitcount = 0;
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-        output += "    return byteindex;\n";
-        output += "}\n";
-
-    }
+    if(getNumberOfDecodeParameters() > 0)
+        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user);\n";
+    else
+        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount);\n";
 
     return output;
 
 }// ProtocolStructure::getPrototypeDecodeString
+
+
+/*!
+ * Return the string that gives the function used to decode this structure.
+ * The decoding is from a simple byte array.
+ * \param isBigEndian should be true for big endian decoding.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian) const
+{
+    QString output;
+
+    int numDecodes = getNumberOfDecodeParameters();
+
+    output += "/*!\n";
+    output += " * \\brief Decode a " + typeName + " structure from a byte array\n";
+    output += " *\n";
+    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += " * \\param data points to the byte array to decoded data from\n";
+    output += " * \\param bytecount points to the starting location in the byte array, and will be incremented by the number of bytes decoded\n";
+    if(numDecodes > 0)
+        output += " * \\param user is the data to decode from the byte array\n";
+    output += " * \\return 1 if the data are decoded, else 0. If 0 is returned bytecount will not be updated.\n";
+    output += " */\n";
+    if(numDecodes > 0)
+        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user)\n";
+    else
+        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount)\n";
+
+    output += "{\n";
+
+    output += "    int byteindex = *bytecount;";
+
+    if(bitfields)
+        output += "    int bitcount = 0;\n";
+
+    if(needsDecodeIterator)
+        output += "    int i = 0;\n";
+
+    int bitcount = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += "    *bytecount = byteindex;\n\n";
+    output += "    return 1;\n";
+    output += "}\n";
+
+    return output;
+
+}// ProtocolStructure::getFunctionDecodeString
 
 
 /*!
@@ -691,9 +713,6 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     QString output;
     QString access;
     QString spacing = "    ";
-
-    // A line between fields
-    ProtocolFile::makeLineSeparator(output);
 
     if(!comment.isEmpty())
         output += spacing + "// " + comment + "\n";
@@ -733,7 +752,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
         else
             access = "&" + name + "[i]";
 
-        output += spacing + "    byteindex = encode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
     else
     {
@@ -742,7 +761,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "byteindex = encode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
 
     if(!dependsOn.isEmpty())
@@ -794,12 +813,16 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
                 output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
         }
 
+        output += spacing + "{\n";
+
         if(isStructureMember)
             access = "&user->" + name + "[i]";
         else
             access = "&" + name + "[i]";
 
-        output += spacing + "    byteindex = decode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+        output += spacing + "        return 0;\n";
+        output += spacing + "}\n";
     }
     else
     {
@@ -808,7 +831,8 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "byteindex = decode" + typeName + "(data, byteindex, " + access + ");\n";
+        output += spacing + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+        output += spacing + "    return 0;\n";
     }
 
     if(!dependsOn.isEmpty())

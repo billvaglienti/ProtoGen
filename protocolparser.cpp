@@ -14,7 +14,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.3.2.a";
+const QString ProtocolParser::genVersion = "1.4.0.b";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -33,7 +33,7 @@ QList<EnumCreator*> ProtocolParser::globalEnums;
  */
 ProtocolParser::ProtocolParser()
 {
-    // wipe any previously exisiting static data
+    // wipe any previously existing static data
     clear();
 }
 
@@ -61,7 +61,7 @@ void ProtocolParser::clear(void)
     version.clear();
     api.clear();
 
-    latexEnabled = false; //Needs the -latex switch to enable
+    latexEnabled = false; // Needs the -latex switch to enable
 
     // Empty the static list
     for(int i = 0; i < structures.size(); i++)
