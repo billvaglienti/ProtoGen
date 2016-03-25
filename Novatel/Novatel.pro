@@ -25,3 +25,6 @@ HEADERS += \
     NovatelProtocol.h \
     NovatelStructures.h \
     NovatelPacket.h
+
+DISTFILES += \
+    novatelprotocol.xml

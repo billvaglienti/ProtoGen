@@ -60,6 +60,9 @@ public:
     //! Return the string that sets this encodable to its default value in code
     virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
 
+    //! Return true if this encodable has documentation for markdown output
+    virtual bool hasDocumentation(void) {return true;}
+
     //! Get details needed to produce documentation for this encodable.
     virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
 
@@ -73,13 +76,13 @@ public:
     bool isArray(void) const {return !array.isEmpty();}
 
     //! True if this encodable is NOT encoded
-    bool isNotEncoded(void) const {return notEncoded;}
+    virtual bool isNotEncoded(void) const {return false;}
 
     //! True if this encodable is NOT in memory
-    bool isNotInMemory(void) const {return notInMemory;}
+    virtual bool isNotInMemory(void) const {return false;}
 
     //! True if this encodable is a constant
-    bool isConstant(void) const {return constant;}
+    virtual bool isConstant(void) const {return false;}
 
     //! True if this encodable is a primitive bitfield
     virtual bool isBitfield(void) const {return false;}
@@ -125,9 +128,6 @@ public:
     QString variableArray;  //!< variable that gives the length of the array in a packet
     QString dependsOn;      //!< variable that determines if this field is present
     EncodedLength encodedLength;    //!< The lengths of the encodables
-    bool notEncoded;        //!< True if this encodable is NOT encoded
-    bool notInMemory;       //!< True if this encodable is NOT in memory
-    bool constant;          //!< True if this encodable is a constant
 };
 
 #endif // ENCODABLE_H

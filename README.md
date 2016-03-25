@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.3.1. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.3.2. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -321,11 +321,9 @@ Data subtag attributes:
 
 - `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
 
-- `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it.
+- `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it. If the inMemoryType is null, the constant value will not be decoded, instead the bytes containing the constant value will simply be skipped over in the decode function.
 
-- `encodeconstant` : similar to the `constant` attribute; however `encodeconstant` is only applied in the encode function. The decode function simply decodes the value from the byte stream, as with a normal non-constant field.
-
-- `decodeconstant` : similar to the `constant` attribute; however `decodeconstant` is also applied to the decode function. The decode function evaluates the received data and returns a fail state if the value is not equal to the supplied constant.
+- `checkConstant` : If set to "true" this attribute affects the interpretation of `constant` in the decode function. When checkConstant is set the decode function evaluates the decoded data and returns a fail state if the value is not equal to the supplied constant.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 

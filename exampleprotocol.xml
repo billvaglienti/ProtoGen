@@ -39,8 +39,8 @@ interpretation
     </Enum>
 
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
-        <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" comment="the API of the sending side"/>
-        <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" encodedType="fixedstring" comment="the version of the sending side"/>
+        <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
+        <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" checkConstant="true" encodedType="fixedstring" comment="the version of the sending side"/>
     </Packet>
 
     <Structure name="GPS" comment="Information from a GPS including the position, velocity, and quality data.
@@ -146,7 +146,7 @@ interpretation
 
     <Packet name="Version"  parameterInterface="true" structureInterface="true"
             comment="Version information for the software and hardware. Send
-            this packet with zero lengtht to request the version information.">
+            this packet with zero length to request the version information.">
         
         <Data name="board" struct="Board" comment="details about this boards provenance"/>
         <Data name="major" inMemoryType="unsigned8" comment="major version of the software"/>
@@ -196,11 +196,13 @@ interpretation
     </Packet>
     
     <Packet name="Constant" file="TelemetryPacket" comment="This packet demonstrates all the different ways that a constant value can be used." structureInterface="true" parameterInterface="true">
-        <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t"/>
+        <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t" checkConstant="true"/>
         <Data name="constant2" inMemoryType="signed8" array="24" encodedType="string" constant="To be or not to be" comment="encoding a string constant"/>
         <Data name="cos45" inMemoryType="float32" constant="0.70710678118654752440084436210485" comment="directly encoding floating point constant"/>
         <Data name="sin45" inMemoryType="float32" array="3" constant="0.70710678118654752440084436210485" encodedType="signed8" max ="1" comment="scaling a floating point constant"/>
         <Data name="constant3" inMemoryType="unsigned32" constant="327612" comment="encoding an integer constant"/>
+        <Data name="constant4" inMemoryType="null" encodedType="bitfield4" constant="12" checkConstant="true" comment="encoding an integer constant"/>
+        <Data name="constant5" inMemoryType="bitfield4" constant="13" checkConstant="true" comment="encoding an integer constant"/>
         <Data name="token" inMemoryType="unsigned8" comment="A value that the user provides"/>
     </Packet>
 

@@ -9,10 +9,7 @@
 Encodable::Encodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
     support(supported),
     protoName(protocolName),
-    prefix(protocolPrefix),
-    notEncoded(false),
-    notInMemory(false),
-    constant(false)
+    prefix(protocolPrefix)
 {
 }
 
@@ -26,9 +23,6 @@ void Encodable::clear(void)
     comment.clear();
     array.clear();
     encodedLength.clear();
-    notEncoded = false;
-    notInMemory = false;
-    constant = false;
 }
 
 
@@ -40,7 +34,7 @@ void Encodable::clear(void)
  */
 QString Encodable::getEncodeSignature(void) const
 {
-    if(notEncoded || notInMemory || constant)
+    if(isNotEncoded() || isNotInMemory() || isConstant())
         return "";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
@@ -59,7 +53,7 @@ QString Encodable::getEncodeSignature(void) const
  */
 QString Encodable::getDecodeSignature(void) const
 {
-    if(notEncoded || notInMemory)
+    if(isNotEncoded() || isNotInMemory())
         return "";
     else if(isArray())
         return ", " + typeName + " " + name + "[" + array + "]";
@@ -75,7 +69,7 @@ QString Encodable::getDecodeSignature(void) const
  */
 QString Encodable::getEncodeParameterComment(void) const
 {
-    if(notEncoded || notInMemory || constant)
+    if(isNotEncoded() || isNotInMemory() || isConstant())
         return "";
     else
         return " * \\param " + name + " is " + comment + "\n";
@@ -89,7 +83,7 @@ QString Encodable::getEncodeParameterComment(void) const
  */
 QString Encodable::getDecodeParameterComment(void) const
 {
-    if(notEncoded || notInMemory)
+    if(isNotEncoded() || isNotInMemory())
         return "";
     else
         return " * \\param " + name + " receives " + comment + "\n";

@@ -229,22 +229,25 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 {
     QString output;
 
-    if(getNumberOfEncodes() <= 0)
-        return;
-
-    int numNonConstEncodes = getNumberOfNonConstEncodes();
+    int numEncodes = getNumberOfEncodeParameters();
+    int numDecodes = getNumberOfDecodeParameters();
 
     header.makeLineSeparator();
 
     // My encoding and decoding prototypes in the header file
     output += "//! Encode a " + typeName + " structure into a byte array\n";
-    if(numNonConstEncodes > 0)
+    if(numEncodes > 0)
         output += "int encode" + typeName + "(uint8_t* data, int byteCount, const " + typeName + "* user);\n";
     else
         output += "int encode" + typeName + "(uint8_t* data, int byteCount);\n";
     output += "\n";
     output += "//! Decode a " + typeName + " structure from a byte array\n";
-    output += "int decode" + typeName + "(const uint8_t* data, int byteCount, " + typeName + "* user);\n";
+
+    if(numDecodes > 0)
+        output += "int decode" + typeName + "(const uint8_t* data, int byteindex, " + typeName + "* user);\n";
+    else
+        output += "int decode" + typeName + "(const uint8_t* data, int byteindex);\n";
+
     header.write(output);
     output.clear();
 
@@ -257,11 +260,11 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     output += ProtocolParser::outputLongComment(" *", comment) + "\n";
     output += " * \\param data points to the byte array to add encoded data to\n";
     output += " * \\param byteindex is the starting location in the byte array\n";
-    if(numNonConstEncodes > 0)
+    if(numEncodes > 0)
         output += " * \\param user is the data to encode in the byte array\n";
     output += " * \\return the location for the next data to be encoded in the byte array\n";
     output += " */\n";
-    if(numNonConstEncodes > 0)
+    if(numEncodes > 0)
         output += "int encode" + typeName + "(uint8_t* data, int byteindex, const " + typeName + "* user)\n";
     else
         output += "int encode" + typeName + "(uint8_t* data, int byteindex)\n";
@@ -283,7 +286,6 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     ProtocolFile::makeLineSeparator(output);
     output += "    return byteindex;\n";
     output += "}\n";
-
 
     // My decoding function
     output += "\n";
@@ -318,7 +320,6 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 
     // Write to the source file
     source.write(output);
-    output.clear();
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
 

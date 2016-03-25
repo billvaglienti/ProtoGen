@@ -46,11 +46,17 @@ class ProtocolCode : public Encodable
     //! Return the string that documents this field as a decode function parameter
     virtual QString getDecodeParameterComment(void) const {return QString();}
 
+    //! Code tag does not add documentation
+    virtual bool hasDocumentation(void) {return false;}
+
     //! Get details needed to produce documentation for this encodable.
     virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const {return;}
 
     //! Returns true since protocol code is a primitive type
     virtual bool isPrimitive(void) const {return true;}
+
+    //! Returns true since protocol code is not in memory
+    virtual bool isNotInMemory(void) const {return true;}
 
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const {return false;}

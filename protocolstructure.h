@@ -43,11 +43,17 @@ public:
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return defaults;}
 
-    //! Get the number of encoded fields
+    //! Get the number of fields that are encoded
     int getNumberOfEncodes(void) const;
 
-    //! Get the number of encoded fields whose value is set by the user.
-    int getNumberOfNonConstEncodes(void) const;
+    //! Get the number of encoded fields for which we need parameters
+    int getNumberOfEncodeParameters(void) const;
+
+    //! Get the number of decoded fields for which we need parameters
+    int getNumberOfDecodeParameters(void) const;
+
+    //! Get the number of fields in memory
+    int getNumberInMemory(void) const;
 
     //! Get the declaration for this structure as a member of another
     virtual QString getDeclaration(void) const;

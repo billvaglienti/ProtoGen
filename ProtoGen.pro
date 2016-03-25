@@ -135,5 +135,4 @@ OTHER_FILES += \
     README.md \
     LICENSE.txt
 
-DISTFILES += \
-    novatelprotocol.xml
+DISTFILES +=

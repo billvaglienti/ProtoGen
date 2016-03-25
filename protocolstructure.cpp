@@ -331,14 +331,14 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 /*!
  * Get the number of encoded fields. This is not the same as the length of the
  * encodables list, because some or all of them could be isNotEncoded()
- * \return the number of encodables that appear in the packet.
+ * \return the number of encodables in the packet.
  */
 int ProtocolStructure::getNumberOfEncodes(void) const
 {
-    // Its is possible that all of our encodes are in fact not encoded
     int numEncodes = 0;
     for(int i = 0; i < encodables.length(); i++)
     {
+        // If its not encoded at all, then it does not count
         if(encodables.at(i)->isNotEncoded())
             continue;
         else
@@ -350,24 +350,65 @@ int ProtocolStructure::getNumberOfEncodes(void) const
 
 
 /*!
- * Get the number of encoded fields whose value is set by the user. This is
- * not the same as the length of the encodables list, because some or all of
- * them could be isNotEncoded(), isNotInMemory(), or isConstant()
- * \return the number of user set encodables that appear in the packet.
+ * Get the number of encoded fields. This is not the same as the length of the
+ * encodables list, because some or all of them could be isNotEncoded() or isConstant()
+ * \return the number of encodables in the packet set by the user.
  */
-int ProtocolStructure::getNumberOfNonConstEncodes(void) const
+int ProtocolStructure::getNumberOfEncodeParameters(void) const
 {
-    // Its is possible that all of our encodes are in fact not set by the user
     int numEncodes = 0;
     for(int i = 0; i < encodables.length(); i++)
     {
-        if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isNotInMemory() || encodables.at(i)->isConstant())
+        // If its not encoded at all, or its encoded as a constant, then it does not count
+        if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isConstant())
             continue;
         else
             numEncodes++;
     }
 
     return numEncodes;
+}
+
+
+/*!
+ * Get the number of decoded fields whose value is written into memory. This is
+ * not the same as the length of the encodables list, because some or all of
+ * them could be isNotEncoded(), isNotInMemory()
+ * \return the number of values decoded from the packet.
+ */
+int ProtocolStructure::getNumberOfDecodeParameters(void) const
+{
+    // Its is possible that all of our decodes are in fact not set by the user
+    int numDecodes = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        // If its not encoded at all, or its not in memory (hence not decoded) it does not count
+        if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isNotInMemory())
+            continue;
+        else
+            numDecodes++;
+    }
+
+    return numDecodes;
+}
+
+
+/*!
+ * Get the number of fields in memory. This can be different than the number of decodes or encodes.
+ * \return the number of user set encodables that appear in the packet.
+ */
+int ProtocolStructure::getNumberInMemory(void) const
+{
+    int num = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        if(encodables.at(i)->isNotInMemory())
+            continue;
+        else
+            num++;
+    }
+
+    return num;
 }
 
 
@@ -406,7 +447,7 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
     QString output;
     QString structure;
 
-    if(encodables.length() > 0)
+    if(getNumberInMemory() > 0)
     {
         // Declare our childrens structures first
         for(int i = 0; i < encodables.length(); i++)
@@ -421,7 +462,7 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
 
         // We don't generate the structure if there is only one element, whats
         // the point? Unless the the caller tells us to always create it
-        if((encodables.length() > 1) || alwaysCreate)
+        if((getNumberInMemory() > 1) || alwaysCreate)
         {
             // The top level comment for the structure definition
             if(!comment.isEmpty())

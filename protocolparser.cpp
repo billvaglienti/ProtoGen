@@ -14,7 +14,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.3.1.b";
+const QString ProtocolParser::genVersion = "1.3.2.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -1059,9 +1059,8 @@ may be repeating information already presented in the packets section\n"));
 bool ProtocolParser::isFieldSet(const QDomElement &e, QString label) {
 
     bool result = false;
-    label = label.toLower();
 
-    QString value = e.attribute(label);
+    QString value = e.attribute(label).trimmed().toLower();
 
     if (value.compare("true",Qt::CaseInsensitive) == 0)
         result = true;

@@ -71,6 +71,15 @@ public:
     //! Returns true since protocol field is a primitive type
     virtual bool isPrimitive(void) const {return true;}
 
+    //! True if this encodable is NOT encoded
+    virtual bool isNotEncoded(void) const {return (encodedType.isNull);}
+
+    //! True if this encodable is NOT in memory
+    virtual bool isNotInMemory(void) const {return inMemoryType.isNull;}
+
+    //! True if this encodable is a constant
+    virtual bool isConstant(void) const {return !constantValue.isEmpty();}
+
     //! True if this encoable is a primitive bitfield
     virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
@@ -123,7 +132,7 @@ public:
     virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}
 
 
-public:
+protected:
     QString enumName;
     double encodedMin;
     double encodedMax;
@@ -133,15 +142,12 @@ public:
     QString scalerString;
     QString defaultValue;
     QString constantValue;
-    QString encodeConstantValue;
-    QString decodeConstantValue;
+    bool checkConstant;
     TypeData inMemoryType;
     TypeData encodedType;
 
     QStringList extraInfoNames; //!< List of extra fields that can be appended to a <Data> tag within a packet description
     QStringList extraInfoValues;
-
-protected:
 
     bool lastBitfield;      //!< True if this is the last bitfield in the local group
     int startingBitCount;   //!< The starting bit count for this field

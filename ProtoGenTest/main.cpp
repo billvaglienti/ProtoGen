@@ -77,13 +77,14 @@ int main(int argc, char *argv[])
 int testConstantPacket(void)
 {
     testPacket_t pkt;
-    Constant_t constant;
+    Constant_t constant = Constant_t();
 
-    memset(&constant, 0, sizeof(constant));
+    //memset(&constant, 0, sizeof(constant));
+    unsigned constant5 = 0;
 
     encodeConstantPacket(&pkt, 127);
 
-    if(pkt.length != (2 + 19 + 4 + 3*1 + 4 + 1) )
+    if(pkt.length != (2 + 19 + 4 + 3*1 + 4 + 1 + 1) )
     {
         std::cout << "Constant packet has the wrong length" << std::endl;
         return 0;
@@ -95,8 +96,11 @@ int testConstantPacket(void)
         return 0;
     }
 
-    if(decodeConstantPacket(&pkt, constant.constant2, &constant.cos45, constant.sin45, &constant.constant3, &constant.token))
+
+    if(decodeConstantPacket(&pkt, constant.constant2, &constant.cos45, constant.sin45, &constant.constant3, &constant5, &constant.token))
     {
+        constant.constant5 = constant5;
+
         if( (pkt.data[0] != 0x12)   ||
             (pkt.data[1] != 0x34)   ||
             (constant.token != 127) ||
@@ -105,7 +109,8 @@ int testConstantPacket(void)
             fcompare(constant.sin45[0], 0.70710678118654752440084436210485f, 1.0/127) ||
             fcompare(constant.sin45[1], 0.70710678118654752440084436210485f, 1.0/127) ||
             fcompare(constant.sin45[2], 0.70710678118654752440084436210485f, 1.0/127) ||
-            (constant.constant3 != 327612))
+            (constant.constant3 != 327612) ||
+            (constant.constant5 != 13))
         {
             std::cout << "decodeConstantPacket() yielded incorrect data" << std::endl;
             return 0;
@@ -122,6 +127,8 @@ int testConstantPacket(void)
     memset(&constant, 0, sizeof(constant));
     if(decodeConstantPacketStructure(&pkt, &constant))
     {
+        constant.constant5 = constant5;
+
         if( (pkt.data[0] != 0x12)   ||
             (pkt.data[1] != 0x34)   ||
             (constant.token != 127) ||
@@ -130,7 +137,8 @@ int testConstantPacket(void)
             fcompare(constant.sin45[0], 0.70710678118654752440084436210485f, 1.0/127) ||
             fcompare(constant.sin45[1], 0.70710678118654752440084436210485f, 1.0/127) ||
             fcompare(constant.sin45[2], 0.70710678118654752440084436210485f, 1.0/127) ||
-            (constant.constant3 != 327612))
+            (constant.constant3 != 327612) ||
+            (constant.constant5 != 13))
         {
             std::cout << "decodeConstantPacketStructure() yielded incorrect data" << std::endl;
             return 0;
