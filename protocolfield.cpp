@@ -6,7 +6,7 @@
 #include <iostream>
 #include <math.h>
 
-TypeData::TypeData() :
+TypeData::TypeData(ProtocolSupport sup) :
     isStruct(false),
     isSigned(false),
     isBitfield(false),
@@ -15,7 +15,8 @@ TypeData::TypeData() :
     isString(false),
     isFixedString(false),
     isNull(false),
-    bits(8)
+    bits(8),
+    support(sup)
 {
 }
 
@@ -29,8 +30,26 @@ TypeData::TypeData(const TypeData& that) :
     isString(that.isString),
     isFixedString(that.isFixedString),
     isNull(that.isNull),
-    bits(that.bits)
+    bits(that.bits),
+    support(that.support)
 {
+}
+
+
+/*!
+ * Reset all members to defaults except the protocol support
+ */
+void TypeData::clear(void)
+{
+    isStruct = false;
+    isSigned = false;
+    isBitfield = false;
+    isFloat = false;
+    isEnum = false;
+    isString = false;
+    isFixedString = false;
+    isNull = false;
+    bits = 8;
 }
 
 
@@ -88,16 +107,14 @@ double TypeData::extractDouble(const QString& string, bool* ok)
 /*!
  * Extract the type information from the type string, for in memory types
  * \param type is the type string
- * \param support gives the protocol support options
  * \param name is the name of this field, used for warnings
  * \param inMemory is true if this is an in-memory type string, else encoded
  */
-void TypeData::extractType(const QString& typeString, const ProtocolSupport& support, const QString& name, bool inMemory)
+void TypeData::extractType(const QString& typeString, const QString& name, bool inMemory)
 {
     QString type(typeString);
 
-    // Reset to defaults first
-    *this = TypeData();
+    clear();
 
     if(type.startsWith("n", Qt::CaseInsensitive))
         isNull = true;
@@ -302,7 +319,12 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
     if(isString)
         typeName = "char";
     else if(isBitfield)
-        typeName = "unsigned";
+    {
+        if((bits > 32) && (support.longbitfield))
+            typeName = "uint64_t";
+        else
+            typeName = "unsigned";
+    }
     else if(isEnum)
     {
         typeName = enumName;
@@ -363,6 +385,8 @@ ProtocolField::ProtocolField(const QString& protocolName, const QString& protoco
     encodedMax(0),
     scaler(1),
     checkConstant(false),
+    inMemoryType(supported),
+    encodedType(supported),
     lastBitfield(false),
     startingBitCount(0)
 {
@@ -383,6 +407,8 @@ ProtocolField::ProtocolField(const QString& protocolName, const QString& protoco
     encodedMax(0),
     scaler(1),
     checkConstant(false),
+    inMemoryType(supported),
+    encodedType(supported),
     lastBitfield(false),
     startingBitCount(0)
 {
@@ -403,7 +429,7 @@ void ProtocolField::clear(void)
     defaultValue.clear();
     constantValue.clear();
     checkConstant = false;
-    encodedType = inMemoryType = TypeData();
+    encodedType = inMemoryType = TypeData(support);
     scalerString.clear();
     minString.clear();
     maxString.clear();
@@ -473,7 +499,7 @@ void ProtocolField::parse(const QDomElement& field)
     }
 
     // Extract the in memory type
-    inMemoryType.extractType(memoryTypeString, support, name, true);
+    inMemoryType.extractType(memoryTypeString, name, true);
 
     // The encoded type string, this can be empty which implies encoded is same as memory
     QString encodedTypeString = field.attribute("encodedType").trimmed();
@@ -486,7 +512,7 @@ void ProtocolField::parse(const QDomElement& field)
             encodedType.isEnum = false;
     }
     else
-        encodedType.extractType(encodedTypeString, support, name, false);
+        encodedType.extractType(encodedTypeString, name, false);
 
     if(inMemoryType.isNull)
     {
@@ -606,6 +632,7 @@ void ProtocolField::parse(const QDomElement& field)
             variableArray.clear();
         }
 
+        /*
         if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
         {
             std::cout << name.toStdString() << ": min, max, and scaler are ignored because encoded type or in memory type is bitfield" << std::endl;
@@ -613,6 +640,7 @@ void ProtocolField::parse(const QDomElement& field)
             minString.clear();
             scalerString.clear();
         }
+        */
     }
 
     // if either type says string, than they both are string
@@ -650,7 +678,7 @@ void ProtocolField::parse(const QDomElement& field)
 
     if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
     {
-        if(inMemoryType.isStruct || inMemoryType.isString || inMemoryType.isBitfield || encodedType.isBitfield || encodedType.isNull)
+        if(inMemoryType.isStruct || inMemoryType.isString || encodedType.isNull)
         {
             std::cout << name.toStdString() << ": min, max, and scaler do not apply to this type data" << std::endl;
             maxString.clear();
@@ -1261,7 +1289,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         if(!description.isEmpty() && !description.endsWith('.'))
             description += ".";
 
-        if(scaler != 1.0)
+        if(encodedMax > encodedMin)
         {
             if(encodedType.isFloat)
                 description += "<br>Scaled by " + scalerString + ".";
@@ -1416,6 +1444,7 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
  */
 QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const
 {
+    QString argument;
     QString output;
     QString constantstring = getConstantString();
 
@@ -1428,14 +1457,58 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if(constantstring.isEmpty())
     {
         if(isStructureMember)
-            output += "    encodeBitfield((unsigned int)user->" + name;
+            argument = "user->" + name;
         else
-            output += "    encodeBitfield((unsigned int)" + name;
+            argument = name;
     }
     else
-        output += "    encodeBitfield((unsigned int)" + constantstring;
+        argument = constantstring;
 
-    output += ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+    // check to see if this is a scaled bitfield
+    if(encodedMax > encodedMin)
+    {
+        // Additional commenting to describe the scaling
+        output += "    // Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+
+        if(encodedType.bits > 32)
+        {
+            if(support.longbitfield)
+            {
+                if(support.float64)
+                    argument = "float64ScaledToLongBitfield((double)" + argument;
+                else
+                    argument = "float32ScaledToLongBitfield((float)" + argument;
+            }
+            else
+            {
+                if(support.float64)
+                   argument = "float64ScaledToBitfield((double)" + argument;
+                else
+                   argument = "float32ScaledToBitfield((float)" + argument;
+
+            }
+        }
+        else
+            argument = "float32ScaledToBitfield((float)" + argument;
+
+        argument += ", " + getNumberString(encodedMin, encodedType.bits);
+        argument += ", " + getNumberString(scaler, encodedType.bits);
+        argument += ")";
+    }
+    else
+    {
+        if((encodedType.bits > 32) && (support.longbitfield))
+            argument = "(uint64_t)" + argument;
+        else
+            argument = "(unsigned int)" + argument;
+    }
+
+    output += "    encode";
+
+    if((encodedType.bits > 32) && (support.longbitfield))
+        output += "Long";
+
+    output += "Bitfield(" + argument + ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
     *bitcount += encodedType.bits;
 
     return output;
@@ -1465,7 +1538,43 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     QString constantstring = getConstantString();
 
     // The actual decode code is the same no matter the trimmings around it
-    QString decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    QString decodestring;
+
+    if((encodedType.bits > 32) && (support.longbitfield))
+        decodestring = "decodeLongBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    else
+        decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+
+    // Check for scaled bitfield, which adds to the decode string
+    if(encodedMax > encodedMin)
+    {
+        // Additional commenting to describe the scaling
+        output += "    // Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+
+        if(encodedType.bits > 32)
+        {
+            if(support.longbitfield)
+            {
+                if(support.float64)
+                    decodestring = "float64ScaledFromLongBitfield(" + decodestring;
+                else
+                    decodestring = "float32ScaledFromLongBitfield(" + decodestring;
+            }
+            else
+            {
+                if(support.float64)
+                    decodestring = "float64ScaledFromBitfield(" + decodestring;
+                else
+                    decodestring = "float32ScaledFromBitfield(" + decodestring;
+            }
+        }
+        else
+            decodestring = "float32ScaledFromBitfield(" + decodestring;
+
+        decodestring += ", " + getNumberString(encodedMin, encodedType.bits);
+        decodestring += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
+        decodestring += ")";
+    }
 
     if(inMemoryType.isNull)
     {
@@ -1878,6 +1987,8 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         // interesting.
         QString scalestring;
 
+        // Notice that encodedMax and encodedMin do not make sense since
+        // the encoded type is float
         if(scaler != 1.0)
         {
             scalestring = "*" + getNumberString(scaler, inMemoryType.bits);
@@ -1933,18 +2044,13 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         output += spacing;
 
-        // Handle the in-memory part
-        if(inMemoryType.isFloat)
-        {
-            if(inMemoryType.bits > 32)
-                output += "float64";
-            else
-                output += "float32";
-        }
-        else if(inMemoryType.isSigned)
-            output += "int" + QString().setNum(inMemoryType.bits);
+        // If we are scaling, then we are going to use a float-encoding
+        // function, since even an integer encoding function would still
+        // have to cast to float to apply the scaler. Note that
+        if((inMemoryType.bits > 32) && support.float64)
+            output += "float64";
         else
-            output += "uint" + QString().setNum(inMemoryType.bits);
+            output += "float32";
 
         output += "ScaledTo";
 
@@ -1961,6 +2067,15 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         // More of the encode call signature, including endian
         output += endian + "Bytes(";
+
+        // Check to see if we need to cast to float
+        if(!inMemoryType.isFloat)
+        {
+            if((inMemoryType.bits > 32) && support.float64)
+                output += "(double)";
+            else
+                output += "(float)";
+        }
 
         // Scaling a constant would be really weird...
         if(constantstring.isEmpty())
@@ -2121,8 +2236,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 
             output += spacing + "if (";
 
-            if (encodedType.isFloat) {
-                if (inMemoryType.bits > 32)
+            if (encodedType.isFloat)
+            {
+                if((inMemoryType.bits > 32) && support.float64)
                     output += "float64";
                 else
                     output += "float32";
@@ -2148,6 +2264,8 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         // interesting.
         QString scalestring;
 
+        // Notice that encodedMax and encodedMin do not make sense since
+        // the encoded type is float
         if(scaler != 1.0)
         {
             scalestring = "(" + getNumberString(1.0, inMemoryType.bits) + "/" + getNumberString(scaler, inMemoryType.bits) + ")*" ;
@@ -2192,18 +2310,19 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         else
             output += spacing + lhs + name + " = ";
 
-        // Handle the in-memory part
-        if(inMemoryType.isFloat)
+        // The cast if the in memory type is not floating
+        if(!inMemoryType.isFloat)
         {
-            if(inMemoryType.bits > 32)
-                output += "float64";
+            if(inMemoryType.isSigned)
+                output += "(int" + QString().setNum(inMemoryType.bits) + "_t)";
             else
-                output += "float32";
+                output += "(uint" + QString().setNum(inMemoryType.bits) + "_t)";
         }
-        else if(inMemoryType.isSigned)
-            output += "int" + QString().setNum(inMemoryType.bits);
+
+        if((inMemoryType.bits > 32) && support.float64)
+            output += "float64";
         else
-            output += "uint" + QString().setNum(inMemoryType.bits);
+            output += "float32";
 
         output += "ScaledFrom";
 
@@ -2297,7 +2416,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
  * \param bits is the number of bits in memory for this string. 32 or less will prompt a 'f' suffix on the string
  * \return the string.
  */
-QString ProtocolField::getNumberString(double number, int bits)
+QString ProtocolField::getNumberString(double number, int bits) const
 {
     QString string;
 
@@ -2308,7 +2427,7 @@ QString ProtocolField::getNumberString(double number, int bits)
         string += ".0";
 
     // Float suffix
-    if(bits <= 32)
+    if((bits <= 32) || !support.float64)
         string += "f";
 
     return string;
@@ -2349,8 +2468,17 @@ QString ProtocolField::getDisplayNumberString(double number)
         return "2&pi;";
     }
     else
-        return getNumberString(number);
+    {
+        QString string;
 
+        string.setNum(number, 'g', 16);
+
+        // Make sure we have a decimal point
+        if(!string.contains("."))
+            string += ".0";
+
+        return string;
+    }
 }
 
 

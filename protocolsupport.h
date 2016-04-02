@@ -9,7 +9,8 @@ public:
     bool float64;       //!< true if support for double precision is included
     bool specialFloat;  //!< true if support for float16 and float24 is included
     bool bitfield;      //!< true if support for bitfields is included
-
+    bool longbitfield;  //!< true to support long bitfields
+    bool bitfieldtest;  //!< true to output the bitfield test function
 };
 
 #endif // PROTOCOLSUPPORT_H

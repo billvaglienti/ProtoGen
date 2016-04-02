@@ -13,18 +13,28 @@ ProtocolScaling::ProtocolScaling(ProtocolSupport sup) :
         typeNames    << "double" << "uint64_t" << "int64_t" << "float" << "uint32_t" << "int32_t" << "uint16_t" << "int16_t" << "uint8_t" << "int8_t";
         typeSigNames << "float64"<< "uint64"   << "int64"   <<"float32"<< "uint32"   << "int32"   << "uint16"   << "int16"   << "uint8"   << "int8";
         typeSizes    <<        8 <<          8 <<         8 <<       4 <<          4 <<         4 <<          2 <<         2 <<         1 <<        1;
+
+        // double and float
+        fromIndices  << 0 << 3;
     }
     else if(support.float64)
     {
         typeNames    << "double" <<  "float" << "uint32_t" << "int32_t" << "uint16_t" << "int16_t" << "uint8_t" << "int8_t";
         typeSigNames << "float64"<< "float32"<< "uint32"   << "int32"   << "uint16"   << "int16"   << "uint8"   << "int8";
         typeSizes    <<        8 <<        4 <<          4 <<         4 <<          2 <<         2 <<         1 <<        1;
+
+        // double and float
+        fromIndices  << 0 << 1;
     }
     else
     {
         typeNames    <<  "float" << "uint32_t" << "int32_t" << "uint16_t" << "int16_t" << "uint8_t" << "int8_t";
         typeSigNames << "float32"<< "uint32"   << "int32"   << "uint16"   << "int16"   << "uint8"   << "int8";
         typeSizes    <<        4 <<          4 <<         4 <<          2 <<         2 <<         1 <<        1;
+
+        // just float
+        fromIndices  << 0;
+
     }
 
 }
@@ -99,8 +109,10 @@ bool ProtocolScaling::generateEncodeHeader(void)
 
     header.write("\n#include <stdint.h>\n");
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        int type = fromIndices.at(typeindex);
+
         for(int length = 1; length <= typeSizes[type]; length++)
         {
             // We don't always do 64-bit
@@ -160,8 +172,10 @@ bool ProtocolScaling::generateEncodeSource(void)
     source.write("#include \"fieldencode.h\"\n");
     source.write("\n");
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        int type = fromIndices.at(typeindex);
+
         for(int length = 1; length <= typeSizes[type]; length++)
         {
             // We don't always do 64-bit
@@ -185,7 +199,6 @@ bool ProtocolScaling::generateEncodeSource(void)
             source.write("\n");
             source.write(fullEncodeComment(type, length, true, false) + "\n");
             source.write(fullEncodeFunction(type, length, true, false) + "\n");
-
 
             // little endian signed
             if(length != 1)
@@ -516,8 +529,10 @@ bool ProtocolScaling::generateDecodeHeader(void)
 
     header.write("\n#include <stdint.h>\n");
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        int type = fromIndices.at(typeindex);
+
         for(int length = 1; length <= typeSizes[type]; length++)
         {            
             // We don't always do 64-bit
@@ -579,8 +594,10 @@ bool ProtocolScaling::generateDecodeSource(void)
     source.write("#include \"fielddecode.h\"\n");
     source.write("\n");
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        int type = fromIndices.at(typeindex);
+
         for(int length = 1; length <= typeSizes[type]; length++)
         {
             // We don't always do 64-bit

@@ -5,11 +5,10 @@
  * \file
  * Auto magically generate the plethora of scaling functions
  *
- * Scaling functions convert all built in types (double, uint64_t, int64_t,
- * float, uint32_t, int32_t, uint16_, int16_t, uint8_t, int8_t) to different
- * integer encodings (signed, unsigned, big endian, littl endian, and byte
- * lengths from 1 to 8). That's a lot of functions, hence the desire to auto-
- * generate them.
+ * Scaling functions convert all built in float types (double, float
+ * float) to different integer encodings (signed, unsigned, big endian,
+ * littl endian, and byte lengths from 1 to 8). That's a lot of functions,
+ * hence the desire to auto-generate them.
  */
 
 
@@ -79,6 +78,9 @@ protected:
 
     //! Size of built in types
     QList<int> typeSizes;
+
+    //! Indices that we go from (the built in floating point types)
+    QList<int> fromIndices;
 
     //! Whats supported by the protocol
     ProtocolSupport support;

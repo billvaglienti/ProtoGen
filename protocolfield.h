@@ -12,10 +12,13 @@ class TypeData
 public:
 
     //! Construct empty type data
-    TypeData();
+    TypeData(ProtocolSupport sup);
 
     //! Construct type data by copying another type
     TypeData(const TypeData& that);
+
+    //! Reset all members to default except the protocol support
+    void clear(void);
 
 public:
     bool isStruct;      //!< true if this is an externally defined struct
@@ -35,11 +38,13 @@ public:
     double extractDouble(const QString& string, bool* ok = 0);
 
     //! Extract the type information from the type string
-    void extractType(const QString& typeString, const ProtocolSupport& support, const QString& name, bool inMemory);
+    void extractType(const QString& typeString, const QString& name, bool inMemory);
 
     //! Create the type string
     QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
 
+private:
+    ProtocolSupport support;
 };
 
 
@@ -53,11 +58,11 @@ public:
     //! Construct a protocol field by parsing a DOM element
     ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
 
-    //! Get a properly formatted number string for a double precision number
-    static QString getNumberString(double number, int bits = 64);
-
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
+
+    //! Get a properly formatted number string for a double precision number
+    QString getNumberString(double number, int bits = 64) const;
 
     //! Destroy the protocol field
     virtual ~ProtocolField(){}

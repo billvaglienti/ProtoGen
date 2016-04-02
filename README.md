@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.3.2. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.4.1. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -67,6 +67,10 @@ The Protocol tag supports the following attributes:
 - `supportFloat64` : if this attribute is set to `false` then floating point types greater than 32 bits will not be allowed.
 
 - `supportBitfield` : if this attribute is set to `false` then bitfields will not be allowed.
+
+- `supportLongBitfield` : if this attribute is set to `true` then a second set of bitfield support functions will be defined. The Long bitfield functions use the integer type `uint64_t` instead of `unsigned int`. This attribute will be ignored if `supportInt64` or `supportBitfield` are `false`.
+
+- `bitfieldTest` : if this attribute is set to `true` then the bitfield support module will include a test function that can be used to determine if bitfield support is working on your compiler.
 
 - `supportSpecialFloat` : if this attribute is set to `false` then floating point types less than 32 bits will not be allowed for encoded types.
 
@@ -302,7 +306,7 @@ Data subtag attributes:
     - `floatX` : is a floating point with X bits, where X can be 16, 24, 32, or 64.
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
-    - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to 32 bits.
+    - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to the number of bits in an int.
     - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates no encoding. The data exist in memory but are not encoded in the packet.
@@ -313,11 +317,11 @@ Data subtag attributes:
 
 - `dependsOn` : The `dependsOn` attribute indicates that the presence of this Data item is dependent on a previously defined data item. If the previous data item evaluates as zero then this data item is skipped in the encoding. `dependsOn` is useful for encodings that do not know a-priori if a particular data item is available. For example consider a telemetry packet that reports data from all sensors connected to a device: if one of the sensors is not connected or not working then the space in the packet used to report that data can be saved. The `dependsOn` data item will typically be a single bit bitfield, but can be any previous data item which is not a structure or an array. Bitfields cannot be dependent on other data items. ProtoGen will verify that the `dependsOn` variable exists as a primitive non-array member of the encoding, *before* the definition of this data item. If the referenced data item does not exist ProtoGen will ignore the `dependsOn` attribute.
 
-- `min` : The minimum value that can be encoded. Typically encoded types take up less space than in-memory types. This is usually accomplished by scaling the data. `min`, along with `max` and the number of bits of the encoded type, is used to determine the scaling factor. `min` is ignored if the encoded type is floating, signed, bitfield, or string. If `min` is not given, but `max` is, then `min` is assumed to be 0. `min` can be input as a mathematical expression in infix notation. For example -10000/2^15 would be correctly evaluated as -.30517578125. In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values. For example 180/pi would be evaluated as 57.295779513082321.
+- `min` : The minimum value that can be encoded. Typically encoded types take up less space than in-memory types. This is usually accomplished by scaling the data. `min`, along with `max` and the number of bits of the encoded type, is used to determine the scaling factor. `min` is ignored if the encoded type is floating, signed, or string. If `min` is not given, but `max` is, then `min` is assumed to be 0. `min` can be input as a mathematical expression in infix notation. For example -10000/2^15 would be correctly evaluated as -.30517578125. In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values. For example 180/pi would be evaluated as 57.295779513082321.
 
-- `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, bitfield or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaler` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
+- `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaler` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
 
-- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is bitfield, string, or structure. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`. Although it is unusual `scaler` can be used with floating point encoded types. This would be useful for cases where the units of the floating point encoded type do not match the desired units of the data in memory.
+- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is string or structure. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`. Although it is unusual `scaler` can be used with floating point encoded types. This would be useful for cases where the units of the floating point encoded type do not match the desired units of the data in memory.
 
 - `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted.
 
@@ -430,16 +434,34 @@ Structure encoding and decoding functions
 
 In addition to the packet functions the generated code can include functions to encode and decode a structure to a byte array. These functions can be used if you do not want the generated code to interact with packet routines. Perhaps because your data are not being encoded in packets, or the simple packet interfaces that ProtoGen supports are not sophisticated enough. These functions will only be generated for Structure tags, not Packet tags. If you want to simultaneously have a structure with generic encoding functions and packet functions; then create both a structure tag and a packet tag which references the structure (see the GPS packet in exampleprotocol.xml).
 
-    //! Encode a Version_t structure into a byte array
-    int encodeVersion_t(uint8_t* data, int byteCount, const Version_t* user);
+	//! Encode a GPS_t structure into a byte array
+	void encodeGPS_t(uint8_t* data, int* bytecount, const GPS_t* user);
 
-    //! Decode a Version_t structure from a byte array
-    int decodeVersion_t(const uint8_t* data, int byteCount, Version_t* user);
+	//! Decode a GPS_t structure from a byte array
+	int decodeGPS_t(const uint8_t* data, int* bytecount, GPS_t* user);
 
 Other generated code
 ====================
 
 ProtoGen also creates other files that are not specified by the xml, but are used as helper functions for the generated packet code. These are the modules: bitfieldspecial, floatspecial, fieldencode, fielddecode, scaledencode, scaleddecode. Although these modules are not specified by the xml they are still generated. Much of the code in these modules is tedious and repetitive, so it was ultimatley simpler and less error prone to auto generate it. More importantly automatically generating this code makes it easier for future versions of ProtoGen to take advantage of changes or advances in the routines these modules provide.
+
+fieldencode and fielddecode
+---------------------------
+
+fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order (big or little endian) and memory alignment requirements. For example, if the processor is little endian (e.g. x86 or ARM) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packet data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
+
+The way to handle both these issues is to copy the data byte by byte. There are numerous methods by which this can be done. ProtoGen does it using leftshift (`<<`) and rightshift (`>>`) operators. This has the advantage of (potentially) leaving the native type in a register during the copy, and not needing to know the local endianness. Even this operation has room for interpretation. The maximum number of bits that can be shifted is architecture dependent; but is typically the number of bits of an `int`. Hence the process of shifting the bits from the field to the data array (and vice versa) is ordered such that only 8 bit shifts are used, allowing ProtoGen code to run on 8 bit processors.
+
+fieldencode also provides the routines to encode non native types, such as `int24_t`. `int24_t` is a 24 bit signed type, which does not exist in most computer architectures. Instead fieldencode provides routines to take a `int32_t` and encode it as a `int24_t`, by discarding the most significant byte. Routines are provided for every byte width from 1 byte to 8 bytes, for both signed and unsigned numbers. If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a lot of functions from this module. Note that you can still encode double precision floating points in this case. To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
+
+fielddecode provides the decoding routines that are the corollary to the routines in fieldencode. These are slightly more challenging for non-native signed types, because special code must be added to perform sign extension of such types when they are converted to the next largest native type.
+
+scaledencode and scaleddecode
+-----------------------------
+
+scaledencode and scaleddecode provide routines to take an in-memory number (like a `double` for example) and scale it to any smaller size integer. An example use case would be to take a double precision geodetic latitude in radians and encode it as a 32-bit signed integer number. Doing so would provide better than centimeter resolution for the encoded type, while using only half the space in the encoded format as the in-memory format. Routines are not provided to inflate the size of an in-memory type. For example there is no routine to take a float and encode it in a 64-bit integer. This would simply waste datalink bandwidth without providing any resolution improvement.
+
+If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a *lot* of functions from this module. Note that you can still encode scaled double precision floating points in this case (as long as you scale them to 32 bits or less). To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
 
 floatspecial
 ------------
@@ -455,25 +477,11 @@ ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to
 bitfieldspecial
 ---------------
 
-bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` then this file will not be output. In addition any bitfields in the protocol description will generated a warning, and the field will be converted to the next larger in-memory unsigned integer.
+bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` then this file will not be output. In addition any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and the long bitfield functions will be used for that bitfield. The normal bitfield support routines use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` a test function will be written into bitfieldspecial which can be used to test the bitfield routines on your compiler.
 
-fieldencode and fielddecode
----------------------------
+Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last.
 
-fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order (big or little endian) and memory alignment requirements. For example, if the processor is little endian (e.g. x86 or ARM) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packets data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
-
-The way to handle both these issues is to copy the data byte by byte. There are numerous methods by which this can be done. ProtoGen does it using leftshift (`<<`) and rightshift (`>>`) operators. This has the advantage of (potentially) leaving the native type in a register during the copy, and not needing to know the local endianness. Even this operation has room for interpretation. The maximum number of bits that can be shifted is architecture dependent; but is typically the number of bits of an `int`. Hence the process of shifting the bits from the field to the data array (and vice versa) is ordered such that only 8 bit shifts are used, allowing ProtoGen code to run on 8 bit processors.
-
-fieldencode also provides the routines to encode non native types, such as `int24_t`. `int24_t` is a 24 bit signed type, which does not exist in most computer architectures. Instead fieldencode provides routines to take a `int32_t` and encode it as a `int24_t`, by discarding the most significant byte. Routines are provided for every byte width from 1 byte to 8 bytes, for both signed and unsigned numbers. If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a lot of functions from this module. Note that you can still encode double precision floating points in this case. To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
-
-fielddecode provides the decoding routines that are the corollary to the routines in fieldencode. These are slightly more challenging for non-native signed types, because special code must be added to perform sign extension of such types when they are converted to the next largest native type.
-
-scaledencode and scaleddecode
------------------------------
-
-scaledencode and scaleddecode provide routines to take an in-memory number (like a `double` for example) and scale it to any smaller size integer. An example use case would be to take a double precision geodetic latitude in radians and encode it as a 32-bit signed integer number. Doing so would provide better than centimeter resolution for the encoded type, while using only half the space in the encoded format as the in-memory format. Routines are not provided to inflate the size of an in-memory type. For example there is no routine to take a float and encode it in a 64-bit integer. This would simply waste datalink bandwidth without providing any resolution improvement.
-
-If you set the protocol attribute `supportInt64="false"` then support for integer types greater than 32 bits will be omitted. This removes a *lot* of functions from this module. Note that you can still encode scaled double precision floating points in this case (as long as you scale them to 32 bits or less). To disable double precision floating points then set the protocol attribute `supportFloat64="false"`.
+Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield. The only drawback to this usage case is that ProtoGen will not enforce the minimum or maximum value that can be encoded. The normal scaling routines in scaleencode will check for and handle an overflow or underflow, because those routines know at compile time how many bits are available. Since the bitfield scaling routines do not know at compile time how many bits are being used, adding checks for overflow or underflow would be too burdensome. User beware; if you choose to scale a value to a bitfield you must ensure that the scaled value does not overflow the encoded bits.
 
 Generation of documentation
 ===========================

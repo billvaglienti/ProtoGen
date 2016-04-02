@@ -2,8 +2,10 @@
 #include "protocolpacket.h"
 #include "enumcreator.h"
 #include "protocolscaling.h"
+#include "protocolscaling.h"
 #include "fieldcoding.h"
 #include "protocolsupport.h"
+#include "protocolbitfield.h"
 #include <QDomDocument>
 #include <QFile>
 #include <QDir>
@@ -14,7 +16,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.0.b";
+const QString ProtocolParser::genVersion = "1.4.1.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -149,6 +151,14 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     if(docElem.attribute("supportBitfield").contains("false", Qt::CaseInsensitive))
         support.bitfield = false;
 
+    // long bitfield support can be turned on
+    if(support.int64 && docElem.attribute("supportLongBitfield").contains("true", Qt::CaseInsensitive))
+        support.longbitfield = true;
+
+    // bitfield test support can be turned on
+    if(docElem.attribute("bitfieldTest").contains("true", Qt::CaseInsensitive))
+        support.bitfieldtest = true;
+
     // Prefix is not required
     prefix = docElem.attribute("prefix").trimmed();
 
@@ -228,6 +238,9 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         ProtocolScaling(support).generate();
         FieldCoding(support).generate();
 
+        if(support.bitfield)
+            ProtocolBitfield(support).generate();
+
         // Copy the resource files
         // This is where the files are stored in the resources
         QString sourcePath = ":/files/prebuiltSources/";
@@ -236,8 +249,8 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         if(support.specialFloat)
             fileNames << "floatspecial.c" << "floatspecial.h";
 
-        if(support.bitfield)
-            fileNames << "bitfieldspecial.c" << "bitfieldspecial.h";
+        //if(support.bitfield)
+        //    fileNames << "bitfieldspecial.c" << "bitfieldspecial.h";
 
         for(int i = 0; i < fileNames.length(); i++)
         {

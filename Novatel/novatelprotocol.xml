@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Novatel" prefix="" version="1.0.0.a" endian="little" comment=
+<Protocol name="Novatel" prefix="" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
 "Novatel interface protocol for sending binary commands and decoding binary logs.
 
  Since the novatel header includes information which is interesting to the

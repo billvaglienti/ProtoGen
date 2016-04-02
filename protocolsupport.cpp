@@ -4,6 +4,8 @@ ProtocolSupport::ProtocolSupport() :
     int64(true),
     float64(true),
     specialFloat(true),
-    bitfield(true)
+    bitfield(true),
+    longbitfield(false),
+    bitfieldtest(false)
 {
 }
