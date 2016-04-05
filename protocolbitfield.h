@@ -38,6 +38,18 @@ private:
     //! The long version (64-bit fields)
     void generateLongSource(void);
 
+    //! The encode source function
+    void generateEncodeBitfield(void);
+
+    //! The decode source function
+    void generateDecodeBitfield(void);
+
+    //! The long encode source function
+    void generateEncodeLongBitfield(void);
+
+    //! The long decode source function
+    void generateDecodeLongBitfield(void);
+
     //! The test code
     void generateTest(void);
 
