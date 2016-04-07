@@ -635,7 +635,7 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
         output += "void encode" + typeName + "(uint8_t* data, int* bytecount)\n";
     output += "{\n";
 
-    output += "    int byteindex = *bytecount;";
+    output += "    int byteindex = *bytecount;\n";
 
     if(bitfields)
         output += "    int bitcount = 0;\n";
@@ -652,6 +652,7 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
 
     ProtocolFile::makeLineSeparator(output);
     output += "    *bytecount = byteindex;\n";
+    output += "\n";
     output += "}// encode" + typeName + "\n";
 
     return output;
@@ -738,7 +739,7 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
 
     output += "{\n";
 
-    output += "    int byteindex = *bytecount;";
+    output += "    int byteindex = *bytecount;\n";
 
     if(bitfields)
         output += "    int bitcount = 0;\n";
@@ -756,6 +757,7 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     ProtocolFile::makeLineSeparator(output);
     output += "    *bytecount = byteindex;\n\n";
     output += "    return 1;\n";
+    output += "\n";
     output += "}// decode" + typeName + "\n";
 
     return output;

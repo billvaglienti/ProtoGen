@@ -14,6 +14,7 @@
     <Enum name="packetIds" comment="The list of packet identifiers">
         <Value name="LOG" value="1" comment="Used to configure log outputs."/>
         <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
+        <Value name="GPSEPHEM" value="7" comment="GPS ephemeris for a single satellite"/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
         <Value name="RANGECMP" value="140" comment="This log contains the compressed channel measurements for the currently tracked satellites."/>
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
@@ -356,6 +357,48 @@
         <Data name="response" inMemoryType="unsigned32" comment="1 to enable response messages, 0 to disable."/>
     </Packet>
 
+    <Packet name="GPSEphemeris" file="NovatelPackets" ID="GPSEPHEM" comment="Ephemeris data for a single satellite">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="prn" inMemoryType="unsigned8" encodedType="unsigned32" comment="Satellite PRN number"/>
+        <Data name="tow" inMemoryType="float64" comment="Timestamp of subframe 0 in seconds"/>
+        <Data name="health" inMemoryType="unsigned32" comment="Health status - a 6-bit health code as defined in ICDGPS-200"/>
+        <Data name="iode1" inMemoryType="unsigned32" comment="Issue of ephemeris data 1"/>
+        <Data name="iode2" inMemoryType="unsigned32" comment="Issue of ephemeris data 2"/>
+        <Data name="week" inMemoryType="unsigned32" comment="GPS reference week number"/>
+        <Data name="zWeek" inMemoryType="unsigned32" comment="Z count week number. This is the week number from subframe 1 of the ephemeris. The ‘toe week’ (field #7) is derived from this to account for rollover"/>
+        <Data name="toe" inMemoryType="float64" comment="Reference time for ephemeris in seconds"/>
+        <Data name="A" inMemoryType="float64" comment="Semi-major axis of the orbit in meters"/>
+        <Data name="deltaN" inMemoryType="float64" comment="Mean motion difference in radians per second"/>
+        <Data name="M0" inMemoryType="float64" comment="Mean anomaly of reference time in radians"/>
+        <Data name="ecc" inMemoryType="float64" comment="Eccentricity, dimensionless - quantity defined for a conic section where ecc=0 is a circle, ecc=1 is a parabola"/>
+        <Data name="omega" inMemoryType="float64" comment="Argument of perigee in radians - measurement along the orbital path from the ascending node to the point where the SV is closest to the Earth, in the direction of the SV's motion"/>
+        <Data name="cuc" inMemoryType="float64" comment="Argument of latitude (amplitude of cosine, radians)"/>
+        <Data name="cus" inMemoryType="float64" comment="Argument of latitude (amplitude of sine, radians)"/>
+        <Data name="crc" inMemoryType="float64" comment="Orbit radius (amplitude of cosine, metres)"/>
+        <Data name="crs" inMemoryType="float64" comment="Orbit radius (amplitude of sine, metres)"/>
+        <Data name="cic" inMemoryType="float64" comment="Inclination (amplitude of cosine, radians)"/>
+        <Data name="cis" inMemoryType="float64" comment="Inclination (amplitude of sine, radians)"/>
+        <Data name="I0" inMemoryType="float64" comment="Inclination angle at reference time, radians"/>
+        <Data name="Idot" inMemoryType="float64" comment="Rate of inclination angle, radians/second"/>
+        <Data name="omega0" inMemoryType="float64" comment="Right ascension in radians"/>
+        <Data name="omegaDot" inMemoryType="float64" comment="Rate of right ascension in radians/second"/>
+        <Data name="iodc" inMemoryType="unsigned32" comment="Issue of data clock"/>
+        <Data name="toc" inMemoryType="float64" comment="SV clock correction term in seconds"/>
+        <Data name="tgd" inMemoryType="float64" comment="Estimated group delay difference in seconds"/>
+        <Data name="af0" inMemoryType="float64" comment="Clock aging parameter, seconds (s)"/>
+        <Data name="af1" inMemoryType="float64" comment="Clock aging parameter, (s/s)"/>
+        <Data name="af2" inMemoryType="float64" comment="Clock aging parameter, (s/s/s)"/>
+        <Data name="AS" inMemoryType="uint32_t" comment="Anti-spoofing on:0 = FALSE 1 = TRUE"/>
+        <Data name="N" inMemoryType="float64" comment="Corrected mean motion, radians/second"/>
+        <Data name="URA" inMemoryType="float64" comment="
+                       User Range Accuracy variance, m2. The ICD a specifies
+                       that the URA index transmitted in the ephemerides can
+                       be converted to a nominal standard deviation value
+                       using an algorithm listed there. We publish the square of
+                       the nominal value (variance)."/>
+    </Packet>
+
     <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
@@ -374,6 +417,7 @@
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
         <Structure name="range" array="24" variableArray="numObs" comment="The raw measurements from each channel">
+            <Code name="psrDeviationLookup" decode="const float psrDevs[] = {0.050f, 0.075f, 0.113f, 0.169f, 0.253f, 0.380f, 0.570f, 0.854f, 1.281f, 2.375f, 4.75f, 9.5f, 19.0f, 38.0f, 76.0f, 152.0f};" comment="Lookup table to convert pseudo range deviation code into meters"/>
             <Structure name="channelTrackingStatus" comment="Tracking status for this channel">
                 <Enum name="SignalType_t" comment="Signal types from GPS">
                     <Value name="L1CA_SIGNAL" value="0" comment="L1 coarse acquisition"/>
@@ -429,11 +473,12 @@
             <Data name="accumulatedDoppler" inMemoryType="float64" encodedType="bitfield32" scaler="256" comment="Carrier phase in cycles"/>
             <Data name="psrDevCode" inMemoryType="bitfield4" comment="Pseudo range deviation code, see Novatel manual for interpretation"/>
             <Data name="psrDeviation" inMemoryType="float32" encodedType="null" comment="Pseudo range standard deviation in meters"/>
+            <Code name="psrDeviation" decode="user->psrDeviation = psrDevs[user->psrDevCode];" comment="Convert pseudo range deviation code into meters"/>
             <Data name="adrDeviation" inMemoryType="float32" encodedType="bitfield4" min="1/512" max="16/512" comment="Accumulated doppler standard deviation in cycles"/>
             <Data name="prn" inMemoryType="uint8_t" comment="Satellite PRN number"/>
             <Data name="lockTime" inMemoryType="float32" encodedType="bitfield21" scaler="32" comment="Lock time in seconds"/>
             <Data name="cno" inMemoryType="float32" encodedType="bitfield5" min="20" scaler="1" comment="Carrier to noise ration in dB-Hz"/>
-            <Data name="reserved" inMemoryType="null" encodedType="bitfield22" comment="Reserved bit2"/>
+            <Data name="reserved" inMemoryType="null" encodedType="bitfield22" comment="Reserved bits"/>
         </Structure>
     </Packet>
 
