@@ -447,6 +447,13 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
     QString output;
     QString structure;
 
+    // Output enumerations specific to this structure
+    for(int i = 0; i < enumList.size(); i++)
+    {
+        output += enumList.at(i)->getOutput();
+        ProtocolFile::makeLineSeparator(output);
+    }
+
     if(getNumberInMemory() > 0)
     {        
         // We don't generate the structure if there is only one element, whats
@@ -554,11 +561,25 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
  * Return the string that gives the prototype of the functions used to encode
  * the structure. The encoding is to a simple byte array.
  * \param isBigEndian should be true for big endian encoding.
+ * \param includeChildren should be true to output the children's prototypes.
  * \return The string including the comments and prototypes with linefeeds and semicolons
  */
-QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian) const
+QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, bool includeChildren) const
 {
     QString output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            if(encodables.at(i)->isPrimitive())
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables.at(i)->getPrototypeEncodeString(isBigEndian, includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
 
     // My encoding and decoding prototypes in the header file
     output += "//! Encode a " + typeName + " structure into a byte array\n";
@@ -576,11 +597,25 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian) const
  * Return the string that gives the function used to encode this structure.
  * The encoding is to a simple byte array.
  * \param isBigEndian should be true for big endian encoding.
+ * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian) const
+QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includeChildren) const
 {
     QString output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            if(encodables.at(i)->isPrimitive())
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables.at(i)->getFunctionEncodeString(isBigEndian, includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
 
     int numEncodes = getNumberOfEncodeParameters();
 
@@ -617,7 +652,7 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian) const
 
     ProtocolFile::makeLineSeparator(output);
     output += "    *bytecount = byteindex;\n";
-    output += "}\n";
+    output += "}// encode" + typeName + "\n";
 
     return output;
 
@@ -628,11 +663,25 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian) const
  * Return the string that gives the prototype of the functions used to decode
  * the structure. The encoding is to a simple byte array.
  * \param isBigEndian should be true for big endian encoding.
+ * \param includeChildren should be true to output the children's prototypes.
  * \return The string including the comments and prototypes with linefeeds and semicolons
  */
-QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
+QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian, bool includeChildren) const
 {
     QString output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            if(encodables.at(i)->isPrimitive())
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables.at(i)->getPrototypeDecodeString(isBigEndian);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
 
     output += "//! Decode a " + typeName + " structure from a byte array\n";
 
@@ -650,11 +699,25 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian) const
  * Return the string that gives the function used to decode this structure.
  * The decoding is from a simple byte array.
  * \param isBigEndian should be true for big endian decoding.
+ * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian) const
+QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includeChildren) const
 {
     QString output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            if(encodables.at(i)->isPrimitive())
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables.at(i)->getFunctionDecodeString(isBigEndian);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
 
     int numDecodes = getNumberOfDecodeParameters();
 
@@ -693,7 +756,7 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian) const
     ProtocolFile::makeLineSeparator(output);
     output += "    *bytecount = byteindex;\n\n";
     output += "    return 1;\n";
-    output += "}\n";
+    output += "}// decode" + typeName + "\n";
 
     return output;
 

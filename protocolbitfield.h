@@ -35,9 +35,6 @@ private:
     //! The source for bitfield special, not counting the long versions
     void generateSource(void);
 
-    //! The long version (64-bit fields)
-    void generateLongSource(void);
-
     //! The encode source function
     void generateEncodeBitfield(void);
 

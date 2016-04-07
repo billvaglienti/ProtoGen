@@ -15,6 +15,7 @@
         <Value name="LOG" value="1" comment="Used to configure log outputs."/>
         <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
+        <Value name="RANGECMP" value="140" comment="This log contains the compressed channel measurements for the currently tracked satellites."/>
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
         <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
         <Value name="SERIALCONFIG" value="1246" comment="Used to configure serial port settings on the receiver."/>
@@ -330,7 +331,7 @@
     <Packet name="InterfaceMode" file="NovatelPackets" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
-        <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receve on a port">
+        <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receive on a port">
             <Value name="NOINTERFACE" value="0" comment="The port accepts/generates nothing. The port is disabled"/>
             <Value name="NOVATEL" value="1" comment="The port accepts/generates NovAtel commands and logs"/>
             <Value name="RTCM" value="2" comment="The port accepts/generates RTCM corrections"/>
@@ -368,6 +369,74 @@
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
     </Packet>
 
+    <Packet name="RangeCmp" file="NovatelPackets" ID="RANGECMP" comment="The compressed version of raw data.">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
+        <Structure name="range" array="24" variableArray="numObs" comment="The raw measurements from each channel">
+            <Structure name="channelTrackingStatus" comment="Tracking status for this channel">
+                <Enum name="SignalType_t" comment="Signal types from GPS">
+                    <Value name="L1CA_SIGNAL" value="0" comment="L1 coarse acquisition"/>
+                    <Value name="L2P_SIGNAL" value="5" comment="L2 precise"/>
+                    <Value name="L2PC_SIGNAL" value="9" comment="L2 precise, codeless"/>
+                    <Value name="L5Q_SIGNAL" value="14" comment="L5 quadrature code"/>
+                    <Value name="L2C_SIGNAL" value="17" comment="L2 civilian"/>
+                </Enum>
+                <Enum name="SatelliteSystem_t" comment="Type of navigation system">
+                    <Value name="GPS_SAT" comment="Global Positioning System"/>
+                    <Value name="GLONASS_SAT" comment="Global Navigation Satellite System"/>
+                    <Value name="SBAS_SAT" comment="Satellite Based Augmentation System"/>
+                    <Value name="Galileo_SAT" comment="European navigation system"/>
+                    <Value name="BeiDou_SAT" comment="BeiDou Navigation Satellite System"/>
+                    <Value name="QZSS_SAT" comment="Quasi-Zenith Satellite System"/>
+                </Enum>
+                <Enum name="CorrelatorType_t" comment="Type of navigation system">
+                    <Value name="standardCorrelator" value="1" comment="Standard correlator: spacing equals 1 chip"/>
+                    <Value name="narrowCorrelator" value="2" comment="Narrow correlator: spacing less than 1 chip"/>
+                    <Value name="pulseApertureCorrelator" value="4" comment="Pulse Aperture Correlator"/>
+                </Enum>
+                <Enum name="TrackingState_t" comment="States of the tracking loop">
+                    <Value name="Idle_TRACKING" value="0" comment="Idle"/>
+                    <Value name="Search_TRACKING" value="1" comment="Sky Search"/>
+                    <Value name="Wide_TRACKING" value="2" comment="Wide frequency band pull-in"/>
+                    <Value name="Narrow_TRACKING" value="3" comment="Narrow frequency band pull-in"/>
+                    <Value name="PLL_TRACKING" value="4" comment="Phase lock loop"/>
+                    <Value name="ChannelSteering_TRACKING" value="6" comment="Channel steering"/>
+                    <Value name="FrequencyLockLoop_TRACKING" value="7" comment="Frequency lock loop"/>
+                    <Value name="ChannelAlignment_TRACKING" value="9" comment="Channel alignment"/>
+                    <Value name="CodeSearch_TRACKING" value="10" comment="Code search"/>
+                    <Value name="AidedPLL_TRACKING" value="11" comment="Aided phase lock loop"/>
+                </Enum>
+                <Data name="channelAssignmentForced" inMemoryType="bitfield1" comment="Set if this channel's assignment is forced, else it is automatic"/>
+                <Data name="prnLockFlag" inMemoryType="bitfield1" comment="Set if this PRN is locked out"/>
+                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+                <Data name="halfCycleAdded" inMemoryType="bitfield1" comment="Set if the carrier phase measurement has a half cycle added to it"/>
+                <Data name="primaryL1Channel" inMemoryType="bitfield1" comment="Set if this channel is the primary L1 channel"/>
+                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+                <Data name="signalType" enum="SignalType_t" encodedType="bitfield5" comment="Type of signal"/>
+                <Data name="grouping" inMemoryType="bitfield1" comment="Set if grouped"/>
+                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+                <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="bitfield3" comment="Type of navigation system"/>
+                <Data name="correlator" enum="CorrelatorType_t" encodedType="bitfield3" comment="Type of correlator hardware"/>
+                <Data name="codeLocked" inMemoryType="bitfield1" comment="Set if the code has been locked"/>
+                <Data name="parityKnown" inMemoryType="bitfield1" comment="Set if the parity is known"/>
+                <Data name="phaseLocked" inMemoryType="bitfield1" comment="Set if the phase has been locked"/>
+                <Data name="channel" inMemoryType="bitfield5" comment="Receiver channel number for this range data"/>
+                <Data name="trackingState" enum="TrackingState_t" encodedType="bitfield5" comment="State of the tracking loop"/>
+            </Structure>
+            <Data name="dopplerFrequency" inMemoryType="float64" encodedType="bitfield28" scaler="256" comment="Frequency of the carrier signal in Hz"/>
+            <Data name="pseudoRange" inMemoryType="float64" encodedType="bitfield36" scaler="128" comment="Pseudo range in meters"/>
+            <Data name="accumulatedDoppler" inMemoryType="float64" encodedType="bitfield32" scaler="256" comment="Carrier phase in cycles"/>
+            <Data name="psrDevCode" inMemoryType="bitfield4" comment="Pseudo range deviation code, see Novatel manual for interpretation"/>
+            <Data name="psrDeviation" inMemoryType="float32" encodedType="null" comment="Pseudo range standard deviation in meters"/>
+            <Data name="adrDeviation" inMemoryType="float32" encodedType="bitfield4" min="1/512" max="16/512" comment="Accumulated doppler standard deviation in cycles"/>
+            <Data name="prn" inMemoryType="uint8_t" comment="Satellite PRN number"/>
+            <Data name="lockTime" inMemoryType="float32" encodedType="bitfield21" scaler="32" comment="Lock time in seconds"/>
+            <Data name="cno" inMemoryType="float32" encodedType="bitfield5" min="20" scaler="1" comment="Carrier to noise ration in dB-Hz"/>
+            <Data name="reserved" inMemoryType="null" encodedType="bitfield22" comment="Reserved bit2"/>
+        </Structure>
+    </Packet>
+
     <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" comment="Pseudo range dilution of precision">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
@@ -394,7 +463,7 @@
             <Value name="HARDHANDSHAKE" comment="Hardware handshaking (CTS/RTS)"/>
         </Enum>
         <Data name="port" enum="Ports_t" encodedType="unsigned32" comment="Port to configure."/>
-        <Data name="buad" inMemoryType="unsigned32" comment="Baud rate of the port in bits per second."/>
+        <Data name="baud" inMemoryType="unsigned32" comment="Baud rate of the port in bits per second."/>
         <Data name="parity" enum="Parity_t" encodedType="unsigned32" comment="Parity setting of the port."/>
         <Data name="databits" inMemoryType="unsigned32" comment="Data bits per byte, either 7 or 8."/>
         <Data name="stopbits" inMemoryType="unsigned32" comment="Stop bits per byte, either 1 or 2."/>

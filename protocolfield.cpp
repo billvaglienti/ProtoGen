@@ -163,10 +163,15 @@ void TypeData::extractType(const QString& typeString, const QString& name, bool 
                 bits = 1;
                 std::cout << name.toStdString() << ": " << "bitfields must have a bit width of at least one" << std::endl;
             }
-            else if(bits > 32)
+            else if((bits > 32) && (support.longbitfield == false))
             {
                 std::cout << name.toStdString() << ": " <<  "bitfields must have a bit width of 32 or less" << std::endl;
                 bits = 32;
+            }
+            else if(bits > 64)
+            {
+                std::cout << name.toStdString() << ": " <<  "bitfields must have a bit width of 64 or less" << std::endl;
+                bits = 64;
             }
         }
     }

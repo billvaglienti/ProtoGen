@@ -125,16 +125,6 @@ void ProtocolPacket::parse(const QDomElement& e)
     // White space is good
     header.makeLineSeparator();
 
-    // Output enumerations specific to this packet
-    for(int i = 0; i < enumList.length(); i++)
-    {
-        header.makeLineSeparator();
-        header.write(enumList.at(i)->getOutput());
-    }
-
-    // White space is good
-    header.makeLineSeparator();
-
     bool structureFunctions = ProtocolParser::isFieldSet(e, "structureInterface");
     bool parameterFunctions = ProtocolParser::isFieldSet(e, "parameterInterface");
 

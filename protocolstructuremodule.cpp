@@ -135,13 +135,6 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     // White space is good
     header.makeLineSeparator();
 
-    // Output enumerations specific to this structure
-    for(int i = 0; i < enumList.size(); i++)
-    {
-        header.makeLineSeparator();
-        header.write(enumList.at(i)->getOutput());
-    }
-
     // Include the helper files in the source, but only do this once
     if(!source.isAppending())
     {
@@ -245,16 +238,16 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 {
     // My encoding and decoding prototypes in the header file
     header.makeLineSeparator();
-    header.write(getPrototypeEncodeString(isBigEndian));
+    header.write(getPrototypeEncodeString(isBigEndian, false));
     header.makeLineSeparator();
-    header.write(getPrototypeDecodeString(isBigEndian));
+    header.write(getPrototypeDecodeString(isBigEndian, false));
     header.makeLineSeparator();
 
     // My encoding and decoding functions in the source file
     source.makeLineSeparator();
-    source.write(getFunctionEncodeString(isBigEndian));
+    source.write(getFunctionEncodeString(isBigEndian, false));
     source.makeLineSeparator();
-    source.write(getFunctionDecodeString(isBigEndian));
+    source.write(getFunctionDecodeString(isBigEndian, false));
     source.makeLineSeparator();
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
