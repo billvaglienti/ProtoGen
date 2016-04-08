@@ -1,7 +1,15 @@
+QT       += core
+QT       -= gui
+
+TARGET = Novatel
+CONFIG   += console
+CONFIG   -= app_bundle
+
 TEMPLATE = app
-CONFIG += console c++11
-CONFIG -= app_bundle
-CONFIG -= qt
+
+QMAKE_CXXFLAGS += -Wno-unused-parameter
+
+QMAKE_CXXFLAGS_WARN_ON = -Wall -Wno-unused-parameter
 
 SOURCES += main.cpp \
     bitfieldspecial.c \
@@ -12,7 +20,8 @@ SOURCES += main.cpp \
     scaledencode.c \
     NovatelPackets.c \
     NovatelStructures.c \
-    NovatelPacket.c
+    NovatelPacket.c \
+    NovatelShim.c
 
 HEADERS += \
     bitfieldspecial.h \
@@ -24,7 +33,8 @@ HEADERS += \
     NovatelPackets.h \
     NovatelProtocol.h \
     NovatelStructures.h \
-    NovatelPacket.h
+    NovatelPacket.h \
+    NovatelShim.h
 
 DISTFILES += \
     novatelprotocol.xml

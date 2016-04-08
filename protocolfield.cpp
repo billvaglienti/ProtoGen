@@ -592,9 +592,6 @@ void ProtocolField::parse(const QDomElement& field)
 
     if(inMemoryType.isStruct)
     {
-        if(!encodedType.isStruct)
-            std::cout << name.toStdString() << ": " << "encoded type information ignored for external struct" << std::endl;
-
         if(structName.isEmpty())
         {
             std::cout << name.toStdString() << ": " << "struct name is missing, struct name \"unknown\" used, probable compile failure" << std::endl;

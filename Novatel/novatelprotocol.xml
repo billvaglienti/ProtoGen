@@ -16,6 +16,7 @@
         <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
         <Value name="GPSEPHEM" value="7" comment="GPS ephemeris for a single satellite"/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
+        <Value name="RANGE" value="43" comment="This log contains the channel measurements for the currently tracked satellites."/>
         <Value name="RANGECMP" value="140" comment="This log contains the compressed channel measurements for the currently tracked satellites."/>
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
         <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
@@ -65,7 +66,7 @@
         <Value name="SPECIAL_31" value="191" comment="Unknown port virtual port 31."/>
         <Value name="THISPORT" value="192" comment="Current COM port virtual port 0."/>
         <Value name="THISPORT_31" value="223" comment="Current COM port virtual port 31."/>
-        <Value name="FILE" value="224" comment="Virtual port 0 for logging to file b."/>
+        <Value name="FILE_" value="224" comment="Virtual port 0 for logging to file b."/>
         <Value name="FILE_31" value="255" comment="Virtual port 31 for logging to file b."/>
         <Value name="XCOM1" value="416" comment="XCOM1 virtual port 0."/>
         <Value name="XCOM1_1" value="417" comment="XCOM1 virtual port 1."/>
@@ -299,6 +300,57 @@
         <Data name="prn" inMemoryType="uint8_t" encodedType="unsigned32" array="32" variableArray="numPRN" comment="Satellite PRNs that are in the position and DOP calculation."/>
     </Structure>
 
+    <Structure name="TrackingStatus" file="NovatelStructures" comment="Tracking status information as a 32-bit field">
+        <Enum name="SignalType_t" comment="Signal types from GPS">
+            <Value name="L1CA_SIGNAL" value="0" comment="L1 coarse acquisition"/>
+            <Value name="L2P_SIGNAL" value="5" comment="L2 precise"/>
+            <Value name="L2PC_SIGNAL" value="9" comment="L2 precise, codeless"/>
+            <Value name="L5Q_SIGNAL" value="14" comment="L5 quadrature code"/>
+            <Value name="L2C_SIGNAL" value="17" comment="L2 civilian"/>
+        </Enum>
+        <Enum name="SatelliteSystem_t" comment="Type of navigation system">
+            <Value name="GPS_SAT" comment="Global Positioning System"/>
+            <Value name="GLONASS_SAT" comment="Global Navigation Satellite System"/>
+            <Value name="SBAS_SAT" comment="Satellite Based Augmentation System"/>
+            <Value name="Galileo_SAT" comment="European navigation system"/>
+            <Value name="BeiDou_SAT" comment="BeiDou Navigation Satellite System"/>
+            <Value name="QZSS_SAT" comment="Quasi-Zenith Satellite System"/>
+        </Enum>
+        <Enum name="CorrelatorType_t" comment="Type of navigation system">
+            <Value name="standardCorrelator" value="1" comment="Standard correlator: spacing equals 1 chip"/>
+            <Value name="narrowCorrelator" value="2" comment="Narrow correlator: spacing less than 1 chip"/>
+            <Value name="pulseApertureCorrelator" value="4" comment="Pulse Aperture Correlator"/>
+        </Enum>
+        <Enum name="TrackingState_t" comment="States of the tracking loop">
+            <Value name="Idle_TRACKING" value="0" comment="Idle"/>
+            <Value name="Search_TRACKING" value="1" comment="Sky Search"/>
+            <Value name="Wide_TRACKING" value="2" comment="Wide frequency band pull-in"/>
+            <Value name="Narrow_TRACKING" value="3" comment="Narrow frequency band pull-in"/>
+            <Value name="PLL_TRACKING" value="4" comment="Phase lock loop"/>
+            <Value name="ChannelSteering_TRACKING" value="6" comment="Channel steering"/>
+            <Value name="FrequencyLockLoop_TRACKING" value="7" comment="Frequency lock loop"/>
+            <Value name="ChannelAlignment_TRACKING" value="9" comment="Channel alignment"/>
+            <Value name="CodeSearch_TRACKING" value="10" comment="Code search"/>
+            <Value name="AidedPLL_TRACKING" value="11" comment="Aided phase lock loop"/>
+        </Enum>
+        <Data name="channelAssignmentForced" inMemoryType="bitfield1" comment="Set if this channel's assignment is forced, else it is automatic"/>
+        <Data name="prnLockFlag" inMemoryType="bitfield1" comment="Set if this PRN is locked out"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+        <Data name="halfCycleAdded" inMemoryType="bitfield1" comment="Set if the carrier phase measurement has a half cycle added to it"/>
+        <Data name="primaryL1Channel" inMemoryType="bitfield1" comment="Set if this channel is the primary L1 channel"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+        <Data name="signalType" enum="SignalType_t" encodedType="bitfield5" comment="Type of signal"/>
+        <Data name="grouping" inMemoryType="bitfield1" comment="Set if grouped"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
+        <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="bitfield3" comment="Type of navigation system"/>
+        <Data name="correlator" enum="CorrelatorType_t" encodedType="bitfield3" comment="Type of correlator hardware"/>
+        <Data name="codeLocked" inMemoryType="bitfield1" comment="Set if the code has been locked"/>
+        <Data name="parityKnown" inMemoryType="bitfield1" comment="Set if the parity is known"/>
+        <Data name="phaseLocked" inMemoryType="bitfield1" comment="Set if the phase has been locked"/>
+        <Data name="channel" inMemoryType="bitfield5" comment="Receiver channel number for this range data"/>
+        <Data name="trackingState" enum="TrackingState_t" encodedType="bitfield5" comment="State of the tracking loop"/>
+    </Structure>
+
     <Packet name="BinaryResponse" file="NovatelPackets" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
@@ -412,73 +464,27 @@
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
     </Packet>
 
-    <Packet name="RangeCmp" file="NovatelPackets" ID="RANGECMP" comment="The compressed version of raw data.">
+    <Packet name="Range" file="NovatelPackets" ID="RANGE" comment="The raw data.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
         <Structure name="range" array="24" variableArray="numObs" comment="The raw measurements from each channel">
-            <Code name="psrDeviationLookup" decode="const float psrDevs[] = {0.050f, 0.075f, 0.113f, 0.169f, 0.253f, 0.380f, 0.570f, 0.854f, 1.281f, 2.375f, 4.75f, 9.5f, 19.0f, 38.0f, 76.0f, 152.0f};" comment="Lookup table to convert pseudo range deviation code into meters"/>
-            <Structure name="channelTrackingStatus" comment="Tracking status for this channel">
-                <Enum name="SignalType_t" comment="Signal types from GPS">
-                    <Value name="L1CA_SIGNAL" value="0" comment="L1 coarse acquisition"/>
-                    <Value name="L2P_SIGNAL" value="5" comment="L2 precise"/>
-                    <Value name="L2PC_SIGNAL" value="9" comment="L2 precise, codeless"/>
-                    <Value name="L5Q_SIGNAL" value="14" comment="L5 quadrature code"/>
-                    <Value name="L2C_SIGNAL" value="17" comment="L2 civilian"/>
-                </Enum>
-                <Enum name="SatelliteSystem_t" comment="Type of navigation system">
-                    <Value name="GPS_SAT" comment="Global Positioning System"/>
-                    <Value name="GLONASS_SAT" comment="Global Navigation Satellite System"/>
-                    <Value name="SBAS_SAT" comment="Satellite Based Augmentation System"/>
-                    <Value name="Galileo_SAT" comment="European navigation system"/>
-                    <Value name="BeiDou_SAT" comment="BeiDou Navigation Satellite System"/>
-                    <Value name="QZSS_SAT" comment="Quasi-Zenith Satellite System"/>
-                </Enum>
-                <Enum name="CorrelatorType_t" comment="Type of navigation system">
-                    <Value name="standardCorrelator" value="1" comment="Standard correlator: spacing equals 1 chip"/>
-                    <Value name="narrowCorrelator" value="2" comment="Narrow correlator: spacing less than 1 chip"/>
-                    <Value name="pulseApertureCorrelator" value="4" comment="Pulse Aperture Correlator"/>
-                </Enum>
-                <Enum name="TrackingState_t" comment="States of the tracking loop">
-                    <Value name="Idle_TRACKING" value="0" comment="Idle"/>
-                    <Value name="Search_TRACKING" value="1" comment="Sky Search"/>
-                    <Value name="Wide_TRACKING" value="2" comment="Wide frequency band pull-in"/>
-                    <Value name="Narrow_TRACKING" value="3" comment="Narrow frequency band pull-in"/>
-                    <Value name="PLL_TRACKING" value="4" comment="Phase lock loop"/>
-                    <Value name="ChannelSteering_TRACKING" value="6" comment="Channel steering"/>
-                    <Value name="FrequencyLockLoop_TRACKING" value="7" comment="Frequency lock loop"/>
-                    <Value name="ChannelAlignment_TRACKING" value="9" comment="Channel alignment"/>
-                    <Value name="CodeSearch_TRACKING" value="10" comment="Code search"/>
-                    <Value name="AidedPLL_TRACKING" value="11" comment="Aided phase lock loop"/>
-                </Enum>
-                <Data name="channelAssignmentForced" inMemoryType="bitfield1" comment="Set if this channel's assignment is forced, else it is automatic"/>
-                <Data name="prnLockFlag" inMemoryType="bitfield1" comment="Set if this PRN is locked out"/>
-                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
-                <Data name="halfCycleAdded" inMemoryType="bitfield1" comment="Set if the carrier phase measurement has a half cycle added to it"/>
-                <Data name="primaryL1Channel" inMemoryType="bitfield1" comment="Set if this channel is the primary L1 channel"/>
-                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
-                <Data name="signalType" enum="SignalType_t" encodedType="bitfield5" comment="Type of signal"/>
-                <Data name="grouping" inMemoryType="bitfield1" comment="Set if grouped"/>
-                <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
-                <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="bitfield3" comment="Type of navigation system"/>
-                <Data name="correlator" enum="CorrelatorType_t" encodedType="bitfield3" comment="Type of correlator hardware"/>
-                <Data name="codeLocked" inMemoryType="bitfield1" comment="Set if the code has been locked"/>
-                <Data name="parityKnown" inMemoryType="bitfield1" comment="Set if the parity is known"/>
-                <Data name="phaseLocked" inMemoryType="bitfield1" comment="Set if the phase has been locked"/>
-                <Data name="channel" inMemoryType="bitfield5" comment="Receiver channel number for this range data"/>
-                <Data name="trackingState" enum="TrackingState_t" encodedType="bitfield5" comment="State of the tracking loop"/>
-            </Structure>
-            <Data name="dopplerFrequency" inMemoryType="float64" encodedType="bitfield28" scaler="256" comment="Frequency of the carrier signal in Hz"/>
-            <Data name="pseudoRange" inMemoryType="float64" encodedType="bitfield36" scaler="128" comment="Pseudo range in meters"/>
-            <Data name="accumulatedDoppler" inMemoryType="float64" encodedType="bitfield32" scaler="256" comment="Carrier phase in cycles"/>
-            <Data name="psrDevCode" inMemoryType="bitfield4" comment="Pseudo range deviation code, see Novatel manual for interpretation"/>
-            <Data name="psrDeviation" inMemoryType="float32" encodedType="null" comment="Pseudo range standard deviation in meters"/>
-            <Code name="psrDeviation" decode="user->psrDeviation = psrDevs[user->psrDevCode];" comment="Convert pseudo range deviation code into meters"/>
-            <Data name="adrDeviation" inMemoryType="float32" encodedType="bitfield4" min="1/512" max="16/512" comment="Accumulated doppler standard deviation in cycles"/>
-            <Data name="prn" inMemoryType="uint8_t" comment="Satellite PRN number"/>
-            <Data name="lockTime" inMemoryType="float32" encodedType="bitfield21" scaler="32" comment="Lock time in seconds"/>
-            <Data name="cno" inMemoryType="float32" encodedType="bitfield5" min="20" scaler="1" comment="Carrier to noise ration in dB-Hz"/>
-            <Data name="reserved" inMemoryType="null" encodedType="bitfield22" comment="Reserved bits"/>
+            <Code name="trackingStatusVar1" decode="int trackcount = 0;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
+            <Code name="trackingStatusVar2" decode="uint8_t temp;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
+            <Data name="prn" inMemoryType="uint16_t" comment="Satellite PRN number"/>
+            <Data name="glofreq" inMemoryType="uint16_t" comment="GLONASS Frequency + 7"/>
+            <Data name="pseudoRange" inMemoryType="float64" comment="Pseudo range in meters"/>
+            <Data name="psrDeviation" inMemoryType="float32" comment="Pseudo range standard deviation in meters"/>
+            <Data name="accumulatedDoppler" inMemoryType="float64" comment="Carrier phase in cycles"/>
+            <Data name="adrDeviation" inMemoryType="float32" comment="Accumulated doppler standard deviation in cycles"/>
+            <Data name="dopplerFrequency" inMemoryType="float32" comment="Frequency of the carrier signal in Hz"/>
+            <Data name="cno" inMemoryType="float32" comment="Carrier to noise ratio in dB-Hz"/>
+            <Data name="lockTime" inMemoryType="float32" comment="Lock time in seconds"/>
+            <Data name="trackingStatusBytes" inMemoryType="unsigned8" array="4" comment="The bytes as they arrive in the message, so we can swap them because of strange Novatel encoding here"/>
+            <Data name="trackingStatus" struct="TrackingStatus" encodedType="null" comment="Tracking status details"/>
+            <Code name="swapone" decode="temp = user->trackingStatusBytes[3]; user->trackingStatusBytes[3] = user->trackingStatusBytes[0]; user->trackingStatusBytes[0] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
+            <Code name="swaptwo" decode="temp = user->trackingStatusBytes[2]; user->trackingStatusBytes[2] = user->trackingStatusBytes[1]; user->trackingStatusBytes[1] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
+            <Code name="trackingStatusFixup" decode="decodeTrackingStatus_t(user->trackingStatusBytes, &amp;trackcount, &amp;user->trackingStatus);" comment="Channel tracking status bits"/>
         </Structure>
     </Packet>
 

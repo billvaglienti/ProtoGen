@@ -9,7 +9,7 @@ extern "C" {
 #include <stdint.h>
 
 //! Maximum size of a novatel packet that we can process.
-#define MAX_NOV_PKT_SIZE 256
+#define MAX_NOV_PKT_SIZE 1024
 
 typedef struct
 {
