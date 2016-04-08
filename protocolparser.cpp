@@ -16,7 +16,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.2.b";
+const QString ProtocolParser::genVersion = "1.4.3.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -1080,6 +1080,29 @@ bool ProtocolParser::isFieldSet(const QDomElement &e, QString label) {
     else if (value.compare("yes",Qt::CaseInsensitive) == 0)
         result = true;
     else if (value.compare("1",Qt::CaseInsensitive) == 0)
+        result = true;
+
+    return result;
+}
+
+
+/*!
+ * Determine if the field contains a given label, and the value is either {'false','no','0'}
+ * \param e is the element from the DOM to test
+ * \param label is the name of the attribute form the element to test
+ * \return true if the attribute value is "false", "no", or "0"
+ */
+bool ProtocolParser::isFieldClear(const QDomElement &e, QString label) {
+
+    bool result = false;
+
+    QString value = e.attribute(label).trimmed().toLower();
+
+    if (value.compare("false",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("no",Qt::CaseInsensitive) == 0)
+        result = true;
+    else if (value.compare("0",Qt::CaseInsensitive) == 0)
         result = true;
 
     return result;

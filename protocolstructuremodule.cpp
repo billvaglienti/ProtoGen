@@ -16,7 +16,9 @@ ProtocolStructureModule::ProtocolStructureModule(const QString& protocolName, co
     ProtocolStructure(protocolName, protocolPrefix, supported),
     api(protocolApi),
     version(protocolVersion),
-    isBigEndian(bigendian)
+    isBigEndian(bigendian),
+    encode(true),
+    decode(true)
 {
 
 }
@@ -36,6 +38,7 @@ void ProtocolStructureModule::clear(void)
     ProtocolStructure::clear();
     source.clear();
     header.clear();
+    encode = decode = true;
 
     // Note that data set during constructor are not changed
 
@@ -53,6 +56,12 @@ void ProtocolStructureModule::parse(const QDomElement& e)
 
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse(e);
+
+    if(ProtocolParser::isFieldClear(e, "encode"))
+        encode = false;
+
+    if(ProtocolParser::isFieldClear(e, "decode"))
+        decode = false;
 
     if(isArray())
     {
@@ -214,15 +223,21 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
         if(encodables[i]->isPrimitive())
             continue;
 
-        source.makeLineSeparator();
-        source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
-        source.makeLineSeparator();
-        source.write(encodables[i]->getFunctionEncodeString(isBigEndian));
+        if(encode)
+        {
+            source.makeLineSeparator();
+            source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
+            source.makeLineSeparator();
+            source.write(encodables[i]->getFunctionEncodeString(isBigEndian));
+        }
 
-        source.makeLineSeparator();
-        source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
-        source.makeLineSeparator();
-        source.write(encodables[i]->getFunctionDecodeString(isBigEndian));
+        if(decode)
+        {
+            source.makeLineSeparator();
+            source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
+            source.makeLineSeparator();
+            source.write(encodables[i]->getFunctionDecodeString(isBigEndian));
+        }
     }
 
     source.makeLineSeparator();
@@ -236,19 +251,27 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
  */
 void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 {
-    // My encoding and decoding prototypes in the header file
+    if(encode)
+    {
+        header.makeLineSeparator();
+        header.write(getPrototypeEncodeString(isBigEndian, false));
+        source.makeLineSeparator();
+        source.write(getFunctionEncodeString(isBigEndian, false));
+    }
+
+    if(decode)
+    {
+        header.makeLineSeparator();
+        header.write(getPrototypeDecodeString(isBigEndian, false));
+        source.makeLineSeparator();
+        source.write(getFunctionDecodeString(isBigEndian, false));
+    }
+
     header.makeLineSeparator();
-    header.write(getPrototypeEncodeString(isBigEndian, false));
-    header.makeLineSeparator();
+    source.makeLineSeparator();
+
     header.write(getPrototypeDecodeString(isBigEndian, false));
     header.makeLineSeparator();
-
-    // My encoding and decoding functions in the source file
-    source.makeLineSeparator();
-    source.write(getFunctionEncodeString(isBigEndian, false));
-    source.makeLineSeparator();
-    source.write(getFunctionDecodeString(isBigEndian, false));
-    source.makeLineSeparator();
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
 

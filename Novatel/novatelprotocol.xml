@@ -205,7 +205,7 @@
         <Value name="UNAUTHORIZED" value="20" comment="Position type is unauthorized - HP or XP on a receiver not authorized for it."/>
     </Enum>
 
-    <Structure name="ExtendedSolStatus" file="NovatelStructures" comment="Extended solution status bits">
+    <Structure name="ExtendedSolStatus" file="NovatelStructures" encode="false" comment="Extended solution status bits">
         <Enum name="IonoCorrection_t" comment="types of ionospheric correction">
             <Value name="Default" comment="Unknownn or default Klobuchar model"/>
             <Value name="Klobuchar" comment="Klobuchar Broadcast"/>
@@ -221,7 +221,7 @@
         <Data name="correctionStatus" inMemoryType="bitfield1" comment="If an RTK solution: NovAtel CORRECT solution has been verified. If a PDP solution: solution is GLIDE Otherwise: Reserved."/>
     </Structure>
 
-    <Structure name="GalileoAndBeiDouSignalsUsed" file="NovatelStructures" comment="Types of signals used from Galileo and BeiDou">
+    <Structure name="GalileoAndBeiDouSignalsUsed" file="NovatelStructures" encode="false" comment="Types of signals used from Galileo and BeiDou">
         <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
         <Data name="beidouB2" inMemoryType="bitfield1" comment="Set if BeiDou B2 used in solution."/>
         <Data name="beidouB1" inMemoryType="bitfield1" comment="Set if BeiDou B1 used in solution."/>
@@ -229,7 +229,7 @@
         <Data name="galileoE1" inMemoryType="bitfield1" comment="Set if Galileo E1 used in solution."/>
     </Structure>
 
-    <Structure name="GpsAndGlonassSignalsUsed" file="NovatelStructures" comment="Types of signals used from GPS and GLONASS">
+    <Structure name="GpsAndGlonassSignalsUsed" file="NovatelStructures" encode="false" comment="Types of signals used from GPS and GLONASS">
         <Data name="reserved67" inMemoryType="null" encodedType="bitfield2" constant="0" comment="Reserved bits."/>
         <Data name="glonassL2" inMemoryType="bitfield1" comment="Set if GLONASS L2 used in solution."/>
         <Data name="glonassL1" inMemoryType="bitfield1" comment="Set if GLONASS L1 used in solution."/>
@@ -239,7 +239,7 @@
         <Data name="gpsL1" inMemoryType="bitfield1" comment="Set if GPS L1 used in solution."/>
     </Structure>
 
-    <Structure name="Pos" file="NovatelStructures" comment="Latitude, Longitude, Altitude position information">
+    <Structure name="Pos" file="NovatelStructures" encode="false" comment="Latitude, Longitude, Altitude position information">
         <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
         <Data name="type" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
         <Data name="lat" inMemoryType="float64" encodedType="float64" scaler="180/pi" comment="Geodetic latitude in radians. Scaled from encoded degrees."/>
@@ -265,7 +265,7 @@
         <Code name="ConstructAlt" decode="user->alt = user->hgtmsl + user->undulation;" comment="Construct the altitude with respect to the datum."/>
     </Structure>
 
-    <Structure name="XYZ" file="NovatelStructures" comment="Cartesian position and velocity information">
+    <Structure name="XYZ" file="NovatelStructures" encode="false" comment="Cartesian position and velocity information">
         <Data name="posSolStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
         <Data name="posType" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
         <Data name="posECEF" inMemoryType="float64" array="3" comment="Position X, Y, Z in meters ECEF."/>
@@ -289,7 +289,7 @@
         <Data name="undulation" inMemoryType="float32" encodedType="null" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation. This is not part of the XYZ log, but must be set from a POS log."/>
     </Structure>
 
-    <Structure name="DOP" file="NovatelStructures" comment="Dilution of precision information">
+    <Structure name="DOP" file="NovatelStructures" encode="false" comment="Dilution of precision information">
         <Data name="gdop" inMemoryType="float32" comment="Geometric dilution of precision - assumes 3D position and receiver clock offset (all 4 parameters) are unknown."/>
         <Data name="pdop" inMemoryType="float32" comment="Position dilution of precision - assumes 3D position is unknown and receiver clock offset is known."/>
         <Data name="hdop" inMemoryType="float32" comment="Horizontal dilution of precision."/>
@@ -300,7 +300,7 @@
         <Data name="prn" inMemoryType="uint8_t" encodedType="unsigned32" array="32" variableArray="numPRN" comment="Satellite PRNs that are in the position and DOP calculation."/>
     </Structure>
 
-    <Structure name="TrackingStatus" file="NovatelStructures" comment="Tracking status information as a 32-bit field">
+    <Structure name="TrackingStatus" file="NovatelStructures" encode="false" comment="Tracking status information as a 32-bit field">
         <Enum name="SignalType_t" comment="Signal types from GPS">
             <Value name="L1CA_SIGNAL" value="0" comment="L1 coarse acquisition"/>
             <Value name="L2P_SIGNAL" value="5" comment="L2 precise"/>
@@ -351,7 +351,7 @@
         <Data name="trackingState" enum="TrackingState_t" encodedType="bitfield5" comment="State of the tracking loop"/>
     </Structure>
 
-    <Packet name="BinaryResponse" file="NovatelPackets" ID="1" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
+    <Packet name="BinaryResponse" file="NovatelPackets" ID="1" encode="false" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="responseID" inMemoryType="unsigned32" comment="ID of the message that triggered this number"/>
@@ -409,7 +409,7 @@
         <Data name="response" inMemoryType="unsigned32" comment="1 to enable response messages, 0 to disable."/>
     </Packet>
 
-    <Packet name="GPSEphemeris" file="NovatelPackets" ID="GPSEPHEM" comment="Ephemeris data for a single satellite">
+    <Packet name="GPSEphemeris" file="NovatelPackets" ID="GPSEPHEM" encode="false" comment="Ephemeris data for a single satellite">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="prn" inMemoryType="unsigned8" encodedType="unsigned32" comment="Satellite PRN number"/>
@@ -451,20 +451,20 @@
                        the nominal value (variance)."/>
     </Packet>
 
-    <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" comment="Best available cartesian position and velocity">
+    <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" encode="false" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="pos" struct="Pos" comment="Latitude, Longitude, Altitude position information."/>
     </Packet>
 
-    <Packet name="UndulationFromBestPos" file="NovatelPackets" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value. This packet can only be used for decode, not encode.">
+    <Packet name="UndulationFromBestPos" file="NovatelPackets" encode="false" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value. This packet can only be used for decode, not encode.">
         <Data name="skipped0" inMemoryType="null" array="MinHeaderLength" encodedType="unsigned8" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (data[3] - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="skipped1" inMemoryType="null" array="32" encodedType="unsigned8" comment="Data before the undulation that we ignore."/>
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
     </Packet>
 
-    <Packet name="Range" file="NovatelPackets" ID="RANGE" comment="The raw data.">
+    <Packet name="Range" file="NovatelPackets" ID="RANGE" encode="false" comment="The raw data.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
@@ -488,13 +488,13 @@
         </Structure>
     </Packet>
 
-    <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" comment="Pseudo range dilution of precision">
+    <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" encode="false" comment="Pseudo range dilution of precision">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="dop" struct="DOP" comment="Dilution of precision data."/>
     </Packet>
 
-    <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" comment="Best available cartesian position and velocity">
+    <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" encode="false" comment="Best available cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>

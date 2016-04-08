@@ -44,6 +44,8 @@ protected:
     QString api;                    //!< The protocol API enumeration
     QString version;                //!< The version string
     bool isBigEndian;               //!< True if this packets data are encoded in Big Endian
+    bool encode;                    //!< True if the encode function is output
+    bool decode;                    //!< True if the decode function is output
 
 };
 

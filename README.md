@@ -191,6 +191,10 @@ Structure tag Attributes:
 
 - `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
 
+- `encode` : By default encode functions will be output. This can be suppressed by setting `encode`="false".
+
+- `decode` : By default decode functions will be output. This can be suppressed by setting `decode`="false".
+
 - `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once).
 
 ###Structure : Data subtags
@@ -477,7 +481,7 @@ ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to
 bitfieldspecial
 ---------------
 
-bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` then this file will not be output. In addition any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and the long bitfield functions will be used for that bitfield. The normal bitfield support routines use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` a test function will be written into bitfieldspecial which can be used to test the bitfield routines on your compiler.
+bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` this file will not be output. In addition any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and the long bitfield functions will be used for that bitfield. The normal bitfield support routines use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` a test function will be written into bitfieldspecial which can be used to test the bitfield routines on your compiler.
 
 Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last.
 
