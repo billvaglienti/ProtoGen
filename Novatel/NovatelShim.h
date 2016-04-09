@@ -26,6 +26,12 @@ extern "C" {
 #include "NovatelProtocol.h"
 #include "NovatelStructures.h"
 
+//! Compute the wavelength of a GPS signal
+double getGPSWavelength(SignalType_t signalType);
+
+//! Compute the carrier phase range from raw range data
+double getCarrierPhaseRange(const range_t* range);
+
 //! Decode the RangeCmp packet
 int decodeRangeCmpPacketStructure(const void* pkt, Range_t* user);
 

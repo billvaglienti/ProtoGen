@@ -14,6 +14,45 @@ static int decodeRangeCmpRecord(const uint8_t* data, int* bytecount, range_t* us
 //! Use the data in a range record to correct the accumulated doppler range
 static void performAdrCorrection(range_t* range);
 
+/*!
+ * Return the wavelength of a GPS signal
+ * \param signalType is the type of signal (L1, L2, L5)
+ * \return the wavelength in meters
+ */
+double getGPSWavelength(SignalType_t signalType)
+{
+    // speed of light in meters per second
+    static const double speedoflight = 299792458.0;
+    switch(signalType)
+    {
+    default:
+    case L1CA_SIGNAL:
+        return speedoflight/(10.23*154.0*1000000);
+
+    case L2P_SIGNAL:
+    case L2PC_SIGNAL:
+    case L2C_SIGNAL:
+        return speedoflight/(10.23*120.0*1000000);
+
+    case L5Q_SIGNAL:
+        return speedoflight/(10.23*115.0*1000000);
+
+    }// switch
+
+}// getGPSWavelength
+
+
+/*!
+ * Compute the carrier phase range from raw range data
+ * \param range is the raw range data from the RANGE or RANGECMP messages
+ * \return the carrier phase range in meters as the accumulatedDoppler times the wavelength.
+ */
+double getCarrierPhaseRange(const range_t* range)
+{
+    return range->accumulatedDoppler*getGPSWavelength(range->trackingStatus.signalType);
+}
+
+
 //! return the packet ID for the RangeCmp packet
 uint32_t getRangeCmpPacketID(void)
 {
@@ -195,26 +234,15 @@ int decodeRangeCmpRecord(const uint8_t* data, int* bytecount, range_t* user)
  */
 void performAdrCorrection(range_t* range)
 {
-    double wavelength;
-    double adrrolls;
-    int32_t adrollsint;
-
-    /// TODO: add non-GPS support? add L5 support?
-
-    if(range->trackingStatus.signalType == L1CA_SIGNAL)
-        wavelength = 0.1902936727984;
-    else
-        wavelength = 0.2442102134246;
+    double wavelength = getGPSWavelength(range->trackingStatus.signalType);
 
     // Compute the number of times ADR has rolled over
-    adrrolls = (range->pseudoRange/wavelength + range->accumulatedDoppler)*(1.0/8388608.0);
+    double adrrolls = (range->pseudoRange/wavelength + range->accumulatedDoppler)*(1.0/8388608.0);
 
-    if(adrrolls > 0.0)
-        adrollsint = (int32_t)(adrrolls + 0.5);
-    else
-        adrollsint = (int32_t)(adrrolls - 0.5);
+    // Properly rounded integer number of rollovers
+    int32_t adrollsint = (adrrolls > 0.0) ? (int32_t)(adrrolls + 0.5) : (int32_t)(adrrolls - 0.5);
 
-    // Now perform the correction
+    // Compute the complete rate
     range->accumulatedDoppler = range->accumulatedDoppler - (adrollsint*8388608.0);
 
 }// performAdrCorrection
@@ -231,6 +259,7 @@ int testRangeCmp(void)
     uint8_t data[] = {0x24, 0x9C, 0x10, 0x08, 0x0e, 0x63, 0x06, 0x20, 0x6A, 0xBA, 0xF7, 0x0B, 0x29, 0x7A, 0xE7, 0xF9, 0x40, 0x1B, 0x81, 0x8E, 0x01, 0x03, 0x00, 0x00};
 
     range_t range = {0};
+    double test;
     int byteindex = 0;
 
     decodeRangeCmpRecord(data, &byteindex, &range);
@@ -283,6 +312,10 @@ int testRangeCmp(void)
     if(range.accumulatedDoppler != -134617221.83984375)
         return 0;
 
+    test = getCarrierPhaseRange(&range);
+    if(test != -25616805.565816127)
+        return 0;
+
     if(range.psrDeviation != 0.05f)
         return 0;
 
@@ -300,4 +333,4 @@ int testRangeCmp(void)
 
     return 1;
 
-}
+}// testRangeCmp

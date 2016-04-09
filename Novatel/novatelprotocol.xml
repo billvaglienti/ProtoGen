@@ -21,6 +21,7 @@
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
         <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
         <Value name="SERIALCONFIG" value="1246" comment="Used to configure serial port settings on the receiver."/>
+        <Value name="SATXYZ2" value="1451" comment="Satellite positions in ECEF."/>
     </Enum>
 
     <Enum name="Formats_t" comment="Types of message formats">
@@ -205,6 +206,15 @@
         <Value name="UNAUTHORIZED" value="20" comment="Position type is unauthorized - HP or XP on a receiver not authorized for it."/>
     </Enum>
 
+    <Enum name="SatelliteSystem_t" comment="Type of navigation system">
+        <Value name="GPS_SAT" comment="Global Positioning System"/>
+        <Value name="GLONASS_SAT" comment="Global Navigation Satellite System"/>
+        <Value name="SBAS_SAT" comment="Satellite Based Augmentation System"/>
+        <Value name="Galileo_SAT" comment="European navigation system"/>
+        <Value name="BeiDou_SAT" comment="BeiDou Navigation Satellite System"/>
+        <Value name="QZSS_SAT" comment="Quasi-Zenith Satellite System"/>
+    </Enum>
+
     <Structure name="ExtendedSolStatus" file="NovatelStructures" encode="false" comment="Extended solution status bits">
         <Enum name="IonoCorrection_t" comment="types of ionospheric correction">
             <Value name="Default" comment="Unknownn or default Klobuchar model"/>
@@ -296,8 +306,8 @@
         <Data name="htdop" inMemoryType="float32" comment="Horizontal position and time dilution of precision."/>
         <Data name="tdop" inMemoryType="float32" comment="Time dilution of precision - assumes 3D position is known and only the receiver clock offset is unknown."/>
         <Data name="cutoff" inMemoryType="float32" scaler="180/pi" comment="GPS elevation cut-off angle in radians."/>
-        <Data name="numPRN" inMemoryType="float32" comment="Number of satellites PRNs to follow."/>
-        <Data name="prn" inMemoryType="uint8_t" encodedType="unsigned32" array="32" variableArray="numPRN" comment="Satellite PRNs that are in the position and DOP calculation."/>
+        <Data name="numPRN" inMemoryType="signed32" comment="Number of satellites PRNs to follow."/>
+        <Data name="prn" inMemoryType="unsigned8" encodedType="unsigned32" array="32" variableArray="numPRN" comment="Satellite PRNs that are in the position and DOP calculation."/>
     </Structure>
 
     <Structure name="TrackingStatus" file="NovatelStructures" encode="false" comment="Tracking status information as a 32-bit field">
@@ -307,14 +317,6 @@
             <Value name="L2PC_SIGNAL" value="9" comment="L2 precise, codeless"/>
             <Value name="L5Q_SIGNAL" value="14" comment="L5 quadrature code"/>
             <Value name="L2C_SIGNAL" value="17" comment="L2 civilian"/>
-        </Enum>
-        <Enum name="SatelliteSystem_t" comment="Type of navigation system">
-            <Value name="GPS_SAT" comment="Global Positioning System"/>
-            <Value name="GLONASS_SAT" comment="Global Navigation Satellite System"/>
-            <Value name="SBAS_SAT" comment="Satellite Based Augmentation System"/>
-            <Value name="Galileo_SAT" comment="European navigation system"/>
-            <Value name="BeiDou_SAT" comment="BeiDou Navigation Satellite System"/>
-            <Value name="QZSS_SAT" comment="Quasi-Zenith Satellite System"/>
         </Enum>
         <Enum name="CorrelatorType_t" comment="Type of navigation system">
             <Value name="standardCorrelator" value="1" comment="Standard correlator: spacing equals 1 chip"/>
@@ -520,6 +522,21 @@
         <Data name="stopbits" inMemoryType="unsigned32" comment="Stop bits per byte, either 1 or 2."/>
         <Data name="handshake" enum="HandShaking_t" encodedType="unsigned32" comment="Handshake setting of the port."/>
         <Data name="enablebreak" inMemoryType="unsigned32" comment="1 to enable break detection, 0 to disable break detection."/>
+    </Packet>
+
+    <Packet name="SatXYZ2" file="NovatelPackets" ID="SATXYZ2" encode="false" comment="Satellite position and errors as computed by Novatel from the GPS ephemeris">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="numSats" inMemoryType="unsigned32" comment="Number of satellite positions to follow"/>
+        <Structure name="satpos" array="12" variableArray="numSats" comment="The satellite positions">
+            <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="unsigned32" comment="Type of navigation system"/>
+            <Data name="satelliteID" inMemoryType="unsigned32" comment="Satellite ID (PRN number for GPS)"/>
+            <Data name="posEcef" inMemoryType="float64" array="3" comment="Position of the satellite in x,y,z ECEF meters"/>
+            <Data name="clockCorrection" inMemoryType="float64" comment="Satellite clock correction in meters (subtract from pseudo range to apply correction)"/>
+            <Data name="ionoDelay" inMemoryType="float64" comment="Ionospheric delay in meters (subtract from pseudo range to apply correction)"/>
+            <Data name="tropoDelay" inMemoryType="float64" comment="Tropospheric delay in meters (subtract from pseudo range to apply correction)"/>
+            <Data name="reserved" inMemoryType="null" encodedType="unsigned8" array="16" comment="Reserved space in the message"/>
+        </Structure>
     </Packet>
 
 </Protocol>
