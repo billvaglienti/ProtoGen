@@ -29,7 +29,8 @@ ProtocolFile::ProtocolFile(const QString& moduleName, bool onlyversion) :
  */
 ProtocolFile::ProtocolFile() :
     dirty(false),
-    appending(false)
+    appending(false),
+    versionOnly(true)
 {
 }
 
@@ -86,8 +87,8 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
     if(directive == fileName())
         return;
 
+    // Build the include directive with quotes or brackets based on the global status
     if (Global == false)
-    // Build the include directive with quotes
         directive = "#include \"" + directive + "\"";
     else
         directive = "#include <" + directive + ">";
@@ -103,7 +104,6 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
         directive += "\t// " + comment + "\n";
 
     write(directive);
-
 
 }// ProtocolFile::writeIncludeDirective
 

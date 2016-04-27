@@ -22,7 +22,6 @@ void ProtocolBitfield::generate(void)
 void ProtocolBitfield::generateHeader(void)
 {
     header.setModuleName("bitfieldspecial");
-    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -116,7 +115,6 @@ void ProtocolBitfield::generateHeader(void)
 void ProtocolBitfield::generateSource(void)
 {
     source.setModuleName("bitfieldspecial");
-    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();

@@ -16,7 +16,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.3.a";
+const QString ProtocolParser::genVersion = "1.4.3.b";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -284,7 +284,6 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
 
     // The file names
     header.setModuleName(nameex);
-    header.setVersionOnly(true);
 
     comment = docElem.attribute("comment");
 

@@ -67,7 +67,6 @@ bool FieldCoding::generate(void)
 bool FieldCoding::generateEncodeHeader(void)
 {
     header.setModuleName("fieldencode");
-    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -145,7 +144,6 @@ bool FieldCoding::generateEncodeHeader(void)
 bool FieldCoding::generateEncodeSource(void)
 {
     source.setModuleName("fieldencode");
-    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();
@@ -465,7 +463,6 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
 bool FieldCoding::generateDecodeHeader(void)
 {
     header.setModuleName("fielddecode");
-    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -543,7 +540,6 @@ bool FieldCoding::generateDecodeHeader(void)
 bool FieldCoding::generateDecodeSource(void)
 {
     source.setModuleName("fielddecode");
-    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();

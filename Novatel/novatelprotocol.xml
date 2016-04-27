@@ -11,7 +11,7 @@
  data. The size of a packet is computed by summing the header length and the
  body length.">
 
-    <Enum name="packetIds" comment="The list of packet identifiers">
+    <Enum name="novatelPacketIds" comment="The list of packet identifiers">
         <Value name="LOG" value="1" comment="Used to configure log outputs."/>
         <Value name="INTERFACEMODE" value="3" comment="Used to configure transmit and receive communications protocols on a port."/>
         <Value name="GPSEPHEM" value="7" comment="GPS ephemeris for a single satellite"/>

@@ -60,7 +60,6 @@ bool ProtocolScaling::generate(void)
 bool ProtocolScaling::generateEncodeHeader(void)
 {
     header.setModuleName("scaledencode");
-    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -163,7 +162,6 @@ bool ProtocolScaling::generateEncodeHeader(void)
 bool ProtocolScaling::generateEncodeSource(void)
 {
     source.setModuleName("scaledencode");
-    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();
@@ -512,7 +510,6 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
 bool ProtocolScaling::generateDecodeHeader(void)
 {
     header.setModuleName("scaleddecode");
-    header.setVersionOnly(true);
 
     // Make sure empty
     header.clear();
@@ -585,7 +582,6 @@ bool ProtocolScaling::generateDecodeHeader(void)
 bool ProtocolScaling::generateDecodeSource(void)
 {
     source.setModuleName("scaleddecode");
-    source.setVersionOnly(true);
 
     // Make sure empty
     source.clear();

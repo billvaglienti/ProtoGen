@@ -6,7 +6,7 @@
 class ProtocolFile
 {
 public:
-    ProtocolFile(const QString& moduleName, bool onlyversion = false);
+    ProtocolFile(const QString& moduleName, bool onlyversion = true);
 
     ProtocolFile();
 
