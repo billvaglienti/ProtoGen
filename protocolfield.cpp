@@ -608,12 +608,15 @@ void ProtocolField::parse(const QDomElement& field)
 
     if(inMemoryType.isBitfield)
     {
-        if(!encodedTypeString.isEmpty() && !encodedType.isBitfield)
-            std::cout << name.toStdString() << ": encoded type ignored because in memory type is bitfield" << std::endl;
+        if(!encodedType.isNull)
+        {
+            if(!encodedTypeString.isEmpty() && !encodedType.isBitfield)
+                std::cout << name.toStdString() << ": encoded type ignored because in memory type is bitfield" << std::endl;
 
-        // make the encoded type follow the in memory type for bit fields
-        encodedType.isBitfield = true;
-        encodedType.bits = inMemoryType.bits;
+            // make the encoded type follow the in memory type for bit fields
+            encodedType.isBitfield = true;
+            encodedType.bits = inMemoryType.bits;
+        }
     }
 
     // It is possible for the in memory type to not be a bit field, but the
