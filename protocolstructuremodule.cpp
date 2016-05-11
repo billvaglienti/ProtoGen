@@ -80,6 +80,9 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     QString moduleName = e.attribute("file");
 
     if(moduleName.isEmpty())
+        moduleName = support.globalFileName;
+
+    if(moduleName.isEmpty())
     {
         // The file names
         header.setModuleName(prefix + name);

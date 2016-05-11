@@ -79,6 +79,9 @@ void ProtocolPacket::parse(const QDomElement& e)
     QString moduleName = e.attribute("file").trimmed();
 
     if(moduleName.isEmpty())
+        moduleName = support.globalFileName;
+
+    if(moduleName.isEmpty())
     {
         // The file names
         header.setModuleName(prefix + name + "Packet");

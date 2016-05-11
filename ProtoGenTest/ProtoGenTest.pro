@@ -16,11 +16,13 @@ TEMPLATE = app
 
 QMAKE_CXXFLAGS += -Wno-unused-parameter
 
+QMAKE_CFLAGS += -std=c99
+QMAKE_CFLAGS += -pedantic
+QMAKE_CFLAGS += -Wall
+
+
 SOURCES += main.cpp \
-    packetinterface.c \
     bitfieldspecial.c \
-    Board.c \
-    Date.c \
     Engine.c \
     fielddecode.c \
     fieldencode.c \
@@ -29,14 +31,12 @@ SOURCES += main.cpp \
     scaleddecode.c \
     scaledencode.c \
     TelemetryPacket.c \
-    VersionPacket.c \
-    KeepAlivePacket.c
+    linkcode.c \
+    packetinterface.c
 
 HEADERS += \
     indices.h \
     bitfieldspecial.h \
-    Board.h \
-    Date.h \
     DemolinkProtocol.h \
     Engine.h \
     fielddecode.h \
@@ -46,8 +46,7 @@ HEADERS += \
     scaleddecode.h \
     scaledencode.h \
     TelemetryPacket.h \
-    VersionPacket.h \
-    KeepAlivePacket.h \
+    linkcode.h \
     packetinterface.h
 
 OTHER_FILES += \

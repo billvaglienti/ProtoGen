@@ -3,12 +3,11 @@
 #include <math.h>
 #include "floatspecial.h"
 #include "bitfieldspecial.h"
-#include "VersionPacket.h"
-#include "KeepAlivePacket.h"
 #include "GPS.h"
 #include "Engine.h"
 #include "TelemetryPacket.h"
 #include "packetinterface.h"
+#include "linkcode.h"
 
 #define PI 3.141592653589793
 #define deg2rad(x) (PI*(x)/180.0)

@@ -16,7 +16,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.3.c";
+const QString ProtocolParser::genVersion = "1.4.4.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -159,6 +159,9 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     if(docElem.attribute("bitfieldTest").contains("true", Qt::CaseInsensitive))
         support.bitfieldtest = true;
 
+    // Global file names can be specified
+    support.globalFileName = docElem.attribute("file");
+
     // Prefix is not required
     prefix = docElem.attribute("prefix").trimmed();
 
@@ -182,6 +185,10 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         QDomElement e = structlist.at(i).toElement();
 
         QString moduleName = e.attribute("file");
+
+        if(moduleName.isEmpty())
+            moduleName = support.globalFileName;
+
         if(moduleName.isEmpty())
             moduleName = e.attribute("name");
 
@@ -193,6 +200,10 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     {
         QDomElement e = packetlist.at(i).toElement();
         QString moduleName = e.attribute("file");
+
+        if(moduleName.isEmpty())
+            moduleName = support.globalFileName;
+
         if(moduleName.isEmpty())
             moduleName = e.attribute("name") + "Packet";
 

@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.4.2. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.4.4. You can download the [windows version here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenWin.zip). The [mac version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenMac.zip). The [linux version is here](http://www.fivebyfivedevelopment.com/Downloads/ProtoGenLinux.tgz). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -53,6 +53,8 @@ The root element of the XML is "Protocol". It must be present for ProtoGen to ge
 The Protocol tag supports the following attributes:
 
 - `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink".
+
+- `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any structures or packets which have their own `file` attribute.
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions. A common way to use the `prefix` is to make it the same as `name`.
 
@@ -189,7 +191,7 @@ Structure tag Attributes:
 
 - `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
 
-- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
+- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
 
 - `encode` : By default encode functions will be output. This can be suppressed by setting `encode`="false".
 
