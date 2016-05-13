@@ -29,6 +29,8 @@ interpretation
         <Value name="TELEMETRY" comment="Regular elemetry packet"/>
         <Value name="GPS" comment="Data for a single GPS"/>
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
+        <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
+
     </Enum>
 
     <Enum name="ThreeD" comment="3D axis enumeration">
@@ -205,5 +207,7 @@ interpretation
         <Data name="constant5" inMemoryType="bitfield4" constant="13" checkConstant="true" comment="encoding an integer constant"/>
         <Data name="token" inMemoryType="float32" encodedType="bitfield7" max="127" comment="A value that the user provides"/>
     </Packet>
+
+    <Packet name="Zero" ID="ZEROLENGTH" comment="This demonstrates a zero length packet"/>
 
 </Protocol>

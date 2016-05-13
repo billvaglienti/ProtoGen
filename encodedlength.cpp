@@ -28,7 +28,19 @@ void EncodedLength::clear(void)
 bool EncodedLength::isEmpty(void)
 {
     return maxEncodedLength.isEmpty();
+}
 
+
+/*!
+ * Determine if the length is zero
+ * \return true if the maximum length is empty or is "0"
+ */
+bool EncodedLength::isZeroLength(void)
+{
+    if(collapseLengthString(maxEncodedLength, true).compare("0") == 0)
+        return true;
+    else
+        return false;
 }
 
 

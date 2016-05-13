@@ -482,25 +482,35 @@ void ProtocolPacket::createPacketFunctions(void)
         source.write(" */\n");
         source.write(getPacketEncodeSignature() + "\n");
         source.write("{\n");
-        source.write("    uint8_t* data = get"+ protoName + "PacketData(pkt);\n");
-        source.write("    int byteindex = 0;\n");
 
-        if(bitfields)
-            source.write("    int bitcount = 0;\n");
-
-        if(needsEncodeIterator)
-            source.write("    int i = 0;\n");
-
-        // Keep our own track of the bitcount so we know what to do when we close the bitfield
-        for(i = 0; i < encodables.length(); i++)
+        if(!encodedLength.isZeroLength())
         {
+            source.write("    uint8_t* data = get"+ protoName + "PacketData(pkt);\n");
+            source.write("    int byteindex = 0;\n");
+
+            if(bitfields)
+                source.write("    int bitcount = 0;\n");
+
+            if(needsEncodeIterator)
+                source.write("    int i = 0;\n");
+
+            // Keep our own track of the bitcount so we know what to do when we close the bitfield
+            for(i = 0; i < encodables.length(); i++)
+            {
+                source.makeLineSeparator();
+                source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, false));
+            }
+
             source.makeLineSeparator();
-            source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, false));
+            source.write("    // complete the process of creating the packet\n");
+            source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + prefix + name + "PacketID());\n");
+        }
+        else
+        {
+            source.write("    // Zero length packet, no data encoded\n");
+            source.write("    finish" + protoName + "Packet(pkt, 0, get" + prefix + name + "PacketID());\n");
         }
 
-        source.makeLineSeparator();
-        source.write("    // complete the process of creating the packet\n");
-        source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + prefix + name + "PacketID());\n");
         source.write("}\n");
     }
 
@@ -519,62 +529,74 @@ void ProtocolPacket::createPacketFunctions(void)
         source.write(" */\n");
         source.write(getPacketDecodeSignature() + "\n");
         source.write("{\n");
-        if(bitfields)
-            source.write("    int bitcount = 0;\n");
-        if(needsDecodeIterator)
-            source.write("    int i = 0;\n");
-        source.write("    int byteindex = 0;\n");
-        source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");
-        source.write("    int numBytes = get" + protoName + "PacketSize(pkt);\n");
-        source.write("\n");
-        source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
-        source.write("        return 0;\n");
-        source.write("\n");
-        source.write("    if(numBytes < get" + prefix + name + "MinDataLength())\n");
-        source.write("        return 0;\n");
-        if(defaults)
+
+        if(!encodedLength.isZeroLength())
         {
+            if(bitfields)
+                source.write("    int bitcount = 0;\n");
+            if(needsDecodeIterator)
+                source.write("    int i = 0;\n");
+            source.write("    int byteindex = 0;\n");
+            source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");
+            source.write("    int numBytes = get" + protoName + "PacketSize(pkt);\n");
             source.write("\n");
-            source.write("    // this packet has default fields, make sure they are set\n");
-
-            for(int i = 0; i < encodables.size(); i++)
-                source.write(encodables[i]->getSetToDefaultsString(false));
-
-        }// if defaults are used in this packet
-
-        // Keep our own track of the bitcount so we know what to do when we close the bitfield
-        bitcount = 0;
-        for(i = 0; i < encodables.length(); i++)
-        {
-            source.makeLineSeparator();
-
-            // Encode just the nondefaults here
-            if(encodables[i]->isDefault())
-                break;
-
-            source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
-        }
-
-        // Before we write out the decodes for default fields we need to check
-        // packet size in the event that we were using variable length arrays
-        // or dependent fields
-        if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
-        {
-            source.makeLineSeparator();
-            source.write("    // Used variable length arrays or dependent fields, check actual length\n");
-            source.write("    if(numBytes < byteindex)\n");
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
             source.write("        return 0;\n");
-        }
+            source.write("\n");
+            source.write("    if(numBytes < get" + prefix + name + "MinDataLength())\n");
+            source.write("        return 0;\n");
+            if(defaults)
+            {
+                source.write("\n");
+                source.write("    // this packet has default fields, make sure they are set\n");
 
-        // Now finish the fields (if any defaults)
-        for(; i < encodables.length(); i++)
-        {
+                for(int i = 0; i < encodables.size(); i++)
+                    source.write(encodables[i]->getSetToDefaultsString(false));
+
+            }// if defaults are used in this packet
+
+            // Keep our own track of the bitcount so we know what to do when we close the bitfield
+            bitcount = 0;
+            for(i = 0; i < encodables.length(); i++)
+            {
+                source.makeLineSeparator();
+
+                // Encode just the nondefaults here
+                if(encodables[i]->isDefault())
+                    break;
+
+                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
+            }
+
+            // Before we write out the decodes for default fields we need to check
+            // packet size in the event that we were using variable length arrays
+            // or dependent fields
+            if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
+            {
+                source.makeLineSeparator();
+                source.write("    // Used variable length arrays or dependent fields, check actual length\n");
+                source.write("    if(numBytes < byteindex)\n");
+                source.write("        return 0;\n");
+            }
+
+            // Now finish the fields (if any defaults)
+            for(; i < encodables.length(); i++)
+            {
+                source.makeLineSeparator();
+                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
+            }
+
             source.makeLineSeparator();
-            source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
+            source.write("    return 1;\n");
+        }
+        else
+        {
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+            source.write("        return 0;\n");
+            source.write("    else\n");
+            source.write("        return 1;\n");
         }
 
-        source.makeLineSeparator();
-        source.write("    return 1;\n");
         source.write("}\n");
     }
 
@@ -696,7 +718,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
     {
         // The length strings, which may include enumerated identiers such as "N3D"
-        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "");
+        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
         // The same quantities, but here we'll try and evaluate to a fixed number
         QString minLengthValue = minLength;
@@ -705,11 +727,12 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
 
         // Re-collapse, perhaps we can solve it now
-        minLengthValue = EncodedLength::collapseLengthString(minLengthValue);
+        minLengthValue = EncodedLength::collapseLengthString(minLengthValue, true);
 
         output += "- data length: " + minLength.replace("*", "&times;");
 
-        // See if we made it any simpler
+        // See if we made it any simpler, if we did then provide both versions,
+        // this way the reader can see the numeric result, and how we got there.
         if(minLengthValue.compare(minLength) != 0)
             output += " : " + minLengthValue.replace("*", "&times;");
 
@@ -718,8 +741,8 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
     else
     {
         // The length strings, which may include enumerated identiers such as "N3D"
-        QString maxLength = EncodedLength::collapseLengthString(encodedLength.maxEncodedLength).replace("1*", "");
-        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength).replace("1*", "");
+        QString maxLength = EncodedLength::collapseLengthString(encodedLength.maxEncodedLength, true).replace("1*", "");
+        QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
         // The same quantities, but here we'll try and evaluate to a fixed number
         QString maxLengthValue = maxLength;
@@ -730,12 +753,13 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
 
         // Re-collapse, perhaps we can solve it now
-        maxLengthValue = EncodedLength::collapseLengthString(maxLengthValue);
-        minLengthValue = EncodedLength::collapseLengthString(minLengthValue);
+        maxLengthValue = EncodedLength::collapseLengthString(maxLengthValue, true);
+        minLengthValue = EncodedLength::collapseLengthString(minLengthValue, true);
 
         output += "- minimum data length: " + minLength.replace("*", "&times;");
 
-        // See if we made it any simpler
+        // See if we made it any simpler, if we did then provide both versions,
+        // this way the reader can see the numeric result, and how we got there.
         if(minLengthValue.compare(minLength) != 0)
             output += " : " + minLengthValue.replace("*", "&times;");
 
@@ -743,7 +767,8 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
 
         output += "- maximum data length: " + maxLength.replace("*", "&times;");
 
-        // See if we made it any simpler
+        // See if we made it any simpler, if we did then provide both versions,
+        // this way the reader can see the numeric result, and how we got there.
         if(maxLengthValue.compare(maxLength) != 0)
             output += " : " + maxLengthValue.replace("*", "&times;");
 

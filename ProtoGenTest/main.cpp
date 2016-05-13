@@ -25,6 +25,7 @@ static int verifyGPSData(GPS_t gps);
 static int testKeepAlivePacket(void);
 static int testVersionPacket(void);
 static int verifyVersionData(Version_t version);
+static int testZeroLengthPacket(void);
 
 static int fcompare(double input1, double input2, double epsilon);
 
@@ -66,6 +67,9 @@ int main(int argc, char *argv[])
         return 0;
 
     if(testKeepAlivePacket() == 0)
+        return 0;
+
+    if(testZeroLengthPacket() == 0)
         return 0;
 
     std::cout << "All tests passed" << std::endl;
@@ -839,6 +843,41 @@ int verifyVersionData(Version_t version)
     if(version.board.calibratedDate.day != 20) return 0;
 
     return 1;
+}
+
+
+int testZeroLengthPacket(void)
+{
+    testPacket_t pkt;
+
+    if(getZeroMinDataLength() != 0)
+    {
+        std::cout << "Zero length packet minimum data length is wrong" << std::endl;
+        return 0;
+    }
+
+    encodeZeroPacket(&pkt);
+
+    if(pkt.length != 0)
+    {
+        std::cout << "Zero length packet has the wrong length" << std::endl;
+        return 0;
+    }
+
+    if(pkt.pkttype != 24)
+    {
+        std::cout << "Zero length packet has the wrong type" << std::endl;
+        return 0;
+    }
+
+    if(!decodeZeroPacket(&pkt))
+    {
+        std::cout << "Zero length packet failed to decode" << std::endl;
+        return 0;
+    }
+
+    return 1;
+
 }
 
 

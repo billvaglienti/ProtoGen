@@ -23,6 +23,9 @@ public:
     //! Determine if there is any data here
     bool isEmpty(void);
 
+    //! Determine if the length is zero
+    bool isZeroLength(void);
+
     //! The minimum encoded length
     QString minEncodedLength;
 
