@@ -164,24 +164,37 @@ void EnumCreator::computeNumberList(void)
             // Increment enumeration value by one
             value++;
 
-            // Is this incremented value aboslute, or referenced to
+            // Is this incremented value absolute, or referenced to
             // some other string we could not resolve?
             if(baseString.isEmpty())
                 stringValue.setNum(value);
             else
                 stringValue = baseString + " + " + QString().setNum(value);
 
+            // Append to the number list
+            numberList.append(stringValue);
+
         }// if the xml was empty
         else
         {
             bool ok;
 
-            if(stringValue.startsWith("0x"))
+            if(stringValue.startsWith("0x", Qt::CaseInsensitive))
                 value = stringValue.toUInt(&ok, 16);
-            else if(stringValue.startsWith("0b"))
+            else if(stringValue.startsWith("0b", Qt::CaseInsensitive))
                 value = stringValue.toUInt(&ok, 2);
             else
                 value = stringValue.toUInt(&ok, 10);
+
+            // If we didn't get a value there is one remainaing
+            // possibility: this text refers to a previous enumeration
+            // whose value we *do* know. We can check that case for any
+            // enumeration which was defined before us
+            if(!ok)
+            {
+                ProtocolParser::replaceEnumerationNameWithValue(stringValue);
+                value = stringValue.toUInt(&ok, 10);
+            }
 
             // If we didn't get a number, then this string has to be resolved
             // by the compiler, all we can do is track offsets from it
@@ -189,11 +202,17 @@ void EnumCreator::computeNumberList(void)
             {
                 baseString = stringValue;
                 value = 0;
+
+                // No useful information is available
+                numberList.append(QString());
             }
             else
             {
                 baseString.clear();
                 stringValue.setNum(value);
+
+                // Append to the number list
+                numberList.append(stringValue);
             }
 
         }// if we got a string from the xml
@@ -201,9 +220,6 @@ void EnumCreator::computeNumberList(void)
         // keep track of maximum value
         if(value > maxValue)
             maxValue = value;
-
-        // Append to the number list
-        numberList.append(stringValue);
 
     }// for the whole list of value strings
 
@@ -270,18 +286,20 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         if(!outline.isEmpty())
             output += "## " + name + "\n\n";
 
+        // commenting for this field
+        if(!comment.isEmpty())
+            output += comment + "\n\n";
+
         // If a longer description exists for this enum, display it in the documentation
-        if (!description.isEmpty()) {
+        if (!description.isEmpty())
+        {
             output += "**Description:**\n";
             output += description;
             output += "\n\n";
         }
 
         // Table caption, with an anchor for the enumeration name
-        if(comment.isEmpty())
-            output += "[<a name=\""+name+"\"></a>" + name + "]\n";
-        else
-            output += "[<a name=\""+name+"\"></a>" + name + ": " + comment + "]\n";
+        output += "[<a name=\""+name+"\"></a>" + name + "]\n";
 
         // Table header
         output += "| ";
@@ -325,6 +343,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
 }// EnumCreator::getMarkdown
 
+
 /*!
  * Replace any text that matches an enumeration name with the value of that enumeration
  * \param text is modified to replace names with numbers
@@ -334,19 +353,13 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
 {
     for(int i = 0; i < nameList.length(); i++)
     {
-        // If we don't have a name there is no point
-        if(nameList.at(i).isEmpty())
+        // If we don't have a name or number there is no point
+        if(nameList.at(i).isEmpty() || numberList.at(i).isEmpty())
             continue;
 
-        // If we don't have a value there is no point
-        if(valueList.at(i) == numberList.at(i))
-            continue;
-
-        if(text.compare(nameList.at(i)) == 0)
-        {
-            text.replace(nameList.at(i), numberList.at(i));
-        }
-
+        // It may be possible that text contains multiple different enum
+        // values, so don't just exit after the first replace
+        text.replace(nameList.at(i), numberList.at(i));
     }
 
     return text;

@@ -720,23 +720,14 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         // The length strings, which may include enumerated identiers such as "N3D"
         QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
-        // The same quantities, but here we'll try and evaluate to a fixed number
-        QString minLengthValue = minLength;
-
         // Replace any defined enumerations with their actual value
-        ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
+        ProtocolParser::replaceEnumerationNameWithValue(minLength);
 
         // Re-collapse, perhaps we can solve it now
-        minLengthValue = EncodedLength::collapseLengthString(minLengthValue, true);
+        minLength = EncodedLength::collapseLengthString(minLength, true);
 
-        output += "- data length: " + minLength.replace("*", "&times;");
-
-        // See if we made it any simpler, if we did then provide both versions,
-        // this way the reader can see the numeric result, and how we got there.
-        if(minLengthValue.compare(minLength) != 0)
-            output += " : " + minLengthValue.replace("*", "&times;");
-
-        output += "\n";
+        // Output the length, replacing the multiply asterisk with a times symbol
+        output += "- data length: " + minLength.replace("*", "&times;") + "\n";
     }
     else
     {
@@ -744,55 +735,33 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         QString maxLength = EncodedLength::collapseLengthString(encodedLength.maxEncodedLength, true).replace("1*", "");
         QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
-        // The same quantities, but here we'll try and evaluate to a fixed number
-        QString maxLengthValue = maxLength;
-        QString minLengthValue = minLength;
-
         // Replace any defined enumerations with their actual value
-        ProtocolParser::replaceEnumerationNameWithValue(maxLengthValue);
-        ProtocolParser::replaceEnumerationNameWithValue(minLengthValue);
+        ProtocolParser::replaceEnumerationNameWithValue(maxLength);
+        ProtocolParser::replaceEnumerationNameWithValue(minLength);
 
         // Re-collapse, perhaps we can solve it now
-        maxLengthValue = EncodedLength::collapseLengthString(maxLengthValue, true);
-        minLengthValue = EncodedLength::collapseLengthString(minLengthValue, true);
+        maxLength = EncodedLength::collapseLengthString(maxLength, true);
+        minLength = EncodedLength::collapseLengthString(minLength, true);
 
-        output += "- minimum data length: " + minLength.replace("*", "&times;");
+        // Output the length, replacing the multiply asterisk with a times symbol
+        output += "- minimum data length: " + minLength.replace("*", "&times;") + "\n";
 
-        // See if we made it any simpler, if we did then provide both versions,
-        // this way the reader can see the numeric result, and how we got there.
-        if(minLengthValue.compare(minLength) != 0)
-            output += " : " + minLengthValue.replace("*", "&times;");
-
-        output += "\n";
-
-        output += "- maximum data length: " + maxLength.replace("*", "&times;");
-
-        // See if we made it any simpler, if we did then provide both versions,
-        // this way the reader can see the numeric result, and how we got there.
-        if(maxLengthValue.compare(maxLength) != 0)
-            output += " : " + maxLengthValue.replace("*", "&times;");
-
-        output += "\n";
-
+        // Output the length, replacing the multiply asterisk with a times symbol
+        output += "- maximum data length: " + maxLength.replace("*", "&times;") + "\n";
     }
 
-    if(enumList.size() > 0)
+
+    for(int i = 0; i < enumList.length(); i++)
     {
-        output += "\n";
-        output += "### " + name + " enumerations\n";
-        output += "\n";
-
-        for(int i = 0; i < enumList.length(); i++)
-        {
-            if(enumList[i] == NULL)
-                continue;
-
-            output += enumList[i]->getMarkdown("");
-            output += "\n";        
-        }
+        if(enumList[i] == NULL)
+            continue;
 
         output += "\n";
+        output += "### " + enumList.at(i)->getName() + " enumeration\n";
+        output += "\n";
 
+        output += enumList[i]->getMarkdown("");
+        output += "\n";
     }
 
     if(encodables.size() > 0)

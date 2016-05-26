@@ -1214,15 +1214,14 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         else
             comments.append(description);
 
+        QString subStartByte = startByte;
+
         // Now go get the substructure stuff
-        ProtocolParser::getStructureSubDocumentationDetails(typeName, outline, startByte, bytes, names, encodings, repeats, comments);
+        ProtocolParser::getStructureSubDocumentationDetails(typeName, outline, subStartByte, bytes, names, encodings, repeats, comments);
 
     }// if structure
     else
     {
-        // Update startByte for following encodables
-        startByte = nextStartByte;
-
         // The encoding
         if(encodedType.isFixedString)
         {
@@ -1324,6 +1323,9 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             comments.append(description);
 
     }// else if not structure
+
+    // Update startByte for following encodables
+    startByte = nextStartByte;
 
 }// ProtocolField::getDocumentationDetails
 

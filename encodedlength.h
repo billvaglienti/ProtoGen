@@ -44,7 +44,7 @@ public:
 private:
 
     //! Create a length string like "4 + 3 + N3D*2" by adding successive length strings
-    static void addToLengthString(QString & totalLength, QString length);
+    static void addToLengthString(QString & totalLength, QString length, QString array = QString());
 
     //! Determine if text is a number for our cases
     static bool isNumber(const QString& text);

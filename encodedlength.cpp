@@ -91,25 +91,12 @@ void EncodedLength::addToLength(const QString & length, bool isString, bool isVa
  */
 void EncodedLength::addToLength(const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent)
 {
-    if(array.isEmpty())
-    {
-        addToLengthString(maxEncodedLength, rightLength.maxEncodedLength);
-        addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength);
+    addToLengthString(maxEncodedLength, rightLength.maxEncodedLength, array);
+    addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength, array);
 
-        // If not variable or dependent, then add to minimum length
-        if(!isVariable && !isDependent)
-            addToLengthString(minEncodedLength, rightLength.minEncodedLength);
-    }
-    else
-    {
-        addToLengthString(maxEncodedLength, array + "*(" + rightLength.maxEncodedLength + ")");
-        addToLengthString(nonDefaultEncodedLength, array + "*(" + rightLength.nonDefaultEncodedLength + ")");
-
-        // If not variable or dependent, then add to minimum length
-        if(!isVariable && !isDependent)
-            addToLengthString(minEncodedLength, array + "*(" + rightLength.minEncodedLength + ")");
-
-    }
+    // If not variable or dependent, then add to minimum length
+    if(!isVariable && !isDependent)
+        addToLengthString(minEncodedLength, rightLength.minEncodedLength, array);
 }
 
 
@@ -132,8 +119,9 @@ void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLen
  * Create a length string like "4 + 3 + N3D*2" by adding successive length strings
  * \param totalLength is the total length string
  * \param length is the new length to add
+ * \param array is the number of times to add it
  */
-void EncodedLength::addToLengthString(QString & totalLength, QString length)
+void EncodedLength::addToLengthString(QString & totalLength, QString length, QString array)
 {
     bool ok;
     double number;
@@ -142,7 +130,8 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
     if(length.isEmpty())
         return;
 
-    // Its possible that length represents something like 24*(6), which we can resolve easily, so lets try
+    // Its possible that length represents something like 24*(6),
+    // which we can resolve easily, so lets try
     number = ShuntingYard::computeInfix(length, &ok);
     if(ok)
     {
@@ -152,11 +141,26 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
         else
             inumber = (int)(number - 0.5);
 
+        if(inumber == 0)
+            return;
+
         length = QString().setNum(inumber);
     }
 
-    if(length == "0")
-        return;
+
+    if(!array.isEmpty() && array != "1")
+    {
+        // How we handle the array multiplier depends on the contents of length
+        // We only expect length to have +, -, or * operators. If there are no
+        // operators, or the only operators are multipliers, then we don't need
+        // the parenthesis. Otherwise we do need them.
+
+        if(length.contains("+") || length.contains("-") || length.contains("/"))
+            length = array + "*(" + length + ")";
+        else
+            length = array + "*" + length;
+    }
+
 
     if(totalLength.isEmpty())
         totalLength = length;
@@ -228,6 +232,29 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length)
  */
 QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, bool minusOne)
 {
+    int number = 0;
+
+    // It might be that we can compute a value directly, give it a
+    // try and see if we can save all the later effort
+    bool ok;
+    double dnumber = ShuntingYard::computeInfix(totalLength, &ok);
+    if(ok)
+    {
+        // round to nearest integer
+        if(dnumber >= 0)
+            number = (int)(dnumber + 0.5);
+        else
+            number = (int)(dnumber - 0.5);
+
+        // Handle the minus one here
+        if(minusOne)
+            number--;
+
+        return QString().setNum(number);
+    }
+
+    // We don't properly support collapsing strings with parenthesis
+    /// TODO: support parenthesis using recursion
     if(totalLength.contains("(") || totalLength.contains(")"))
     {
         if(minusOne)
@@ -241,7 +268,7 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
     QStringList others;
 
     // Some of these groups are simple numbers, some of them are not. We are going to re-order to put the numbers together
-    int number = 0;
+    number = 0;
     for(int i = 0; i < list.size(); i++)
     {
         if(list.at(i).isEmpty())
@@ -336,8 +363,7 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
         output = "0";
 
     // It might be that we can compute a value now, give it a try
-    bool ok;
-    double dnumber = ShuntingYard::computeInfix(output, &ok);
+    dnumber = ShuntingYard::computeInfix(output, &ok);
     if(ok)
     {
         // round to nearest integer
