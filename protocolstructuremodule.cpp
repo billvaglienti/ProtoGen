@@ -182,10 +182,13 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     header.makeLineSeparator();
 
     // The encoded size of this structure as a macro that others can access
-    header.write("#define getMinLengthOf" + typeName + "() (" + encodedLength.minEncodedLength + ")\n");
+    if((encode != false) || (decode != false))
+    {
+        header.write("#define getMinLengthOf" + typeName + "() (" + encodedLength.minEncodedLength + ")\n");
 
-    // White space is good
-    header.makeLineSeparator();
+        // White space is good
+        header.makeLineSeparator();
+    }
 
     // Write to disk
     header.flush();
@@ -272,9 +275,6 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
 
     header.makeLineSeparator();
     source.makeLineSeparator();
-
-    header.write(getPrototypeDecodeString(isBigEndian, false));
-    header.makeLineSeparator();
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
 
