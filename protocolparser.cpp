@@ -16,7 +16,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.5.b";
+const QString ProtocolParser::genVersion = "1.4.6.a";
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -117,6 +117,7 @@ void ProtocolParser::clear(void)
 bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles, QString inlinecss)
 {
     ProtocolSupport support;
+    QStringList fileNameList;
 
     // The outer most element
     QDomElement docElem = doc.documentElement();
@@ -173,12 +174,15 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     if(!createProtocolFiles(docElem))
         return false;
 
+    fileNameList.append(header.fileName());
+
     // All of the top level Structures, which stand alone in their own modules
     QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
 
     // All of the top level packets. Packets can only be at the top level
     QList<QDomNode> packetlist = childElementsByTagName(docElem, "Packet");
 
+    /*
     // Delete the files we are going to create so we don't have to worry about appending when we shouldn't
     for(int i = 0; i < structlist.size(); i++)
     {
@@ -190,7 +194,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
             moduleName = support.globalFileName;
 
         if(moduleName.isEmpty())
-            moduleName = e.attribute("name");
+            moduleName = prefix + e.attribute("name");
 
         ProtocolFile::deleteModule(moduleName);
 
@@ -205,11 +209,12 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
             moduleName = support.globalFileName;
 
         if(moduleName.isEmpty())
-            moduleName = e.attribute("name") + "Packet";
+            moduleName = prefix + e.attribute("name") + "Packet";
 
         ProtocolFile::deleteModule(moduleName);
 
     }// for all packets
+    */
 
     for(int i = 0; i < structlist.size(); i++)
     {
@@ -218,6 +223,10 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
 
         // Parse its XML
         module->parse(structlist.at(i).toElement());
+
+        // Keep a list of all the file names
+        fileNameList.append(module->getHeaderFileName());
+        fileNameList.append(module->getSourceFileName());
 
         // Keep it around, but only if we got something for it
         if(module->encodedLength.isEmpty())
@@ -237,6 +246,10 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         // Parse its XML
         packet->parse(packetlist.at(i).toElement());
 
+        // Keep a list of all the file names
+        fileNameList.append(packet->getHeaderFileName());
+        fileNameList.append(packet->getSourceFileName());
+
         // Keep it around
         packets.push_back(packet);
 
@@ -249,8 +262,21 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         ProtocolScaling(support).generate();
         FieldCoding(support).generate();
 
+        fileNameList.append("scaledencode.h");
+        fileNameList.append("scaledencode.c");
+        fileNameList.append("scaleddecode.h");
+        fileNameList.append("scaleddecode.c");
+        fileNameList.append("fieldencode.h");
+        fileNameList.append("fieldencode.c");
+        fileNameList.append("fielddecode.h");
+        fileNameList.append("fielddecode.c");
+
         if(support.bitfield)
+        {
+            fileNameList.append("bitfieldspecial.h");
+            fileNameList.append("bitfieldspecial.c");
             ProtocolBitfield(support).generate();
+        }
 
         // Copy the resource files
         // This is where the files are stored in the resources
@@ -258,15 +284,16 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
 
         QStringList fileNames;
         if(support.specialFloat)
+        {
+            fileNameList.append("floatspecial.h");
+            fileNameList.append("floatspecial.c");
             fileNames << "floatspecial.c" << "floatspecial.h";
-
-        //if(support.bitfield)
-        //    fileNames << "bitfieldspecial.c" << "bitfieldspecial.h";
+        }
 
         for(int i = 0; i < fileNames.length(); i++)
         {
-            ProtocolFile::deleteFile(fileNames[i]);
-            QFile::copy(sourcePath + fileNames[i], fileNames[i]);
+            // ProtocolFile::deleteFile(fileNames[i]);
+            QFile::copy(sourcePath + fileNames[i], ProtocolFile::tempprefix + fileNames[i]);
         }
     }
 
@@ -277,6 +304,13 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     if(!nodoxygen)
         outputDoxygen();
     #endif
+
+    header.flush();
+
+    // This is fun...replace all the temporary files with real ones if needed
+    fileNameList.removeDuplicates();
+    for(int i = 0; i < fileNameList.count(); i++)
+        ProtocolFile::copyTemporaryFile(fileNameList.at(i));
 
     return true;
 
@@ -830,7 +864,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     QString filename = basepath + name + ".markdown";
 
-    ProtocolFile file(filename);
+    ProtocolFile file(filename, false);
 
     //Adding this metadata improves LaTeX support
     file.write("latex input: mmd-article-header \n");

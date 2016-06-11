@@ -25,6 +25,9 @@ public:
     //! Get the name of the header file that encompasses this structure definition
     QString getHeaderFileName(void) const {return header.fileName();}
 
+    //! Get the name of the source file for this structure
+    QString getSourceFileName(void) const {return source.fileName();}
+
     //! Output the top level markdown documentation for the this structure and its children
     QString getTopLevelMarkdown(QString outline) const;
 

@@ -2,11 +2,12 @@
 #define PROTOCOLFILE_H
 
 #include <QString>
+#include <QFile>
 
 class ProtocolFile
 {
 public:
-    ProtocolFile(const QString& moduleName, bool onlyversion = true);
+    ProtocolFile(const QString& moduleName, bool temporary = true);
 
     ProtocolFile();
 
@@ -28,14 +29,11 @@ public:
     //! Set the name of the module
     void setModuleName(const QString& name);
 
-    //! Set the versionOnly flag, which controls if version and date or just version are output
-    void setVersionOnly(bool onlyversion) {versionOnly = onlyversion;}
-
     //! Return the filename
     virtual QString fileName(void) const {return module;}
 
     //! \return true if an append operation is in progress
-    bool isAppending(void){return appending;}
+    bool isAppending(void) const {return appending;}
 
     //! Make sure one blank line at end
     void makeLineSeparator(void);
@@ -49,17 +47,30 @@ public:
     //! delete both the .c and .h file
     static void deleteModule(const QString& moduleName);
 
+    //! Rename a file from oldName to newName
+    static void renameFile(const QString& oldName, const QString& newName);
+
+    //! Copy a temporary file to the real file and delete the temporary file
+    static void copyTemporaryFile(const QString& fileName);
+
     //! Make sure one blank line at end
     static void makeLineSeparator(QString& contents);
 
+    //! The prefix used to indicate a temporary name
+    static QString tempprefix;
+
 protected:
+
+    //! Return the correct on disk name
+    QString fileNameOnDisk(void) const;
+
     QString module;     //!< The module name, not including the file extension
     QString contents;   //!< The contents, not including the prologue or epilogue
     QString prototypeContents;  //!< Contents that go before the main body of the file
 
     bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
     bool appending;     //!< Flag set if an append operation is in progress
-    bool versionOnly;   //!< Flag to limit protogen notice to use only the version, not the date and time
+    bool temporary;     //!< Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
 };
 
 
