@@ -62,9 +62,11 @@ int main(int argc, char *argv[])
             else
                 std::cout << "Failed to open " << arg.toStdString() << "; using default css" << std::endl;
         }
-        else if (arg.startsWith("-docs")) {
+        else if (arg.startsWith("-docs"))
+        {
             //Is there an argument following this?
-            if (arguments.size() > (i + 1)) {
+            if (arguments.size() > (i + 1))
+            {
                 docs = arguments.at(i+1);
 
                 QDir docDir(docs);
@@ -74,7 +76,9 @@ int main(int argc, char *argv[])
                     docs = docDir.absolutePath();
                     //Skip the next argument;
                     i++;
-                } else {
+                }
+                else
+                {
                     docs = "";
                 }
             }

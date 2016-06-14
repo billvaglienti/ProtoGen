@@ -21,6 +21,9 @@ public:
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag);
 
+    //! Return the value of an attribute from a Dom Element
+    static QString getAttribute(QString name, const QDomNamedNodeMap& map);
+
     //! Output a long string of text which should be wrapped at 80 characters.
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
 
@@ -75,8 +78,14 @@ public:
     //! Return true if the element has a particular attribute set to {'true','yes','1'}
     static bool isFieldSet(const QDomElement &e, QString label);
 
+    //! Return true if the value set to {'true','yes','1'}
+    static bool isFieldSet(QString value);
+
     //! Return true if the element has a particular attribute set to {'false','no','0'}
     static bool isFieldClear(const QDomElement &e, QString label);
+
+    //! Return true if the value is set to {'false','no','0'}
+    static bool isFieldClear(QString value);
 
 protected:
 

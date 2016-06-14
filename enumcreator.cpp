@@ -2,6 +2,8 @@
 #include "protocolparser.h"
 #include <QStringList>
 #include <math.h>
+#include <iostream>
+
 
 EnumCreator::EnumCreator(const QDomElement& e):
     minbitwidth(0),
@@ -35,13 +37,31 @@ QString EnumCreator::parse(const QDomElement& e)
 {
     clear();
 
-    name = e.attribute("name");
-    comment = e.attribute("comment");
-    description = e.attribute("description");
+    QDomNamedNodeMap map = e.attributes();
 
-    // If the enum struct has the attribute 'hidden="true"',
-    // it won't be displayed in the documentation
-    hidden = ProtocolParser::isFieldSet(e,"hidden");
+    // We use name as part of our debug outputs, so its good to have it first.
+    name = ProtocolParser::getAttribute("name", map);
+
+    for(int i = 0; i < map.count(); i++)
+    {
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        QString attrname = attr.name();
+
+        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
+            name = attr.value().trimmed();
+        else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
+            comment = attr.value().trimmed();
+        else if(attrname.compare("description", Qt::CaseInsensitive) == 0)
+            description = attr.value().trimmed();
+        else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
+            hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
+        else
+            std::cout << "Unrecognized attribute of Enum: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+
+    }
 
     QDomNodeList list = e.elementsByTagName("Value");
 
@@ -67,19 +87,40 @@ QString EnumCreator::parse(const QDomElement& e)
         if(field.isNull())
             continue;
 
-        QString valueName = field.attribute("name");
-        if(valueName.isEmpty())
-            continue;
+        QDomNamedNodeMap map = field.attributes();
+
+        // We use name as part of our debug outputs, so its good to have it first.
+        QString valueName = ProtocolParser::getAttribute("name", map);
+        QString value;
+        QString comment;
+
+        for(int i = 0; i < map.count(); i++)
+        {
+            QDomAttr attr = map.item(i).toAttr();
+            if(attr.isNull())
+                continue;
+
+            QString attrname = attr.name();
+
+            if(attrname.compare("name", Qt::CaseInsensitive) == 0)
+                valueName = attr.value().trimmed();
+            else if(attrname.compare("value", Qt::CaseInsensitive) == 0)
+                value = attr.value().trimmed();
+            else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
+                comment = ProtocolParser::reflowComment(attr.value());
+            else
+                std::cout << "Unrecognized attribute of enumeration Value : " << name.toStdString() << " : " << valueName.toStdString() << " : " << attrname.toStdString() << std::endl;
+
+        }
 
         // Add it to our list
         nameList.append(valueName);
 
         // The declared value, which may be empty
-        QString value = field.attribute("value");
         valueList.append(value);
 
         // And don't forget the comment
-        commentList.append(ProtocolParser::getComment(field));
+        commentList.append(comment);
 
         // Form the declaration string
         QString declaration = "    " + valueName;

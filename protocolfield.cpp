@@ -440,6 +440,8 @@ void ProtocolField::clear(void)
     maxString.clear();
     lastBitfield = false;
     startingBitCount = 0;
+    extraInfoNames.clear();
+    extraInfoValues.clear();
 
 }// ProtocolField::clear
 
@@ -450,37 +452,80 @@ void ProtocolField::clear(void)
  */
 void ProtocolField::parse(const QDomElement& field)
 {
+    QString memoryTypeString;
+    QString encodedTypeString;
+    QString structName;
+
     clear();
 
-    // Pull all the attribute data
-    name = field.attribute("name").trimmed();
-    QString memoryTypeString = field.attribute("inMemoryType").trimmed();
-    QString structName = field.attribute("struct").trimmed();
-    maxString = field.attribute("max").trimmed();
-    minString = field.attribute("min").trimmed();
-    scalerString = field.attribute("scaler").trimmed();
-    array = field.attribute("array").trimmed();
-    variableArray = field.attribute("variableArray").trimmed();
-    dependsOn = field.attribute("dependsOn").trimmed();
-    enumName = field.attribute("enum").trimmed();
-    defaultValue = field.attribute("default").trimmed();
-    constantValue = field.attribute("constant").trimmed();
-    checkConstant = ProtocolParser::isFieldSet(field, "checkConstant");
-    comment = ProtocolParser::getComment(field);
+    QDomNamedNodeMap map = field.attributes();
 
-    // Decode any extra information from the tag that can be used to expand upon documentation
-    extraInfoNames.clear();
-    extraInfoValues.clear();
+    // We use name as part of our debug outputs, so its good to have it first.
+    name = ProtocolParser::getAttribute("name", map);
 
-    // Add in a list of extra fields that will be accepted (for documentation purposes only)
-    // These will show up in the Packet table where appropriate
-    // These do NOT affect the generated code, they are only for extra clarity in docs
-    extraInfoNames << "Units" << "Range" << "Notes";
+    if(name.isEmpty())
+        name = "_unknown";
 
-    foreach (QString extraInfo, extraInfoNames)
+    for(int i = 0; i < map.count(); i++)
     {
-        extraInfoValues.append(field.attribute(extraInfo.toLower()));
-    }
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        QString attrname = attr.name();
+
+        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
+            name = attr.value().trimmed();
+        else if(attrname.compare("inMemoryType", Qt::CaseInsensitive) == 0)
+            memoryTypeString = attr.value().trimmed();
+        else if(attrname.compare("encodedType", Qt::CaseInsensitive) == 0)
+            encodedTypeString = attr.value().trimmed();
+        else if(attrname.compare("struct", Qt::CaseInsensitive) == 0)
+            structName = attr.value().trimmed();
+        else if(attrname.compare("max", Qt::CaseInsensitive) == 0)
+            maxString = attr.value().trimmed();
+        else if(attrname.compare("min", Qt::CaseInsensitive) == 0)
+            minString = attr.value().trimmed();
+        else if(attrname.compare("scaler", Qt::CaseInsensitive) == 0)
+            scalerString = attr.value().trimmed();
+        else if(attrname.compare("array", Qt::CaseInsensitive) == 0)
+            array = attr.value().trimmed();
+        else if(attrname.compare("variableArray", Qt::CaseInsensitive) == 0)
+            variableArray = attr.value().trimmed();
+        else if(attrname.compare("dependsOn", Qt::CaseInsensitive) == 0)
+            dependsOn = attr.value().trimmed();
+        else if(attrname.compare("enum", Qt::CaseInsensitive) == 0)
+            enumName = attr.value().trimmed();
+        else if(attrname.compare("default", Qt::CaseInsensitive) == 0)
+            defaultValue = attr.value().trimmed();
+        else if(attrname.compare("constant", Qt::CaseInsensitive) == 0)
+            constantValue = attr.value().trimmed();
+        else if(attrname.compare("checkConstant", Qt::CaseInsensitive) == 0)
+            checkConstant = ProtocolParser::isFieldSet(attr.value().trimmed());
+        else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
+            comment = ProtocolParser::reflowComment(attr.value().trimmed());
+        else if(attrname.compare("Units", Qt::CaseInsensitive) == 0)
+        {
+            extraInfoNames.append("Units");
+            extraInfoValues.append(attr.value().toLower());
+        }
+        else if(attrname.compare("Range", Qt::CaseInsensitive) == 0)
+        {
+            extraInfoNames.append("Range");
+            extraInfoValues.append(attr.value().toLower());
+        }
+        else if(attrname.compare("Notes", Qt::CaseInsensitive) == 0)
+        {
+            extraInfoNames.append("Notes");
+            extraInfoValues.append(attr.value().toLower());
+        }
+        else
+        {
+            std::cout << "Unrecognized attribute of Data: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+        }
+
+    }// for all attributes
+
 
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
@@ -507,7 +552,6 @@ void ProtocolField::parse(const QDomElement& field)
     inMemoryType.extractType(memoryTypeString, name, true);
 
     // The encoded type string, this can be empty which implies encoded is same as memory
-    QString encodedTypeString = field.attribute("encodedType").trimmed();
     if(encodedTypeString.isEmpty())
     {
         encodedType = inMemoryType;

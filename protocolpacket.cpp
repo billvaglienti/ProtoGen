@@ -22,6 +22,8 @@
 ProtocolPacket::ProtocolPacket(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
     ProtocolStructureModule(protocolName, protocolPrefix, supported, protocolApi, protocolVersion, bigendian)
 {
+    // These are attributes on top of the normal structureModule that we support
+    attriblist << "structureInterface" << "parameterInterface" << "ID";
 }
 
 
@@ -55,12 +57,25 @@ void ProtocolPacket::parse(const QDomElement& e)
 
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse(e);
+    QDomNamedNodeMap map = e.attributes();
 
-    if(ProtocolParser::isFieldClear(e, "encode"))
-        encode = false;
+    QString moduleName = ProtocolParser::getAttribute("file", map);
+    id = ProtocolParser::getAttribute("ID", map);
+    encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
+    decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+    bool parameterFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("parameterInterface", map));
+    bool structureFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("structureInterface", map));
 
-    if(ProtocolParser::isFieldClear(e, "decode"))
-        decode = false;
+    // Look for any other attributes that we don't recognize
+    for(int i = 0; i < map.count(); i++)
+    {
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        if(attriblist.contains(attr.name(), Qt::CaseInsensitive) == false)
+            std::cout << "Unrecognized attribute of Packet: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+    }
 
     if(isArray())
     {
@@ -76,8 +91,6 @@ void ProtocolPacket::parse(const QDomElement& e)
     }
 
     // The file directive allows us to override the file name
-    QString moduleName = e.attribute("file").trimmed();
-
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
@@ -133,9 +146,6 @@ void ProtocolPacket::parse(const QDomElement& e)
 
     // White space is good
     header.makeLineSeparator();
-
-    bool structureFunctions = ProtocolParser::isFieldSet(e, "structureInterface");
-    bool parameterFunctions = ProtocolParser::isFieldSet(e, "parameterInterface");
 
     if((structureFunctions == false) && (parameterFunctions == false))
     {
@@ -210,8 +220,6 @@ void ProtocolPacket::parse(const QDomElement& e)
  */
 void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
 {
-    id = e.attribute("ID");
-
     // If no ID is supplied then use the packet name in upper case,
     // assuming that the user will define it elsewhere
     if(id.isEmpty())

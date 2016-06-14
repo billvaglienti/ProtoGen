@@ -16,8 +16,11 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
     needsEncodeIterator(false),
     needsDecodeIterator(false),
     defaults(false),
-    hidden(false)
+    hidden(false),
+    attriblist()
 {
+    // List of attributes understood by ProtocolStructure
+    attriblist << "name" << "array" << "variableArray" << "dependsOn" << "comment" << "hidden";
 
 }
 
@@ -35,6 +38,9 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
     defaults(false),
     hidden(false)
 {
+    // List of attributes understood by ProtocolStructure
+    attriblist << "name" << "array" << "variableArray" << "dependsOn" << "comment" << "hidden";
+
     parse(field);
 
 }// ProtocolStructure::ProtocolStructure
@@ -86,26 +92,36 @@ void ProtocolStructure::clear(void)
 /*!
  * Parse the DOM data for this structure
  * \param field is the DOM data for this structure
- * \param typePrefix is prefix information for the type data
  */
 void ProtocolStructure::parse(const QDomElement& field)
 {
-    name = field.attribute("name");
+    QDomNamedNodeMap map = field.attributes();
+
+    // All the attribute we care about
+    name = ProtocolParser::getAttribute("name", map);
+    array = ProtocolParser::getAttribute("array", map);
+    variableArray = ProtocolParser::getAttribute("variableArray", map);
+    dependsOn = ProtocolParser::getAttribute("dependsOn", map);
+    comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
+    hidden = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
 
     if(name.isEmpty())
         name = "_unknown";
 
-    // set attribute 'hidden="true"' to hide the packet from the docs
-    hidden = ProtocolParser::isFieldSet(field, "hidden");
+    // Look for any other attributes that we don't recognize
+    // Look for any other attributes that we don't recognize
+    for(int i = 0; i < map.count(); i++)
+    {
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        if(attriblist.contains(attr.name(), Qt::CaseInsensitive) == false)
+            std::cout << "Unrecognized attribute of structure: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+    }
 
     // for now the typename is derived from the name
     typeName = prefix + name + "_t";
-
-    // The data that describe this structure
-    array = field.attribute("array");
-
-    // Is the array variable length
-    variableArray = field.attribute("variableArray");
 
     // We can't have a variable array length without an array
     if(array.isEmpty() && !variableArray.isEmpty())
@@ -114,17 +130,12 @@ void ProtocolStructure::parse(const QDomElement& field)
         variableArray.clear();
     }
 
-    // String for depending on something else
-    dependsOn = field.attribute("dependsOn");
 
     if(!dependsOn.isEmpty() && !variableArray.isEmpty())
     {
         std::cout << name.toStdString() << ": variable length arrays cannot also use dependsOn" << std::endl;
         dependsOn.clear();
     }
-
-    // Any user comment about this
-    comment = ProtocolParser::getComment(field);
 
     // Get any enumerations
     parseEnumerations(field);

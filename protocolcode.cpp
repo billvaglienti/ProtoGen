@@ -46,12 +46,34 @@ void ProtocolCode::parse(const QDomElement& field)
 {
     clear();
 
-    // Pull all the attribute data
-    name = field.attribute("name").trimmed();
-    comment = ProtocolParser::getComment(field);
-    encode = field.attribute("encode").trimmed();
-    decode = field.attribute("decode").trimmed();
-}
+    QDomNamedNodeMap map = field.attributes();
+
+    // We use name as part of our debug outputs, so its good to have it first.
+    name = ProtocolParser::getAttribute("name", map);
+
+    if(name.isEmpty())
+        name = "_unknown";
+
+    for(int i = 0; i < map.count(); i++)
+    {
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        QString attrname = attr.name();
+
+        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
+            name = attr.value().trimmed();
+        else if(attrname.compare("encdoe", Qt::CaseInsensitive) == 0)
+            encode = attr.value().trimmed();
+        else if(attrname.compare("decode", Qt::CaseInsensitive) == 0)
+            decode = attr.value().trimmed();
+        else
+            std::cout << "Unrecognized attribute of code: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+
+    }// for all attributes
+
+}// ProtocolCode::parse
 
 
 /*!

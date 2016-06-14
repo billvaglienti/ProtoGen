@@ -20,7 +20,8 @@ ProtocolStructureModule::ProtocolStructureModule(const QString& protocolName, co
     encode(true),
     decode(true)
 {
-
+    // These are attributes on top of the normal structure that we support
+    attriblist << "encode" << "decode" << "file";
 }
 
 
@@ -57,11 +58,22 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse(e);
 
-    if(ProtocolParser::isFieldClear(e, "encode"))
-        encode = false;
+    QDomNamedNodeMap map = e.attributes();
 
-    if(ProtocolParser::isFieldClear(e, "decode"))
-        decode = false;
+    QString moduleName = ProtocolParser::getAttribute("file", map);
+    encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
+    decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+
+    // Look for any other attributes that we don't recognize
+    for(int i = 0; i < map.count(); i++)
+    {
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
+
+        if(attriblist.contains(attr.name(), Qt::CaseInsensitive) == false)
+            std::cout << "Unrecognized attribute of top level Structure: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+    }
 
     if(isArray())
     {
@@ -77,8 +89,6 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     }
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
-    QString moduleName = e.attribute("file");
-
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 

@@ -108,6 +108,8 @@ protected:
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
     bool hidden;                //!< True if this structure is to be hidden from the documentation
+    QStringList attriblist;     //!< List of all attributes that we understand
+
 };
 
 #endif // PROTOCOLSTRUCTURE_H

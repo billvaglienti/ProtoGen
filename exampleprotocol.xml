@@ -20,7 +20,7 @@ interpretation
     <Include name="string.h" comment="C string manipulation function header" global="true"/>
     <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
 
-    <Enum name="packetIds" comment="The list of packet identifiers">
+    <Enum name="packetIds" comment="The list of packet identifiers" description="even more stuff!">
         <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
