@@ -16,7 +16,10 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.7.a";
+const QString ProtocolParser::genVersion = "1.4.7.b";
+
+// The protocol support data is here so it is statically accessible
+ProtocolSupport ProtocolParser::support = ProtocolSupport();
 
 // A static list of parsed structures
 QList<ProtocolStructureModule*> ProtocolParser::structures;
@@ -112,15 +115,21 @@ void ProtocolParser::clear(void)
  * \param nomarkdown should be true to skip the markdown generation.
  * \param nohelperfiles should be true to skip generating helper source files.
  * \param inlinecss is the css to use for the markdown output, if blank use default.
+ * \param disableunrecognized should be true to disable warnings about unrecognized attributes
  * \return true if something was written to a file
  */
-bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles, QString inlinecss)
+bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles, QString inlinecss, bool disableunrecognized)
 {
-    ProtocolSupport support;
     QStringList fileNameList;
 
     // The outer most element
     QDomElement docElem = doc.documentElement();
+
+    // Clear the support information
+    support = ProtocolSupport();
+
+    // Set the disable unrecognized warnings flag
+    support.disableunrecognized = disableunrecognized;
 
     // This element must have the "Protocol" tag
     if(docElem.tagName() != "Protocol")
@@ -680,7 +689,7 @@ void ProtocolParser::parseEnumerations(const QDomNode& node)
  */
 const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
 {
-    EnumCreator* Enum = new EnumCreator(element);
+    EnumCreator* Enum = new EnumCreator(element, support);
 
     if(!Enum->getOutput().isEmpty())
         enums.append(Enum);

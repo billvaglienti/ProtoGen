@@ -116,7 +116,7 @@ void ProtocolStructure::parse(const QDomElement& field)
         if(attr.isNull())
             continue;
 
-        if(attriblist.contains(attr.name(), Qt::CaseInsensitive) == false)
+        if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
             std::cout << "Unrecognized attribute of structure: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
     }
 

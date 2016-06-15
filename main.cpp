@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     bool nodoxygen = false;
     bool nomarkdown = false;
     bool nohelperfiles = false;
+    bool disableunrecognized = false;
     QString inlinecss;
 
     QString docs;
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
         return 0;
     }
 
@@ -51,6 +52,8 @@ int main(int argc, char *argv[])
             filename = arg;
         else if (arg.contains("-latex", Qt::CaseInsensitive))
             latexSupportOn = true;
+        else if (arg.contains("-no-unrecognized-warnings", Qt::CaseInsensitive))
+            disableunrecognized = true;
         else if(arg.endsWith(".css"))
         {
             QFile file(arg);
@@ -118,7 +121,7 @@ int main(int argc, char *argv[])
                     QDir::setCurrent(path);
                 }
 
-                if(parser.parse(doc, nodoxygen, nomarkdown, nohelperfiles, inlinecss))
+                if(parser.parse(doc, nodoxygen, nomarkdown, nohelperfiles, inlinecss, disableunrecognized))
                     Return = 1;
 
             }

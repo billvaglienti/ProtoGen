@@ -5,9 +5,10 @@
 #include <iostream>
 
 
-EnumCreator::EnumCreator(const QDomElement& e):
+EnumCreator::EnumCreator(const QDomElement& e, ProtocolSupport supported):
     minbitwidth(0),
-    hidden(false)
+    hidden(false),
+    support(supported)
 {
     parse(e);
 }
@@ -58,7 +59,7 @@ QString EnumCreator::parse(const QDomElement& e)
             description = attr.value().trimmed();
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
-        else
+        else if(support.disableunrecognized == false)
             std::cout << "Unrecognized attribute of Enum: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
 
     }
@@ -108,7 +109,7 @@ QString EnumCreator::parse(const QDomElement& e)
                 value = attr.value().trimmed();
             else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
                 comment = ProtocolParser::reflowComment(attr.value());
-            else
+            else if(support.disableunrecognized == false)
                 std::cout << "Unrecognized attribute of enumeration Value : " << name.toStdString() << " : " << valueName.toStdString() << " : " << attrname.toStdString() << std::endl;
 
         }

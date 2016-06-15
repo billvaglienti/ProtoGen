@@ -69,7 +69,7 @@ void ProtocolCode::parse(const QDomElement& field)
             encode = attr.value().trimmed();
         else if(attrname.compare("decode", Qt::CaseInsensitive) == 0)
             decode = attr.value().trimmed();
-        else
+        else if(support.disableunrecognized == false)
             std::cout << "Unrecognized attribute of code: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
 
     }// for all attributes

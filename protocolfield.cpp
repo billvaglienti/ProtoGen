@@ -519,7 +519,7 @@ void ProtocolField::parse(const QDomElement& field)
             extraInfoNames.append("Notes");
             extraInfoValues.append(attr.value().toLower());
         }
-        else
+        else if(support.disableunrecognized == false)
         {
             std::cout << "Unrecognized attribute of Data: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
         }

@@ -16,7 +16,7 @@ public:
     ~ProtocolParser();
 
     //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
-    bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "");
+    bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "", bool disableunrecognized = false);
 
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag);
@@ -103,6 +103,9 @@ protected:
 
     //! Output the doxygen HTML documentation
     void outputDoxygen(void);
+
+    //! Protocol support information
+    static ProtocolSupport support;
 
     ProtocolHeaderFile header;   //!< The header file (*.h)
     QString name;   //!< Base name of the protocol

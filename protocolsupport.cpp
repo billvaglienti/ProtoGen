@@ -6,6 +6,7 @@ ProtocolSupport::ProtocolSupport() :
     specialFloat(true),
     bitfield(true),
     longbitfield(false),
-    bitfieldtest(false)
+    bitfieldtest(false),
+    disableunrecognized(false)
 {
 }

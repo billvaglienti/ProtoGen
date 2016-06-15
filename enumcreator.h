@@ -4,15 +4,20 @@
 #include <QString>
 #include <QStringList>
 #include <QDomElement>
+#include "protocolsupport.h"
 
 class EnumCreator
 {
 public:
     //! Create an empty enumeration list
-    EnumCreator(void){}
+    EnumCreator(ProtocolSupport supported) :
+        minbitwidth(0),
+        hidden(false),
+        support(supported)
+    {}
 
     //! Create an enumeration list and populate it from the DOM
-    EnumCreator(const QDomElement& e);
+    EnumCreator(const QDomElement& e, ProtocolSupport supported);
 
     //! Empty the enumeration list
     void clear(void);
@@ -60,6 +65,8 @@ protected:
     int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
 
     bool hidden;        //!< Determines if this enum will be hidden from the documentation
+
+    ProtocolSupport support;
 };
 
 //! Output a string with specific spacing
