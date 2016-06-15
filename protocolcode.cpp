@@ -1,5 +1,6 @@
 #include "protocolcode.h"
 #include "protocolparser.h"
+#include <iostream>
 
 /*!
  * Construct a blank protocol field
