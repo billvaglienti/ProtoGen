@@ -729,20 +729,10 @@ void ProtocolParser::outputIncludes(ProtocolFile& file, const QDomNode& node)
     {
         QDomElement e = list.at(i).toElement();
         QDomNamedNodeMap map = e.attributes();
-        QString include;
+
+        QString include = ProtocolParser::getAttribute("name", map);
         QString comment;
         bool global = false;
-
-        // The name is part of our debug output, so get that first
-        for(int i = 0; i < map.count(); i++)
-        {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
-
-            if(attr.name().compare("name", Qt::CaseInsensitive) == 0)
-                include = attr.value().trimmed();
-        }
 
         for(int i = 0; i < map.count(); i++)
         {
@@ -758,7 +748,7 @@ void ProtocolParser::outputIncludes(ProtocolFile& file, const QDomNode& node)
                 comment = ProtocolParser::reflowComment(attr.value().trimmed());
             else if(attrname.compare("global", Qt::CaseInsensitive) == 0)
                 global = ProtocolParser::isFieldSet(attr.value().trimmed());
-            else
+            else if(support.disableunrecognized == false)
                 std::cout << "Unrecognized attribute of include: " << include.toStdString() << " : " << attrname.toStdString() << std::endl;
 
         }// for all attributes
