@@ -194,7 +194,11 @@ void ProtocolStructureModule::parse(const QDomElement& e)
     // The encoded size of this structure as a macro that others can access
     if((encode != false) || (decode != false))
     {
-        header.write("#define getMinLengthOf" + typeName + "() (" + encodedLength.minEncodedLength + ")\n");
+        header.write("#define getMinLengthOf" + typeName + "() ");
+        if(encodedLength.minEncodedLength.isEmpty())
+            header.write("(0)\n");
+        else
+            header.write("(" + encodedLength.minEncodedLength + ")\n");
 
         // White space is good
         header.makeLineSeparator();

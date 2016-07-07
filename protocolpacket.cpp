@@ -225,38 +225,19 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
     if(id.isEmpty())
         id = name.toUpper();
 
-    // The prototype for the packet ID
+    // The macro for the packet ID
     header.makeLineSeparator();
     header.write("//! return the packet ID for the " + prefix + name + " packet\n");
-    header.write("uint32_t get" + prefix + name + "PacketID(void);\n");
+    header.write("#define get" + prefix + name + "PacketID() (" + id + ")\n");
 
-    // And the source code
-    source.makeLineSeparator();
-    source.write("/*!\n");
-    source.write(" * \\return the packet ID for the " + prefix + name + " packet\n");
-    source.write(" */\n");
-    source.write("uint32_t get" + prefix + name + "PacketID(void)\n");
-    source.write("{\n");
-    source.write("    return " + id + ";\n");
-    source.write("}\n");
-
-    // The prototype for the minimum packet length
+    // The macro for the minimum packet length
     header.makeLineSeparator();
     header.write("//! return the minimum data length for the " + prefix + name + " packet\n");
-    header.write("int get" + prefix + name + "MinDataLength(void);\n");
-
-    // And the source code
-    source.makeLineSeparator();
-    source.write("/*!\n");
-    source.write(" * \\return the minimum data length in bytes for the " + prefix + name + " packet\n");
-    source.write(" */\n");
-    source.write("int get" + prefix + name + "MinDataLength(void)\n");
-    source.write("{\n");
+    header.write("#define get" + prefix + name + "MinDataLength() ");
     if(encodedLength.minEncodedLength.isEmpty())
-        source.write("    return 0;\n");
+        header.write("0\n");
     else
-        source.write("    return " + encodedLength.minEncodedLength + ";\n");
-    source.write("}\n");
+        header.write("("+encodedLength.minEncodedLength + ")\n");
 
 }// ProtocolPacket::createUtilityFunctions
 
