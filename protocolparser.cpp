@@ -6,6 +6,7 @@
 #include "fieldcoding.h"
 #include "protocolsupport.h"
 #include "protocolbitfield.h"
+#include "protocoldocumentation.h"
 #include <QDomDocument>
 #include <QFile>
 #include <QDir>
@@ -16,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.4.8.a";
+const QString ProtocolParser::genVersion = "1.5.0.a";
 
 // The protocol support data is here so it is statically accessible
 ProtocolSupport ProtocolParser::support = ProtocolSupport();
@@ -33,13 +34,15 @@ QList<EnumCreator*> ProtocolParser::enums;
 // A static list of parsed global enumerations
 QList<EnumCreator*> ProtocolParser::globalEnums;
 
+// Statically accessible knowledge of the input path
+QString ProtocolParser::inputpath;
+
+
 /*!
  * \brief ProtocolParser::ProtocolParser
  */
 ProtocolParser::ProtocolParser()
 {
-    // wipe any previously existing static data
-    clear();
 }
 
 
@@ -50,61 +53,6 @@ ProtocolParser::~ProtocolParser()
 {
     // Write anything out that might be pending
     header.flush();
-
-    clear();
-}
-
-
-/*!
- * Clear any data from the protocol parser, including static data
- */
-void ProtocolParser::clear(void)
-{
-    header.clear();
-    name.clear();
-    prefix.clear();
-    version.clear();
-    api.clear();
-
-    latexEnabled = false; // Needs the -latex switch to enable
-
-    // Empty the static list
-    for(int i = 0; i < structures.size(); i++)
-    {
-        if(structures[i] != NULL)
-        {
-            delete structures[i];
-            structures[i] = NULL;
-        }
-    }
-
-    structures.clear();
-
-    // Empty the static list
-    for(int i = 0; i < packets.size(); i++)
-    {
-        if(packets[i] != NULL)
-        {
-            delete packets[i];
-            packets[i] = NULL;
-        }
-    }
-
-    packets.clear();
-
-    // Empty the static list
-    for(int i = 0; i < enums.size(); i++)
-    {
-        if(enums[i] != NULL)
-        {
-            delete enums[i];
-            enums[i] = NULL;
-        }
-    }
-
-    // enums and globalEnums contain the same pointers
-    enums.clear();
-    globalEnums.clear();
 }
 
 
@@ -179,91 +127,108 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     if(docElem.attribute("endian").contains("little", Qt::CaseInsensitive))
         bigendian = false;
 
-    // Build the top level module
-    if(!createProtocolFiles(docElem))
-        return false;
-
-    fileNameList.append(header.fileName());
-
     // All of the top level Structures, which stand alone in their own modules
     QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
 
-    // All of the top level packets. Packets can only be at the top level
-    QList<QDomNode> packetlist = childElementsByTagName(docElem, "Packet");
+    // All of the top level packets and top level documentation. Packets can only be at the top level
+    QList<QDomNode> doclist = childElementsByTagName(docElem, "Packet", "Enum", "Documentation");
 
-    /*
-    // Delete the files we are going to create so we don't have to worry about appending when we shouldn't
-    for(int i = 0; i < structlist.size(); i++)
-    {
-        QDomElement e = structlist.at(i).toElement();
-
-        QString moduleName = e.attribute("file");
-
-        if(moduleName.isEmpty())
-            moduleName = support.globalFileName;
-
-        if(moduleName.isEmpty())
-            moduleName = prefix + e.attribute("name");
-
-        ProtocolFile::deleteModule(moduleName);
-
-    }// for all structures
-
-    for(int i = 0; i < packetlist.size(); i++)
-    {
-        QDomElement e = packetlist.at(i).toElement();
-        QString moduleName = e.attribute("file");
-
-        if(moduleName.isEmpty())
-            moduleName = support.globalFileName;
-
-        if(moduleName.isEmpty())
-            moduleName = prefix + e.attribute("name") + "Packet";
-
-        ProtocolFile::deleteModule(moduleName);
-
-    }// for all packets
-    */
-
+    // We want to create the objects first, then parse them later. That way we
+    // can retain the order of their definition, but get enumerations and
+    // structures to parse first
     for(int i = 0; i < structlist.size(); i++)
     {
         // Create the module object
         ProtocolStructureModule* module = new ProtocolStructureModule(name, prefix, support, api, version, bigendian);
 
+        // Remember its xml
+        module->setElement(structlist.at(i).toElement());
+
+        // Keep track of the structure
+        structures.append(module);
+    }
+    structlist.clear();
+
+    // Create the packets, enums, and documents
+    for(int i = 0; i < doclist.size(); i++)
+    {
+        if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
+        {
+            // Create the module object
+            ProtocolPacket* packet = new ProtocolPacket(name, prefix, support, api, version, bigendian);
+
+            // Remember its xml
+            packet->setElement(doclist.at(i).toElement());
+
+            // Keep it around
+            packets.append(packet);
+
+            // Keep it in the document list as well
+            documents.append(packet);
+        }
+        else if(doclist.at(i).nodeName().contains("Enum", Qt::CaseInsensitive))
+        {
+            EnumCreator* Enum = new EnumCreator(support);
+
+            // Enums can be parsed now
+            Enum->setElement(doclist.at(i).toElement());
+            Enum->parse();
+
+            // Keep it around in the global list
+            if(!Enum->getOutput().isEmpty())
+                globalEnums.append(Enum);
+
+            // Keep it in the document list as well
+            documents.append(Enum);
+        }
+        else
+        {
+            // Create the module object
+            ProtocolDocumentation* document = new ProtocolDocumentation();
+
+            // Documents can be parsed now
+            document->setElement(doclist.at(i).toElement());
+            document->parse();
+
+            // Keep it around
+            documents.append(document);
+        }
+
+    }// for all packets, enums, and documents
+    doclist.clear();
+
+    // Now parse the global structures
+    for(int i = 0; i < structures.size(); i++)
+    {
+        ProtocolStructureModule* module = structures[i];
+
         // Parse its XML
-        module->parse(structlist.at(i).toElement());
+        module->parse();
 
         // Keep a list of all the file names
         fileNameList.append(module->getHeaderFileName());
         fileNameList.append(module->getSourceFileName());
 
-        // Keep it around, but only if we got something for it
-        if(module->encodedLength.isEmpty())
-            delete module;
-        else
-            structures.push_back(module);
-
     }// for all top level structures
-    structlist.clear();
 
-    // Create the packet files
-    for(int i = 0; i < packetlist.size(); i++)
+    // And the global packets
+    for(int i = 0; i < packets.size(); i++)
     {
         // Create the module object
-        ProtocolPacket* packet = new ProtocolPacket(name, prefix, support, api, version, bigendian);
+        ProtocolPacket* packet = packets[i];
 
         // Parse its XML
-        packet->parse(packetlist.at(i).toElement());
+        packet->parse();
 
         // Keep a list of all the file names
         fileNameList.append(packet->getHeaderFileName());
         fileNameList.append(packet->getSourceFileName());
+    }
 
-        // Keep it around
-        packets.push_back(packet);
+    // Build the top level module
+    createProtocolFiles(docElem);
 
-    }// for all packets
-    packetlist.clear();
+    fileNameList.append(header.fileName());
 
     if(!nohelperfiles)
     {
@@ -329,9 +294,8 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
 /*!
  * Create the header file for the top level module of the protocol
  * \param docElem is the "protocol" element from the DOM
- * \return true if the generation happened, false if the DOM does not conform
  */
-bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
+void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
 {
     // If the name is "coollink" then make everything "coollinkProtocol"
     QString nameex = name + "Protocol";
@@ -388,14 +352,12 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     // Add other includes
     outputIncludes(header, docElem);
 
-    // Output enumerations
-    parseEnumerations(docElem);
-    outputEnumerations(header);
-
-    // At this point the list of enums are the globals, we want to track those
-    // separately from the next set of enums that come from packets and structures
-    for(int i = 0; i < enums.size(); i++)
-        globalEnums.append(enums.at(i));
+    // Output the global enumerations to my header
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        header.makeLineSeparator();
+        header.write(globalEnums.at(i)->getOutput());
+    }
 
     // API functions
     if(!api.isEmpty())
@@ -433,8 +395,6 @@ bool ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     header.write("uint32_t get" + name + "PacketID(const void* pkt);\n");
     header.write("\n");
 
-    return true;
-
 }// ProtocolParser::createProtocolFiles
 
 
@@ -460,6 +420,30 @@ void ProtocolParser::outputLongComment(ProtocolFile& file, const QString& prefix
  * \return The formatted text string.
  */
 QString ProtocolParser::outputLongComment(const QString& prefix, const QString& text)
+{
+    return reflowComment(text, prefix, 80);
+
+}// ProtocolParser::outputLongComment
+
+
+/*!
+ * Get a correctly reflowed comment from a DOM
+ * \param e is the DOM to get the comment from
+ * \return the correctly reflowed comment, which could be empty
+ */
+QString ProtocolParser::getComment(const QDomElement& e)
+{
+    return reflowComment(e.attribute("comment"));
+}
+
+/*!
+ * Take a comment line which may have some unusual spaces and line feeds that
+ * came from the xml formatting and reflow it for our needs.
+ * \param text is the raw comment from the xml.
+ * \param prefix precedes each line (for example "//" or " *"
+ * \return the reflowed comment.
+ */
+QString ProtocolParser::reflowComment(QString text, QString prefix, int charlimit)
 {
     // Remove leading and trailing white space
     QString output = text.trimmed();
@@ -503,6 +487,9 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
                 // Replace line feeds with spaces
                 paragraphs[i].replace("\n", " ");
 
+                // Replace tabs with spaces
+                paragraphs[i].replace("\t", " ");
+
                 int length = 0;
 
                 // Break it apart into words
@@ -514,11 +501,14 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
                     // Length of the word plus the preceding space
                     int wordLength = list.at(j).length() + 1;
 
-                    if((length != 0) && (length + wordLength > 80))
+                    if(charlimit > 0)
                     {
-                        // Terminate the previous line
-                        output += "\n";
-                        length = 0;
+                        if((length != 0) && (length + wordLength > charlimit))
+                        {
+                            // Terminate the previous line
+                            output += "\n";
+                            length = 0;
+                        }
                     }
 
                     // All lines in the header comment block start with this spacing
@@ -548,62 +538,6 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
     }// for all blocks
 
     return output;
-
-}// ProtocolParser::outputLongComment
-
-
-/*!
- * Get a correctly reflowed comment from a DOM
- * \param e is the DOM to get the comment from
- * \return the correctly reflowed comment, which could be empty
- */
-QString ProtocolParser::getComment(const QDomElement& e)
-{
-    return reflowComment(e.attribute("comment"));
-}
-
-/*!
- * Take a comment line which may have some unusual spaces and line feeds that
- * came from the xml formatting and reflow it for our needs.
- * \param text is the raw comment from the xml.
- * \return the reflowed comment.
- */
-QString ProtocolParser::reflowComment(const QString& text)
-{
-    // Remove leading and trailing white space
-    QString comment = text.trimmed();
-    QString output;
-
-    if(comment.isEmpty())
-        return output;
-
-    // Convert to unix style line endings, just in case
-    comment.replace("\r\n", "\n");
-
-    // Split into paragraphs, which are separated by dual line endings
-    QStringList paragraphs = comment.split("\n\n", QString::SkipEmptyParts);
-
-    for(int i = 0; i < paragraphs.size(); i++)
-    {
-        // Replace line feeds with spaces, this is the first part of the reflow
-        paragraphs[i].replace("\n", " ");
-
-        // Split based on spaces. Multiple spaces will be discarded, this is the second part of the reflow
-        QStringList list = paragraphs[i].split(" ", QString::SkipEmptyParts);
-
-        // Put it back together into one string
-        int j;
-        for(j = 0; j < list.size() - 1; j++)
-            output += list.at(j) + " ";
-        output += list.at(j);
-
-        // If we have multiple paragraphs, put the paragraph separator back in
-        if(i < paragraphs.size() - 1)
-            output += "\n\n";
-
-    }// for all paragraphs in a block
-
-    return output;
 }
 
 
@@ -611,24 +545,28 @@ QString ProtocolParser::reflowComment(const QString& text)
  * Return a list of QDomNodes that are direct children and have a specific tag
  * name. This is different then elementsByTagName() because that gets all
  * descendants, including grand-children. We just want children.
- * \param node is the parent node
- * \param tag is the tag name to look for
+ * \param node is the parent node.
+ * \param tag is the tag name to look for.
+ * \param tag2 is a second optional tag name to look for.
+ * \param tag3 is a third optional tag name to look for.
  * \return a list of QDomNodes.
  */
-QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QString tag)
+QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QString tag, QString tag2, QString tag3)
 {
     QList<QDomNode> list;
 
     // All the direct children
     QDomNodeList children = node.childNodes();
 
-    // Now remove any whose tag is wrong
+    // Now just the ones with the tag(s) we want
     for (int i = 0; i < children.size(); ++i)
     {
-        if(children.item(i).nodeName().contains(tag, Qt::CaseInsensitive))
-        {
+        if(!tag.isEmpty() && children.item(i).nodeName().contains(tag, Qt::CaseInsensitive))
             list.append(children.item(i));
-        }
+        else if(!tag2.isEmpty() && children.item(i).nodeName().contains(tag2, Qt::CaseInsensitive))
+            list.append(children.item(i));
+        else if(!tag3.isEmpty() && children.item(i).nodeName().contains(tag3, Qt::CaseInsensitive))
+            list.append(children.item(i));
     }
 
     return list;
@@ -689,7 +627,10 @@ void ProtocolParser::parseEnumerations(const QDomNode& node)
  */
 const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
 {
-    EnumCreator* Enum = new EnumCreator(element, support);
+    EnumCreator* Enum = new EnumCreator(support);
+
+    Enum->setElement(element);
+    Enum->parse();
 
     if(!Enum->getOutput().isEmpty())
         enums.append(Enum);
@@ -697,23 +638,6 @@ const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
     return Enum;
 
 }// ProtocolParser::parseEnumeration
-
-
-/*!
- * Output all enumerations in the global list
- * \param file receives the output
- */
-void ProtocolParser::outputEnumerations(ProtocolFile& file)
-{
-    for(int i = 0; i < enums.size(); i++)
-    {
-        // Output the enumerations to my header
-        file.makeLineSeparator();
-        file.write(enums.at(i)->getOutput());
-
-    }// for all my enum tags
-
-}// ProtocolParser::outputEnumerations
 
 
 /*!
@@ -797,18 +721,18 @@ const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName
 {
     for(int i = 0; i < structures.size(); i++)
     {
-        if(structures[i]->typeName == typeName)
+        if(structures.at(i)->typeName == typeName)
         {
-            return structures[i];
+            return structures.at(i);
         }
     }
 
 
     for(int i = 0; i < packets.size(); i++)
     {
-        if(packets[i]->typeName == typeName)
+        if(packets.at(i)->typeName == typeName)
         {
-            return packets[i];
+            return packets.at(i);
         }
     }
 
@@ -823,6 +747,14 @@ const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName
  */
 const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
 {
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        if(globalEnums.at(i)->getName() == enumName)
+        {
+            return globalEnums.at(i);
+        }
+    }
+
     for(int i = 0; i < enums.size(); i++)
     {
         if(enums.at(i)->getName() == enumName)
@@ -842,6 +774,11 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
  */
 QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text)
 {
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        globalEnums.at(i)->replaceEnumerationNameWithValue(text);
+    }
+
     for(int i = 0; i < enums.size(); i++)
     {
         enums.at(i)->replaceEnumerationNameWithValue(text);
@@ -859,6 +796,12 @@ QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text)
  */
 QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text)
 {
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        if(globalEnums.at(i)->isEnumerationValue(text))
+            return globalEnums.at(i)->getName();
+    }
+
     for(int i = 0; i < enums.size(); i++)
     {
         if(enums.at(i)->isEnumerationValue(text))
@@ -885,18 +828,18 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 {
     for(int i = 0; i < structures.size(); i++)
     {
-        if(structures[i]->typeName == typeName)
+        if(structures.at(i)->typeName == typeName)
         {
-            return structures[i]->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
+            return structures.at(i)->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 
 
     for(int i = 0; i < packets.size(); i++)
     {
-        if(packets[i]->typeName == typeName)
+        if(packets.at(i)->typeName == typeName)
         {
-            return packets[i]->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
+            return packets.at(i)->getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
         }
     }
 
@@ -909,8 +852,6 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
  */
 void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
-    int paragraph1 = 1, paragraph2 = 1;
-
     QString basepath;
 
     if (!docsDir.isEmpty())
@@ -953,12 +894,6 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
-    if(isBigEndian)
-        file.write("Data *on the wire* are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last\n");
-    else
-        file.write("Data *on the wire* are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last\n");
-    file.write("\n");
-
     if(!version.isEmpty())
     {
         file.write(name + " Protocol version is " + version + ".\n");
@@ -971,10 +906,26 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
-    paragraph1++;
-    paragraph2 = 1;
     file.write("----------------------------\n\n");
 
+    QStringList packetids;
+    for(int i = 0; i < packets.size(); i++)
+        packetids.append(packets.at(i)->getId());
+
+    for(int i = 0; i < documents.size(); i++)
+    {
+        if(documents.at(i) == NULL)
+            continue;
+
+        // If the particular enum is to be hidden
+        if(documents.at(i)->isHidden())
+            continue;
+
+        file.write(documents.at(i)->getTopLevelMarkdown(true, packetids));
+        file.write("\n");
+    }
+
+    file.write("----------------------------\n\n");
     file.write("# About this ICD\n");
     file.write("\n");
 
@@ -984,8 +935,13 @@ version " + ProtocolParser::genVersion + ". ProtoGen also generates C source cod
 most of the work of encoding data from memory to the wire, and vice versa.\n");
     file.write("\n");
 
-    file.write("# Encodings\n");
+    file.write("## Encodings\n");
     file.write("\n");
+
+    if(isBigEndian)
+        file.write("Data for this protocol are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last.\n\n");
+    else
+        file.write("Data for this protocol are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last. However bitfields are always sent most significant bits first.\n\n");
 
     file.write("Data can be encoded as unsigned integers, signed integers (two's complement), bitfields, and floating point.\n");
     file.write("\n");
@@ -1002,7 +958,7 @@ most of the work of encoding data from memory to the wire, and vice versa.\n");
 | F64                          | 64 bit floating point (IEEE-754)      | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n");
     file.write("\n");
 
-    file.write("# Size of fields");
+    file.write("## Size of fields");
     file.write("\n");
 
     file.write("The encoding tables give the bytes for each field as X...Y; \
@@ -1025,100 +981,12 @@ depends on the non-zero value of another field this will be indicated in the \
 description column of the table.\n");
     file.write("\n");
 
-    paragraph1++;
-    paragraph2 = 1;
-    file.write("----------------------------\n\n");
-    if(globalEnums.size() > 0)
-    {
-        QStringList packetids;
-        for(int i = 0; i < packets.size(); i++)
-        {
-            if(packets[i] == NULL)
-                continue;
-
-            packetids.append(packets.at(i)->getId());
-        }
-
-        file.write("# Enumerations\n");
-        file.write("\n");
-        file.write(name + " protocol defines these global enumerations.\n");
-        file.write("\n");
-        for(int i = 0; i < globalEnums.size(); i++)
-        {
-            if(globalEnums[i] == NULL)
-                continue;
-
-            // If the particular enum is to be hidden
-            if (globalEnums[i]->isHidden())
-                continue;
-
-            file.write(globalEnums[i]->getMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++), packetids));
-            file.write("\n");
-        }
-    }
-
-    paragraph1++;
-    paragraph2 = 1;
-    file.write("----------------------------\n\n");
-    if(packets.size() > 0)
-    {
-        file.write("# Packets\n");
-        file.write("\n");
-        file.write("This section describes the data payloads of the packets; and how those data are represented in the bytes of the packets.\n");
-        file.write("\n");
-
-        for(int i = 0; i < packets.size(); i++)
-        {
-            if(packets[i] == NULL)
-                continue;
-
-            // If the .xml file describes this particular packet as 'hidden', don't include it in the docs
-            if (packets[i]->isHidden())
-                continue;
-
-            file.write(packets[i]->getTopLevelMarkdown(QString().setNum(paragraph1) + "." + QString().setNum(paragraph2++)));
-            file.write("\n");
-        }
-
-        paragraph1++;
-        paragraph2 = 1;
-    }
-
-    /*
-    paragraph1++;
-    paragraph2 = 1;
-    file.write("----------------------------\n\n");
-    if(structures.size() > 0)
-    {
-        paragraph2 = 1;
-        file.write("# Structures");
-        file.write("\n");
-        file.write(name + " Protocol defines global structures. \
-Structures are similar to packets but are intended to be reusable encodings \
-that are contained in one or more packets. The information in this section \
-may be repeating information already presented in the packets section\n"));
-        file.write("\n");
-
-        for(int i = 0; i < structures.size(); i++)
-        {
-            if(structures[i] == NULL)
-                continue;
-
-            file.write(structures[i]->getTopLevelMarkdown(QString().setNum(paragraph1) + "." + QString.setNum(paragraph2++)));
-            file.write("\n");
-        }
-
-        paragraph1++;
-        paragraph2 = 1;
-    }
-    */
-
     file.flush();
 
     QProcess process;
     QStringList arguments;
 
-    //Write html documentation
+    // Write html documentation
     QString htmlfile = basepath + name + ".html";
 
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
@@ -1242,8 +1110,9 @@ QString ProtocolParser::getDefaultInlinCSS(void)
     }\n\
 \n\
     table {\n\
-       border: 3px solid darkred;\n\
+       border: 2px solid darkred;\n\
        border-collapse: collapse;\n\
+       margin-bottom: 25px;\n\
     }\n\
 \n\
     th, td {\n\
@@ -1253,12 +1122,19 @@ QString ProtocolParser::getDefaultInlinCSS(void)
 \n\
     td{ padding: 2px; }\n\
     h1, h2, h3, h4, h5 { font-family: Arial; }\n\
-    h1 { font-size:150%; }\n\
-    h2 { font-size:135%; }\n\
-    h3 { font-size:120%; }\n\
-    h4 { font-size:110%; }\n\
-    h5, li { font-size:100%; }\n\
+    h1 { font-size:120%; margin-bottom: 25px;}\n\
+    h2 { font-size:110%; margin-bottom: 15px; }\n\
+    h3 { font-size:100%; margin-bottom: 10px;}\n\
+    h4, li { font-size:100%; }\n\
     caption{ font-family:Verdana; }\n\
+\n\
+    hr{\n\
+        color: black;\n\
+        background-color: dimgray;\n\
+        height: 1px;\n\
+        margin-bottom:25px;\n\
+        margin-top:25px;\n\
+    }\n\
 \n\
     code, pre, .codelike {\n\
         font-family: Courier New, monospace;\n\
@@ -1286,18 +1162,19 @@ QString ProtocolParser::getDefaultInlinCSS(void)
     return inlinecss;
 }
 
+
 /*!
  * \brief ProtocolParser::setDocsPath
  * Set the target path for writing output markdown documentation files
  * If no output path is set, then QDir::Current() is used
  * \param path
  */
-void ProtocolParser::setDocsPath(QString path) {
-    if (QDir(path).exists()) {
+void ProtocolParser::setDocsPath(QString path)
+{
+    if (QDir(path).exists())
         docsDir = path;
-    } else {
+    else
         docsDir = "";
-    }
 }
 
 /*!

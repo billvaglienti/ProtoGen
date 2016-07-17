@@ -3,10 +3,11 @@
 
 #include "protocolsupport.h"
 #include "encodedlength.h"
+#include "protocoldocumentation.h"
 #include <QDomElement>
 #include <QString>
 
-class Encodable
+class Encodable : public ProtocolDocumentation
 {
 public:
 
@@ -17,9 +18,6 @@ public:
 
     //! Construct a protocol field by parsing a DOM element
     static Encodable* generateEncodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
-
-    //! Parse the DOM element
-    virtual void parse(const QDomElement& field) = 0;
 
     //! Reset all data to defaults
     virtual void clear(void);
@@ -128,8 +126,6 @@ public:
     QString protoName;      //!< Name of the protocol
     QString prefix;         //!< Prefix of names
     QString typeName;       //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
-    QString name;           //!< The name of this encodable
-    QString comment;        //!< The comment that goes with this encodable
     QString array;          //!< The array length of this encodable, empty if no array
     QString variableArray;  //!< variable that gives the length of the array in a packet
     QString dependsOn;      //!< variable that determines if this field is present

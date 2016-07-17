@@ -39,7 +39,8 @@ SOURCES += main.cpp \
     encodedlength.cpp \
     shuntingyard.cpp \
     protocolcode.cpp \
-    protocolbitfield.cpp
+    protocolbitfield.cpp \
+    protocoldocumentation.cpp
 
 HEADERS += \
     protocolparser.h \
@@ -56,7 +57,8 @@ HEADERS += \
     encodedlength.h \
     shuntingyard.h \
     protocolcode.h \
-    protocolbitfield.h
+    protocolbitfield.h \
+    protocoldocumentation.h
 
 RESOURCES += \
     ProtoGen.qrc
@@ -137,4 +139,5 @@ OTHER_FILES += \
     README.md \
     LICENSE.txt
 
-DISTFILES +=
+DISTFILES += \
+    moredocsfile.txt

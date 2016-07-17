@@ -400,28 +400,6 @@ ProtocolField::ProtocolField(const QString& protocolName, const QString& protoco
 
 
 /*!
- * Construct a protocol field by parsing the DOM
- * \param protocolName is the name of the protocol
- * \param prtoocolPrefix is the naming prefix
- * \param supported indicates what the protocol can support
- * \param field is the DOM element
- */
-ProtocolField::ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field):
-    Encodable(protocolName, protocolPrefix, supported),
-    encodedMin(0),
-    encodedMax(0),
-    scaler(1),
-    checkConstant(false),
-    inMemoryType(supported),
-    encodedType(supported),
-    lastBitfield(false),
-    startingBitCount(0)
-{
-    parse(field);
-}
-
-
-/*!
  * Reset all data to defaults
  */
 void ProtocolField::clear(void)
@@ -448,9 +426,8 @@ void ProtocolField::clear(void)
 
 /*!
  * Parse the DOM to determine the details of this ProtocolField
- * \param field is the DOM element
  */
-void ProtocolField::parse(const QDomElement& field)
+void ProtocolField::parse(void)
 {
     QString memoryTypeString;
     QString encodedTypeString;
@@ -458,13 +435,10 @@ void ProtocolField::parse(const QDomElement& field)
 
     clear();
 
-    QDomNamedNodeMap map = field.attributes();
+    QDomNamedNodeMap map = e.attributes();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
-
-    if(name.isEmpty())
-        name = "_unknown";
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -530,16 +504,16 @@ void ProtocolField::parse(const QDomElement& field)
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
         name = "notprovided";
-        std::cout << "data tag without a name: " << field.text().toStdString() << std::endl;
+        std::cout << "data tag without a name: " << e.text().toStdString() << std::endl;
     }
 
     // maybe its an enum or a external struct?
     if(memoryTypeString.isEmpty())
     {
         // Maybe its an enum?
-        if(!field.attribute("enum").isEmpty())
+        if(!e.attribute("enum").isEmpty())
             memoryTypeString = "enum";
-        else if(!field.attribute("struct").isEmpty())
+        else if(!e.attribute("struct").isEmpty())
             memoryTypeString = "struct";
         else
         {

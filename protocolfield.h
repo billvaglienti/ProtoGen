@@ -55,9 +55,6 @@ public:
     //! Construct a field, setting the protocol name and name prefix
     ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
-    //! Construct a protocol field by parsing a DOM element
-    ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
-
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
 
@@ -71,7 +68,7 @@ public:
     virtual void clear(void);
 
     //! Parse the DOM element
-    virtual void parse(const QDomElement& field);
+    virtual void parse(void);
 
     //! Returns true since protocol field is a primitive type
     virtual bool isPrimitive(void) const {return true;}

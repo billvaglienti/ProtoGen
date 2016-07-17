@@ -1,16 +1,22 @@
 #include "enumcreator.h"
 #include "protocolparser.h"
 #include <QStringList>
+#include <QRegularExpression>
+#include <QChar>
 #include <math.h>
 #include <iostream>
 
-
-EnumCreator::EnumCreator(const QDomElement& e, ProtocolSupport supported):
-    minbitwidth(0),
-    hidden(false),
-    support(supported)
+EnumCreator::~EnumCreator(void)
 {
-    parse(e);
+    // Delete all the objects in the list
+    for(int i = 0; i < documentList.count(); i++)
+    {
+        if(documentList[i] != NULL)
+        {
+            delete documentList[i];
+            documentList[i] = NULL;
+        }
+    }
 }
 
 
@@ -26,17 +32,33 @@ void EnumCreator::clear(void)
     commentList.clear();
     valueList.clear();
     numberList.clear();
+    hiddenList.clear();
+
+    // Delete all the objects in the list
+    for(int i = 0; i < documentList.count(); i++)
+    {
+        if(documentList[i] != NULL)
+        {
+            delete documentList[i];
+            documentList[i] = NULL;
+        }
+    }
+
+    // clear the list
+    documentList.clear();
+
 }
 
 
 /*!
  * Parse an Enum tag from the xml to create an enumeration.
- * \param e is the Enum tag DOM element
- * \return A string (including linefeeds) to declare the enumeration
  */
-QString EnumCreator::parse(const QDomElement& e)
+void EnumCreator::parse(void)
 {
     clear();
+
+    // Get any documentation for this packet
+    ProtocolDocumentation::getChildDocuments(e, documentList);
 
     QDomNamedNodeMap map = e.attributes();
 
@@ -54,7 +76,7 @@ QString EnumCreator::parse(const QDomElement& e)
         if(attrname.compare("name", Qt::CaseInsensitive) == 0)
             name = attr.value().trimmed();
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-            comment = attr.value().trimmed();
+            comment = ProtocolParser::reflowComment(attr.value());
         else if(attrname.compare("description", Qt::CaseInsensitive) == 0)
             description = attr.value().trimmed();
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
@@ -68,7 +90,7 @@ QString EnumCreator::parse(const QDomElement& e)
 
     // If we have no entries there is nothing to do
     if(list.size() <= 0)
-        return output;
+        return;
 
     // Put the top level comment in
     if(!comment.isEmpty())
@@ -94,6 +116,7 @@ QString EnumCreator::parse(const QDomElement& e)
         QString valueName = ProtocolParser::getAttribute("name", map);
         QString value;
         QString comment;
+        bool hiddenvalue = false;
 
         for(int i = 0; i < map.count(); i++)
         {
@@ -109,6 +132,8 @@ QString EnumCreator::parse(const QDomElement& e)
                 value = attr.value().trimmed();
             else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
                 comment = ProtocolParser::reflowComment(attr.value());
+            else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
+                hiddenvalue = ProtocolParser::isFieldSet(attr.value().trimmed());
             else if(support.disableunrecognized == false)
                 std::cout << "Unrecognized attribute of enumeration Value : " << name.toStdString() << " : " << valueName.toStdString() << " : " << attrname.toStdString() << std::endl;
 
@@ -122,6 +147,9 @@ QString EnumCreator::parse(const QDomElement& e)
 
         // And don't forget the comment
         commentList.append(comment);
+
+        // Specific enum values can be hidden
+        hiddenList.append(hiddenvalue);
 
         // Form the declaration string
         QString declaration = "    " + valueName;
@@ -176,8 +204,6 @@ QString EnumCreator::parse(const QDomElement& e)
     output += "}";
     output += name;
     output += ";\n";
-
-    return output;
 
 }// EnumCreator::parse
 
@@ -279,11 +305,11 @@ void EnumCreator::computeNumberList(void)
 
 /*!
  * Get the markdown output that documents this enumeration
- * \param outline gives the outline number for this heading
+ * \param global should be true to include a paragraph number for this heading
  * \param packetids is the list of packet identifiers, used to determine if a link should be added
  * \return the markdown output string
  */
-QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) const
+QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packetids) const
 {
     QString output;
 
@@ -299,6 +325,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         {
             bool link = false;
 
+
             // Check to see if this enumeration is a packet identifier
             for(int j = 0; j < packetids.size(); j++)
             {
@@ -309,7 +336,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
                 }
             }
 
-            // Make name as code, with or without a link to an anchor elsewhere
+            // Mark name as code, with or without a link to an anchor elsewhere
             if(link)
                 codeNameList.append("[`" + nameList.at(i) + "`](#" + nameList.at(i) + ")");
             else
@@ -325,12 +352,15 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
 
         // The outline paragraph
-        if(!outline.isEmpty())
-            output += "## " + name + "\n\n";
+        if(global)
+            output += "## " + name + " enumeration\n\n";
 
         // commenting for this field
         if(!comment.isEmpty())
             output += comment + "\n\n";
+
+        for(int i = 0; i < documentList.count(); i++)
+            output += documentList.at(i)->getTopLevelMarkdown();
 
         // If a longer description exists for this enum, display it in the documentation
         if (!description.isEmpty())
@@ -341,7 +371,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         }
 
         // Table caption, with an anchor for the enumeration name
-        output += "[<a name=\""+name+"\"></a>" + name + "]\n";
+        output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
 
         // Table header
         output += "| ";
@@ -367,6 +397,10 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
         // Now write out the outputs
         for(int i = 0; i < codeNameList.length(); i++)
         {
+            // Skip hidden values
+            if(hiddenList.at(i) == true)
+                continue;
+
             output += "| ";
             output += spacedString(codeNameList.at(i), firstColumnSpacing);
             output += " | ";
@@ -377,6 +411,7 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
 
         }
 
+        output += "\n";
         output += "\n";
 
     }
@@ -393,20 +428,93 @@ QString EnumCreator::getMarkdown(QString outline, const QStringList& packetids) 
  */
 QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
 {
-    for(int i = 0; i < nameList.length(); i++)
+    // split words around mathematical operators
+    QStringList tokens = splitAroundMathOperators(text);
+
+    for(int j = 0; j < tokens.size(); j++)
     {
-        // If we don't have a name or number there is no point
-        if(nameList.at(i).isEmpty() || numberList.at(i).isEmpty())
+        // Don't look to replace the mathematical operators
+        if(isMathOperator(tokens.at(j).at(0)))
             continue;
 
-        // It may be possible that text contains multiple different enum
-        // values, so don't just exit after the first replace
-        text.replace(nameList.at(i), numberList.at(i));
-    }
+        for(int i = 0; i < nameList.length(); i++)
+        {
+            // If we don't have a name or number there is no point
+            if(nameList.at(i).isEmpty() || numberList.at(i).isEmpty())
+                continue;
 
+            // The entire token must match before we will replace it
+            if(tokens.at(j).compare(nameList.at(i)) == 0)
+                tokens[j] = numberList.at(i);
+
+        }// for all names
+
+    }// for all tokens
+
+    // Rejoin the strings
+    text = tokens.join(QString());
     return text;
 
 }// EnumCreator::replaceEnumerationNameWithValue
+
+
+/*!
+ * Split a string around the math operators. This is just like QString::split(), except we keep the operators as tokens
+ * \param text is the input text to split
+ * \return is the list of split strings
+ */
+QStringList EnumCreator::splitAroundMathOperators(QString text) const
+{
+    QStringList output;
+    QString token;
+
+    for(int i = 0; i < text.count(); i++)
+    {
+        if(isMathOperator(text.at(i)))
+        {
+            // If we got a math operator, then appen the preceding token to the list
+            if(!token.isEmpty())
+            {
+                output.append(token);
+
+                // Clear the token, its finished
+                token.clear();
+            }
+
+            // Also append the operator as a token, we want to keep this
+            output.append(text.at(i));
+        }
+        else
+        {
+            // If not a math operator, then just add to the current token
+            token.append(text.at(i));
+
+        }// switch on character
+
+    }// for all characters in the input
+
+    // Get the last token (might be the only one)
+    if(!token.isEmpty())
+        output.append(token);
+
+    return output;
+
+}// EnumCreator::splitAroundMathOperators
+
+
+/*!
+ * Determine if a character is a math operator
+ * \param op is the character to check
+ * \return true if op is a math operator
+ */
+bool EnumCreator::isMathOperator(QChar op) const
+{
+    if((op == '^') || (op == '*') || (op == '/') || (op == '+') || (op == '-') || (op == '(') || (op == ')'))
+        return true;
+    else
+        return false;
+
+}// EnumCreator::isMathOperator
 
 
 /*!

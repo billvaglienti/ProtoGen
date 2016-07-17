@@ -5,8 +5,9 @@
 #include <QStringList>
 #include <QDomElement>
 #include "protocolsupport.h"
+#include "protocoldocumentation.h"
 
-class EnumCreator
+class EnumCreator : public ProtocolDocumentation
 {
 public:
     //! Create an empty enumeration list
@@ -16,17 +17,16 @@ public:
         support(supported)
     {}
 
-    //! Create an enumeration list and populate it from the DOM
-    EnumCreator(const QDomElement& e, ProtocolSupport supported);
+    ~EnumCreator(void);
 
     //! Empty the enumeration list
     void clear(void);
 
     //! Parse the DOM to fill out the enumeration list
-    QString parse(const QDomElement& e);
+    virtual void parse(void);
 
     //! Get the markdown documentation for this enumeration
-    QString getMarkdown(QString outline, const QStringList& ids = QStringList()) const;
+    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
 
     //! Return the enumeration name
     QString getName(void) const {return name;}
@@ -53,13 +53,18 @@ protected:
     //! Parse the enumeration values to build the number list
     void computeNumberList(void);
 
+    //! Split string around math operators
+    QStringList splitAroundMathOperators(QString text) const;
+
+    //! Determine if a character is a math operator
+    bool isMathOperator(QChar op) const;
+
     QStringList nameList;
     QStringList commentList;
     QStringList valueList;
     QStringList numberList;
+    QList<bool> hiddenList;
 
-    QString name;       //!< The name of the enumeration
-    QString comment;    //!< The comment of the enumeration
     QString description;//!< A longer description is possible for enums (will be displayed in the documentation)
     QString output;     //!< The header file output string of the enumeration
     int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
@@ -67,6 +72,9 @@ protected:
     bool hidden;        //!< Determines if this enum will be hidden from the documentation
 
     ProtocolSupport support;
+
+    //! List of document objects
+    QList<ProtocolDocumentation*> documentList;
 };
 
 //! Output a string with specific spacing

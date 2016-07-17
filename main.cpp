@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     }
 
     // We expect the input file here
-    QString filename = a.arguments().at(1);
+    QString filename;
 
     // The output path
     QString path;
@@ -100,6 +100,12 @@ int main(int argc, char *argv[])
             if (doc.setContent(&file))
             {
                 ProtocolParser parser;
+
+                // The current working directory
+                QDir dir(QDir::current());
+
+                // The absolute path to the xml file, not including the name of the xml file
+                parser.setInputPath(dir.absoluteFilePath(filename).remove(filename));
 
                 parser.setLaTeXSupport(latexSupportOn);
 

@@ -6,6 +6,9 @@
 #include <QList>
 #include "protocolstructuremodule.h"
 
+// Forward declaration of sublass ProtocolDocumentation
+class ProtocolDocumentation;
+
 class ProtocolPacket : public ProtocolStructureModule
 {
 public:
@@ -13,16 +16,16 @@ public:
     ProtocolPacket(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
 
     //! Parse a packet from the DOM
-    virtual void parse(const QDomElement& e);
+    virtual void parse(void);
 
     //! Destroy the protocol packet
-    ~ProtocolPacket(void);
+    virtual ~ProtocolPacket(void);
 
     //! Clear out any data
     virtual void clear(void);
 
     //! Return top level markdown documentation for this packet
-    QString getTopLevelMarkdown(QString outline) const;
+    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
 
     //! Get the ID string of this packet
     QString getId(void) const {return id;}
@@ -69,7 +72,11 @@ protected:
     QString getDataDecodeBriefComment(void) const;
 
 protected:
-    QString id; //!< Packet identifier string
+    //! Packet identifier string
+    QString id;
+
+    //! List of document objects
+    QList<ProtocolDocumentation*> documentList;
 };
 
 #endif // PROTOCOLPACKET_H

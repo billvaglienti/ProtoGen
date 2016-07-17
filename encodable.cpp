@@ -2,6 +2,7 @@
 #include "protocolfield.h"
 #include "protocolstructure.h"
 #include "protocolcode.h"
+#include "protocoldocumentation.h"
 
 /*!
  * Constructor for encodable
@@ -102,13 +103,21 @@ QString Encodable::getDecodeParameterComment(void) const
  */
 Encodable* Encodable::generateEncodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
 {
-    if(field.tagName().contains("Structure", Qt::CaseInsensitive))
-        return new ProtocolStructure(protocolName, protocolPrefix, supported, field);
-    else if(field.tagName().contains("Data", Qt::CaseInsensitive))
-        return new ProtocolField(protocolName, protocolPrefix, supported, field);
-    else if(field.tagName().contains("Code", Qt::CaseInsensitive))
-        return new ProtocolCode(protocolName, protocolPrefix, supported, field);
+    Encodable* enc = NULL;
 
-    return NULL;
+    if(field.tagName().contains("Structure", Qt::CaseInsensitive))
+        enc = new ProtocolStructure(protocolName, protocolPrefix, supported);
+    else if(field.tagName().contains("Data", Qt::CaseInsensitive))
+        enc = new ProtocolField(protocolName, protocolPrefix, supported);
+    else if(field.tagName().contains("Code", Qt::CaseInsensitive))
+        enc = new ProtocolCode(protocolName, protocolPrefix, supported);
+
+    if(enc != NULL)
+    {
+        enc->setElement(field);
+        enc->parse();
+    }
+
+    return enc;
 }
 

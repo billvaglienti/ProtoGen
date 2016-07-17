@@ -14,7 +14,7 @@ public:
     ProtocolStructureModule(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
 
     //! Parse a packet from the DOM
-    virtual void parse(const QDomElement& e);
+    virtual void parse(void);
 
     //! Reset our data contents
     virtual void clear(void);
@@ -27,9 +27,6 @@ public:
 
     //! Get the name of the source file for this structure
     QString getSourceFileName(void) const {return source.fileName();}
-
-    //! Output the top level markdown documentation for the this structure and its children
-    QString getTopLevelMarkdown(QString outline) const;
 
 protected:
 

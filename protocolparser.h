@@ -19,7 +19,7 @@ public:
     bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "", bool disableunrecognized = false);
 
     //! Return a list of QDomNodes that are direct children and have a specific tag
-    static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag);
+    static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
 
     //! Return the value of an attribute from a Dom Element
     static QString getAttribute(QString name, const QDomNamedNodeMap& map);
@@ -43,7 +43,7 @@ public:
     static QString getComment(const QDomElement& e);
 
     //! Take a comment line and reflow it for our needs.
-    static QString reflowComment(const QString& comment);
+    static QString reflowComment(QString comment, QString prefix = QString(), int charlimit = 0);
 
     //! Find the include name for a specific type
     static QString lookUpIncludeName(const QString& typeName);
@@ -69,6 +69,12 @@ public:
     //! Get the string used for inline css.
     static QString getDefaultInlinCSS(void);
 
+    //! The path of the xml source file
+    static void setInputPath(QString path) {inputpath = path;}
+
+    //! Return the path of the xml source file
+    static QString getInputPath(void) {return inputpath;}
+
     //! Configure a documentation path separate to the main protocol output directory
     void setDocsPath(QString path);
 
@@ -88,12 +94,6 @@ public:
     static bool isFieldClear(QString value);
 
 protected:
-
-    //! Wipe any data, including static data
-    void clear(void);
-
-    //! Output enumerations in the global list
-    void outputEnumerations(ProtocolFile& file);
 
     //! Create the source and header files that represent a packet
     bool createPacketFiles(const QDomElement& packet);
@@ -118,15 +118,18 @@ protected:
 
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
 
+    QList<ProtocolDocumentation*> documents;
     static QList<ProtocolStructureModule*> structures;
     static QList<ProtocolPacket*> packets;
     static QList<EnumCreator*> enums;
     static QList<EnumCreator*> globalEnums;
+    static QString inputpath;
+
 
 private:
 
     //! Create the source and header files for the top level module of the protocol
-    bool createProtocolFiles(const QDomElement& docElem);
+    void createProtocolFiles(const QDomElement& docElem);
 
 };
 

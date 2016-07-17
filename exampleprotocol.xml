@@ -20,6 +20,8 @@ interpretation
     <Include name="string.h" comment="C string manipulation function header" global="true"/>
     <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
 
+    <Documentation name="Enumerations" paragraph="1"/>
+
     <Enum name="packetIds" comment="The list of packet identifiers" description="even more stuff!">
         <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
@@ -40,10 +42,21 @@ interpretation
         <Value name="N3D"/>
     </Enum>
 
+    <Documentation comment="------------"/>
+
+    <Documentation name="Added documentation" paragraph="1" comment="You can add more documentation in between packets. Each Documentation tag is includes an optional paragraph label, with controllable outline level
+
+    You can have multiple paragraphs in a documentation tag by placing two line feeds in the xml"/>
+
+    <Documentation comment="------------"/>
+    <Documentation name="Packets" paragraph="1"/>
+
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
         <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" checkConstant="true" encodedType="fixedstring" comment="the version of the sending side"/>
     </Packet>
+
+    <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>
 
     <Structure name="GPS" comment="Information from a GPS including the position, velocity, and quality data.
                                    This is a generic GPS description that should suffice for most GPS devices">
@@ -85,6 +98,8 @@ interpretation
             comment="Engine command packet. Send this packet to change the engines operating point. The command can be
             either a throttle or an RPM. The interpretation of the command is a function of the engine operating mode,
             see the EngineSettings packet.">
+
+        <Documentation name="Engine command details" comment="You can have documentation specific to a packet if you like."/>
 	
         <Data name="command" inMemoryType="float32" comment="The engine command, which is a throttle or an RPM depending on the engine control mode"/>
 

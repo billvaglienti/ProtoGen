@@ -1,0 +1,5 @@
+## Files for documentation
+
+You can also add more markdown documentation through a *file*.
+
+Isn't protogen cool?

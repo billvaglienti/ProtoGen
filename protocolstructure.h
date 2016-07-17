@@ -13,9 +13,6 @@ public:
     //! Default constructor for protocol structure
     ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
-    //! Construct a protocol field by parsing a DOM element
-    ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
-
     //! Destroy this protocol structure
     virtual ~ProtocolStructure();
 
@@ -23,7 +20,7 @@ public:
     virtual void clear(void);
 
     //! Parse the DOM data for this structure
-    virtual void parse(const QDomElement& field);
+    virtual void parse(void);
 
     //! Parse the DOM data for this structures children
     void parseChildren(const QDomElement& field);
@@ -86,7 +83,7 @@ public:
     void getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! Return true if this structure should be hidden from the documentation
-    bool isHidden(void) const {return hidden;}
+    virtual bool isHidden(void) const {return hidden;}
 
 protected:
 

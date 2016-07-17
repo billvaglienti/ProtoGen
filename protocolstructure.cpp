@@ -24,27 +24,6 @@ ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString&
 
 }
 
-/*!
- * Construct a protocol structure from a DOM field
- * \param protocolName is the name of the protocol
- * \param protocolPrefix is the type name prefix
- * \param field is a DOM field whose data and children define this structure
- */
-ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field) :
-    Encodable(protocolName, protocolPrefix, supported),
-    bitfields(false),
-    needsEncodeIterator(false),
-    needsDecodeIterator(false),
-    defaults(false),
-    hidden(false)
-{
-    // List of attributes understood by ProtocolStructure
-    attriblist << "name" << "array" << "variableArray" << "dependsOn" << "comment" << "hidden";
-
-    parse(field);
-
-}// ProtocolStructure::ProtocolStructure
-
 
 /*!
  * Destroy the protocol structure and all its children
@@ -91,11 +70,10 @@ void ProtocolStructure::clear(void)
 
 /*!
  * Parse the DOM data for this structure
- * \param field is the DOM data for this structure
  */
-void ProtocolStructure::parse(const QDomElement& field)
+void ProtocolStructure::parse(void)
 {
-    QDomNamedNodeMap map = field.attributes();
+    QDomNamedNodeMap map = e.attributes();
 
     // All the attribute we care about
     name = ProtocolParser::getAttribute("name", map);
@@ -138,10 +116,10 @@ void ProtocolStructure::parse(const QDomElement& field)
     }
 
     // Get any enumerations
-    parseEnumerations(field);
+    parseEnumerations(e);
 
     // At this point a structure cannot be default, null, or reserved.
-    parseChildren(field);
+    parseChildren(e);
 
     // Sum the length of all the children
     EncodedLength length;
@@ -932,11 +910,16 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
 {
     QString description;
 
+    QString maxEncodedLength = encodedLength.maxEncodedLength;
+
+    // See if we can replace any enumeration names with values
+    ProtocolParser::replaceEnumerationNameWithValue(maxEncodedLength);
+
     // The byte after this one
-    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + encodedLength.maxEncodedLength);
+    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
 
     // The length data
-    if(encodedLength.maxEncodedLength.isEmpty() || (encodedLength.maxEncodedLength.compare("1") == 0))
+    if(maxEncodedLength.isEmpty() || (maxEncodedLength.compare("1") == 0))
         bytes.append(startByte);
     else
     {

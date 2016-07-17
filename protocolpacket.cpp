@@ -4,6 +4,7 @@
 #include "protocolfield.h"
 #include "protocolstructure.h"
 #include "protocolparser.h"
+#include "protocoldocumentation.h"
 #include <QDateTime>
 #include <QStringList>
 #include <iostream>
@@ -41,6 +42,19 @@ void ProtocolPacket::clear(void)
     ProtocolStructureModule::clear();
     id.clear();
 
+    // Delete all the objects in the list
+    for(int i = 0; i < documentList.count(); i++)
+    {
+        if(documentList[i] != NULL)
+        {
+            delete documentList[i];
+            documentList[i] = NULL;
+        }
+    }
+
+    // clear the list
+    documentList.clear();
+
     // Note that data set during constructor are not changed
 
 }
@@ -48,15 +62,17 @@ void ProtocolPacket::clear(void)
 
 /*!
  * Create the source and header files that represent a packet
- * \param packet is DOM element that defines the packet
  */
-void ProtocolPacket::parse(const QDomElement& e)
+void ProtocolPacket::parse(void)
 {
     // Initialize metadata
     clear();
 
+    // Get any documentation for this packet
+    ProtocolDocumentation::getChildDocuments(e, documentList);
+
     // Me and all my children, which may themselves be structures
-    ProtocolStructure::parse(e);
+    ProtocolStructure::parse();
     QDomNamedNodeMap map = e.attributes();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
@@ -681,13 +697,14 @@ QString ProtocolPacket::getDataDecodeBriefComment(void) const
     return QString("Decode the data from the " + protoName + " " + name + " structure");
 }
 
-QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
+
+QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids) const
 {
     QString output;
     QString idvalue = id;
 
     // Put an anchor in the identifier line which is the same as the ID. We'll link to it if we can
-    output += "## <a name=\"" + id + "\"></a>" + name + "\n";
+    output += "## <a name=\"" + id + "\"></a>" + name + " packet\n";
     output += "\n";
 
     if(!comment.isEmpty())
@@ -696,13 +713,16 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         output += "\n";
     }
 
-    // In case the packet identifer is an enumeration we know
-    ProtocolParser::replaceEnumerationNameWithValue(idvalue);
+    if(!id.isEmpty())
+    {
+        // In case the packet identifer is an enumeration we know
+        ProtocolParser::replaceEnumerationNameWithValue(idvalue);
 
-    if(id.compare(idvalue) == 0)
-        output += "- packet identifier: `" + id + "`\n";
-    else
-        output += "- packet identifier: `" + id + "` : " + idvalue + "\n";
+        if(id.compare(idvalue) == 0)
+            output += "- packet identifier: `" + id + "`\n";
+        else
+            output += "- packet identifier: `" + id + "` : " + idvalue + "\n";
+    }
 
     if(encodedLength.minEncodedLength.compare(encodedLength.maxEncodedLength) == 0)
     {
@@ -739,26 +759,27 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         output += "- maximum data length: " + maxLength.replace("*", "&times;") + "\n";
     }
 
+    // Output any documetation data
+    output += "\n";
+    for(int i = 0; i < documentList.count(); i++)
+        output += documentList.at(i)->getTopLevelMarkdown();
 
     for(int i = 0; i < enumList.length(); i++)
     {
         if(enumList[i] == NULL)
             continue;
 
-        output += "\n";
-        output += "### " + enumList.at(i)->getName() + " enumeration\n";
-        output += "\n";
+        //output += "\n";
+        //output += "### " + enumList.at(i)->getName() + " enumeration\n";
+        //output += "\n";
 
-        output += enumList[i]->getMarkdown("");
+        output += enumList[i]->getTopLevelMarkdown();
+        output += "\n";
         output += "\n";
     }
 
     if(encodables.size() > 0)
     {
-        output += "\n";
-        output += "### " + name + " encoding\n";
-        output += "\n";
-
         QStringList bytes, names, encodings, repeats, comments;
         QString startByte = "0";
 
@@ -794,7 +815,7 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
         for(int i = 0; i < names.length(); i++)
         {
             // replace a "1*" with nothing, since that won't change the value but
-            // is clearer. Also replace "*" with the html time symbol. This
+            // is clearer. Also replace "*" with the html times symbol. This
             // looks better and does not cause markdown to emphasize the text
             // if there are multiple "*".
             bytes[i].replace("1*", "").replace("*", "&times;");
@@ -818,11 +839,17 @@ QString ProtocolPacket::getTopLevelMarkdown(QString outline) const
                 commentColumn = comments.at(i).length();
         }
 
-        // Output the header
+
         output += "\n";
 
+        /*
+        output += "\n";
+        output += "### " + name + " layout\n";
+        output += "\n";
+        */
+
         // Table caption
-        output += "[Encoding for packet " + name + "]\n";
+        output += "[" + name + " packet bytes]\n";
 
         // Table header, notice the column markers lead and follow. We have to do this for merged cells
         output +=  "| ";

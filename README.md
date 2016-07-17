@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.4.7. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.5.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -116,6 +116,8 @@ Other comments are output as single line doxygen comments:
 
     //!< This is a single line comment that appears after the object it documents, on the same line.
 
+The reflow logic can be suspended by placing comment text between "\verbatim" escapes. Text between the "\verbatim" escapts is simply output in the comment without reflow or interpretation. This makes it possible to insert more advanced markdown features, such as tables.
+
 Include tag
 -----------
 
@@ -181,6 +183,8 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 - `value` : is an optional attribute that sets the value of this enumeration element. If value is left out the element will get its value in the normal C language way (by incrementing from the previous element, or starting at 0). Note that non numeric values may be used, as long as those strings are resolved by an include directive or previous enumeration.
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
+
+- `hidden` : is used to specify that this particular enumeration element will *not* appear in the generated documentation markdown.
 
 In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice). Enumerations are also a good choice when creating arrays. If an array length is given by an enumeration that is defined in the protocol xml then ProtoGen will attempt to compute the enumeration value, and use that to compute the length of the array in bytes. This substantially improves the protocol documentation that ProtoGen will output.
 
@@ -358,6 +362,31 @@ Data subtag attributes:
 
 - `range | units | notes` : If specified, each of these attributes will be added (as single-line comments) to the packet description table in the documentation markdown. These comments will appear next to this <Data> tag, and can be used if extra specificity is required. Note that these fields apply ONLY to the documentation, and will NOT appear anywhere in the generated code.
 
+Documentation tag
+-----------------
+
+The Documentation tag is used to add extra documentation to the markdown output, but not the generated code. It is typically used to provide expository text needed to better document the overall protocol. The tag can appear anywhere in the xml, at the global level (same as Packet tags), or as a sub-tag of Packet or Enum. For global Documentation tags the order of the tag (with respect to global Packet and Enum tags) is preserved in the markdown output; in combination with the heading label and outline level this makes it possible to better organize the markdown output.
+
+Documentation attributes:
+
+- `name` : The heading of the documentation. This attribute is optional, if it is not given then no heading label is output.
+
+- `comment` : The expository text for this documentation. The text will be reflowed and wrapped at 80 characters. Multiple paragraphs are supported by using two line feeds (a la markdown) to separate the paragraphs.
+
+- `paragraph` : The outline level applied to the heading. This attribute is optional, if it is not given the outline level is assumed to be 1 for global Docmentation and 3 for Documentation that is a sub of Packet or Enum. The `paragraph` attribute only effects the output if the `name` attribute is given.
+
+- `file` : A file that provides the text of the Documentation. This attribute is optional, its purpose is to make it possible to have large blocks of text, with markdown formatting, without having to incude the text directly in the .xml file. The file path is relative to the xml input file path. The contets of the file are inserted into the markdown output without interpretation.
+
+Documentation examples:
+
+    <Documentation comment="---"/>
+
+Inserts "---" into the markdown output. This will produce a horizontal rule in the generated html.
+
+    <Documentation name="Enumerations" paragraph="1" comment="Packets in the protocol refer to these global enumerations."/>
+
+Is an example of documentation that would be used ahead of a global enumeration for packet identifiers. This will insert a level 1 heading named "Enumerations" followed by a paragraph of the text given in comment.
+
 ---
 
 The generated top level code
@@ -423,13 +452,14 @@ Each packet defined in the protocol xml will produce code that defines a structu
 The packet length and ID
 ------------------------
 
-The autogenerated code will define any named enumeration given in the protocol xml for the packet. It will define functions to determine the packet ID and the minimum length of the encoded data of the packet. The packet lengths are given in numbers of bytes. ProtoGen refers to "minimum length", rather than "length" because packets can include default data, variable length arrays, or strings, any of which can cause the packet length to vary.
+The autogenerated code will define any named enumeration given in the protocol xml for the packet. It will also define macros to determine the packet ID and the minimum length of the encoded data of the packet. The packet lengths are given in numbers of bytes. ProtoGen refers to "minimum length", rather than "length" because packets can include default data, variable length arrays, or strings, any of which can cause the packet length to vary.
 
-    //! return the minimum data length for the  Version packet
-    int getVersionMinDataLength(void);
+    //! return the packet ID for the Version packet
+    #define getVersionPacketID() (VERSION)
 
-    //! return the packet ID for the  Version packet
-    uint32_t getVersionPacketID(void);
+    //! return the minimum data length for the Version packet
+    #define getVersionMinDataLength() (25)
+
 
 Variable length packets are a great tool for optimizing bandwidth utilization without limiting the in-memory capabilities of the code. However the correct length of a variable length packet cannot be determined until the packet has been mostly decoded; therefore the generated code will check the length of such a packet twice. The first check occurs before any decoding is done to verify the packet meets the minimum length. The second check occurs when the packet decoding is complete (or only default fields are left) to verify that there were enough bytes to complete the variable length fields.
 
@@ -459,11 +489,20 @@ Structure encoding and decoding functions
 
 In addition to the packet functions the generated code can include functions to encode and decode a structure to a byte array. These functions can be used if you do not want the generated code to interact with packet routines. Perhaps because your data are not being encoded in packets, or the simple packet interfaces that ProtoGen supports are not sophisticated enough. These functions will only be generated for Structure tags, not Packet tags. If you want to simultaneously have a structure with generic encoding functions and packet functions; then create both a structure tag and a packet tag which references the structure (see the GPS packet in exampleprotocol.xml).
 
-	//! Encode a GPS_t structure into a byte array
-	void encodeGPS_t(uint8_t* data, int* bytecount, const GPS_t* user);
+	//! Create the GPS packet
+    void encodeGPSPacket(void* pkt, const GPS_t* gps);
 
-	//! Decode a GPS_t structure from a byte array
-	int decodeGPS_t(const uint8_t* data, int* bytecount, GPS_t* user);
+    //! Decode the GPS packet
+    int decodeGPSPacket(const void* pkt, GPS_t* gps);
+
+Note that Structures do not emit markdown documentation. If a structure is included as part of a packet, then its documentation will be output when the packets documentation is output, in order to complemetely document the packet.
+
+Parsing order
+-------------
+
+Global tags (those directly under the `Protocol` tag) are not parsed in the order defined in the xml. Instead ProtoGen will first parse global Enums, and then global Structures, and finally global Packets. Enums and Structures which are subs of global tags are parsed when their parent tag is parsed. This parsing order is important because Structures may refer to Enums, and Packets may refer to both Enums and Structures. The parsing order ensures that the references are available when needed.
+
+However the order of the global tags (in the xml) is preserved when the markdown documentation is output. This makes it possible to organize the xml file to produce the best documentation.
 
 Other generated code
 ====================
@@ -513,7 +552,7 @@ Generation of documentation
 
 Documentation for a protocol is often the last task undertaken by a developer, but arguably should be the first. The usefulness of a protocol is largely dictated by the quality of its documentation (unless you plan to be the only one to ever use it!). ProtoGen provides automatic documentation. The emitted code will be decorated with doxygen style comments. If doxygen is installed ProtoGen can use it to generate html documentation for the code. This documentation is useful for developers who are coding against the API provided by the generated code.
 
-ProtoGen will also output a Demolink.markdown file which provides a MultiMarkdown formatted document of the protocol. ProtoGen can feed this file to MultiMarkdown (if it is installed) in order to create a Demolink.html file. This file is intended as a master document for the protocol that is suitable for developers and users alike. The author of the protocol xml is encouraged to be verbose in the comment attributes. The better you document your protocol the less users will bug you for help!
+ProtoGen will also output a markdown file which provides a MultiMarkdown formatted document of the protocol. ProtoGen can feed this file to MultiMarkdown (if it is installed) in order to create a html file. This file is intended as a master document for the protocol that is suitable for developers and users alike. The author of the protocol xml is encouraged to be verbose in the comment attributes. The better you document your protocol the less users will bug you for help!
 
 ###Documentation consequences of using the `Include` tag
 
