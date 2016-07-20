@@ -22,6 +22,12 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
         typeUnsigneds<< true     << false   << true     << false   << true     << false   << true     << false   ;
     }
 
+    // These types are always supported
+    typeNames    << "float" <<"uint32_t"<<"int32_t"<<"uint32_t"<<"int32_t"<<"uint16_t"<<"int16_t"<<"uint8_t"<<"int8_t";
+    typeSigNames <<"float32"<<"uint32"  <<"int32"  <<"uint24"  <<"int24"  <<"uint16"  <<"int16"  <<"uint8"  <<"int8";
+    typeSizes    <<       4 <<      4   <<       4 <<        3 <<       3 <<        2 <<       2 <<       1 << 1;
+    typeUnsigneds<< false   << true     << false   << true     << false   << true     << false   << true    << false;
+
     if(support.float64)
     {
         typeNames    << "double";
@@ -29,12 +35,6 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
         typeSizes    <<       8 ;
         typeUnsigneds<< false   ;
     }
-
-    // These types are always supported
-    typeNames    << "float" <<"uint32_t"<<"int32_t"<<"uint32_t"<<"int32_t"<<"uint16_t"<<"int16_t"<<"uint8_t"<<"int8_t";
-    typeSigNames <<"float32"<<"uint32"  <<"int32"  <<"uint24"  <<"int24"  <<"uint16"  <<"int16"  <<"uint8"  <<"int8";
-    typeSizes    <<       4 <<      4   <<       4 <<        3 <<       3 <<        2 <<       2 <<       1 << 1;
-    typeUnsigneds<< false   << true     << false   << true     << false   << true     << false   << true    << false;
 
     if(support.specialFloat)
     {
@@ -107,14 +107,27 @@ bool FieldCoding::generateEncodeHeader(void)
  * be re-ordered for the data to be interpreted correctly.\n\
  */\n");
 
-    header.write("\n#include <stdint.h>\n");
+    header.write("\n#define __STDC_CONSTANT_MACROS\n");
+    header.write("#include <stdint.h>\n");
 
-    header.write("\n\
-    //! Encode a null terminated string on a byte stream\n\
-    void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+    header.write("\n");
+    header.write("//! Encode a null terminated string on a byte stream\n");
+    header.write("void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+
+    if(support.int64)
+    {
+        header.write("\n");
+        header.write("#ifdef UINT64_MAX\n");
+    }
 
     for(int i = 0; i < typeNames.size(); i++)
     {
+        if(support.int64 && (i > 0))
+        {
+            if((typeSizes.at(i) == 4) && (typeSizes.at(i-1) == 5))
+                header.write("\n#endif // UINT64_MAX\n");
+        }
+
         // big endian
         header.write("\n");
         header.write("//! " + briefEncodeComment(i, true) + "\n");
@@ -198,9 +211,20 @@ void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength
 \n\
 }// stringToBytes\n");
 
+    if(support.int64)
+    {
+        source.write("\n");
+        source.write("#ifdef UINT64_MAX\n");
+    }
 
     for(int i = 0; i < typeNames.size(); i++)
     {
+        if(support.int64 && (i > 0))
+        {
+            if((typeSizes.at(i) == 4) && (typeSizes.at(i-1) == 5))
+                source.write("#endif // UINT64_MAX\n");
+        }
+
         // big endian
         source.write("\n");
         source.write(fullEncodeComment(i, true) + "\n");
@@ -505,14 +529,28 @@ bool FieldCoding::generateDecodeHeader(void)
  * sign extension.\n\
  */\n");
 
-    header.write("\n#include <stdint.h>\n");
+    header.write("\n");
+    header.write("#define __STDC_CONSTANT_MACROS\n");
+    header.write("#include <stdint.h>\n");
 
-    header.write("\n\
-    //! Decode a null terminated string from a byte stream\n\
-    void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+    header.write("\n");
+    header.write("//! Decode a null terminated string from a byte stream\n");
+    header.write("void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+
+    if(support.int64)
+    {
+        header.write("\n");
+        header.write("#ifdef UINT64_MAX\n");
+    }
 
     for(int type = 0; type < typeNames.size(); type++)
     {
+        if(support.int64 && (type > 0))
+        {
+            if((typeSizes.at(type) == 4) && (typeSizes.at(type-1) == 5))
+                header.write("\n#endif // UINT64_MAX\n");
+        }
+
         header.write("\n");
         header.write("//! " + briefDecodeComment(type, true) + "\n");
         header.write(decodeSignature(type, true) + ";\n");
@@ -587,8 +625,20 @@ void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLeng
 \n\
 }// stringFromBytes\n");
 
+    if(support.int64)
+    {
+        source.write("\n");
+        source.write("#ifdef UINT64_MAX\n");
+    }
+
     for(int type = 0; type < typeNames.size(); type++)
     {
+        if(support.int64 && (type > 0))
+        {
+            if((typeSizes.at(type) == 4) && (typeSizes.at(type-1) == 5))
+                source.write("#endif // UINT64_MAX\n");
+        }
+
         // big endian unsigned
         source.write("\n");
         source.write(fullDecodeComment(type, true) + "\n");

@@ -34,8 +34,8 @@ void ProtocolBitfield::generateHeader(void)
  */\n");
 
     header.write("\n");
+    header.write("#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
-    header.write("#include <limits.h>\n");
     header.write("\n");
     header.write("//! Add a bit field to a byte stream.\n");
     header.write("void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits);\n");
@@ -68,6 +68,8 @@ void ProtocolBitfield::generateHeader(void)
     if(support.longbitfield)
     {
         header.write("\n");
+        header.write("#ifdef UINT64_MAX\n");
+        header.write("\n");
         header.write("//! Add a bit field to a byte stream.\n");
         header.write("void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int* bitcount, int numbits);\n");
         header.write("\n");
@@ -95,6 +97,8 @@ void ProtocolBitfield::generateHeader(void)
         header.write("\n");
         header.write("//! Scale the 64 bit integer type to a float32\n");
         header.write("float float32ScaledFromLongBitfield(uint64_t value, float min, float invscaler);\n");
+        header.write("\n");
+        header.write("#endif // UINT64_MAX\n");
     }
 
     if(support.bitfieldtest)
@@ -122,6 +126,8 @@ void ProtocolBitfield::generateSource(void)
     if(support.bitfieldtest)
         source.write("#include <string.h>\n");
 
+    source.write("#include <limits.h>\n");
+
     source.makeLineSeparator();
     generateEncodeBitfield();
 
@@ -131,10 +137,13 @@ void ProtocolBitfield::generateSource(void)
     if(support.longbitfield)
     {
         source.makeLineSeparator();
+        source.write("#ifdef UINT64_MAX\n");
+        source.makeLineSeparator();
         generateEncodeLongBitfield();
         source.makeLineSeparator();
         generateDecodeLongBitfield();
-
+        source.makeLineSeparator();
+        source.write("#endif // UINT64_MAX\n");
     }
 
     if(support.bitfieldtest)
@@ -183,7 +192,7 @@ void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcoun
     unsigned int max = UINT_MAX;\n\
 \n\
     // The maximum value that can be stored in numbits\n\
-    max = max >> (8*sizeof(unsigned int) - numbits);\n\
+    max = max >> (CHAR_BIT*sizeof(unsigned int) - numbits);\n\
 \n\
     // Enforce maximum value\n\
     if(value > max)\n\
@@ -451,7 +460,7 @@ void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int* bitcoun
     uint64_t max = UINT64_MAX;\n\
 \n\
     // The maximum value that can be stored in numbits\n\
-    max = max >> (8*sizeof(uint64_t) - numbits);\n\
+    max = max >> (CHAR_BIT*sizeof(uint64_t) - numbits);\n\
 \n\
     // Enforce maximum value\n\
     if(value > max)\n\

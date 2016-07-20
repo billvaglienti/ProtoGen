@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.5.0.a";
+const QString ProtocolParser::genVersion = "1.5.1.a";
 
 // The protocol support data is here so it is statically accessible
 ProtocolSupport ProtocolParser::support = ProtocolSupport();

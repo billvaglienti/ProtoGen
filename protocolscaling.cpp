@@ -14,8 +14,16 @@ ProtocolScaling::ProtocolScaling(ProtocolSupport sup) :
         typeSigNames << "float64"<< "uint64"   << "int64"   <<"float32"<< "uint32"   << "int32"   << "uint16"   << "int16"   << "uint8"   << "int8";
         typeSizes    <<        8 <<          8 <<         8 <<       4 <<          4 <<         4 <<          2 <<         2 <<         1 <<        1;
 
-        // double and float
-        fromIndices  << 0 << 3;
+        if(support.float64)
+        {
+            // double and float
+            fromIndices  << 0 << 3;
+        }
+        else
+        {
+            // just float
+            fromIndices  << 3;
+        }
     }
     else if(support.float64)
     {
@@ -106,16 +114,33 @@ bool ProtocolScaling::generateEncodeHeader(void)
  * must be equal to or less than the number of bytes of the raw data.\n\
  */\n");
 
-    header.write("\n#include <stdint.h>\n");
+    header.write("\n");
+    header.write("#define __STDC_CONSTANT_MACROS\n");
+    header.write("#include <stdint.h>\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        bool ifdefopened = false;
+
         int type = fromIndices.at(typeindex);
 
-        for(int length = 1; length <= typeSizes[type]; length++)
+        for(int length = typeSizes.at(type); length >= 1; length--)
         {
-            // We don't always do 64-bit
-            if(!support.int64 && (length > 4))
+            // Protect against compilers that cannot support 64-bit operations
+            if(support.int64)
+            {
+                if((ifdefopened == false) && (length > 4))
+                {
+                    ifdefopened = true;
+                    header.write("\n#ifdef UINT64_MAX\n");
+                }
+                else if((ifdefopened == true) && (length <= 4))
+                {
+                    ifdefopened = false;
+                    header.write("\n#endif // UINT64_MAX\n");
+                }
+            }
+            else if(length > 4) // We don't always do 64-bit
                 continue;
 
             // big endian unsigned
@@ -161,23 +186,36 @@ bool ProtocolScaling::generateEncodeHeader(void)
  */
 bool ProtocolScaling::generateEncodeSource(void)
 {
-    source.setModuleName("scaledencode");
-
     // Make sure empty
     source.clear();
 
-    source.write("\n");
+    source.setModuleName("scaledencode");
     source.write("#include \"fieldencode.h\"\n");
     source.write("\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        bool ifdefopened = false;
+
         int type = fromIndices.at(typeindex);
 
-        for(int length = 1; length <= typeSizes[type]; length++)
+        for(int length = typeSizes.at(type); length >= 1; length--)
         {
-            // We don't always do 64-bit
-            if(!support.int64 && (length > 4))
+            // Protect against compilers that cannot support 64-bit operations
+            if(support.int64)
+            {
+                if((ifdefopened == false) && (length > 4))
+                {
+                    ifdefopened = true;
+                    source.write("#ifdef UINT64_MAX\n");
+                }
+                else if((ifdefopened == true) && (length <= 4))
+                {
+                    ifdefopened = false;
+                    source.write("#endif // UINT64_MAX\n");
+                }
+            }
+            else if(length > 4) // We don't always do 64-bit
                 continue;
 
             // big endian unsigned
@@ -524,16 +562,33 @@ bool ProtocolScaling::generateDecodeHeader(void)
  * in this module are the reverse operation of the routines in scaledencode.\n\
  */");
 
-    header.write("\n#include <stdint.h>\n");
+    header.write("\n");
+    header.write("#define __STDC_CONSTANT_MACROS\n");
+    header.write("#include <stdint.h>\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        bool ifdefopened = false;
+
         int type = fromIndices.at(typeindex);
 
-        for(int length = 1; length <= typeSizes[type]; length++)
-        {            
-            // We don't always do 64-bit
-            if(!support.int64 && (length > 4))
+        for(int length = typeSizes.at(type); length >= 1; length--)
+        {
+            // Protect against compilers that cannot support 64-bit operations
+            if(support.int64)
+            {
+                if((ifdefopened == false) && (length > 4))
+                {
+                    ifdefopened = true;
+                    header.write("\n#ifdef UINT64_MAX\n");
+                }
+                else if((ifdefopened == true) && (length <= 4))
+                {
+                    ifdefopened = false;
+                    header.write("\n#endif // UINT64_MAX\n");
+                }
+            }
+            else if(length > 4) // We don't always do 64-bit
                 continue;
 
             // big endian unsigned
@@ -581,23 +636,36 @@ bool ProtocolScaling::generateDecodeHeader(void)
  */
 bool ProtocolScaling::generateDecodeSource(void)
 {
-    source.setModuleName("scaleddecode");
-
     // Make sure empty
     source.clear();
 
-    source.write("\n");
+    source.setModuleName("scaleddecode");
     source.write("#include \"fielddecode.h\"\n");
     source.write("\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
+        bool ifdefopened = false;
+
         int type = fromIndices.at(typeindex);
 
-        for(int length = 1; length <= typeSizes[type]; length++)
+        for(int length = typeSizes.at(type); length >= 1; length--)
         {
-            // We don't always do 64-bit
-            if(!support.int64 && (length > 4))
+            // Protect against compilers that cannot support 64-bit operations
+            if(support.int64)
+            {
+                if((ifdefopened == false) && (length > 4))
+                {
+                    ifdefopened = true;
+                    source.write("#ifdef UINT64_MAX\n");
+                }
+                else if((ifdefopened == true) && (length <= 4))
+                {
+                    ifdefopened = false;
+                    source.write("#endif // UINT64_MAX\n");
+                }
+            }
+            else if(length > 4) // We don't always do 64-bit
                 continue;
 
             // big endian unsigned
