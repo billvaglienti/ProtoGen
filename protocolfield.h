@@ -37,9 +37,6 @@ public:
     //! Pull a double precision value from a string
     double extractDouble(const QString& string, bool* ok = 0);
 
-    //! Extract the type information from the type string
-    void extractType(const QString& typeString, const QString& name, bool inMemory);
-
     //! Create the type string
     QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
 
@@ -53,7 +50,7 @@ class ProtocolField : public Encodable
 public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolField(QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
@@ -69,6 +66,9 @@ public:
 
     //! Parse the DOM element
     virtual void parse(void);
+
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
     //! Returns true since protocol field is a primitive type
     virtual bool isPrimitive(void) const {return true;}
@@ -153,6 +153,9 @@ protected:
 
     bool lastBitfield;      //!< True if this is the last bitfield in the local group
     int startingBitCount;   //!< The starting bit count for this field
+
+    //! Extract the type information from the type string
+    void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);
 
     //! Return the constant value string, sourced from either constantValue, encodeConstantValue, decodeConstantValue
     QString getConstantString() const;

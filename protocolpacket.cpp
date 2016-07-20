@@ -69,7 +69,7 @@ void ProtocolPacket::parse(void)
     clear();
 
     // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(e, documentList);
+    ProtocolDocumentation::getChildDocuments(getHierarchicalName(), e, documentList);
 
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse();
@@ -90,19 +90,19 @@ void ProtocolPacket::parse(void)
             continue;
 
         if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            std::cout << "Unrecognized attribute of Packet: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+            emitWarning("Unrecognized attribute " + attr.name());
     }
 
     if(isArray())
     {
-        std::cout << name.toStdString() << ": packets cannot be an array" << std::endl;
+        emitWarning("packets cannot be an array");
         array.clear();
         variableArray.clear();
     }
 
     if(!dependsOn.isEmpty())
     {
-        std::cout << name.toStdString() << ": dependsOn makes no sense for a packet" << std::endl;
+        emitWarning("dependsOn makes no sense for a packet");
         dependsOn.clear();
     }
 
@@ -154,7 +154,7 @@ void ProtocolPacket::parse(void)
         header.makeLineSeparator();
 
     // Add other includes specific to this packet
-    ProtocolParser::outputIncludes(header, e);
+    ProtocolParser::outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
     for(int i = 0; i < encodables.length(); i++)

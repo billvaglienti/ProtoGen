@@ -58,7 +58,7 @@ void EnumCreator::parse(void)
     clear();
 
     // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(e, documentList);
+    ProtocolDocumentation::getChildDocuments(getHierarchicalName(), e, documentList);
 
     QDomNamedNodeMap map = e.attributes();
 
@@ -82,7 +82,7 @@ void EnumCreator::parse(void)
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(support.disableunrecognized == false)
-            std::cout << "Unrecognized attribute of Enum: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+            emitWarning("Unrecognized attribute: " + attrname);
 
     }
 
@@ -135,8 +135,7 @@ void EnumCreator::parse(void)
             else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
                 hiddenvalue = ProtocolParser::isFieldSet(attr.value().trimmed());
             else if(support.disableunrecognized == false)
-                std::cout << "Unrecognized attribute of enumeration Value : " << name.toStdString() << " : " << valueName.toStdString() << " : " << attrname.toStdString() << std::endl;
-
+                emitWarning(":" + valueName + ": Unrecognized attribute: " + attrname);
         }
 
         // Add it to our list

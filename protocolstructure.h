@@ -11,7 +11,7 @@ class ProtocolStructure : public Encodable
 public:
 
     //! Default constructor for protocol structure
-    ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolStructure(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Destroy this protocol structure
     virtual ~ProtocolStructure();
@@ -21,6 +21,9 @@ public:
 
     //! Parse the DOM data for this structure
     virtual void parse(void);
+
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
     //! Parse the DOM data for this structures children
     void parseChildren(const QDomElement& field);

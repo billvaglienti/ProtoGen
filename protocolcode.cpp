@@ -8,25 +8,10 @@
  * \param prtoocolPrefix is the naming prefix
  * \param supported indicates what the protocol can support
  */
-ProtocolCode::ProtocolCode(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
-    Encodable(protocolName, protocolPrefix, supported)
+ProtocolCode::ProtocolCode(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
+    Encodable(Parent, protocolName, protocolPrefix, supported)
 {
 }
-
-
-/*!
- * Construct a protocol field by parsing the DOM
- * \param protocolName is the name of the protocol
- * \param prtoocolPrefix is the naming prefix
- * \param supported indicates what the protocol can support
- * \param field is the DOM element
- */
-ProtocolCode::ProtocolCode(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field):
-    Encodable(protocolName, protocolPrefix, supported)
-{
-    parse(field);
-}
-
 
 
 //! Reset all data to defaults
@@ -41,13 +26,12 @@ void ProtocolCode::clear(void)
 
 /*!
  * Parse the DOM to determine the details of this ProtocolCode
- * \param field is the DOM element
  */
-void ProtocolCode::parse(const QDomElement& field)
+void ProtocolCode::parse(void)
 {
     clear();
 
-    QDomNamedNodeMap map = field.attributes();
+    QDomNamedNodeMap map = e.attributes();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
@@ -72,7 +56,7 @@ void ProtocolCode::parse(const QDomElement& field)
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
             comment = attr.value().trimmed();
         else if(support.disableunrecognized == false)
-            std::cout << "Unrecognized attribute of code: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+            emitWarning("Unrecognized attribute: " + attrname);
 
     }// for all attributes
 

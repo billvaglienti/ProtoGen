@@ -12,15 +12,18 @@ class Encodable : public ProtocolDocumentation
 public:
 
     //! Constructor for basic encodable that sets protocl name and prefix
-    Encodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    Encodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
+    static Encodable* generateEncodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
 
     //! Reset all data to defaults
     virtual void clear(void);
+
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const = 0;
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
     virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const {return QString();}

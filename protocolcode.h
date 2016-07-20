@@ -11,10 +11,7 @@ class ProtocolCode : public Encodable
     public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolCode(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
-
-    //! Construct a protocol field by parsing a DOM element
-    ProtocolCode(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
+    ProtocolCode(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Destroy the protocol field
     virtual ~ProtocolCode(){}
@@ -23,7 +20,10 @@ class ProtocolCode : public Encodable
     virtual void clear(void);
 
     //! Parse the DOM element
-    virtual void parse(const QDomElement& field);
+    virtual void parse(void);
+
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;

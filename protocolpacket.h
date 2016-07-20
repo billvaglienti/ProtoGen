@@ -24,6 +24,9 @@ public:
     //! Clear out any data
     virtual void clear(void);
 
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+
     //! Return top level markdown documentation for this packet
     virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
 

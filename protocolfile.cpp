@@ -305,7 +305,7 @@ bool ProtocolFile::flush(void)
     // Got to have a name
     if(module.isEmpty())
     {
-        std::cout << "Empty module name when writing protocol file" << std::endl;
+        std::cerr << "Empty module name when writing protocol file" << std::endl;
         return false;
     }
 
@@ -313,7 +313,7 @@ bool ProtocolFile::flush(void)
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cout << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
         return false;
     }
 
@@ -353,7 +353,7 @@ bool ProtocolHeaderFile::flush(void)
     // Got to have a name
     if(module.isEmpty())
     {
-        std::cout << "Empty module name when writing protocol header file" << std::endl;
+        std::cerr << "Empty module name when writing protocol header file" << std::endl;
         return false;
     }
 
@@ -361,7 +361,7 @@ bool ProtocolHeaderFile::flush(void)
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cout << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
         return false;
     }
 
@@ -430,7 +430,7 @@ void ProtocolHeaderFile::prepareToAppend(void)
     {
         if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            std::cout << "Failed to open " << fileName().toStdString() << " for append" << std::endl;
+            std::cerr << "Failed to open " << fileName().toStdString() << " for append" << std::endl;
             return ;
         }
 
@@ -473,7 +473,7 @@ bool ProtocolSourceFile::flush(void)
     // Got to have a name
     if(module.isEmpty())
     {
-        std::cout << "Empty module name when writing protocol source file" << std::endl;
+        std::cerr << "Empty module name when writing protocol source file" << std::endl;
         return false;
     }
 
@@ -481,7 +481,7 @@ bool ProtocolSourceFile::flush(void)
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cout << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
         return false;
     }
 
@@ -541,7 +541,7 @@ void ProtocolSourceFile::prepareToAppend(void)
     {
         if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            std::cout << "Failed to open " << file.fileName().toStdString() << " for append" << std::endl;
+            std::cerr << "Failed to open " << file.fileName().toStdString() << " for append" << std::endl;
             return ;
         }
 

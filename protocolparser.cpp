@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.5.1.a";
+const QString ProtocolParser::genVersion = "1.5.2.a";
 
 // The protocol support data is here so it is statically accessible
 ProtocolSupport ProtocolParser::support = ProtocolSupport();
@@ -82,49 +82,51 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     // This element must have the "Protocol" tag
     if(docElem.tagName() != "Protocol")
     {
-        std::cout << "Protocol tag not found in XML" << std::endl;
+        emitWarning("Protocol tag not found in XML");
         return false;
     }
 
     name = docElem.attribute("name").trimmed();
     if(name.isEmpty())
     {
-        std::cout << "Protocol name not found in Protocol tag" << std::endl;
+        emitWarning("Protocol name not found in Protocol tag");
         return false;
     }
 
     // 64-bit support can be turned off
-    if(docElem.attribute("supportInt64").contains("false", Qt::CaseInsensitive))
+    if(isFieldClear(docElem, "supportInt64"))
         support.int64 = false;
 
     // double support can be turned off
-    if(docElem.attribute("supportFloat64").contains("false", Qt::CaseInsensitive))
+    if(isFieldClear(docElem, "supportFloat64"))
         support.float64 = false;
 
     // special float support can be turned off
-    if(docElem.attribute("supportSpecialFloat").contains("false", Qt::CaseInsensitive))
+    if(isFieldClear(docElem, "supportSpecialFloat"))
         support.specialFloat = false;
 
     // bitfield support can be turned off
-    if(docElem.attribute("supportBitfield").contains("false", Qt::CaseInsensitive))
+    if(isFieldClear(docElem, "supportBitfield"))
         support.bitfield = false;
 
     // long bitfield support can be turned on
-    if(support.int64 && docElem.attribute("supportLongBitfield").contains("true", Qt::CaseInsensitive))
+    if(support.int64 && isFieldSet(docElem, "supportLongBitfield"))
         support.longbitfield = true;
 
     // bitfield test support can be turned on
-    if(docElem.attribute("bitfieldTest").contains("true", Qt::CaseInsensitive))
+    if(isFieldSet(docElem, "bitfieldTest"))
         support.bitfieldtest = true;
 
+    QDomNamedNodeMap map = docElem.attributes();
+
     // Global file names can be specified
-    support.globalFileName = docElem.attribute("file");
+    support.globalFileName = getAttribute("file", map);
 
     // Prefix is not required
-    prefix = docElem.attribute("prefix").trimmed();
+    prefix = getAttribute("prefix", map).trimmed();
 
     bool bigendian = true;
-    if(docElem.attribute("endian").contains("little", Qt::CaseInsensitive))
+    if(getAttribute("endian", map).contains("little", Qt::CaseInsensitive))
         bigendian = false;
 
     // All of the top level Structures, which stand alone in their own modules
@@ -168,7 +170,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         }
         else if(doclist.at(i).nodeName().contains("Enum", Qt::CaseInsensitive))
         {
-            EnumCreator* Enum = new EnumCreator(support);
+            EnumCreator* Enum = new EnumCreator(name, support);
 
             // Enums can be parsed now
             Enum->setElement(doclist.at(i).toElement());
@@ -184,7 +186,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         else
         {
             // Create the module object
-            ProtocolDocumentation* document = new ProtocolDocumentation();
+            ProtocolDocumentation* document = new ProtocolDocumentation(name);
 
             // Documents can be parsed now
             document->setElement(doclist.at(i).toElement());
@@ -350,7 +352,7 @@ void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     header.write("#include <stdint.h>\n");
 
     // Add other includes
-    outputIncludes(header, docElem);
+    outputIncludes(name, header, docElem);
 
     // Output the global enumerations to my header
     for(int i = 0; i < globalEnums.size(); i++)
@@ -602,16 +604,17 @@ QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map)
 /*!
  * Parse all enumerations which are direct children of a DomNode. The
  * enumerations will be stored in the global list
+ * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param node is parent node
  */
-void ProtocolParser::parseEnumerations(const QDomNode& node)
+void ProtocolParser::parseEnumerations(QString parent, const QDomNode& node)
 {
     // Build the top level enumerations
     QList<QDomNode>list = childElementsByTagName(node, "Enum");
 
     for(int i = 0; i < list.size(); i++)
     {
-        parseEnumeration(list.at(i).toElement());
+        parseEnumeration(parent, list.at(i).toElement());
 
     }// for all my enum tags
 
@@ -622,12 +625,13 @@ void ProtocolParser::parseEnumerations(const QDomNode& node)
  * Parse a single enumeration given by a DOM element. This will also
  * add the enumeration to the global list which can be searched with
  * lookUpEnumeration().
+ * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param element is the QDomElement that represents this enumeration
  * \return a pointer to the newly created enumeration object.
  */
-const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
+const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomElement& element)
 {
-    EnumCreator* Enum = new EnumCreator(support);
+    EnumCreator* Enum = new EnumCreator(parent, support);
 
     Enum->setElement(element);
     Enum->parse();
@@ -642,10 +646,11 @@ const EnumCreator* ProtocolParser::parseEnumeration(const QDomElement& element)
 
 /*!
  * Output all include directions which are direct children of a DomNode
+ * \param parent is the hierarchical name of the owning object
  * \param file receives the output
  * \param node is parent node
  */
-void ProtocolParser::outputIncludes(ProtocolFile& file, const QDomNode& node)
+void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node)
 {
     // Build the top level enumerations
     QList<QDomNode>list = childElementsByTagName(node, "Include");
@@ -673,7 +678,7 @@ void ProtocolParser::outputIncludes(ProtocolFile& file, const QDomNode& node)
             else if(attrname.compare("global", Qt::CaseInsensitive) == 0)
                 global = ProtocolParser::isFieldSet(attr.value().trimmed());
             else if(support.disableunrecognized == false)
-                std::cout << "Unrecognized attribute of include: " << include.toStdString() << " : " << attrname.toStdString() << std::endl;
+                emitWarning(parent + ":" + include + ": Unrecognized attribute " + attrname);
 
         }// for all attributes
 
@@ -1188,7 +1193,7 @@ void ProtocolParser::outputDoxygen(void)
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cout << "Failed to open " << fileName.toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName.toStdString() << std::endl;
         return;
     }
 

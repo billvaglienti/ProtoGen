@@ -3,7 +3,6 @@
 #include "shuntingyard.h"
 #include <QString>
 #include <QDomElement>
-#include <iostream>
 #include <math.h>
 
 TypeData::TypeData(ProtocolSupport sup) :
@@ -104,219 +103,6 @@ double TypeData::extractDouble(const QString& string, bool* ok)
 }
 
 
-/*!
- * Extract the type information from the type string, for in memory types
- * \param type is the type string
- * \param name is the name of this field, used for warnings
- * \param inMemory is true if this is an in-memory type string, else encoded
- */
-void TypeData::extractType(const QString& typeString, const QString& name, bool inMemory)
-{
-    QString type(typeString);
-
-    clear();
-
-    if(type.startsWith("n", Qt::CaseInsensitive))
-        isNull = true;
-    else if(type.startsWith("stru", Qt::CaseInsensitive))
-    {
-        if(inMemory)
-            isStruct = true;
-        else
-            return;
-    }
-    else if(type.startsWith("string", Qt::CaseInsensitive))
-    {
-        isString = true;
-        isFixedString = false;
-
-        bits = 8;
-    }
-    else if(type.startsWith("fixedstring", Qt::CaseInsensitive))
-    {
-        isString = true;
-        isFixedString = true;
-
-        bits = 8;
-    }
-    else if(type.startsWith("b", Qt::CaseInsensitive))
-    {
-        // Get the number of bits, between 1 and 32 inclusive
-        bits = extractPositiveInt(type);
-
-        if(support.bitfield == false)
-        {
-            std::cout << name.toStdString() << ": " << "bitfield support is disabled in this protocol" << std::endl;
-
-            // if bits is 1, then it becomes 8. If it is 8 then it
-            // becomes 8, if its 9 it becomes 16, etc.
-            bits = 8*((bits + 7)/8);
-        }
-        else
-        {
-            // Bitfields cannot be floats and cannot be signed
-            isBitfield = true;
-
-            // Bitfields must have at least one bit, and less than 33 bits
-            if(bits < 1)
-            {
-                bits = 1;
-                std::cout << name.toStdString() << ": " << "bitfields must have a bit width of at least one" << std::endl;
-            }
-            else if((bits > 32) && (support.longbitfield == false))
-            {
-                std::cout << name.toStdString() << ": " <<  "bitfields must have a bit width of 32 or less" << std::endl;
-                bits = 32;
-            }
-            else if(bits > 64)
-            {
-                std::cout << name.toStdString() << ": " <<  "bitfields must have a bit width of 64 or less" << std::endl;
-                bits = 64;
-            }
-        }
-    }
-    else if(type.startsWith("e", Qt::CaseInsensitive))
-    {
-        // enumeration types are only for in-memory, never encoded
-        if(inMemory)
-        {
-            isEnum = true;
-        }
-        else
-        {
-            isEnum = false;
-        }
-
-        bits = 8;
-    }
-    else
-    {
-        bits = extractPositiveInt(type);
-
-        if(type.startsWith("u", Qt::CaseInsensitive))
-        {
-            isSigned = false;
-        }
-        else
-        {
-            isSigned = true;
-
-            if(type.startsWith("f", Qt::CaseInsensitive))
-            {
-                isFloat = true;
-
-                // "float" is not a warning
-                if(bits == 0)
-                    bits = 32;
-            }
-            else if(type.startsWith("d", Qt::CaseInsensitive))
-            {
-                isFloat = true;
-
-                // "double" is not a warning
-                if(bits == 0)
-                    bits = 64;
-            }
-            else if(!type.startsWith("s", Qt::CaseInsensitive) && !type.startsWith("i", Qt::CaseInsensitive))
-            {
-                std::cout << name.toStdString() << ": " << "in memory type name not understood, signed integer assumed" << std::endl;
-            }
-        }
-
-        if(isFloat)
-        {
-            if(inMemory)
-            {
-                if((bits != 32) && (bits != 64))
-                {
-                    std::cout << name.toStdString() << ": " << "in memory float types must be 32 or 64 bits" << std::endl;
-
-                    if(bits < 32)
-                        bits = 32;
-                    else
-                        bits = 64;
-                }
-            }
-            else if((bits != 16) && (bits != 24) && (bits != 24) && (bits != 64))
-            {
-                std::cout << name.toStdString() << ": " << "encoded float types must be 16, 24, 32, or 64 bits" << std::endl;
-
-                if(bits < 16)
-                    bits = 16;
-                else if(bits < 24)
-                    bits = 24;
-                else if(bits < 32)
-                    bits = 32;
-                else
-                    bits = 64;
-
-                if((bits < 32) && (support.specialFloat == false))
-                {
-                    std::cout << name.toStdString() << ": " << "non-standard float bit widths are disabled in this protocol" << std::endl;
-                    bits = 32;
-                }
-            }
-
-            if((bits > 32) && (support.float64 == false))
-            {
-                std::cout << name.toStdString() << ": " << "64 bit float support is disabled in this protocol" << std::endl;
-                bits = 32;
-            }
-
-        }// if float
-        else
-        {
-            if(inMemory)
-            {
-                if((bits != 8) && (bits != 16) && (bits != 32) && (bits != 64))
-                {
-                    std::cout << name.toStdString() << ": " << "in memory integer types must be 8, 16, 32, or 64 bits" << std::endl;
-
-                    if(bits > 32)
-                        bits = 64;
-                    else if(bits > 16)
-                        bits = 32;
-                    else if(bits > 8)
-                        bits = 16;
-                    else
-                        bits = 8;
-                }
-            }
-            else if(((bits % 8) != 0) || (bits > 64))
-            {
-                std::cout << name.toStdString() << ": " << "encoded integer types must be 8, 16, 24, 32, 40, 48, 56, or 64 bits" << std::endl;
-
-                if(bits > 56)
-                    bits = 64;
-                else if(bits > 48)
-                    bits = 56;
-                else if(bits > 40)
-                    bits = 48;
-                else if(bits > 32)
-                    bits = 40;
-                else if(bits > 24)
-                    bits = 32;
-                else if(bits > 16)
-                    bits = 24;
-                else if(bits > 8)
-                    bits = 16;
-                else
-                    bits = 8;
-            }
-
-            if((bits > 32) && (support.int64 == false))
-            {
-                std::cout << name.toStdString() << ": " << "Integers greater than 32 bits are disabled in this protocol" << std::endl;
-                bits = 32;
-            }
-
-        }// if integer
-
-    }// else if float or integer
-
-}// TypeData::extractType
-
-
 QString TypeData::toTypeString(QString enumName, QString structName) const
 {
     QString typeName;
@@ -380,12 +166,13 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
 
 /*!
  * Construct a blank protocol field
+ * \param parent is the hierarchical name of the parent object
  * \param protocolName is the name of the protocol
  * \param prtoocolPrefix is the naming prefix
  * \param supported indicates what the protocol can support
  */
-ProtocolField::ProtocolField(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
-    Encodable(protocolName, protocolPrefix, supported),
+ProtocolField::ProtocolField(QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
+    Encodable(parent, protocolName, protocolPrefix, supported),
     encodedMin(0),
     encodedMax(0),
     scaler(1),
@@ -422,6 +209,220 @@ void ProtocolField::clear(void)
     extraInfoValues.clear();
 
 }// ProtocolField::clear
+
+
+/*!
+ * Extract the type information from the type string, for in memory types
+ * \param data holds the extracted type
+ * \param type is the type string
+ * \param name is the name of this field, used for warnings
+ * \param inMemory is true if this is an in-memory type string, else encoded
+ */
+void ProtocolField::extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory)
+{
+    QString type(typeString);
+
+    data.clear();
+
+    if(type.startsWith("n", Qt::CaseInsensitive))
+        data.isNull = true;
+    else if(type.startsWith("stru", Qt::CaseInsensitive))
+    {
+        if(inMemory)
+            data.isStruct = true;
+        else
+            return;
+    }
+    else if(type.startsWith("string", Qt::CaseInsensitive))
+    {
+        data.isString = true;
+        data.isFixedString = false;
+
+        data.bits = 8;
+    }
+    else if(type.startsWith("fixedstring", Qt::CaseInsensitive))
+    {
+        data.isString = true;
+        data.isFixedString = true;
+
+        data.bits = 8;
+    }
+    else if(type.startsWith("b", Qt::CaseInsensitive))
+    {
+        // Get the number of bits, between 1 and 32 inclusive
+        data.bits = data.extractPositiveInt(type);
+
+        if(support.bitfield == false)
+        {
+            emitWarning("bitfield support is disabled in this protocol");
+
+            // if bits is 1, then it becomes 8. If it is 8 then it
+            // becomes 8, if its 9 it becomes 16, etc.
+            data.bits = 8*((data.bits + 7)/8);
+        }
+        else
+        {
+            // Bitfields cannot be floats and cannot be signed
+            data.isBitfield = true;
+
+            // Bitfields must have at least one bit, and less than 33 bits
+            if(data.bits < 1)
+            {
+                data.bits = 1;
+                emitWarning("bitfields must have a bit width of at least one");
+            }
+            else if((data.bits > 32) && (support.longbitfield == false))
+            {
+                emitWarning("bitfields must have a bit width of 32 or less");
+                data.bits = 32;
+            }
+            else if(data.bits > 64)
+            {
+                emitWarning("bitfields must have a bit width of 64 or less");
+                data.bits = 64;
+            }
+        }
+    }
+    else if(type.startsWith("e", Qt::CaseInsensitive))
+    {
+        // enumeration types are only for in-memory, never encoded
+        if(inMemory)
+        {
+            data.isEnum = true;
+        }
+        else
+        {
+            data.isEnum = false;
+        }
+
+        data.bits = 8;
+    }
+    else
+    {
+        data.bits = data.extractPositiveInt(type);
+
+        if(type.startsWith("u", Qt::CaseInsensitive))
+        {
+            data.isSigned = false;
+        }
+        else
+        {
+            data.isSigned = true;
+
+            if(type.startsWith("f", Qt::CaseInsensitive))
+            {
+                data.isFloat = true;
+
+                // "float" is not a warning
+                if(data.bits == 0)
+                    data.bits = 32;
+            }
+            else if(type.startsWith("d", Qt::CaseInsensitive))
+            {
+                data.isFloat = true;
+
+                // "double" is not a warning
+                if(data.bits == 0)
+                    data.bits = 64;
+            }
+            else if(!type.startsWith("s", Qt::CaseInsensitive) && !type.startsWith("i", Qt::CaseInsensitive))
+            {
+                emitWarning("in memory type name not understood, signed integer assumed");
+            }
+        }
+
+        if(data.isFloat)
+        {
+            if(inMemory)
+            {
+                if((data.bits != 32) && (data.bits != 64))
+                {
+                    emitWarning("in memory float types must be 32 or 64 bits");
+
+                    if(data.bits < 32)
+                        data.bits = 32;
+                    else
+                        data.bits = 64;
+                }
+            }
+            else if((data.bits != 16) && (data.bits != 24) && (data.bits != 32) && (data.bits != 64))
+            {
+                emitWarning("encoded float types must be 16, 24, 32, or 64 bits");
+
+                if(data.bits < 16)
+                    data.bits = 16;
+                else if(data.bits < 24)
+                    data.bits = 24;
+                else if(data.bits < 32)
+                    data.bits = 32;
+                else
+                    data.bits = 64;
+
+                if((data.bits < 32) && (support.specialFloat == false))
+                {
+                    emitWarning("non-standard float bit widths are disabled in this protocol");
+                    data.bits = 32;
+                }
+            }
+
+            if((data.bits > 32) && (support.float64 == false))
+            {
+                emitWarning("64 bit float support is disabled in this protocol");
+                data.bits = 32;
+            }
+
+        }// if float
+        else
+        {
+            if(inMemory)
+            {
+                if((data.bits != 8) && (data.bits != 16) && (data.bits != 32) && (data.bits != 64))
+                {
+                    emitWarning("in memory integer types must be 8, 16, 32, or 64 bits");
+
+                    if(data.bits > 32)
+                        data.bits = 64;
+                    else if(data.bits > 16)
+                        data.bits = 32;
+                    else if(data.bits > 8)
+                        data.bits = 16;
+                    else
+                        data.bits = 8;
+                }
+            }
+            else if(((data.bits % 8) != 0) || (data.bits > 64))
+            {
+                emitWarning("encoded integer types must be 8, 16, 24, 32, 40, 48, 56, or 64 bits");
+
+                if(data.bits > 56)
+                    data.bits = 64;
+                else if(data.bits > 48)
+                    data.bits = 56;
+                else if(data.bits > 40)
+                    data.bits = 48;
+                else if(data.bits > 32)
+                    data.bits = 40;
+                else if(data.bits > 24)
+                    data.bits = 32;
+                else if(data.bits > 16)
+                    data.bits = 24;
+                else if(data.bits > 8)
+                    data.bits = 16;
+                else
+                    data.bits = 8;
+            }
+
+            if((data.bits > 32) && (support.int64 == false))
+            {
+                emitWarning("Integers greater than 32 bits are disabled in this protocol");
+                data.bits = 32;
+            }
+
+        }// if integer
+
+    }// else if float or integer
+
+}// ProtocolField::extractType
 
 
 /*!
@@ -495,7 +496,7 @@ void ProtocolField::parse(void)
         }
         else if(support.disableunrecognized == false)
         {
-            std::cout << "Unrecognized attribute of Data: " << name.toStdString() << " : " << attrname.toStdString() << std::endl;
+            emitWarning("Unrecognized attribute of Data: " + attrname);
         }
 
     }// for all attributes
@@ -503,8 +504,7 @@ void ProtocolField::parse(void)
 
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
-        name = "notprovided";
-        std::cout << "data tag without a name: " << e.text().toStdString() << std::endl;
+        emitWarning("Data tag without a name: " + e.text());
     }
 
     // maybe its an enum or a external struct?
@@ -518,12 +518,12 @@ void ProtocolField::parse(void)
         else
         {
             memoryTypeString = "null";
-            std::cout << "failed to find inMemoryType attribute for: " << name.toStdString() << " \"null\" assumed." << std::endl;
+            emitWarning("failed to find inMemoryType attribute, \"null\" assumed.");
         }
     }
 
     // Extract the in memory type
-    inMemoryType.extractType(memoryTypeString, name, true);
+    extractType(inMemoryType, memoryTypeString, name, true);
 
     // The encoded type string, this can be empty which implies encoded is same as memory
     if(encodedTypeString.isEmpty())
@@ -535,7 +535,7 @@ void ProtocolField::parse(void)
             encodedType.isEnum = false;
     }
     else
-        encodedType.extractType(encodedTypeString, name, false);
+        extractType(encodedType, encodedTypeString, name, false);
 
     if(inMemoryType.isNull)
     {
@@ -553,7 +553,7 @@ void ProtocolField::parse(void)
         }
         else
         {
-            std::cout << "both in-memory and encoded types for: " << name.toStdString() << " are \"null\", nothing to do." << std::endl;
+            emitWarning("both in-memory and encoded types are \"null\", nothing to do.");
             return;
         }
     }
@@ -562,7 +562,7 @@ void ProtocolField::parse(void)
     {
         if(enumName.isEmpty())
         {
-            std::cout << name.toStdString() << ": " << "enumeration name is missing, type changed to unsigned" << std::endl;
+            emitWarning("enumeration name is missing, type changed to unsigned");
             inMemoryType.isEnum = encodedType.isEnum = false;
         }
         else
@@ -590,7 +590,7 @@ void ProtocolField::parse(void)
                 // make sure the encoded length data is large enough
                 if(encodedType.bits < minbits)
                 {
-                    std::cout << name.toStdString() << ": " << "enumeration needs at least " << minbits << " bits. Encoded bit length changed." << std::endl;
+                    emitWarning("enumeration needs at least " + QString::number(minbits) + " bits. Encoded bit length changed.");
                     if(!encodedType.isBitfield)
                     {
                         // Make it a multiple of 8 bits
@@ -612,7 +612,7 @@ void ProtocolField::parse(void)
     {
         if(structName.isEmpty())
         {
-            std::cout << name.toStdString() << ": " << "struct name is missing, struct name \"unknown\" used, probable compile failure" << std::endl;
+            emitWarning("struct name is missing, struct name \"unknown\" used, probable compile failure");
             structName = "unknown";
         }
 
@@ -620,7 +620,7 @@ void ProtocolField::parse(void)
         {
             constantValue.clear();
             checkConstant = false;
-            std::cout << name.toStdString() << ": " << "structure cannot be a constant" << std::endl;
+            emitWarning("structure cannot be a constant");
         }
     }
 
@@ -629,7 +629,7 @@ void ProtocolField::parse(void)
         if(!encodedType.isNull)
         {
             if(!encodedTypeString.isEmpty() && !encodedType.isBitfield)
-                std::cout << name.toStdString() << ": encoded type ignored because in memory type is bitfield" << std::endl;
+                emitWarning("encoded type ignored because in memory type is bitfield");
 
             // make the encoded type follow the in memory type for bit fields
             encodedType.isBitfield = true;
@@ -644,13 +644,13 @@ void ProtocolField::parse(void)
     {
         if(!dependsOn.isEmpty())
         {
-            std::cout << name.toStdString() << ": bitfields cannot use dependsOn" << std::endl;
+            emitWarning("bitfields cannot use dependsOn");
             dependsOn.clear();
         }
 
         if(!array.isEmpty())
         {
-            std::cout << name.toStdString() << ": bitfields encodings cannot use arrays" << std::endl;
+            emitWarning("bitfields encodings cannot use arrays");
             array.clear();
             variableArray.clear();
         }
@@ -658,7 +658,7 @@ void ProtocolField::parse(void)
         /*
         if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
         {
-            std::cout << name.toStdString() << ": min, max, and scaler are ignored because encoded type or in memory type is bitfield" << std::endl;
+            emitWarning("min, max, and scaler are ignored because encoded type or in memory type is bitfield");
             maxString.clear();
             minString.clear();
             scalerString.clear();
@@ -683,19 +683,19 @@ void ProtocolField::parse(void)
 
     if(array.isEmpty() && !variableArray.isEmpty())
     {
-        std::cout << name.toStdString() << ": Must specify array length to specify variable array length" << std::endl;
+        emitWarning("Must specify array length to specify variable array length");
         variableArray.clear();
     }
 
     if(!dependsOn.isEmpty() && !variableArray.isEmpty())
     {
-        std::cout << name.toStdString() << ": variable length arrays cannot also use dependsOn" << std::endl;
+        emitWarning("variable length arrays cannot also use dependsOn");
         dependsOn.clear();
     }
 
     if(!scalerString.isEmpty() && !maxString.isEmpty())
     {
-        std::cout << name.toStdString() << ": scaler ignored because max is provided" << std::endl;
+        emitWarning("scaler ignored because max is provided");
         scalerString.clear();
     }
 
@@ -703,7 +703,7 @@ void ProtocolField::parse(void)
     {
         if(inMemoryType.isStruct || inMemoryType.isString || encodedType.isNull)
         {
-            std::cout << name.toStdString() << ": min, max, and scaler do not apply to this type data" << std::endl;
+            emitWarning("min, max, and scaler do not apply to this type data");
             maxString.clear();
             minString.clear();
             scalerString.clear();
@@ -716,7 +716,7 @@ void ProtocolField::parse(void)
     {
         if(encodedType.isFloat)
         {
-            std::cout << name.toStdString() << ": min, max, are ignored because encoded type is float" << std::endl;
+            emitWarning("min, max, are ignored because encoded type is float");
             maxString.clear();
             minString.clear();
         }
@@ -725,7 +725,7 @@ void ProtocolField::parse(void)
 
     if(constantValue.isEmpty() && checkConstant)
     {
-        std::cout << name.toStdString() << ": \"checkConstant\" cannot be applied unless the field is constant" << std::endl;
+        emitWarning("\"checkConstant\" cannot be applied unless the field is constant");
         checkConstant = false;
     }
 
@@ -734,20 +734,20 @@ void ProtocolField::parse(void)
         // Strings have to be arrays, default to 64 characters
         if(array.isEmpty())
         {
-            std::cout << name.toStdString() << ": string length not provided, assuming 64" << std::endl;
+            emitWarning("string length not provided, assuming 64");
             array = "64";
         }
 
         // Strings are always variable length, through null termination
         if(!variableArray.isEmpty())
         {
-            std::cout << name.toStdString() << ": strings cannot use variableAray attribute, they are always variable length through null termination (unless fixedstring)" << std::endl;
+            emitWarning("strings cannot use variableAray attribute, they are always variable length through null termination (unless fixedstring)");
             variableArray.clear();
         }
 
         if(!dependsOn.isEmpty())
         {
-            std::cout << name.toStdString() << ": strings cannot use dependsOn" << std::endl;
+            emitWarning("strings cannot use dependsOn");
             dependsOn.clear();
         }
 
@@ -756,7 +756,7 @@ void ProtocolField::parse(void)
     {
         if(checkConstant)
         {
-            std::cout << name.toStdString() << ": \"checkConstant\" cannot be applied to arrays (except strings) " << std::endl;
+            emitWarning("\"checkConstant\" cannot be applied to arrays (except strings) ");
             checkConstant = false;
         }
 
@@ -766,20 +766,20 @@ void ProtocolField::parse(void)
     {
         if(!constantValue.isEmpty())
         {
-            std::cout << name.toStdString() << ": constant value does not make sense for types that are not encoded (null)" << std::endl;
+            emitWarning("constant value does not make sense for types that are not encoded (null)");
             constantValue.clear();
             checkConstant = false;
         }
 
         if(!variableArray.isEmpty())
         {
-            std::cout << name.toStdString() << ": variable length arrays do not make sense for types that are not encoded (null)" << std::endl;
+            emitWarning("variable length arrays do not make sense for types that are not encoded (null)");
             variableArray.clear();
         }
 
         if(!dependsOn.isEmpty())
         {
-            std::cout << name.toStdString() << ": dependsOn does not make sense for types that are not encoded (null)" << std::endl;
+            emitWarning("dependsOn does not make sense for types that are not encoded (null)");
             dependsOn.clear();
         }
     }
@@ -790,7 +790,7 @@ void ProtocolField::parse(void)
     {
         if(encodedType.isSigned)
         {
-            std::cout << name.toStdString() << ": min value ignored because encoded type is signed" << std::endl;
+            emitWarning("min value ignored because encoded type is signed");
             minString.clear();
         }
         else
@@ -799,7 +799,7 @@ void ProtocolField::parse(void)
 
             if(!ok)
             {
-                std::cout << name.toStdString() + ": min is not a number, 0.0 assumed" << std::endl;
+                emitWarning("min is not a number, 0.0 assumed");
                 minString = "0";
             }
         }
@@ -810,7 +810,7 @@ void ProtocolField::parse(void)
         encodedMax = ShuntingYard::computeInfix(maxString, &ok);
         if(!ok)
         {
-            std::cout << name.toStdString() + ": max is not a number, 1.0 assumed" << std::endl;
+            emitWarning("max is not a number, 1.0 assumed");
             encodedMax = 1.0;
             maxString = "1";
         }
@@ -859,13 +859,13 @@ void ProtocolField::parse(void)
 
         if(!ok)
         {
-            std::cout << name.toStdString() + ": scaler is not a number, 1.0 assumed" << std::endl;
+            emitWarning("scaler is not a number, 1.0 assumed");
             scaler = 1.0;
             scalerString = "1.0";
         }
         else if(scaler <= 0.0)
         {
-            std::cout << name.toStdString() + ": scaler must be greater than zero, 1.0 used" << std::endl;
+            emitWarning("scaler must be greater than zero, 1.0 used");
             scaler = 1.0;
             scalerString = "1.0";
         }
@@ -919,7 +919,7 @@ void ProtocolField::parse(void)
         minString.clear();
         maxString.clear();
         scaler = 1.0;
-        std::cout << name.toStdString() << ": max is not more than min, encoding not scaled" << std::endl;
+        emitWarning("max is not more than min, encoding not scaled");
     }
 
     // Just the type data
@@ -929,12 +929,12 @@ void ProtocolField::parse(void)
     {
         if(inMemoryType.isStruct)
         {
-            std::cout << name.toStdString() << ": structure cannot have a constant value" << std::endl;
+            emitWarning("structure cannot have a constant value");
             constantValue.clear();
         }
         else if(!defaultValue.isEmpty())
         {
-            std::cout << name.toStdString() << ": fields with default values cannot also be constant" << std::endl;
+            emitWarning("fields with default values cannot also be constant");
             constantValue.clear();
         }
     }
@@ -1066,7 +1066,7 @@ QString ProtocolField::getIncludeDirective(void)
                 output = typeName;
                 output.remove("_t");
                 output += ".h";
-                std::cout << name.toStdString() + ": unknown include for " << typeName.toStdString() << "; guess supplied" << std::endl;
+                emitWarning("unknown include for " + typeName + "; guess supplied");
             }
             else
             {

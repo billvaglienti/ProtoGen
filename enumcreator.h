@@ -11,7 +11,8 @@ class EnumCreator : public ProtocolDocumentation
 {
 public:
     //! Create an empty enumeration list
-    EnumCreator(ProtocolSupport supported) :
+    EnumCreator(QString Parent, ProtocolSupport supported) :
+        ProtocolDocumentation(Parent),
         minbitwidth(0),
         hidden(false),
         support(supported)
@@ -47,7 +48,10 @@ public:
     int getMinBitWidth(void) const {return minbitwidth;}
 
     //! Return true if this enumeration is hidden from the documentation
-    bool isHidden(void) const {return hidden;}
+    virtual bool isHidden(void) const {return hidden;}
+
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
 protected:
     //! Parse the enumeration values to build the number list

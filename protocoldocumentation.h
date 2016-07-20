@@ -10,7 +10,7 @@ class ProtocolDocumentation
 public:
 
     //! Construct the document object
-    ProtocolDocumentation(void);
+    ProtocolDocumentation(QString Parent);
 
     //! Virtual destructor
     virtual ~ProtocolDocumentation(void) {;}
@@ -27,8 +27,14 @@ public:
     //! Documentation is by definition never hidden from the documentation
     virtual bool isHidden(void) const {return false;}
 
+    //! The hierarchical name of this object
+    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+
+    //! Output a warning
+    void emitWarning(QString warning) const;
+
     //! Helper function to create a list of ProtocolDocumentation objects
-    static void getChildDocuments(const QDomElement& e, QList<ProtocolDocumentation*>& list);
+    static void getChildDocuments(QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list);
 
 public:
     QString name;           //!< The name of this encodable
@@ -36,6 +42,7 @@ public:
 
 protected:
     QDomElement e;          //!< The DOM element which is the source of this object's data
+    QString parent;         //!< The parent name of this encodable
 
 private:
     int outlineLevel;       //!< The paragraph outline level

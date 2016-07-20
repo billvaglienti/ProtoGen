@@ -4,6 +4,7 @@
 #include <QDomDocument>
 #include <QFile>
 #include <QList>
+#include <iostream>
 #include "protocolfile.h"
 #include "protocolstructuremodule.h"
 #include "protocolpacket.h"
@@ -18,6 +19,9 @@ public:
     //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
     bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "", bool disableunrecognized = false);
 
+    //! Output a warning
+    static void emitWarning(QString warning) {std::cerr << warning.toStdString() << std::endl;}
+
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
 
@@ -28,13 +32,13 @@ public:
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
 
     //! Parse all enumerations which are direct children of a DomNode
-    static void parseEnumerations(const QDomNode& node);
+    static void parseEnumerations(QString parent, const QDomNode& node);
 
     //! Parse all enumerations which are direct children of a DomNode
-    static const EnumCreator* parseEnumeration(const QDomElement& element);
+    static const EnumCreator* parseEnumeration(QString parent, const QDomElement& element);
 
     //! Output all includes which are direct children of a DomNode
-    static void outputIncludes(ProtocolFile& file, const QDomNode& node);
+    static void outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node);
 
     //! Format a long string of text which should be wrapped at 80 characters.
     static QString outputLongComment(const QString& prefix, const QString& text);

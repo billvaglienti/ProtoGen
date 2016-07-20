@@ -4,7 +4,8 @@
 #include <QFile>
 
 //! Construct the document object, with details about the overall protocol
-ProtocolDocumentation::ProtocolDocumentation() :
+ProtocolDocumentation::ProtocolDocumentation(QString Parent) :
+    parent(Parent),
     outlineLevel(0)
 {
 }
@@ -70,12 +71,20 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
 }
 
 
+//! Output a warning
+void ProtocolDocumentation::emitWarning(QString warning) const
+{
+    ProtocolParser::emitWarning(getHierarchicalName() + ": " + warning);
+}
+
+
 /*!
  * Helper function to create a list of ProtocolDocumentation objects based upon the DOM
+ * \param Parent is the name of the parent object that owns the created objects
  * \param e is the DOM element which may have documentation children
  * \param list receives the list of allocated objects.
  */
-void ProtocolDocumentation::getChildDocuments(const QDomElement& e, QList<ProtocolDocumentation*>& list)
+void ProtocolDocumentation::getChildDocuments(QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list)
 {
     // The list of documentation that goes inside this packet
     QList<QDomNode> documents = ProtocolParser::childElementsByTagName(e, "Documentation");
@@ -84,7 +93,7 @@ void ProtocolDocumentation::getChildDocuments(const QDomElement& e, QList<Protoc
     for(int i = 0; i < documents.count(); i++)
     {
         // Create the document and parse its xml
-        ProtocolDocumentation* doc = new ProtocolDocumentation();
+        ProtocolDocumentation* doc = new ProtocolDocumentation(Parent);
 
         doc->setElement(documents.at(i).toElement());
         doc->parse();

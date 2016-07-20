@@ -7,11 +7,12 @@
 
 /*!
  * Construct a protocol structure
+ * \param Parent is the hierarchical name of the object that owns this object.
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is the type name prefix
  */
-ProtocolStructure::ProtocolStructure(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
-    Encodable(protocolName, protocolPrefix, supported),
+ProtocolStructure::ProtocolStructure(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+    Encodable(Parent, protocolName, protocolPrefix, supported),
     bitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
@@ -95,7 +96,7 @@ void ProtocolStructure::parse(void)
             continue;
 
         if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            std::cout << "Unrecognized attribute of structure: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+            emitWarning("Unrecognized attribute " + attr.name());
     }
 
     // for now the typename is derived from the name
@@ -104,14 +105,14 @@ void ProtocolStructure::parse(void)
     // We can't have a variable array length without an array
     if(array.isEmpty() && !variableArray.isEmpty())
     {
-        std::cout << name.toStdString() << ": must specify array length to specify variable array length" << std::endl;
+        emitWarning("must specify array length to specify variable array length");
         variableArray.clear();
     }
 
 
     if(!dependsOn.isEmpty() && !variableArray.isEmpty())
     {
-        std::cout << name.toStdString() << ": variable length arrays cannot also use dependsOn" << std::endl;
+        emitWarning("variable length arrays cannot also use dependsOn");
         dependsOn.clear();
     }
 
@@ -146,7 +147,7 @@ void ProtocolStructure::parseEnumerations(const QDomNode& node)
 
     for(int i = 0; i < list.size(); i++)
     {
-        enumList.append(ProtocolParser::parseEnumeration(list.at(i).toElement()));
+        enumList.append(ProtocolParser::parseEnumeration(getHierarchicalName(), list.at(i).toElement()));
 
     }// for all my enum tags
 
@@ -167,7 +168,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     // Make encodables out of them, and add to our list
     for (int i = 0; i < children.size(); i++)
     {
-        Encodable* encodable = generateEncodable(protoName, prefix, support, children.at(i).toElement());
+        Encodable* encodable = generateEncodable(getHierarchicalName(), protoName, prefix, support, children.at(i).toElement());
         if(encodable != NULL)
         {
             // If the encodable is null, then none of the metadata
@@ -196,7 +197,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                         for(int j = 0; j < encodables.size(); j++)
                         {
                             encodables[j]->clearDefaults();
-                            std::cout << name.toStdString() << ": " << encodables[j]->name.toStdString() << ": default value ignored, field is followed by non-default" << std::endl;
+                            encodables[j]->emitWarning("default value ignored, field is followed by non-default");
                         }
 
                         defaults = false;
@@ -236,7 +237,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                     if(prev >= encodables.size())
                     {
-                       std::cout << name.toStdString() << ": " << encodable->name.toStdString() << ": variable length array ignored, failed to find length variable" << std::endl;
+                       encodable->emitWarning("variable length array ignored, failed to find length variable");
                        encodable->variableArray.clear();
                     }
 
@@ -247,7 +248,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                 {
                     if(encodable->isBitfield())
                     {
-                        std::cout << name.toStdString() << ": " << encodable->name.toStdString() << ": bitfields cannot use dependsOn" << std::endl;
+                        encodable->emitWarning("bitfields cannot use dependsOn");
                         encodable->dependsOn.clear();
                     }
                     else
@@ -274,7 +275,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                         if(prev >= encodables.size())
                         {
-                           std::cout << name.toStdString() << ": " << encodable->name.toStdString() << ": dependsOn ignored, failed to find dependsOn variable" << std::endl;
+                           encodable->emitWarning("dependsOn ignored, failed to find dependsOn variable");
                            encodable->dependsOn.clear();
                         }
                     }

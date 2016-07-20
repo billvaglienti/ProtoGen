@@ -7,7 +7,8 @@
 /*!
  * Constructor for encodable
  */
-Encodable::Encodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+Encodable::Encodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+    ProtocolDocumentation(Parent),
     support(supported),
     protoName(protocolName),
     prefix(protocolPrefix)
@@ -94,6 +95,7 @@ QString Encodable::getDecodeParameterComment(void) const
 /*!
  * Construct a protocol field by parsing a DOM element. The type of Encodable
  * created will be either a ProtocolStructure or a ProtocolField
+ * \param Parent is the hierarchical name of the objec which owns the newly created object
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is a prefix to use for typenames
  * \param supported describes what the protocol can support
@@ -101,16 +103,16 @@ QString Encodable::getDecodeParameterComment(void) const
  * \return a pointer to a newly allocated encodable. The caller is
  *         responsible for deleting this object.
  */
-Encodable* Encodable::generateEncodable(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
+Encodable* Encodable::generateEncodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
 {
     Encodable* enc = NULL;
 
     if(field.tagName().contains("Structure", Qt::CaseInsensitive))
-        enc = new ProtocolStructure(protocolName, protocolPrefix, supported);
+        enc = new ProtocolStructure(Parent, protocolName, protocolPrefix, supported);
     else if(field.tagName().contains("Data", Qt::CaseInsensitive))
-        enc = new ProtocolField(protocolName, protocolPrefix, supported);
+        enc = new ProtocolField(Parent, protocolName, protocolPrefix, supported);
     else if(field.tagName().contains("Code", Qt::CaseInsensitive))
-        enc = new ProtocolCode(protocolName, protocolPrefix, supported);
+        enc = new ProtocolCode(Parent, protocolName, protocolPrefix, supported);
 
     if(enc != NULL)
     {

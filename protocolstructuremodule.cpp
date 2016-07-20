@@ -13,7 +13,7 @@
  *        significant byte first.
  */
 ProtocolStructureModule::ProtocolStructureModule(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
-    ProtocolStructure(protocolName, protocolPrefix, supported),
+    ProtocolStructure(protocolName, protocolName, protocolPrefix, supported),
     api(protocolApi),
     version(protocolVersion),
     isBigEndian(bigendian),
@@ -71,19 +71,19 @@ void ProtocolStructureModule::parse(void)
             continue;
 
         if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            std::cout << "Unrecognized attribute of top level Structure: " << name.toStdString() << " : " << attr.name().toStdString() << std::endl;
+            emitWarning("Unrecognized attribute " + attr.name());
     }
 
     if(isArray())
     {
-        std::cout << name.toStdString() + ": top level structure cannot be an array" << std::endl;
+        emitWarning("top level structure cannot be an array");
         array.clear();
         variableArray.clear();
     }
 
     if(!dependsOn.isEmpty())
     {
-        std::cout << name.toStdString() << ": dependsOn makes no sense for a top level structure" << std::endl;
+        emitWarning("dependsOn makes no sense for a top level structure");
         dependsOn.clear();
     }
 
@@ -147,7 +147,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Add other includes specific to this structure
-    ProtocolParser::outputIncludes(header, e);
+    ProtocolParser::outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
     for(int i = 0; i < encodables.length(); i++)
