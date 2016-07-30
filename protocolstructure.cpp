@@ -7,12 +7,13 @@
 
 /*!
  * Construct a protocol structure
+ * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the object that owns this object.
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is the type name prefix
  */
-ProtocolStructure::ProtocolStructure(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
-    Encodable(Parent, protocolName, protocolPrefix, supported),
+ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+    Encodable(parse, Parent, protocolName, protocolPrefix, supported),
     bitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
@@ -147,7 +148,7 @@ void ProtocolStructure::parseEnumerations(const QDomNode& node)
 
     for(int i = 0; i < list.size(); i++)
     {
-        enumList.append(ProtocolParser::parseEnumeration(getHierarchicalName(), list.at(i).toElement()));
+        enumList.append(parser->parseEnumeration(getHierarchicalName(), list.at(i).toElement()));
 
     }// for all my enum tags
 
@@ -168,7 +169,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     // Make encodables out of them, and add to our list
     for (int i = 0; i < children.size(); i++)
     {
-        Encodable* encodable = generateEncodable(getHierarchicalName(), protoName, prefix, support, children.at(i).toElement());
+        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), protoName, prefix, support, children.at(i).toElement());
         if(encodable != NULL)
         {
             // If the encodable is null, then none of the metadata
@@ -914,7 +915,7 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
     QString maxEncodedLength = encodedLength.maxEncodedLength;
 
     // See if we can replace any enumeration names with values
-    ProtocolParser::replaceEnumerationNameWithValue(maxEncodedLength);
+    parser->replaceEnumerationNameWithValue(maxEncodedLength);
 
     // The byte after this one
     QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);

@@ -11,7 +11,7 @@ class ProtocolCode : public Encodable
     public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolCode(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolCode(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Destroy the protocol field
     virtual ~ProtocolCode(){}

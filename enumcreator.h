@@ -11,8 +11,8 @@ class EnumCreator : public ProtocolDocumentation
 {
 public:
     //! Create an empty enumeration list
-    EnumCreator(QString Parent, ProtocolSupport supported) :
-        ProtocolDocumentation(Parent),
+    EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+        ProtocolDocumentation(parse, Parent),
         minbitwidth(0),
         hidden(false),
         support(supported)

@@ -5,12 +5,14 @@
 #include <QString>
 #include <QStringList>
 
+class ProtocolParser;
+
 class ProtocolDocumentation
 {
 public:
 
     //! Construct the document object
-    ProtocolDocumentation(QString Parent);
+    ProtocolDocumentation(ProtocolParser* parse, QString Parent);
 
     //! Virtual destructor
     virtual ~ProtocolDocumentation(void) {;}
@@ -34,15 +36,16 @@ public:
     void emitWarning(QString warning) const;
 
     //! Helper function to create a list of ProtocolDocumentation objects
-    static void getChildDocuments(QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list);
+    static void getChildDocuments(ProtocolParser* parse, QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list);
 
 public:
     QString name;           //!< The name of this encodable
     QString comment;        //!< The comment that goes with this encodable
 
 protected:
-    QDomElement e;          //!< The DOM element which is the source of this object's data
+    ProtocolParser* parser; //!< The parser object
     QString parent;         //!< The parent name of this encodable
+    QDomElement e;          //!< The DOM element which is the source of this object's data
 
 private:
     int outlineLevel;       //!< The paragraph outline level

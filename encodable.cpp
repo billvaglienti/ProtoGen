@@ -7,8 +7,8 @@
 /*!
  * Constructor for encodable
  */
-Encodable::Encodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
-    ProtocolDocumentation(Parent),
+Encodable::Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, Parent),
     support(supported),
     protoName(protocolName),
     prefix(protocolPrefix)
@@ -95,6 +95,7 @@ QString Encodable::getDecodeParameterComment(void) const
 /*!
  * Construct a protocol field by parsing a DOM element. The type of Encodable
  * created will be either a ProtocolStructure or a ProtocolField
+ * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the objec which owns the newly created object
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is a prefix to use for typenames
@@ -103,16 +104,16 @@ QString Encodable::getDecodeParameterComment(void) const
  * \return a pointer to a newly allocated encodable. The caller is
  *         responsible for deleting this object.
  */
-Encodable* Encodable::generateEncodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
+Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
 {
     Encodable* enc = NULL;
 
     if(field.tagName().contains("Structure", Qt::CaseInsensitive))
-        enc = new ProtocolStructure(Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolStructure(parse, Parent, protocolName, protocolPrefix, supported);
     else if(field.tagName().contains("Data", Qt::CaseInsensitive))
-        enc = new ProtocolField(Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolField(parse, Parent, protocolName, protocolPrefix, supported);
     else if(field.tagName().contains("Code", Qt::CaseInsensitive))
-        enc = new ProtocolCode(Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolCode(parse, Parent, protocolName, protocolPrefix, supported);
 
     if(enc != NULL)
     {

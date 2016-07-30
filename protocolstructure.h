@@ -11,7 +11,7 @@ class ProtocolStructure : public Encodable
 public:
 
     //! Default constructor for protocol structure
-    ProtocolStructure(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Destroy this protocol structure
     virtual ~ProtocolStructure();

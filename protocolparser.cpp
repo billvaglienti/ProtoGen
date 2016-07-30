@@ -17,31 +17,16 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.5.2.a";
-
-// The protocol support data is here so it is statically accessible
-ProtocolSupport ProtocolParser::support = ProtocolSupport();
-
-// A static list of parsed structures
-QList<ProtocolStructureModule*> ProtocolParser::structures;
-
-// A static list of parsed packets
-QList<ProtocolPacket*> ProtocolParser::packets;
-
-// A static list of parsed enumerations
-QList<EnumCreator*> ProtocolParser::enums;
-
-// A static list of parsed global enumerations
-QList<EnumCreator*> ProtocolParser::globalEnums;
-
-// Statically accessible knowledge of the input path
-QString ProtocolParser::inputpath;
-
+const QString ProtocolParser::genVersion = "1.5.3.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
  */
-ProtocolParser::ProtocolParser()
+ProtocolParser::ProtocolParser() :
+    latexEnabled(false),
+    nomarkdown(false),
+    nohelperfiles(false),
+    nodoxygen(false)
 {
 }
 
@@ -51,45 +36,93 @@ ProtocolParser::ProtocolParser()
  */
 ProtocolParser::~ProtocolParser()
 {
-    // Write anything out that might be pending
-    header.flush();
+    // Delete all of our lists of new'ed objects
+    qDeleteAll(documents.begin(), documents.end());
+    documents.clear();
+
+    qDeleteAll(structures.begin(), structures.end());
+    structures.clear();
+
+    qDeleteAll(enums.begin(), enums.end());
+    enums.clear();
+
+    qDeleteAll(globalEnums.begin(), globalEnums.end());
+    globalEnums.clear();
 }
 
 
 /*!
  * Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
- * \param doc is the DOM from the xml file.
- * \param nodoxygen should be true to skip the doxygen generation.
- * \param nomarkdown should be true to skip the markdown generation.
- * \param nohelperfiles should be true to skip generating helper source files.
- * \param inlinecss is the css to use for the markdown output, if blank use default.
- * \param disableunrecognized should be true to disable warnings about unrecognized attributes
+ * \param file is the already opened xml file to read the xml contents from
+ * \param path is the output path for generated files
  * \return true if something was written to a file
  */
-bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkdown, bool nohelperfiles, QString inlinecss, bool disableunrecognized)
+bool ProtocolParser::parse(QString filename, QString path)
 {
-    QStringList fileNameList;
+    QFile file(filename);
+    QFileInfo fileinfo(filename);
+
+    // Remember the input path, in case there are files referenced by the main file
+    inputpath = ProtocolFile::sanitizePath(fileinfo.absolutePath());
+
+    // Also remember the name of the file, which we use for warning outputs
+    inputfile = fileinfo.fileName();
+
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        emitWarning(" error: Failed to open protocol file");
+        return false;
+    }
+
+    // The entire contents of the file, which we use twice
+    QString contents(file.readAll());
+
+    // Done with the file
+    file.close();
+
+    // Qt's XML parsing
+    if(!doc.setContent(contents))
+    {
+        emitWarning(" error: Failed to validate xml from file");
+        return false;
+    }
+
+    // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
+    line.setXMLContents(contents);
 
     // The outer most element
     QDomElement docElem = doc.documentElement();
 
-    // Clear the support information
-    support = ProtocolSupport();
+    // Set our output directory
+    if(!path.isEmpty())
+    {
+        // Make the path as short as possible
+        path = ProtocolFile::sanitizePath(path);
 
-    // Set the disable unrecognized warnings flag
-    support.disableunrecognized = disableunrecognized;
+        // Make sure the path exists
+        if(QDir::current().mkpath(path))
+        {
+            // Remember the output path for all users
+            support.outputpath = path;
+        }
+        else
+        {
+            std::cerr << "error: Failed to create output path: " << QDir::toNativeSeparators(path).toStdString() << std::endl;
+            return false;
+        }
+    }
 
     // This element must have the "Protocol" tag
     if(docElem.tagName() != "Protocol")
     {
-        emitWarning("Protocol tag not found in XML");
+        emitWarning(" error: Protocol tag not found in XML");
         return false;
     }
 
     name = docElem.attribute("name").trimmed();
     if(name.isEmpty())
     {
-        emitWarning("Protocol name not found in Protocol tag");
+        emitWarning(" error: Protocol name not found in Protocol tag");
         return false;
     }
 
@@ -141,7 +174,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     for(int i = 0; i < structlist.size(); i++)
     {
         // Create the module object
-        ProtocolStructureModule* module = new ProtocolStructureModule(name, prefix, support, api, version, bigendian);
+        ProtocolStructureModule* module = new ProtocolStructureModule(this, name, prefix, support, api, version, bigendian);
 
         // Remember its xml
         module->setElement(structlist.at(i).toElement());
@@ -157,7 +190,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
         {
             // Create the module object
-            ProtocolPacket* packet = new ProtocolPacket(name, prefix, support, api, version, bigendian);
+            ProtocolPacket* packet = new ProtocolPacket(this, name, prefix, support, api, version, bigendian);
 
             // Remember its xml
             packet->setElement(doclist.at(i).toElement());
@@ -165,12 +198,12 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
             // Keep it around
             packets.append(packet);
 
-            // Keep it in the document list as well
-            documents.append(packet);
+            // Keep it in the master document list as well
+            alldocumentsinorder.append(packet);
         }
         else if(doclist.at(i).nodeName().contains("Enum", Qt::CaseInsensitive))
         {
-            EnumCreator* Enum = new EnumCreator(name, support);
+            EnumCreator* Enum = new EnumCreator(this, name, support);
 
             // Enums can be parsed now
             Enum->setElement(doclist.at(i).toElement());
@@ -180,13 +213,13 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
             if(!Enum->getOutput().isEmpty())
                 globalEnums.append(Enum);
 
-            // Keep it in the document list as well
-            documents.append(Enum);
+            // Keep it in the master document list as well
+            alldocumentsinorder.append(Enum);
         }
         else
         {
             // Create the module object
-            ProtocolDocumentation* document = new ProtocolDocumentation(name);
+            ProtocolDocumentation* document = new ProtocolDocumentation(this, name);
 
             // Documents can be parsed now
             document->setElement(doclist.at(i).toElement());
@@ -194,10 +227,16 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
 
             // Keep it around
             documents.append(document);
+
+            // Keep it in the master document list as well
+            alldocumentsinorder.append(document);
         }
 
     }// for all packets, enums, and documents
     doclist.clear();
+
+    // The list of our output files
+    QStringList fileNameList;
 
     // Now parse the global structures
     for(int i = 0; i < structures.size(); i++)
@@ -269,7 +308,7 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
         for(int i = 0; i < fileNames.length(); i++)
         {
             // ProtocolFile::deleteFile(fileNames[i]);
-            QFile::copy(sourcePath + fileNames[i], ProtocolFile::tempprefix + fileNames[i]);
+            QFile::copy(sourcePath + fileNames[i], support.outputpath + ProtocolFile::tempprefix + fileNames[i]);
         }
     }
 
@@ -286,11 +325,24 @@ bool ProtocolParser::parse(const QDomDocument& doc, bool nodoxygen, bool nomarkd
     // This is fun...replace all the temporary files with real ones if needed
     fileNameList.removeDuplicates();
     for(int i = 0; i < fileNameList.count(); i++)
-        ProtocolFile::copyTemporaryFile(fileNameList.at(i));
+        ProtocolFile::copyTemporaryFile(support.outputpath, fileNameList.at(i));
+
+    // If we are putting the files in our local directory then we don't just want an empty string in our printout
+    if(path.isEmpty())
+        path = "./";
+
+    std::cout << "Generated protocol files in " << QDir::toNativeSeparators(path).toStdString() << std::endl;
 
     return true;
 
 }// ProtocolParser::parse
+
+
+void ProtocolParser::emitWarning(QString warning) const
+{
+    QString output = inputpath + inputfile + ":" + warning;
+    std::cerr << output.toStdString() << std::endl;
+}
 
 
 /*!
@@ -304,6 +356,7 @@ void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
 
     // The file names
     header.setModuleName(nameex);
+    header.setPath(support.outputpath);
 
     comment = docElem.attribute("comment");
 
@@ -631,7 +684,7 @@ void ProtocolParser::parseEnumerations(QString parent, const QDomNode& node)
  */
 const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomElement& element)
 {
-    EnumCreator* Enum = new EnumCreator(parent, support);
+    EnumCreator* Enum = new EnumCreator(this, parent, support);
 
     Enum->setElement(element);
     Enum->parse();
@@ -650,7 +703,7 @@ const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomEl
  * \param file receives the output
  * \param node is parent node
  */
-void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node)
+void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node) const
 {
     // Build the top level enumerations
     QList<QDomNode>list = childElementsByTagName(node, "Include");
@@ -695,7 +748,7 @@ void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QD
  * \param typeName is the type to lookup
  * \return the file name to be included to reference this global structure type
  */
-QString ProtocolParser::lookUpIncludeName(const QString& typeName)
+QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
 {
     for(int i = 0; i < structures.size(); i++)
     {
@@ -722,7 +775,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName)
  * \param typeName is the type to lookup
  * \return a pointer to the structure encodable, or NULL if it does not exist
  */
-const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName)
+const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName) const
 {
     for(int i = 0; i < structures.size(); i++)
     {
@@ -750,7 +803,7 @@ const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName
  * \param enumName is the name of the enumeration.
  * \return A pointer to the enumeration creator, or NULL if it cannot be found
  */
-const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
+const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName) const
 {
     for(int i = 0; i < globalEnums.size(); i++)
     {
@@ -777,7 +830,7 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName)
  * \param text is modified to replace names with numbers
  * \return a reference to text
  */
-QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text)
+QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text) const
 {
     for(int i = 0; i < globalEnums.size(); i++)
     {
@@ -799,7 +852,7 @@ QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text)
  * \param text is the enumeration value string to compare.
  * \return The enumeration name if a match is found, or an empty string for no match.
  */
-QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text)
+QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text) const
 {
     for(int i = 0; i < globalEnums.size(); i++)
     {
@@ -829,7 +882,7 @@ QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text)
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments)
+void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
 {
     for(int i = 0; i < structures.size(); i++)
     {
@@ -857,10 +910,10 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
  */
 void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
-    QString basepath;
+    QString basepath = support.outputpath;
 
     if (!docsDir.isEmpty())
-        basepath = docsDir + QDir::separator();
+        basepath = docsDir;
 
     QString filename = basepath + name + ".markdown";
 
@@ -917,16 +970,16 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     for(int i = 0; i < packets.size(); i++)
         packetids.append(packets.at(i)->getId());
 
-    for(int i = 0; i < documents.size(); i++)
+    for(int i = 0; i < alldocumentsinorder.size(); i++)
     {
-        if(documents.at(i) == NULL)
+        if(alldocumentsinorder.at(i) == NULL)
             continue;
 
-        // If the particular enum is to be hidden
-        if(documents.at(i)->isHidden())
+        // If the particular documention is to be hidden
+        if(alldocumentsinorder.at(i)->isHidden())
             continue;
 
-        file.write(documents.at(i)->getTopLevelMarkdown(true, packetids));
+        file.write(alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids));
         file.write("\n");
     }
 
@@ -997,7 +1050,7 @@ description column of the table.\n");
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(htmlfile));
 
-    std::cout << "Writing HTML documentation to " << htmlfile.toStdString() << std::endl;
+    std::cout << "Writing HTML documentation to " << QDir::toNativeSeparators(htmlfile).toStdString() << std::endl;
 
     arguments << filename;   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
@@ -1181,6 +1234,7 @@ void ProtocolParser::setDocsPath(QString path)
     else
         docsDir = "";
 }
+
 
 /*!
  * Output the doxygen HTML documentation

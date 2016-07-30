@@ -12,6 +12,7 @@
 
 /*!
  * Construct the object that parses packet descriptions
+ * \param parse points to the global protocol parser that owns everything
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is the prefix string to use
  * \param supported gives the supported features of the protocol
@@ -20,8 +21,8 @@
  * \param bigendian should be true to encode multi-byte fields with the most
  *        significant byte first.
  */
-ProtocolPacket::ProtocolPacket(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
-    ProtocolStructureModule(protocolName, protocolPrefix, supported, protocolApi, protocolVersion, bigendian)
+ProtocolPacket::ProtocolPacket(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
+    ProtocolStructureModule(parse, protocolName, protocolPrefix, supported, protocolApi, protocolVersion, bigendian)
 {
     // These are attributes on top of the normal structureModule that we support
     attriblist << "structureInterface" << "parameterInterface" << "ID";
@@ -69,7 +70,7 @@ void ProtocolPacket::parse(void)
     clear();
 
     // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(getHierarchicalName(), e, documentList);
+    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), e, documentList);
 
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse();
@@ -123,6 +124,9 @@ void ProtocolPacket::parse(void)
         source.setModuleName(moduleName);
     }
 
+    header.setPath(support.outputpath);
+    source.setPath(support.outputpath);
+
     // We may be appending data to an already existing file
     header.prepareToAppend();
     source.prepareToAppend();
@@ -154,7 +158,7 @@ void ProtocolPacket::parse(void)
         header.makeLineSeparator();
 
     // Add other includes specific to this packet
-    ProtocolParser::outputIncludes(getHierarchicalName(), header, e);
+    parser->outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
     for(int i = 0; i < encodables.length(); i++)
@@ -716,7 +720,7 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
     if(!id.isEmpty())
     {
         // In case the packet identifer is an enumeration we know
-        ProtocolParser::replaceEnumerationNameWithValue(idvalue);
+        parser->replaceEnumerationNameWithValue(idvalue);
 
         if(id.compare(idvalue) == 0)
             output += "- packet identifier: `" + id + "`\n";
@@ -730,7 +734,7 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
         QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
         // Replace any defined enumerations with their actual value
-        ProtocolParser::replaceEnumerationNameWithValue(minLength);
+        parser->replaceEnumerationNameWithValue(minLength);
 
         // Re-collapse, perhaps we can solve it now
         minLength = EncodedLength::collapseLengthString(minLength, true);
@@ -745,8 +749,8 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
         QString minLength = EncodedLength::collapseLengthString(encodedLength.minEncodedLength, true).replace("1*", "");
 
         // Replace any defined enumerations with their actual value
-        ProtocolParser::replaceEnumerationNameWithValue(maxLength);
-        ProtocolParser::replaceEnumerationNameWithValue(minLength);
+        parser->replaceEnumerationNameWithValue(maxLength);
+        parser->replaceEnumerationNameWithValue(minLength);
 
         // Re-collapse, perhaps we can solve it now
         maxLength = EncodedLength::collapseLengthString(maxLength, true);

@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QFileDevice>
+#include <QDir>
 #include <iostream>
 
 #ifdef WIN32
@@ -41,6 +42,14 @@ ProtocolFile::ProtocolFile() :
 void ProtocolFile::setModuleName(const QString& name)
 {
     module = name;
+}
+
+
+//! Set the path to the module
+void ProtocolFile::setPath(const QString& filepath)
+{
+    // Make sure the path uses native separators and ends with a separator (unless its empty)
+    path = sanitizePath(filepath);
 }
 
 
@@ -163,6 +172,38 @@ void ProtocolFile::makeLineSeparator(QString& contents)
 
 
 /*!
+ * Make a nice, native, relative path with a trailing directory separator
+ * \param path is the path to sanitize
+ * \return the sanitized path
+ */
+QString ProtocolFile::sanitizePath(const QString& path)
+{
+    QString relative;
+    QString absolute;
+
+    // Empty paths are the simplest
+    if(path.isEmpty())
+        return relative;
+
+    // Absolute path including the mount point
+    absolute = QDir(path).absolutePath();
+
+    // Make sure it has a trailing separator
+    if(!absolute.endsWith('/') && !absolute.endsWith('\\'))
+        absolute += '/';
+
+    // Make the result relative to the current working directory
+    relative = QDir::current().relativeFilePath(absolute + "randomfilename.txt").remove("randomfilename.txt");
+
+    // Return the shorter of the two paths
+    if(relative.count() > absolute.count())
+        return absolute;
+    else
+        return relative;
+}
+
+
+/*!
  * delete a specific file. The file will be deleted even if it is read-only.
  * \param fileName identifies the file relative to the current working directory
  */
@@ -222,29 +263,30 @@ void ProtocolFile::makeFileWritable(const QString& fileName)
 
 /*!
  * Copy a temporary file to the real file and delete the temporary file
+ * \param path is the path to the files
  * \param fileName is the real file name, which does not include the temporary prefix
  */
-void ProtocolFile::copyTemporaryFile(const QString& fileName)
+void ProtocolFile::copyTemporaryFile(const QString& path, const QString& fileName)
 {
-    QString tempFileName = tempprefix + fileName;
+    bool equal = false;
+    QString tempFileName = path + tempprefix + fileName;
+    QString permFileName = path + fileName;
 
     QFile tempfile(tempFileName);
-    QFile file(fileName);
+    QFile permfile(permFileName);
 
     if(!tempfile.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
 
-    QByteArray tempfilecontents = tempfile.readAll();
+    // Check if the files are the same
+    if(permfile.open(QIODevice::ReadOnly | QIODevice::Text))
+        equal = tempfile.readAll() == permfile.readAll();
+
+    // Done with the file contents
     tempfile.close();
+    permfile.close();
 
-    QByteArray filecontents;
-    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        filecontents = file.readAll();
-        file.close();
-    }
-
-    if(tempfilecontents == filecontents)
+    if(equal)
     {
         // If the two file contents are the same, delete the temporary
         // file, leave the original file unchanged
@@ -254,7 +296,7 @@ void ProtocolFile::copyTemporaryFile(const QString& fileName)
     {
         // else if the file contents are different, delete the original
         // file and rename the temp file to be the original file
-        renameFile(tempFileName, fileName);
+        renameFile(tempFileName, permFileName);
     }
 
 }// ProtocolFile::copyTemporaryFile
@@ -287,9 +329,9 @@ ProtocolFile::~ProtocolFile()
 QString ProtocolFile::fileNameOnDisk(void) const
 {
     if(temporary)
-        return tempprefix+fileName();
+        return path + tempprefix+fileName();
     else
-        return fileName();
+        return path + fileName();
 }
 
 
@@ -313,7 +355,7 @@ bool ProtocolFile::flush(void)
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "error: failed to open " << fileName().toStdString() << std::endl;
         return false;
     }
 

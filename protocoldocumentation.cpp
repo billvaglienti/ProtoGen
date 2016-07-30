@@ -4,7 +4,8 @@
 #include <QFile>
 
 //! Construct the document object, with details about the overall protocol
-ProtocolDocumentation::ProtocolDocumentation(QString Parent) :
+ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, QString Parent) :
+    parser(parse),
     parent(Parent),
     outlineLevel(0)
 {
@@ -57,7 +58,7 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
 
     if(!docfile.isEmpty())
     {
-        QFile file(ProtocolParser::getInputPath() + docfile);
+        QFile file(parser->getInputPath() + docfile);
 
         if(file.open(QFile::Text | QFile::ReadOnly))
         {
@@ -74,17 +75,20 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
 //! Output a warning
 void ProtocolDocumentation::emitWarning(QString warning) const
 {
-    ProtocolParser::emitWarning(getHierarchicalName() + ": " + warning);
+    QString name = getHierarchicalName();
+    int line = parser->getLineNumber(name);
+    parser->emitWarning(QString::number(line) + ":0: warning: " + name + ": " + warning);
 }
 
 
 /*!
  * Helper function to create a list of ProtocolDocumentation objects based upon the DOM
+ * \param parse points to the global protocol parser that owns everything
  * \param Parent is the name of the parent object that owns the created objects
  * \param e is the DOM element which may have documentation children
  * \param list receives the list of allocated objects.
  */
-void ProtocolDocumentation::getChildDocuments(QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list)
+void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list)
 {
     // The list of documentation that goes inside this packet
     QList<QDomNode> documents = ProtocolParser::childElementsByTagName(e, "Documentation");
@@ -93,7 +97,7 @@ void ProtocolDocumentation::getChildDocuments(QString Parent, const QDomElement&
     for(int i = 0; i < documents.count(); i++)
     {
         // Create the document and parse its xml
-        ProtocolDocumentation* doc = new ProtocolDocumentation(Parent);
+        ProtocolDocumentation* doc = new ProtocolDocumentation(parse, Parent);
 
         doc->setElement(documents.at(i).toElement());
         doc->parse();

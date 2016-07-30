@@ -58,7 +58,7 @@ void EnumCreator::parse(void)
     clear();
 
     // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(getHierarchicalName(), e, documentList);
+    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), e, documentList);
 
     QDomNamedNodeMap map = e.attributes();
 
@@ -259,7 +259,7 @@ void EnumCreator::computeNumberList(void)
             // enumeration which was defined before us
             if(!ok)
             {
-                ProtocolParser::replaceEnumerationNameWithValue(stringValue);
+                parser->replaceEnumerationNameWithValue(stringValue);
                 value = stringValue.toUInt(&ok, 10);
             }
 

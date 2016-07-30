@@ -22,6 +22,7 @@ void ProtocolBitfield::generate(void)
 void ProtocolBitfield::generateHeader(void)
 {
     header.setModuleName("bitfieldspecial");
+    header.setPath(support.outputpath);
 
     // Make sure empty
     header.clear();
@@ -119,6 +120,7 @@ void ProtocolBitfield::generateHeader(void)
 void ProtocolBitfield::generateSource(void)
 {
     source.setModuleName("bitfieldspecial");
+    source.setPath(support.outputpath);
 
     // Make sure empty
     source.clear();

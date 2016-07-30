@@ -29,6 +29,9 @@ public:
     //! Set the name of the module
     void setModuleName(const QString& name);
 
+    //! Set the path to the module
+    void setPath(const QString& filepath);
+
     //! Return the filename
     virtual QString fileName(void) const {return module;}
 
@@ -37,6 +40,9 @@ public:
 
     //! Make sure one blank line at end
     void makeLineSeparator(void);
+
+    //! Make a nice, native, relative path
+    static QString sanitizePath(const QString& path);
 
     //! Make a specific file writable.
     static void makeFileWritable(const QString& fileName);
@@ -51,7 +57,7 @@ public:
     static void renameFile(const QString& oldName, const QString& newName);
 
     //! Copy a temporary file to the real file and delete the temporary file
-    static void copyTemporaryFile(const QString& fileName);
+    static void copyTemporaryFile(const QString& path, const QString& fileName);
 
     //! Make sure one blank line at end
     static void makeLineSeparator(QString& contents);
@@ -64,6 +70,7 @@ protected:
     //! Return the correct on disk name
     QString fileNameOnDisk(void) const;
 
+    QString path;       //!< Output path for the file
     QString module;     //!< The module name, not including the file extension
     QString contents;   //!< The contents, not including the prologue or epilogue
     QString prototypeContents;  //!< Contents that go before the main body of the file
