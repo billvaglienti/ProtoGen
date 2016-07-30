@@ -50,7 +50,7 @@ class ProtocolField : public Encodable
 public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolField(QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);

@@ -15,6 +15,7 @@ public:
     bool bitfieldtest;          //!< true to output the bitfield test function
     QString globalFileName;     //!< File name to be used if a name is not given
     bool disableunrecognized;   //!< true to disable warnings about unrecognized attributes
+    QString outputpath;         //!< path to output files to
 };
 
 #endif // PROTOCOLSUPPORT_H

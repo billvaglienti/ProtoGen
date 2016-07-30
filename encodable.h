@@ -12,12 +12,12 @@ class Encodable : public ProtocolDocumentation
 public:
 
     //! Constructor for basic encodable that sets protocl name and prefix
-    Encodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
+    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
 
     //! Reset all data to defaults
     virtual void clear(void);

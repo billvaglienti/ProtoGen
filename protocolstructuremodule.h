@@ -11,7 +11,7 @@ class ProtocolStructureModule : public ProtocolStructure
 {
 public:
     //! Construct the structure parsing object, with details about the overall protocol
-    ProtocolStructureModule(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
+    ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
 
     //! Parse a packet from the DOM
     virtual void parse(void);

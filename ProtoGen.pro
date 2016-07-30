@@ -40,7 +40,8 @@ SOURCES += main.cpp \
     shuntingyard.cpp \
     protocolcode.cpp \
     protocolbitfield.cpp \
-    protocoldocumentation.cpp
+    protocoldocumentation.cpp \
+    xmllinelocator.cpp
 
 HEADERS += \
     protocolparser.h \
@@ -58,7 +59,8 @@ HEADERS += \
     shuntingyard.h \
     protocolcode.h \
     protocolbitfield.h \
-    protocoldocumentation.h
+    protocoldocumentation.h \
+    xmllinelocator.h
 
 RESOURCES += \
     ProtoGen.qrc

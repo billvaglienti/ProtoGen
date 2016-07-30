@@ -4,12 +4,13 @@
 
 /*!
  * Construct a blank protocol field
+ * \param parse points to the global protocol parser that owns everything
  * \param protocolName is the name of the protocol
  * \param prtoocolPrefix is the naming prefix
  * \param supported indicates what the protocol can support
  */
-ProtocolCode::ProtocolCode(QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
-    Encodable(Parent, protocolName, protocolPrefix, supported)
+ProtocolCode::ProtocolCode(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
+    Encodable(parse, Parent, protocolName, protocolPrefix, supported)
 {
 }
 

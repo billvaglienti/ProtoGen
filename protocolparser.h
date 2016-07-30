@@ -9,6 +9,7 @@
 #include "protocolstructuremodule.h"
 #include "protocolpacket.h"
 #include "enumcreator.h"
+#include "xmllinelocator.h"
 
 class ProtocolParser
 {
@@ -16,11 +17,35 @@ public:
     ProtocolParser();
     ~ProtocolParser();
 
+    //! Configure a documentation path separate to the main protocol output directory
+    void setDocsPath(QString path);
+
+    //! Set LaTeX support
+    void setLaTeXSupport(bool on) {latexEnabled = on;}
+
+    //! Option to disable markdown output
+    void disableMarkdown(bool disable) {nomarkdown = disable;}
+
+    //! Option to disable helper file output
+    void disableHelperFiles(bool disable) {nohelperfiles = disable;}
+
+    //! Option to disable doxygen output
+    void disableDoxygen(bool disable) {nodoxygen = disable;}
+
+    //! Option to disable unrecognized warnings
+    void disableUnrecognizedWarnings(bool disable) {support.disableunrecognized = disable;}
+
+    //! Set the inlinee css
+    void setInlineCSS(QString css) {inlinecss = css;}
+
     //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
-    bool parse(const QDomDocument& doc, bool nodoxygen = false, bool nomarkdown = false, bool nohelperfiles = false, QString inlinecss = "", bool disableunrecognized = false);
+    bool parse(QString filename, QString path);
+
+    //! Get the line number from a hierarchical name
+    int getLineNumber(const QString& hierarchicalName) {return line.getLineNumber(hierarchicalName);}
 
     //! Output a warning
-    static void emitWarning(QString warning) {std::cerr << warning.toStdString() << std::endl;}
+    void emitWarning(QString warning) const;
 
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
@@ -32,13 +57,13 @@ public:
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
 
     //! Parse all enumerations which are direct children of a DomNode
-    static void parseEnumerations(QString parent, const QDomNode& node);
+    void parseEnumerations(QString parent, const QDomNode& node);
 
     //! Parse all enumerations which are direct children of a DomNode
-    static const EnumCreator* parseEnumeration(QString parent, const QDomElement& element);
+    const EnumCreator* parseEnumeration(QString parent, const QDomElement& element);
 
     //! Output all includes which are direct children of a DomNode
-    static void outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node);
+    void outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node) const;
 
     //! Format a long string of text which should be wrapped at 80 characters.
     static QString outputLongComment(const QString& prefix, const QString& text);
@@ -50,22 +75,22 @@ public:
     static QString reflowComment(QString comment, QString prefix = QString(), int charlimit = 0);
 
     //! Find the include name for a specific type
-    static QString lookUpIncludeName(const QString& typeName);
+    QString lookUpIncludeName(const QString& typeName) const;
 
     //! Find the enumeration creator for this enum
-    static const EnumCreator* lookUpEnumeration(const QString& enumName);
+    const EnumCreator* lookUpEnumeration(const QString& enumName) const;
 
     //! Replace any text that matches an enumeration name with the value of that enumeration
-    static QString& replaceEnumerationNameWithValue(QString& text);
+    QString& replaceEnumerationNameWithValue(QString& text) const;
 
     //! Determine if text is part of an enumeration.
-    static QString getEnumerationNameForEnumValue(const QString& text);
+    QString getEnumerationNameForEnumValue(const QString& text) const;
 
     //! Find the global structure point for a specific type
-    static const ProtocolStructure* lookUpStructure(const QString& typeName);
+    const ProtocolStructure* lookUpStructure(const QString& typeName) const;
 
     //! Get the documentation details for a specific global structure type
-    static void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments);
+    void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! The version of the protocol generator software
     static const QString genVersion;
@@ -73,17 +98,8 @@ public:
     //! Get the string used for inline css.
     static QString getDefaultInlinCSS(void);
 
-    //! The path of the xml source file
-    static void setInputPath(QString path) {inputpath = path;}
-
     //! Return the path of the xml source file
-    static QString getInputPath(void) {return inputpath;}
-
-    //! Configure a documentation path separate to the main protocol output directory
-    void setDocsPath(QString path);
-
-    //! Set LaTeX support
-    void setLaTeXSupport(bool on) {latexEnabled = on;}
+    QString getInputPath(void) {return inputpath;}
 
     //! Return true if the element has a particular attribute set to {'true','yes','1'}
     static bool isFieldSet(const QDomElement &e, QString label);
@@ -109,7 +125,10 @@ protected:
     void outputDoxygen(void);
 
     //! Protocol support information
-    static ProtocolSupport support;
+    ProtocolSupport support;
+
+    QDomDocument doc;
+    XMLLineLocator line;
 
     ProtocolHeaderFile header;   //!< The header file (*.h)
     QString name;   //!< Base name of the protocol
@@ -121,14 +140,19 @@ protected:
     QString docsDir;    //!< Directory target for storing documentation markdown
 
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
+    bool nomarkdown;    //!< Disable markdown output
+    bool nohelperfiles; //!< Disable helper file output
+    bool nodoxygen;     //!< Disable doxygen output
+    QString inlinecss;  //!< CSS used for markdown output
 
+    QList<ProtocolDocumentation*> alldocumentsinorder;
     QList<ProtocolDocumentation*> documents;
-    static QList<ProtocolStructureModule*> structures;
-    static QList<ProtocolPacket*> packets;
-    static QList<EnumCreator*> enums;
-    static QList<EnumCreator*> globalEnums;
-    static QString inputpath;
-
+    QList<ProtocolStructureModule*> structures;
+    QList<ProtocolPacket*> packets;
+    QList<EnumCreator*> enums;
+    QList<EnumCreator*> globalEnums;
+    QString inputpath;
+    QString inputfile;
 
 private:
 

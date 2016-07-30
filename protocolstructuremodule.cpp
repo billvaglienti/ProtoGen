@@ -4,6 +4,7 @@
 
 /*!
  * Construct the object that parses structure descriptions
+ * \param parse points to the global protocol parser that owns everything
  * \param protocolName is the name of the protocol
  * \param protocolPrefix is the prefix string to use
  * \param supported gives the supported features of the protocol
@@ -12,8 +13,8 @@
  * \param bigendian should be true to encode multi-byte fields with the most
  *        significant byte first.
  */
-ProtocolStructureModule::ProtocolStructureModule(const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
-    ProtocolStructure(protocolName, protocolName, protocolPrefix, supported),
+ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
+    ProtocolStructure(parse, protocolName, protocolName, protocolPrefix, supported),
     api(protocolApi),
     version(protocolVersion),
     isBigEndian(bigendian),
@@ -96,6 +97,8 @@ void ProtocolStructureModule::parse(void)
         // The file names
         header.setModuleName(prefix + name);
         source.setModuleName(prefix + name);
+        header.setPath(support.outputpath);
+        source.setPath(support.outputpath);
 
         // Comment block at the top of the header file
         header.write("/*!\n");
@@ -121,6 +124,8 @@ void ProtocolStructureModule::parse(void)
         // The file names
         header.setModuleName(moduleName);
         source.setModuleName(moduleName);
+        header.setPath(support.outputpath);
+        source.setPath(support.outputpath);
 
         // We may be appending data to an already existing file
         header.prepareToAppend();
@@ -147,7 +152,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Add other includes specific to this structure
-    ProtocolParser::outputIncludes(getHierarchicalName(), header, e);
+    parser->outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
     for(int i = 0; i < encodables.length(); i++)

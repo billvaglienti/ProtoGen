@@ -68,6 +68,7 @@ bool ProtocolScaling::generate(void)
 bool ProtocolScaling::generateEncodeHeader(void)
 {
     header.setModuleName("scaledencode");
+    header.setPath(support.outputpath);
 
     // Make sure empty
     header.clear();
@@ -190,6 +191,8 @@ bool ProtocolScaling::generateEncodeSource(void)
     source.clear();
 
     source.setModuleName("scaledencode");
+    source.setPath(support.outputpath);
+
     source.write("#include \"fieldencode.h\"\n");
     source.write("\n");
 
@@ -548,6 +551,7 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
 bool ProtocolScaling::generateDecodeHeader(void)
 {
     header.setModuleName("scaleddecode");
+    header.setPath(support.outputpath);
 
     // Make sure empty
     header.clear();
@@ -640,6 +644,8 @@ bool ProtocolScaling::generateDecodeSource(void)
     source.clear();
 
     source.setModuleName("scaleddecode");
+    source.setPath(support.outputpath);
+
     source.write("#include \"fielddecode.h\"\n");
     source.write("\n");
 

@@ -166,13 +166,14 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
 
 /*!
  * Construct a blank protocol field
+ * \param parse points to the global protocol parser that owns everything
  * \param parent is the hierarchical name of the parent object
  * \param protocolName is the name of the protocol
  * \param prtoocolPrefix is the naming prefix
  * \param supported indicates what the protocol can support
  */
-ProtocolField::ProtocolField(QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
-    Encodable(parent, protocolName, protocolPrefix, supported),
+ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
+    Encodable(parse, parent, protocolName, protocolPrefix, supported),
     encodedMin(0),
     encodedMax(0),
     scaler(1),
@@ -570,7 +571,7 @@ void ProtocolField::parse(void)
             int minbits = 8;
 
             // Figure out the minimum number of bits for the enumeration
-            const EnumCreator* creator = ProtocolParser::lookUpEnumeration(enumName);
+            const EnumCreator* creator = parser->lookUpEnumeration(enumName);
             if(creator != 0)
                 minbits = creator->getMinBitWidth();
 
@@ -979,7 +980,7 @@ void ProtocolField::computeEncodedLength(void)
     {
         encodedLength.clear();
 
-        const ProtocolStructure* struc = ProtocolParser::lookUpStructure(typeName);
+        const ProtocolStructure* struc = parser->lookUpStructure(typeName);
 
         // Account for array, variable array, and depends on
         if(struc != NULL)
@@ -1056,7 +1057,7 @@ QString ProtocolField::getIncludeDirective(void)
 {
     if(inMemoryType.isStruct)
     {
-        QString output = ProtocolParser::lookUpIncludeName(typeName);
+        QString output = parser->lookUpIncludeName(typeName);
 
         if(output.isEmpty())
         {
@@ -1121,7 +1122,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         return;
 
     // See if we can replace any enumeration names with values
-    ProtocolParser::replaceEnumerationNameWithValue(maxEncodedLength);
+    parser->replaceEnumerationNameWithValue(maxEncodedLength);
 
     // The byte after this one
     QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
@@ -1194,7 +1195,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         }
         else
         {
-            QString arrayLink = ProtocolParser::getEnumerationNameForEnumValue(array);
+            QString arrayLink = parser->getEnumerationNameForEnumValue(array);
 
             if(arrayLink.isEmpty())
                 arrayLink = array;
@@ -1205,7 +1206,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
                 repeats.append(arrayLink);
             else
             {
-                QString variablearrayLink = ProtocolParser::getEnumerationNameForEnumValue(variableArray);
+                QString variablearrayLink = parser->getEnumerationNameForEnumValue(variableArray);
 
                 if(variablearrayLink.isEmpty())
                     variablearrayLink = variableArray;
@@ -1235,7 +1236,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         QString subStartByte = startByte;
 
         // Now go get the substructure stuff
-        ProtocolParser::getStructureSubDocumentationDetails(typeName, outline, subStartByte, bytes, names, encodings, repeats, comments);
+        parser->getStructureSubDocumentationDetails(typeName, outline, subStartByte, bytes, names, encodings, repeats, comments);
 
     }// if structure
     else
@@ -1269,7 +1270,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             }
             else
             {
-                QString arrayLink = ProtocolParser::getEnumerationNameForEnumValue(array);
+                QString arrayLink = parser->getEnumerationNameForEnumValue(array);
 
                 if(arrayLink.isEmpty())
                     arrayLink = array;
@@ -1280,7 +1281,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
                     repeats.append(arrayLink);
                 else
                 {
-                    QString variablearrayLink = ProtocolParser::getEnumerationNameForEnumValue(variableArray);
+                    QString variablearrayLink = parser->getEnumerationNameForEnumValue(variableArray);
 
                     if(variablearrayLink.isEmpty())
                         variablearrayLink = variableArray;

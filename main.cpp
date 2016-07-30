@@ -6,20 +6,12 @@
 #include <iostream>
 
 #include "protocolparser.h"
+#include "xmllinelocator.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    int Return = 1;
-    bool nodoxygen = false;
-    bool nomarkdown = false;
-    bool nohelperfiles = false;
-    bool disableunrecognized = false;
-    QString inlinecss;
-
-    QString docs;
-
-    bool latexSupportOn = false;
+    ProtocolParser parser;
 
     // The list of arguments
     QStringList arguments = a.arguments();
@@ -28,7 +20,7 @@ int main(int argc, char *argv[])
     {
         std::cout << "Protocol generator usage:" << std::endl;
         std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
-        return 0;
+        return 2;   // no input file
     }
 
     // We expect the input file here
@@ -43,117 +35,58 @@ int main(int argc, char *argv[])
         QString arg = arguments.at(i);
 
         if(arg.contains("-no-doxygen", Qt::CaseInsensitive))
-            nodoxygen = true;
+            parser.disableDoxygen(true);
         else if(arg.contains("-no-markdown", Qt::CaseInsensitive))
-            nomarkdown = true;        
+            parser.disableMarkdown(true);
         else if(arg.contains("-no-helper-files", Qt::CaseInsensitive))
-            nohelperfiles = true;
+            parser.disableHelperFiles(true);
         else if(arg.endsWith(".xml"))
             filename = arg;
         else if (arg.contains("-latex", Qt::CaseInsensitive))
-            latexSupportOn = true;
+            parser.setLaTeXSupport(true);
         else if (arg.contains("-no-unrecognized-warnings", Qt::CaseInsensitive))
-            disableunrecognized = true;
+            parser.disableUnrecognizedWarnings(true);
         else if(arg.endsWith(".css"))
         {
             QFile file(arg);
             if(file.open(QIODevice::ReadOnly | QIODevice::Text))
             {
-                inlinecss = file.readAll();
+                parser.setInlineCSS(file.readAll());
                 file.close();
             }
             else
-                std::cout << "Failed to open " << arg.toStdString() << "; using default css" << std::endl;
+                std::cerr << "warning: Failed to open " << QDir::toNativeSeparators(arg).toStdString() << ", using default css" << std::endl;
         }
         else if (arg.startsWith("-docs"))
         {
-            //Is there an argument following this?
+            // Is there an argument following this?
             if (arguments.size() > (i + 1))
             {
-                docs = arguments.at(i+1);
+                // The following argument is the directory path for documents
+                QString docs = ProtocolFile::sanitizePath(arguments.at(i++));
 
-                QDir docDir(docs);
-
-                if (docDir.exists() || QDir::current().mkdir(docs)) //Markdown directory is sane
-                {
-                    docs = docDir.absolutePath();
-                    //Skip the next argument;
-                    i++;
-                }
-                else
-                {
-                    docs = "";
-                }
+                // If the directory already exists, or we can make it, then use it
+                if(QDir::current().mkdir(docs))
+                    parser.setDocsPath(docs);
             }
         }
         else if((path.isEmpty()) && (arg != filename))
             path = arg;
-    }
+
+    }// for all input arguments
+
 
     if(!filename.isEmpty())
     {
-        QDomDocument doc("protogen");
-
-        QFile file(filename);
-        if (file.open(QIODevice::ReadOnly))
-        {
-            if (doc.setContent(&file))
-            {
-                ProtocolParser parser;
-
-                // The current working directory
-                QDir dir(QDir::current());
-
-                // The absolute path to the xml file, not including the name of the xml file
-                parser.setInputPath(dir.absoluteFilePath(filename).remove(filename));
-
-                parser.setLaTeXSupport(latexSupportOn);
-
-                if (!docs.isEmpty())
-                    parser.setDocsPath(docs);
-
-                // Set our working directory
-                if(!path.isEmpty())
-                {
-                    QDir dir(QDir::current());
-
-                    // The path could be absolute or relative to
-                    // our current path, this works either way
-
-                    // Make sure the path exists
-                    dir.mkpath(path);
-
-                    // Now set it as the path to use
-                    QDir::setCurrent(path);
-                }
-
-                if(parser.parse(doc, nodoxygen, nomarkdown, nohelperfiles, inlinecss, disableunrecognized))
-                    Return = 1;
-
-            }
-            else
-            {
-                std::cout << "failed to validate xml from file: " << filename.toStdString() << std::endl;
-                Return = 0;
-            }
-
-            file.close();
-        }
+        if(parser.parse(filename, path))
+            return 0;   // normal exit
         else
-        {
-            std::cout << "failed to open protocol file: " << filename.toStdString() << std::endl;
-            Return = 0;
-        }
-
+            return 1;   // input file in error
     }
     else
     {
-        std::cout << "must provide a protocol file." << std::endl;
-        Return = 0;
+        std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
+        return 2;   // no input file
     }
 
-    if (Return == 1)
-        std::cout << "Generated protocol files in " << path.toStdString() << std::endl;
-
-    return Return;
 }
