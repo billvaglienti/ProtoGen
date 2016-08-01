@@ -63,10 +63,10 @@ int main(int argc, char *argv[])
             if (arguments.size() > (i + 1))
             {
                 // The following argument is the directory path for documents
-                QString docs = ProtocolFile::sanitizePath(arguments.at(i++));
+                QString docs = ProtocolFile::sanitizePath(arguments.at(++i));
 
                 // If the directory already exists, or we can make it, then use it
-                if(QDir::current().mkdir(docs))
+                if(QDir(docs).exists() ||  QDir::current().mkdir(docs))
                     parser.setDocsPath(docs);
             }
         }
