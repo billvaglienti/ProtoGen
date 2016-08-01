@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
                 QString docs = ProtocolFile::sanitizePath(arguments.at(++i));
 
                 // If the directory already exists, or we can make it, then use it
-                if(QDir::current().mkdir(docs))
+                if(QDir(docs).exists() ||  QDir::current().mkdir(docs))
                     parser.setDocsPath(docs);
             }
         }
