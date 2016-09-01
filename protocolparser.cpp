@@ -919,15 +919,8 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     ProtocolFile file(filename, false);
 
-    // Adding this metadata improves LaTeX support
-    file.write("latex input: mmd-article-header \n");
-
-    // Metadata must appear at the top
-    file.write("Title: " + name + " Protocol  \n");
-
-    // Adding this metadata improves LaTeX support
-    file.write("Base Header Level: 1 \n");
-    file.write("latex input: mmd-article-begin-doc\n");
+    file.write("Base Header Level: 1 \n");  //Base header level refers to the HTML output format
+    file.write("LaTeX Header Level: 3 \n"); //Header-level 3 ensures that the LaTeX document starts at the "Section" level
 
     file.write("\n");
 
