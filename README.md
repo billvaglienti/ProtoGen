@@ -38,6 +38,8 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `-latex` will cause ProtoGen to generate LaTeX style markdown (if multimarkdown is installed and in the PATH).
 
+- `-latex-header-level level` specifies the starting header-level for generated LaTeX output. If unspecified, it defaults to `1` (Chapter headings)
+
 - `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. 
 
 - `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. 
