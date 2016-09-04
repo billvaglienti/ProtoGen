@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-latex-header-level level] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
         return 2;   // no input file
     }
 
@@ -42,6 +42,29 @@ int main(int argc, char *argv[])
             parser.disableHelperFiles(true);
         else if(arg.endsWith(".xml"))
             filename = arg;
+        else if (arg.startsWith("-latex-header-level"))
+        {
+            // Is there an argument following this one?
+            if (arguments.size() > (i + 1))
+            {
+                // Read the header-level and parse the header level (and auto-increment the argument index)
+                QString lvl = arguments.at(++i);
+
+                bool ok = false;
+
+                int header_level = lvl.toInt(&ok);
+
+                if (!ok)
+                {
+                    std::cerr << "warning: -latex-header-level argument '" << lvl.toStdString() << "' is invalid.";
+                }
+
+                else if (header_level > 0)
+                {
+                    parser.setLaTeXLevel(header_level);
+                }
+            }
+        }
         else if (arg.contains("-latex", Qt::CaseInsensitive))
             parser.setLaTeXSupport(true);
         else if (arg.contains("-no-unrecognized-warnings", Qt::CaseInsensitive))

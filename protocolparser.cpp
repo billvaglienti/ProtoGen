@@ -23,6 +23,7 @@ const QString ProtocolParser::genVersion = "1.5.3.b";
  * \brief ProtocolParser::ProtocolParser
  */
 ProtocolParser::ProtocolParser() :
+    latexHeader(1),
     latexEnabled(false),
     nomarkdown(false),
     nohelperfiles(false),
@@ -919,8 +920,8 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     ProtocolFile file(filename, false);
 
-    file.write("Base Header Level: 1 \n");  //Base header level refers to the HTML output format
-    file.write("LaTeX Header Level: 3 \n"); //Header-level 3 ensures that the LaTeX document starts at the "Section" level
+    file.write("Base Header Level: 1 \n");  // Base header level refers to the HTML output format
+    file.write("LaTeX Header Level: " + QString::number(latexHeader) + " \n"); // LaTeX header level can be set by user
 
     file.write("\n");
 

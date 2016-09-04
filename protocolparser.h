@@ -23,6 +23,9 @@ public:
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 
+    //! Set LaTeX header level
+    void setLaTeXLevel(int level) {latexHeader = level;}
+
     //! Option to disable markdown output
     void disableMarkdown(bool disable) {nomarkdown = disable;}
 
@@ -139,6 +142,7 @@ protected:
 
     QString docsDir;    //!< Directory target for storing documentation markdown
 
+    int latexHeader;    //!< Top heading level for LaTeX output
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
     bool nomarkdown;    //!< Disable markdown output
     bool nohelperfiles; //!< Disable helper file output
