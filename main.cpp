@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     if(arguments.size() <= 1)
     {
         std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-latex] [-latex-header-level level] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
+        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-show-hidden-items] [-latex] [-latex-header-level level] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
         return 2;   // no input file
     }
 
