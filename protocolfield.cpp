@@ -483,17 +483,17 @@ void ProtocolField::parse(void)
         else if(attrname.compare("Units", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Units");
-            extraInfoValues.append(attr.value().toLower());
+            extraInfoValues.append(attr.value());
         }
         else if(attrname.compare("Range", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Range");
-            extraInfoValues.append(attr.value().toLower());
+            extraInfoValues.append(attr.value());
         }
         else if(attrname.compare("Notes", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Notes");
-            extraInfoValues.append(attr.value().toLower());
+            extraInfoValues.append(attr.value());
         }
         else if(support.disableunrecognized == false)
         {
@@ -1301,9 +1301,9 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             else
             {
                 if(encodedType.isBitfield)
-                    description += "reserved bits in the packet.";
+                    description += "Reserved bits in the packet.";
                 else
-                    description += "reserved bytes in the packet.";
+                    description += "Reserved bytes in the packet.";
             }
         }
         else

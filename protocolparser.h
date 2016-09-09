@@ -35,6 +35,9 @@ public:
     //! Option to disable doxygen output
     void disableDoxygen(bool disable) {nodoxygen = disable;}
 
+    //! Option to force documentation for hidden items
+    void showHiddenItems(bool show) {showAllItems = show;}
+
     //! Option to disable unrecognized warnings
     void disableUnrecognizedWarnings(bool disable) {support.disableunrecognized = disable;}
 
@@ -147,6 +150,7 @@ protected:
     bool nomarkdown;    //!< Disable markdown output
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
+    bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
 
     QList<ProtocolDocumentation*> alldocumentsinorder;

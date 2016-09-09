@@ -27,7 +27,8 @@ ProtocolParser::ProtocolParser() :
     latexEnabled(false),
     nomarkdown(false),
     nohelperfiles(false),
-    nodoxygen(false)
+    nodoxygen(false),
+    showAllItems(false)
 {
 }
 
@@ -970,7 +971,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
             continue;
 
         // If the particular documention is to be hidden
-        if(alldocumentsinorder.at(i)->isHidden())
+        if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
             continue;
 
         file.write(alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids));

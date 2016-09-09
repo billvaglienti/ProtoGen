@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
             parser.disableMarkdown(true);
         else if(arg.contains("-no-helper-files", Qt::CaseInsensitive))
             parser.disableHelperFiles(true);
+        else if (arg.contains("-show-hidden-items", Qt::CaseInsensitive))
+            parser.showHiddenItems(true);
         else if(arg.endsWith(".xml"))
             filename = arg;
         else if (arg.startsWith("-latex-header-level"))
