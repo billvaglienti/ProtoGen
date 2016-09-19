@@ -36,7 +36,11 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `-docs dir` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same same directory as `Outputpath`.
 
+- `-show-hidden-items` will cause documentation to be generated for **all** elements, even if the element has the *hidden="true"* flag
+
 - `-latex` will cause ProtoGen to generate LaTeX style markdown (if multimarkdown is installed and in the PATH).
+
+- `-latex-header-level level` specifies the starting header-level for generated LaTeX output. If unspecified, it defaults to `1` (Chapter headings)
 
 - `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. 
 

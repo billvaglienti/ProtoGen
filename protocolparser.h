@@ -23,6 +23,9 @@ public:
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 
+    //! Set LaTeX header level
+    void setLaTeXLevel(int level) {latexHeader = level;}
+
     //! Option to disable markdown output
     void disableMarkdown(bool disable) {nomarkdown = disable;}
 
@@ -31,6 +34,9 @@ public:
 
     //! Option to disable doxygen output
     void disableDoxygen(bool disable) {nodoxygen = disable;}
+
+    //! Option to force documentation for hidden items
+    void showHiddenItems(bool show) {showAllItems = show;}
 
     //! Option to disable unrecognized warnings
     void disableUnrecognizedWarnings(bool disable) {support.disableunrecognized = disable;}
@@ -139,10 +145,12 @@ protected:
 
     QString docsDir;    //!< Directory target for storing documentation markdown
 
+    int latexHeader;    //!< Top heading level for LaTeX output
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
     bool nomarkdown;    //!< Disable markdown output
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
+    bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
 
     QList<ProtocolDocumentation*> alldocumentsinorder;

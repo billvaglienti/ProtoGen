@@ -23,10 +23,12 @@ const QString ProtocolParser::genVersion = "1.6.0.a";
  * \brief ProtocolParser::ProtocolParser
  */
 ProtocolParser::ProtocolParser() :
+    latexHeader(1),
     latexEnabled(false),
     nomarkdown(false),
     nohelperfiles(false),
-    nodoxygen(false)
+    nodoxygen(false),
+    showAllItems(false)
 {
 }
 
@@ -911,15 +913,8 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     ProtocolFile file(filename, false);
 
-    // Adding this metadata improves LaTeX support
-    file.write("latex input: mmd-article-header \n");
-
-    // Metadata must appear at the top
-    file.write("Title: " + name + " Protocol  \n");
-
-    // Adding this metadata improves LaTeX support
-    file.write("Base Header Level: 1 \n");
-    file.write("latex input: mmd-article-begin-doc\n");
+    file.write("Base Header Level: 1 \n");  // Base header level refers to the HTML output format
+    file.write("LaTeX Header Level: " + QString::number(latexHeader) + " \n"); // LaTeX header level can be set by user
 
     file.write("\n");
 
@@ -968,7 +963,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
             continue;
 
         // If the particular documention is to be hidden
-        if(alldocumentsinorder.at(i)->isHidden())
+        if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
             continue;
 
         file.write(alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids));
