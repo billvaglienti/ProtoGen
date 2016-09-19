@@ -76,6 +76,9 @@ class ProtocolCode : public Encodable
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return false;}
 
+    //! True if this encodable invalidates an earlier default
+    virtual bool invalidatesPreviousDefault(void) const {return false;}
+
 protected:
     QString encode;
     QString decode;

@@ -199,7 +199,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                     if(encodable->usesDefaults())
                         defaults = true;
-                    else if(defaults)
+                    else if(defaults && encodable->invalidatesPreviousDefault())
                     {
                         // Check defaults. If a previous field was defaulted but this
                         // field is not, then we have to terminate the previous default,
