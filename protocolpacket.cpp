@@ -14,18 +14,17 @@
  * Construct the object that parses packet descriptions
  * \param parse points to the global protocol parser that owns everything
  * \param protocolName is the name of the protocol
- * \param protocolPrefix is the prefix string to use
  * \param supported gives the supported features of the protocol
  * \param protocolApi is the API string of the protocol
  * \param protocolVersion is the version string of the protocol
  * \param bigendian should be true to encode multi-byte fields with the most
  *        significant byte first.
  */
-ProtocolPacket::ProtocolPacket(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
-    ProtocolStructureModule(parse, protocolName, protocolPrefix, supported, protocolApi, protocolVersion, bigendian)
+ProtocolPacket::ProtocolPacket(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
+    ProtocolStructureModule(parse, protocolName, supported, protocolApi, protocolVersion)
 {
     // These are attributes on top of the normal structureModule that we support
-    attriblist << "structureInterface" << "parameterInterface" << "ID";
+    attriblist << "structureInterface" << "parameterInterface" << "ID" << "useInOtherPackets";
 }
 
 
@@ -80,6 +79,7 @@ void ProtocolPacket::parse(void)
     id = ProtocolParser::getAttribute("ID", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+    bool outputTopLevelStructureCode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("useInOtherPackets", map));
     bool parameterFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("parameterInterface", map));
     bool structureFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("structureInterface", map));
 
@@ -114,8 +114,8 @@ void ProtocolPacket::parse(void)
     if(moduleName.isEmpty())
     {
         // The file names
-        header.setModuleName(prefix + name + "Packet");
-        source.setModuleName(prefix + name + "Packet");
+        header.setModuleName(support.prefix + name + support.packetParameterSuffix + "");
+        source.setModuleName(support.prefix + name + support.packetParameterSuffix + "");
     }
     else
     {
@@ -208,6 +208,10 @@ void ProtocolPacket::parse(void)
     // packet. These need to be declared before the main functions
     createSubStructureFunctions();
 
+    // For referencing this packet as a structure
+    if(outputTopLevelStructureCode)
+        createTopLevelStructureFunctions();
+
     // The functions that encode and decode the packet from a structure.
     if(structureFunctions)
         createStructurePacketFunctions();
@@ -247,13 +251,13 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
 
     // The macro for the packet ID
     header.makeLineSeparator();
-    header.write("//! return the packet ID for the " + prefix + name + " packet\n");
-    header.write("#define get" + prefix + name + "PacketID() (" + id + ")\n");
+    header.write("//! return the packet ID for the " + support.prefix + name + " packet\n");
+    header.write("#define get" + support.prefix + name + support.packetParameterSuffix + "ID() (" + id + ")\n");
 
     // The macro for the minimum packet length
     header.makeLineSeparator();
-    header.write("//! return the minimum data length for the " + prefix + name + " packet\n");
-    header.write("#define get" + prefix + name + "MinDataLength() ");
+    header.write("//! return the minimum data length for the " + support.prefix + name + " packet\n");
+    header.write("#define get" + support.prefix + name + "MinDataLength() ");
     if(encodedLength.minEncodedLength.isEmpty())
         header.write("0\n");
     else
@@ -276,9 +280,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.makeLineSeparator();
         header.write("//! " + getPacketEncodeBriefComment() + "\n");
         if(numEncodes > 0)
-            header.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user);\n");
+            header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user);\n");
         else
-            header.write("void encode" + prefix + name + "PacketStructure(void* pkt);\n");
+            header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt);\n");
     }
 
     if(decode)
@@ -288,9 +292,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write("int decode" + prefix + name + "PacketStructure(const void* pkt, " + typeName + "* user);\n");
+            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user);\n");
         else
-            header.write("int decode" + prefix + name + "PacketStructure(const void* pkt);\n");
+            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt);\n");
     }
 
     if(encode)
@@ -307,13 +311,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             source.write(" * \\param user points to the user data that will be encoded in pkt\n");
             source.write(" */\n");
-            source.write("void encode" + prefix + name + "PacketStructure(void* pkt, const " + typeName + "* user)\n");
+            source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user)\n");
             source.write("{\n");
         }
         else
         {
             source.write(" */\n");
-            source.write("void encode" + prefix + name + "PacketStructure(void* pkt)\n");
+            source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt)\n");
             source.write("{\n");
         }
 
@@ -326,16 +330,19 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(needsEncodeIterator)
             source.write("    int i = 0;\n");
 
+        if(needs2ndEncodeIterator)
+            source.write("    int j = 0;\n");
+
         int bitcount = 0;
         for(int i = 0; i < encodables.length(); i++)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, true));
+            source.write(encodables[i]->getEncodeString(support.bigendian, &bitcount, true));
         }
 
         source.makeLineSeparator();
         source.write("    // complete the process of creating the packet\n");
-        source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + prefix + name + "PacketID());\n");
+        source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
         source.write("}\n");
     }
 
@@ -356,9 +363,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write("int decode" + prefix + name + "PacketStructure(const void* pkt, " + typeName + "* user)\n");
+                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user)\n");
             else
-                source.write("int decode" + prefix + name + "PacketStructure(const void* pkt)\n");
+                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
             source.write("{\n");
             source.write("    int numBytes;\n");
             source.write("    int byteindex = 0;\n");
@@ -368,14 +375,16 @@ void ProtocolPacket::createStructurePacketFunctions(void)
 
             if(needsDecodeIterator)
                 source.write("    int i = 0;\n");
+            if(needs2ndDecodeIterator)
+                source.write("    int j = 0;\n");
             source.write("\n");
             source.write("    // Verify the packet identifier\n");
-            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             source.write("        return 0;\n");
             source.write("\n");
             source.write("    // Verify the packet size\n");
             source.write("    numBytes = get" + protoName + "PacketSize(pkt);\n");
-            source.write("    if(numBytes < get" + prefix + name + "MinDataLength())\n");
+            source.write("    if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
             source.write("        return 0;\n");
             source.write("\n");
             source.write("    // The raw data from the packet\n");
@@ -403,7 +412,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
                 if(encodables[i]->isDefault())
                     break;
 
-                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, true, true));
+                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true));
             }
 
             // Before we write out the decodes for default fields we need to check
@@ -421,7 +430,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             for(; i < encodables.length(); i++)
             {
                 source.makeLineSeparator();
-                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, true, true));
+                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true));
             }
 
             source.makeLineSeparator();
@@ -439,9 +448,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\param pkt points to the packet being decoded by this function\n");
             source.write(" * \\return 0 is returned if the packet ID is wrong, else 1\n");
             source.write(" */\n");
-            source.write("int decode" + prefix + name + "PacketStructure(const void* pkt)\n");
+            source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
             source.write("{\n");
-            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             source.write("        return 0;\n");
             source.write("    else\n");
             source.write("        return 1;\n");
@@ -503,21 +512,24 @@ void ProtocolPacket::createPacketFunctions(void)
             if(needsEncodeIterator)
                 source.write("    int i = 0;\n");
 
+            if(needs2ndEncodeIterator)
+                source.write("    int j = 0;\n");
+
             // Keep our own track of the bitcount so we know what to do when we close the bitfield
             for(i = 0; i < encodables.length(); i++)
             {
                 source.makeLineSeparator();
-                source.write(encodables[i]->getEncodeString(isBigEndian, &bitcount, false));
+                source.write(encodables[i]->getEncodeString(support.bigendian, &bitcount, false));
             }
 
             source.makeLineSeparator();
             source.write("    // complete the process of creating the packet\n");
-            source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + prefix + name + "PacketID());\n");
+            source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
         }
         else
         {
             source.write("    // Zero length packet, no data encoded\n");
-            source.write("    finish" + protoName + "Packet(pkt, 0, get" + prefix + name + "PacketID());\n");
+            source.write("    finish" + protoName + "Packet(pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
         }
 
         source.write("}\n");
@@ -545,14 +557,16 @@ void ProtocolPacket::createPacketFunctions(void)
                 source.write("    int bitcount = 0;\n");
             if(needsDecodeIterator)
                 source.write("    int i = 0;\n");
+            if(needs2ndDecodeIterator)
+                source.write("    int j = 0;\n");
             source.write("    int byteindex = 0;\n");
             source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");
             source.write("    int numBytes = get" + protoName + "PacketSize(pkt);\n");
             source.write("\n");
-            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             source.write("        return 0;\n");
             source.write("\n");
-            source.write("    if(numBytes < get" + prefix + name + "MinDataLength())\n");
+            source.write("    if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
             source.write("        return 0;\n");
             if(defaults)
             {
@@ -574,7 +588,7 @@ void ProtocolPacket::createPacketFunctions(void)
                 if(encodables[i]->isDefault())
                     break;
 
-                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
+                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true));
             }
 
             // Before we write out the decodes for default fields we need to check
@@ -592,7 +606,7 @@ void ProtocolPacket::createPacketFunctions(void)
             for(; i < encodables.length(); i++)
             {
                 source.makeLineSeparator();
-                source.write(encodables[i]->getDecodeString(isBigEndian, &bitcount, false, true));
+                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true));
             }
 
             source.makeLineSeparator();
@@ -600,7 +614,7 @@ void ProtocolPacket::createPacketFunctions(void)
         }
         else
         {
-            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + prefix + name + "PacketID())\n");
+            source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             source.write("        return 0;\n");
             source.write("    else\n");
             source.write("        return 1;\n");
@@ -617,7 +631,7 @@ void ProtocolPacket::createPacketFunctions(void)
  */
 QString ProtocolPacket::getPacketEncodeSignature(void) const
 {
-    QString output = "void encode" + prefix + name + "Packet(void* pkt";
+    QString output = "void encode" + support.prefix + name + support.packetParameterSuffix + "(void* pkt";
 
     output += getDataEncodeParameterList() + ")";
 
@@ -630,7 +644,7 @@ QString ProtocolPacket::getPacketEncodeSignature(void) const
  */
 QString ProtocolPacket::getPacketDecodeSignature(void) const
 {
-    QString output = "int decode" + prefix + name + "Packet(const void* pkt";
+    QString output = "int decode" + support.prefix + name + support.packetParameterSuffix + "(const void* pkt";
 
     output += getDataDecodeParameterList() + ")";
 
@@ -643,7 +657,7 @@ QString ProtocolPacket::getPacketDecodeSignature(void) const
  */
 QString ProtocolPacket::getPacketEncodeBriefComment(void) const
 {
-    return QString("Create the " + prefix + name + " packet");
+    return QString("Create the " + support.prefix + name + " packet");
 }
 
 
@@ -652,7 +666,7 @@ QString ProtocolPacket::getPacketEncodeBriefComment(void) const
  */
 QString ProtocolPacket::getPacketDecodeBriefComment(void) const
 {
-    return QString("Decode the " + prefix + name + " packet");
+    return QString("Decode the " + support.prefix + name + " packet");
 }
 
 
@@ -773,10 +787,6 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
         if(enumList[i] == NULL)
             continue;
 
-        //output += "\n";
-        //output += "### " + enumList.at(i)->getName() + " enumeration\n";
-        //output += "\n";
-
         output += enumList[i]->getTopLevelMarkdown();
         output += "\n";
         output += "\n";
@@ -823,12 +833,10 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
             // looks better and does not cause markdown to emphasize the text
             // if there are multiple "*".
             bytes[i].replace("1*", "").replace("*", "&times;");
+            repeats[i].replace("*", "&times;");
 
             if(bytes.at(i).length() > byteColumn)
                 byteColumn = bytes.at(i).length();
-
-            // Place a soft hypen after the ")" so the text can wrap in the table
-            // names[i].replace(")", ")&shy;");
 
             if(names.at(i).length() > nameColumn)
                 nameColumn = names.at(i).length();
@@ -845,12 +853,6 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& ids)
 
 
         output += "\n";
-
-        /*
-        output += "\n";
-        output += "### " + name + " layout\n";
-        output += "\n";
-        */
 
         // Table caption
         output += "[" + name + " packet bytes]\n";

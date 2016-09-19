@@ -542,7 +542,7 @@ int testGPSPacket(void)
     }
 
     fillOutGPSTest(gps);
-    encodeGPSPacket(&pkt, &gps);
+    encodeGPSPacketStructure(&pkt, &gps);
 
     if(pkt.length != (25 + 5*6) )
     {
@@ -557,7 +557,7 @@ int testGPSPacket(void)
     }
 
     memset(&gps, 0, sizeof(gps));
-    if(decodeGPSPacket(&pkt, &gps))
+    if(decodeGPSPacketStructure(&pkt, &gps))
     {
         if(!verifyGPSData(gps))
         {

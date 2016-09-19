@@ -13,7 +13,7 @@ class ProtocolPacket : public ProtocolStructureModule
 {
 public:
     //! Construct the packet parsing object, with details about the overall protocol
-    ProtocolPacket(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
+    ProtocolPacket(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
     //! Parse a packet from the DOM
     virtual void parse(void);
@@ -75,6 +75,7 @@ protected:
     QString getDataDecodeBriefComment(void) const;
 
 protected:
+
     //! Packet identifier string
     QString id;
 

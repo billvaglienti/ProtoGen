@@ -10,19 +10,20 @@
  * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the object that owns this object.
  * \param protocolName is the name of the protocol
- * \param protocolPrefix is the type name prefix
  */
-ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
-    Encodable(parse, Parent, protocolName, protocolPrefix, supported),
+ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported) :
+    Encodable(parse, Parent, protocolName, supported),
     bitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
+    needs2ndEncodeIterator(false),
+    needs2ndDecodeIterator(false),
     defaults(false),
     hidden(false),
     attriblist()
 {
     // List of attributes understood by ProtocolStructure
-    attriblist << "name" << "array" << "variableArray" << "dependsOn" << "comment" << "hidden";
+    attriblist << "name" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden";
 
 }
 
@@ -64,6 +65,8 @@ void ProtocolStructure::clear(void)
     bitfields = false;
     needsEncodeIterator = false;
     needsDecodeIterator = false;
+    needs2ndEncodeIterator = false;
+    needs2ndDecodeIterator = false;
     defaults = false;
     hidden = false;
 
@@ -101,7 +104,7 @@ void ProtocolStructure::parse(void)
     }
 
     // for now the typename is derived from the name
-    typeName = prefix + name + "_t";
+    typeName = support.prefix + name + "_t";
 
     // We can't have a variable array length without an array
     if(array.isEmpty() && !variableArray.isEmpty())
@@ -169,7 +172,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     // Make encodables out of them, and add to our list
     for (int i = 0; i < children.size(); i++)
     {
-        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), protoName, prefix, support, children.at(i).toElement());
+        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), protoName, support, children.at(i).toElement());
         if(encodable != NULL)
         {
             // If the encodable is null, then none of the metadata
@@ -187,6 +190,12 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                     if(encodable->usesDecodeIterator())
                         needsDecodeIterator = true;
+
+                    if(encodable->uses2ndEncodeIterator())
+                        needs2ndEncodeIterator = true;
+
+                    if(encodable->uses2ndDecodeIterator())
+                        needs2ndDecodeIterator = true;
 
                     if(encodable->usesDefaults())
                         defaults = true;
@@ -210,6 +219,9 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     // Structures can be arrays as well.
                     if(encodable->isArray())
                         needsDecodeIterator = needsEncodeIterator = true;
+
+                    if(encodable->is2dArray())
+                        needs2ndDecodeIterator = needs2ndEncodeIterator = true;
                 }
 
 
@@ -243,6 +255,37 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     }
 
                 }// if this is a variable length array
+
+                // Handle the variable 2d array case. We have to make sure that the referenced variable exists
+                if(!encodable->variable2dArray.isEmpty())
+                {
+                    int prev;
+                    for(prev = 0; prev < encodables.size(); prev++)
+                    {
+                       Encodable* prevEncodable = encodables.at(prev);
+                       if(prevEncodable == NULL)
+                           continue;
+
+                       // It has to be a named variable that is both in memory and encoded
+                       if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
+                           continue;
+
+                       // It has to be a primitive, and it cannot be an array itself
+                       if(!prevEncodable->isPrimitive() && !prevEncodable->isArray())
+                           continue;
+
+                       // Now check to see if this previously defined encodable is our variable
+                       if(prevEncodable->name == encodable->variable2dArray)
+                           break;
+                    }
+
+                    if(prev >= encodables.size())
+                    {
+                       encodable->emitWarning("variable 2d length array ignored, failed to find 2d length variable");
+                       encodable->variable2dArray.clear();
+                    }
+
+                }// if this is a 2d variable length array
 
                 // Handle the dependsOn case. We have to make sure that the referenced variable exists
                 if(!encodable->dependsOn.isEmpty())
@@ -414,8 +457,10 @@ QString ProtocolStructure::getDeclaration(void) const
 
     if(array.isEmpty())
         output += ";";
-    else
+    else if(array2d.isEmpty())
         output += "[" + array + "];";
+    else
+        output += "[" + array + "][" + array2d + "]";
 
     if(!comment.isEmpty())
         output += " //!< " + comment;
@@ -634,6 +679,9 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     if(needsEncodeIterator)
         output += "    int i = 0;\n";
 
+    if(needs2ndEncodeIterator)
+        output += "    int j = 0;\n";
+
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -738,6 +786,9 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     if(needsDecodeIterator)
         output += "    int i = 0;\n";
 
+    if(needs2ndDecodeIterator)
+        output += "    int j = 0;\n";
+
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -803,10 +854,35 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
                 output += spacing + "for(i = 0; i < (int)(" + variableArray + ") && i < " + array + "; i++)\n";
         }
 
-        if(isStructureMember)
-            access = "&user->" + name + "[i]";
+
+        if(is2dArray())
+        {
+            spacing += "    ";
+
+            if(variable2dArray.isEmpty())
+                output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+            else
+            {
+                // Variable length array
+                if(isStructureMember)
+                    output += spacing + "for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "for(j = 0; j < (int)(" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+            }
+
+            if(isStructureMember)
+                access = "&user->" + name + "[i][j]";
+            else
+                access = "&" + name + "[i][j]";
+
+        }// if 2d array
         else
-            access = "&" + name + "[i]";
+        {
+            if(isStructureMember)
+                access = "&user->" + name + "[i]";
+            else
+                access = "&" + name + "[i]";
+        }
 
         output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
@@ -871,14 +947,42 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 
         output += spacing + "{\n";
 
-        if(isStructureMember)
-            access = "&user->" + name + "[i]";
-        else
-            access = "&" + name + "[i]";
+        if(is2dArray())
+        {
+            if(variable2dArray.isEmpty())
+                output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+            else
+            {
+                // Variable length array
+                if(isStructureMember)
+                    output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+            }
 
-        output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
-        output += spacing + "        return 0;\n";
-        output += spacing + "}\n";
+            output += spacing + "    {\n";
+
+            if(isStructureMember)
+                access = "&user->" + name + "[i][j]";
+            else
+                access = "&" + name + "[i][j]";
+
+            output += spacing + "        if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + "            return 0;\n";
+            output += spacing + "    }\n";
+            output += spacing + "}\n";
+        }
+        else
+        {
+            if(isStructureMember)
+                access = "&user->" + name + "[i]";
+            else
+                access = "&" + name + "[i]";
+
+            output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + "        return 0;\n";
+            output += spacing + "}\n";
+        }
     }
     else
     {
@@ -945,16 +1049,9 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
 
     // The repeat/array column
     if(array.isEmpty())
-    {
         repeats.append(QString());
-    }
     else
-    {
-        if(variableArray.isEmpty())
-            repeats.append(array);
-        else
-            repeats.append(variableArray + ", up to " + array);
-    }
+        repeats.append(getRepeatsDocumentationDetails());
 
     // The commenting
     description += comment;

@@ -3,15 +3,15 @@
 #include "protocolstructure.h"
 #include "protocolcode.h"
 #include "protocoldocumentation.h"
+#include "protocolparser.h"
 
 /*!
  * Constructor for encodable
  */
-Encodable::Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported) :
+Encodable::Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported) :
     ProtocolDocumentation(parse, Parent),
     support(supported),
-    protoName(protocolName),
-    prefix(protocolPrefix)
+    protoName(protocolName)
 {
 }
 
@@ -24,6 +24,9 @@ void Encodable::clear(void)
     name.clear();
     comment.clear();
     array.clear();
+    variableArray.clear();
+    array2d.clear();
+    variable2dArray.clear();
     encodedLength.clear();
 }
 
@@ -38,6 +41,8 @@ QString Encodable::getEncodeSignature(void) const
 {
     if(isNotEncoded() || isNotInMemory() || isConstant())
         return "";
+    else if(is2dArray())
+        return ", const " + typeName + " " + name + "[" + array + "][" + array2d + "]";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
     else if(isPrimitive())
@@ -57,6 +62,8 @@ QString Encodable::getDecodeSignature(void) const
 {
     if(isNotEncoded() || isNotInMemory())
         return "";
+    else if(is2dArray())
+        return ", " + typeName + " " + name + "[" + array + "][" + array2d + "]";
     else if(isArray())
         return ", " + typeName + " " + name + "[" + array + "]";
     else
@@ -93,27 +100,94 @@ QString Encodable::getDecodeParameterComment(void) const
 
 
 /*!
+ * Get documentation repeat details for array or 2d arrays
+ * \return The repeat details
+ */
+QString Encodable::getRepeatsDocumentationDetails(void) const
+{
+    QString repeats = "1";
+    QString arrayLink;
+    QString array2dLink;
+    QString variableArrayLink;
+    QString variable2dArrayLink;
+
+    if(isArray())
+    {
+        arrayLink = parser->getEnumerationNameForEnumValue(array);
+
+        if(arrayLink.isEmpty())
+            arrayLink = array;
+        else
+            arrayLink = "["+array+"](#"+arrayLink+")";
+
+        if(variableArray.isEmpty())
+            variableArrayLink = parser->getEnumerationNameForEnumValue(variableArray);
+
+        if(variableArrayLink.isEmpty())
+            variableArrayLink = variableArray;
+        else
+            variableArrayLink = "["+variableArray+"](#"+variableArrayLink+")";
+    }
+
+    if(is2dArray())
+    {
+        array2dLink = parser->getEnumerationNameForEnumValue(array2d);
+
+        if(array2dLink.isEmpty())
+            array2dLink = array2d;
+        else
+            array2dLink = "["+array2d+"](#"+array2dLink+")";
+
+        if(variable2dArray.isEmpty())
+            variable2dArrayLink = parser->getEnumerationNameForEnumValue(variable2dArray);
+
+        if(variable2dArrayLink.isEmpty())
+            variable2dArrayLink = variable2dArray;
+        else
+            variable2dArrayLink = "["+variable2dArray+"](#"+variable2dArrayLink+")";
+    }
+
+    if(is2dArray())
+    {
+        if(variableArray.isEmpty() && variable2dArray.isEmpty())
+            repeats = arrayLink+"*"+array2dLink;
+        else
+            repeats = variableArrayLink+"*"+variable2dArrayLink + ", up to " + arrayLink+"*"+array2dLink;
+    }
+    else if(isArray())
+    {
+        if(variableArray.isEmpty())
+            repeats = arrayLink;
+        else
+            repeats = variableArrayLink + ", up to " + arrayLink;
+    }
+
+    return repeats;
+
+}// Encodable::getRepeatsDocumentationDetails
+
+
+/*!
  * Construct a protocol field by parsing a DOM element. The type of Encodable
  * created will be either a ProtocolStructure or a ProtocolField
  * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the objec which owns the newly created object
  * \param protocolName is the name of the protocol
- * \param protocolPrefix is a prefix to use for typenames
  * \param supported describes what the protocol can support
  * \param field is the DOM element to parse (including its children)
  * \return a pointer to a newly allocated encodable. The caller is
  *         responsible for deleting this object.
  */
-Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field)
+Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field)
 {
     Encodable* enc = NULL;
 
     if(field.tagName().contains("Structure", Qt::CaseInsensitive))
-        enc = new ProtocolStructure(parse, Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolStructure(parse, Parent, protocolName, supported);
     else if(field.tagName().contains("Data", Qt::CaseInsensitive))
-        enc = new ProtocolField(parse, Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolField(parse, Parent, protocolName, supported);
     else if(field.tagName().contains("Code", Qt::CaseInsensitive))
-        enc = new ProtocolCode(parse, Parent, protocolName, protocolPrefix, supported);
+        enc = new ProtocolCode(parse, Parent, protocolName, supported);
 
     if(enc != NULL)
     {

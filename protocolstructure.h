@@ -11,7 +11,7 @@ class ProtocolStructure : public Encodable
 public:
 
     //! Default constructor for protocol structure
-    ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported);
 
     //! Destroy this protocol structure
     virtual ~ProtocolStructure();
@@ -39,6 +39,12 @@ public:
 
     //! True if this encodable has a direct child that needs an iterator
     virtual bool usesDecodeIterator(void) const {return needsDecodeIterator;}
+
+    //! True if this encodable has a direct child that needs a 2nd iterator
+    virtual bool uses2ndEncodeIterator(void) const {return needs2ndEncodeIterator;}
+
+    //! True if this encodable has a direct child that needs a 2nd iterator
+    virtual bool uses2ndDecodeIterator(void) const {return needs2ndDecodeIterator;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return defaults;}
@@ -105,6 +111,8 @@ protected:
     bool bitfields;             //!< True if this structure uses bitfields
     bool needsEncodeIterator;   //!< True if this structure uses arrays iterators on encode
     bool needsDecodeIterator;   //!< True if this structure uses arrays iterators on decode
+    bool needs2ndEncodeIterator;//!< True if this structure uses 2nd arrays iterators on encode
+    bool needs2ndDecodeIterator;//!< True if this structure uses 2nd arrays iterators on decode
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
     bool hidden;                //!< True if this structure is to be hidden from the documentation

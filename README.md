@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.5.3. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.6.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -94,6 +94,10 @@ The Protocol tag supports the following attributes:
 - `bitfieldTest` : if this attribute is set to `true` then the bitfield support module will include a test function that can be used to determine if bitfield support is working on your compiler.
 
 - `supportSpecialFloat` : if this attribute is set to `false` then floating point types less than 32 bits will not be allowed for encoded types.
+
+- `packetStructureSuffix` : This attribute defines the ending of the function names used to encode and decode structures into packets. If not specified then the function name ending is `PacketStructure`. For example the default name of the function that encodes a structure of date information would be `encodeDatePacketStructure()`; using this attribute the name could be changed to (for example) `encodeDatePktStruct()`.
+
+- `packetParameterSuffix` : This attribute defines the ending of the function names used to encode and decode raw parameters into packets. If not specified then the function name ending is `Packet`. For example the default name of the function that encodes a parameters of date information would be `encodeDatePacket()`; using this attribute the name could be changed to (for example) `encodeDatePkt()`.
 
 - `comment` : The comment for the Protocol tag will be placed at the top of the main header file as a multi-line doxygen comment with a \mainpage tag.
 
@@ -190,7 +194,7 @@ In the above example the enumeration support is used to create a list of packet 
 
 Structure tag
 -------------
-The Structure tag is used to define a structure and the code to encode and decode the structure. Structures can appear under the Protocol tag, in which case they are not associated with any one packet, but can be referenced by any following packet.
+The Structure tag is used to define a structure and the code to encode and decode the structure. Structures can appear under the Protocol tag, in which case they are not associated with any one packet, but can be referenced by any packet.
 
     <Structure name="Date" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" comment="year of the date"/>
@@ -262,7 +266,9 @@ Packet tag attributes:
 
 - `comment` : The comment for the Packet tag will be placed at the top of the packets header file (or the top of the appended text if the file is used more than once) as a multi-line doxygen comment. The comment will be wrapped at 80 characters using spaces as the separator.
 
-- `hidden` : is used to specify that this particular packet will NOT appear in the documentation markdown. Useful if a particular packet is not to be revealed to others reading the documentation. NOTE: The packet will still be present in the generated code.
+- `hidden` : If set to `true` this attribute specifies that this packet will NOT appear in the documentation markdown.
+
+- `useInOtherPackets` : If set to `true` this attribute specifies that this packet will generate extra outputs as though it were a top level structure in addition to being a packet. This makes it possible to use this packet as a sub-structure of another packet. 
 
 ###Packet : Data subtags
 
@@ -343,6 +349,10 @@ Data subtag attributes:
 - `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
 
 - `variableArray` : If this Data are an array, then the `variableArray` attribute indicates that the array length is variable (up to `array` size). The `variableArray` attribute indicates which previously defined data item in the encoding gives the size of the array in the encoding. `variableArray` is a powerful tool for efficiently encoding an a-priori unknown range of data. The `variableArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variableArray` attribute. Note: for text it is better to use the encodedType "string", since this will result in a variable length array which is null terminated, and is therefore compatible with C-style string functions.
+
+- `array2d` : For two dimensional arrays, the size of the second dimension. `array2d` is invalid if `array` is not also specified. If `array2d` is not provided the array is one dimensional. `array2d` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an two dimensional array of structures. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array2d` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
+
+- `variable2dArray` : If this Data are a two dimensional array, then the `variable2dArray` attribute indicates that the second dimension length is variable (up to `array2d` size). The `variable2dArray` attribute indicates which previously defined data item in the encoding gives the size of the array in the encoding. The `variable2dArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variable2dArray` attribute.
 
 - `dependsOn` : The `dependsOn` attribute indicates that the presence of this Data item is dependent on a previously defined data item. If the previous data item evaluates as zero then this data item is skipped in the encoding. `dependsOn` is useful for encodings that do not know a-priori if a particular data item is available. For example consider a telemetry packet that reports data from all sensors connected to a device: if one of the sensors is not connected or not working then the space in the packet used to report that data can be saved. The `dependsOn` data item will typically be a single bit bitfield, but can be any previous data item which is not a structure or an array. Bitfields cannot be dependent on other data items. ProtoGen will verify that the `dependsOn` variable exists as a primitive non-array member of the encoding, *before* the definition of this data item. If the referenced data item does not exist ProtoGen will ignore the `dependsOn` attribute.
 

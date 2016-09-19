@@ -20,6 +20,9 @@ public:
     //! Set the element from the DOM
     virtual void setElement(QDomElement element) {e = element;}
 
+    //! Get the element
+    QDomElement& getElement(void) {return e;}
+
     //! Parse the document from the DOM
     virtual void parse(void);
 

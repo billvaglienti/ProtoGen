@@ -169,11 +169,10 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
  * \param parse points to the global protocol parser that owns everything
  * \param parent is the hierarchical name of the parent object
  * \param protocolName is the name of the protocol
- * \param prtoocolPrefix is the naming prefix
  * \param supported indicates what the protocol can support
  */
-ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported):
-    Encodable(parse, parent, protocolName, protocolPrefix, supported),
+ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, ProtocolSupport supported):
+    Encodable(parse, parent, protocolName, supported),
     encodedMin(0),
     encodedMax(0),
     scaler(1),
@@ -468,6 +467,10 @@ void ProtocolField::parse(void)
             array = attr.value().trimmed();
         else if(attrname.compare("variableArray", Qt::CaseInsensitive) == 0)
             variableArray = attr.value().trimmed();
+        else if(attrname.compare("array2d", Qt::CaseInsensitive) == 0)
+            array2d = attr.value().trimmed();
+        else if(attrname.compare("variable2dArray", Qt::CaseInsensitive) == 0)
+            variable2dArray = attr.value().trimmed();
         else if(attrname.compare("dependsOn", Qt::CaseInsensitive) == 0)
             dependsOn = attr.value().trimmed();
         else if(attrname.compare("enum", Qt::CaseInsensitive) == 0)
@@ -542,6 +545,7 @@ void ProtocolField::parse(void)
     {
         // Null types are not in memory, therefore cannot have defaults or variable arrays
         variableArray.clear();
+        variable2dArray.clear();
         defaultValue.clear();
 
         // A special case, where we use the encoded type data in place of the
@@ -654,17 +658,10 @@ void ProtocolField::parse(void)
             emitWarning("bitfields encodings cannot use arrays");
             array.clear();
             variableArray.clear();
+            array2d.clear();
+            variable2dArray.clear();
         }
 
-        /*
-        if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
-        {
-            emitWarning("min, max, and scaler are ignored because encoded type or in memory type is bitfield");
-            maxString.clear();
-            minString.clear();
-            scalerString.clear();
-        }
-        */
     }
 
     // if either type says string, than they both are string
@@ -688,9 +685,27 @@ void ProtocolField::parse(void)
         variableArray.clear();
     }
 
+    if(array.isEmpty() && !array2d.isEmpty())
+    {
+        emitWarning("Must specify array length to specify second dimension array length");
+        array2d.clear();
+    }
+
+    if(array2d.isEmpty() && !variable2dArray.isEmpty())
+    {
+        emitWarning("Must specify array 2d length to specify variable 2d array length");
+        variable2dArray.clear();
+    }
+
     if(!dependsOn.isEmpty() && !variableArray.isEmpty())
     {
         emitWarning("variable length arrays cannot also use dependsOn");
+        dependsOn.clear();
+    }
+
+    if(!dependsOn.isEmpty() && !variable2dArray.isEmpty())
+    {
+        emitWarning("variable length 2d arrays cannot also use dependsOn");
         dependsOn.clear();
     }
 
@@ -746,6 +761,13 @@ void ProtocolField::parse(void)
             variableArray.clear();
         }
 
+        if(!array2d.isEmpty())
+        {
+            emitWarning("2d arrays not allowed for strings");
+            array2d.clear();
+            variable2dArray.clear();
+        }
+
         if(!dependsOn.isEmpty())
         {
             emitWarning("strings cannot use dependsOn");
@@ -772,10 +794,11 @@ void ProtocolField::parse(void)
             checkConstant = false;
         }
 
-        if(!variableArray.isEmpty())
+        if(!variableArray.isEmpty() || !variable2dArray.isEmpty())
         {
             emitWarning("variable length arrays do not make sense for types that are not encoded (null)");
             variableArray.clear();
+            variable2dArray.clear();
         }
 
         if(!dependsOn.isEmpty())
@@ -924,7 +947,7 @@ void ProtocolField::parse(void)
     }
 
     // Just the type data
-    typeName = inMemoryType.toTypeString(enumName, prefix + structName);
+    typeName = inMemoryType.toTypeString(enumName, support.prefix + structName);
 
     if(!constantValue.isEmpty())
     {
@@ -984,10 +1007,12 @@ void ProtocolField::computeEncodedLength(void)
 
         // Account for array, variable array, and depends on
         if(struc != NULL)
-            encodedLength.addToLength(struc->encodedLength, array, !variableArray.isEmpty(), !dependsOn.isEmpty());
+            encodedLength.addToLength(struc->encodedLength, array, !(variableArray.isEmpty() || variable2dArray.isEmpty()), !dependsOn.isEmpty(), array2d);
         else
         {
-            if(isArray())
+            if(is2dArray())
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !(variableArray.isEmpty() || variable2dArray.isEmpty()), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+            else if(isArray())
                 encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
             else
                 encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), !defaultValue.isEmpty());
@@ -1000,8 +1025,11 @@ void ProtocolField::computeEncodedLength(void)
         lengthString.setNum(encodedType.bits / 8);
 
         // Remember that we could be encoding an array
-        if(!array.isEmpty())
+        if(isArray())
             lengthString += "*" + array;
+
+        if(is2dArray())
+            lengthString += "*" + array2d;
 
         encodedLength.addToLength(lengthString, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
 
@@ -1025,6 +1053,8 @@ QString ProtocolField::getDeclaration(void) const
 
     if(inMemoryType.isBitfield)
         output += " : " + QString().setNum(inMemoryType.bits);
+    else if(is2dArray())
+        output += "[" + array + "][" + array2d + "]";
     else if(isArray())
         output += "[" + array + "]";
 
@@ -1094,6 +1124,8 @@ QString ProtocolField::getEncodeSignature(void) const
 {
     if(isNotEncoded() || isNotInMemory() || isConstant())
         return "";
+    else if(is2dArray())
+        return ", const " + typeName + " " + name + "[" + array + "][" + array2d + "]";
     else if(isArray())
         return ", const " + typeName + " " + name + "[" + array + "]";
     else if(!inMemoryType.isStruct)
@@ -1188,34 +1220,8 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         // Encoding is blank for structures
         encodings.append(QString());
 
-        // Third column is the repeat/array column
-        if(array.isEmpty())
-        {
-            repeats.append("1");
-        }
-        else
-        {
-            QString arrayLink = parser->getEnumerationNameForEnumValue(array);
-
-            if(arrayLink.isEmpty())
-                arrayLink = array;
-            else
-                arrayLink = "["+array+"](#"+arrayLink+")";
-
-            if(variableArray.isEmpty())
-                repeats.append(arrayLink);
-            else
-            {
-                QString variablearrayLink = parser->getEnumerationNameForEnumValue(variableArray);
-
-                if(variablearrayLink.isEmpty())
-                    variablearrayLink = variableArray;
-                else
-                    variablearrayLink = "["+variableArray+"](#"+variablearrayLink+")";
-
-                repeats.append(variablearrayLink + ", up to " + arrayLink);
-            }
-        }
+        // Repeats
+        repeats.append(getRepeatsDocumentationDetails());
 
         // Fourth column is the commenting
         description += comment;
@@ -1264,33 +1270,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
                 encodings.append("U" + QString().setNum(encodedType.bits));
 
             // Third column is the repeat/array column
-            if(array.isEmpty())
-            {
-                repeats.append("1");
-            }
-            else
-            {
-                QString arrayLink = parser->getEnumerationNameForEnumValue(array);
-
-                if(arrayLink.isEmpty())
-                    arrayLink = array;
-                else
-                    arrayLink = "["+array+"](#"+arrayLink+")";
-
-                if(variableArray.isEmpty())
-                    repeats.append(arrayLink);
-                else
-                {
-                    QString variablearrayLink = parser->getEnumerationNameForEnumValue(variableArray);
-
-                    if(variablearrayLink.isEmpty())
-                        variablearrayLink = variableArray;
-                    else
-                        variablearrayLink = "["+variableArray+"](#"+variablearrayLink+")";
-
-                    repeats.append(variablearrayLink + ", up to " + arrayLink);
-                }
-            }
+            repeats.append(getRepeatsDocumentationDetails());
         }
 
         // Fourth column is the commenting
@@ -1440,8 +1420,17 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
         if(isStructureMember)
             access = "user->";
 
-        output += "    for(i = 0; i < " + array + "; i++)\n";
-        output += "        " + access + name + "[i] = " + defaultValue + ";\n";
+        if(is2dArray())
+        {
+            output += "    for(i = 0; i < " + array + "; i++)\n";
+            output += "        for(j = 0; j < " + array2d + "; j++)\n";
+            output += "            " + access + name + "[i][j] = " + defaultValue + ";\n";
+        }
+        else
+        {
+            output += "    for(i = 0; i < " + array + "; i++)\n";
+            output += "        " + access + name + "[i] = " + defaultValue + ";\n";
+        }
     }
     else
     {
@@ -1811,12 +1800,37 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
                 output += spacing + "for(i = 0; i < (int)" + variableArray + " && i < " + array + "; i++)\n";
         }
 
-        if(isStructureMember)
-            access = "&user->" + name + "[i]";
-        else
-            access = "&" + name + "[i]";
 
-        output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        if(is2dArray())
+        {
+            if(variable2dArray.isEmpty())
+            {
+                output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+            }
+            else
+            {
+                if(isStructureMember)
+                    output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)" + variable2dArray + " && j < " + array2d + "; j++)\n";
+            }
+
+            if(isStructureMember)
+                access = "&user->" + name + "[i][j]";
+            else
+                access = "&" + name + "[i][j]";
+
+            output += spacing + "        encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        }
+        else
+        {
+            if(isStructureMember)
+                access = "&user->" + name + "[i]";
+            else
+                access = "&" + name + "[i]";
+
+            output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        }
     }
     else
     {
@@ -1879,14 +1893,41 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
 
         output += spacing + "{\n";
 
-        if(isStructureMember)
-            access = "&user->" + name + "[i]";
-        else
-            access = "&" + name + "[i]";
+        if(is2dArray())
+        {
+            if(variable2dArray.isEmpty())
+                output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+            else
+            {
+                if(isStructureMember)
+                    output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+            }
 
-        output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
-        output += spacing + "        return 0;\n";
-        output += spacing + "}\n";
+            output += spacing + "    {\n";
+
+            if(isStructureMember)
+                access = "&user->" + name + "[i][j]";
+            else
+                access = "&" + name + "[i][j]";
+
+            output += spacing + "        if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + "            return 0;\n";
+            output += spacing + "    }\n";
+            output += spacing + "}\n";
+        }
+        else
+        {
+            if(isStructureMember)
+                access = "&user->" + name + "[i]";
+            else
+                access = "&" + name + "[i]";
+
+            output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + "        return 0;\n";
+            output += spacing + "}\n";
+        }
 
     }
     else
@@ -1979,8 +2020,11 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     lengthString.setNum(length);
 
     // Remember that we could be encoding an array
-    if(!array.isEmpty())
+    if(isArray())
         lengthString += "*" + array;
+
+    if(is2dArray())
+        lengthString += "*" + array2d;
 
     // The endian string, which is empty for 1 byte, since
     // endian only applies to multi-byte fields
@@ -2043,10 +2087,25 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             else
                 output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
 
-            if(constantstring.isEmpty())
-                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i], data, &byteindex);\n";
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)" + lhs + variable2dArray + " && j < " + array2d + "; j++)\n";
+
+                if(constantstring.isEmpty())
+                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i][j], data, &byteindex);\n";
+                else
+                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            }
             else
-                output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            {
+                if(constantstring.isEmpty())
+                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i], data, &byteindex);\n";
+                else
+                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            }
         }
     }
     else if(encodedMax > encodedMin)
@@ -2063,6 +2122,18 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                 output += spacing + "for(i = 0; i < " + array + "; i++)\n";
             else
                 output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
+
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)" + lhs + variable2dArray + " && j < " + array2d + "; j++)\n";
+
+                // indent the next line
+                output += "    ";
+
+            }
 
             // indent the next line
             output += "    ";
@@ -2109,7 +2180,9 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             // The reference to the data
             output += lhs + name;
 
-            if(!array.isEmpty())
+            if(is2dArray())
+                output += "[i][j]";
+            else if(isArray())
                 output += "[i]";
         }
         else
@@ -2134,8 +2207,6 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         QString cast = "(" + encodedType.toTypeString() + ")";
         QString opener;
 
-        output += spacing;
-
         if(encodedType.isSigned)
         {
             opener = "int";
@@ -2148,21 +2219,36 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         if(array.isEmpty())
         {
             if(constantstring.isEmpty())
-                output += opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + ", data, &byteindex);\n";
+                output += spacing + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + ", data, &byteindex);\n";
             else
-                output += opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+                output += spacing + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
         }
         else
         {
             if(variableArray.isEmpty())
-                output += "for(i = 0; i < " + array + "; i++)\n";
+                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
             else
-                output += "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
+                output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
 
-            if(constantstring.isEmpty())
-                output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + "[i], data, &byteindex);\n";
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)" + lhs + variable2dArray + " && j < " + array2d + "; j++)\n";
+
+                if(constantstring.isEmpty())
+                    output += spacing + "        " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + "[i][j], data, &byteindex);\n";
+                else
+                    output += spacing + "        " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            }
             else
-                output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            {
+                if(constantstring.isEmpty())
+                    output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + "[i], data, &byteindex);\n";
+                else
+                    output += spacing + "    " + opener + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+            }
         }
 
     }// else not scaled and not float
@@ -2225,8 +2311,12 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 
     // What is the length in bytes of this field, remember that we could be encoding an array
     lengthString.setNum(length);
-    if(!array.isEmpty())
+
+    if(isArray())
         lengthString += "*" + array;
+
+    if(is2dArray())
+        lengthString += "*" + array2d;
 
     if(!dependsOn.isEmpty())
     {
@@ -2253,7 +2343,8 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         // Skip over reserved space
         if(!array.isEmpty())
         {
-            QString math = EncodedLength::collapseLengthString(array + "*" + QString().setNum(length), true);
+            QString math = EncodedLength::collapseLengthString(lengthString, true);
+
             output += spacing + "byteindex += " + math + ";\n";
         }
         else if (checkConstant)
@@ -2314,24 +2405,54 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                     output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
             }
 
-            output += spacing + "    " + lhs + name + "[i] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
-        }
-    }
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                {
+                    if(isStructureMember)
+                        output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + ";j++)\n";
+                    else
+                        output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+                }
+
+                output += spacing + "        " + lhs + name + "[i][j] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+            }
+            else
+                output += spacing + "    " + lhs + name + "[i] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+
+        }// if array
+
+    }// if float
     else if(encodedMax > encodedMin)
     {
         // Additional commenting to describe the scaling
         output += spacing + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
 
         // Handle the array
-        if(!array.isEmpty())
+        if(isArray())
         {
             if(variableArray.isEmpty())
                 output += spacing + "for(i = 0; i < " + array + "; i++)\n";
             else
                 output += spacing + "for(i = 0; i < (int)" + lhs + variableArray + " && i < " + array + "; i++)\n";
 
-            // start the next line
-            output += spacing + "    " + lhs + name + "[i] = ";
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                    output += spacing + "    for(j = 0; j < (int)" + lhs + variable2dArray + " && j < " + array2d + "; j++)\n";
+
+                // start the next line
+                output += spacing + "        " + lhs + name + "[i][j] = ";
+            }
+            else
+            {
+                // start the next line
+                output += spacing + "    " + lhs + name + "[i] = ";
+            }
         }
         else
             output += spacing + lhs + name + " = ";
@@ -2401,7 +2522,22 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                     output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
             }
 
-            output += spacing + "    " + lhs + name + "[i] = " + cast + opener + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+            if(is2dArray())
+            {
+                if(variable2dArray.isEmpty())
+                    output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                else
+                {
+                    if(isStructureMember)
+                        output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                    else
+                        output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+                }
+
+                output += spacing + "        " + lhs + name + "[i][j] = " + cast + opener + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+            }
+            else
+                output += spacing + "    " + lhs + name + "[i] = " + cast + opener + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
         }
 
     }// else not scaled and not float

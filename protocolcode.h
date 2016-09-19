@@ -11,7 +11,7 @@ class ProtocolCode : public Encodable
     public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolCode(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolCode(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported);
 
     //! Destroy the protocol field
     virtual ~ProtocolCode(){}
@@ -66,6 +66,12 @@ class ProtocolCode : public Encodable
 
     //! True if this encodable has a direct child that needs an iterator on decode
     virtual bool usesDecodeIterator(void) const {return false;}
+
+    //! True if this encodable has a direct child that needs an iterator on encode
+    virtual bool uses2ndEncodeIterator(void) const {return false;}
+
+    //! True if this encodable has a direct child that needs an iterator on decode
+    virtual bool uses2ndDecodeIterator(void) const {return false;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return false;}

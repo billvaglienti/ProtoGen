@@ -88,15 +88,16 @@ void EncodedLength::addToLength(const QString & length, bool isString, bool isVa
  * \param array is the array length, which can be empty.
  * \param isVariable is true if this length is for a variable length array.
  * \param isDependent is true if this length is for a field whose presence depends on another field.
+ * \param array2d is the 2nd dimension array length, which can be empty.
  */
-void EncodedLength::addToLength(const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent)
+void EncodedLength::addToLength(const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent, const QString& array2d)
 {
-    addToLengthString(maxEncodedLength, rightLength.maxEncodedLength, array);
-    addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength, array);
+    addToLengthString(maxEncodedLength, rightLength.maxEncodedLength, array, array2d);
+    addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength, array, array2d);
 
     // If not variable or dependent, then add to minimum length
     if(!isVariable && !isDependent)
-        addToLengthString(minEncodedLength, rightLength.minEncodedLength, array);
+        addToLengthString(minEncodedLength, rightLength.minEncodedLength, array, array2d);
 }
 
 
@@ -107,11 +108,12 @@ void EncodedLength::addToLength(const EncodedLength& rightLength, const QString&
  * \param array is the array length, which can be empty.
  * \param isVariable is true if this length is for a variable length array.
  * \param isDependent is true if this length is for a field whose presence depends on another field.
+ * \param array2d is the 2nd dimension array length, which can be empty.
  */
-void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent)
+void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent, const QString& array2d)
 {
     if(leftLength != NULL)
-        leftLength->addToLength(rightLength, array, isVariable, isDependent);
+        leftLength->addToLength(rightLength, array, isVariable, isDependent, array2d);
 }
 
 
@@ -121,7 +123,7 @@ void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLen
  * \param length is the new length to add
  * \param array is the number of times to add it
  */
-void EncodedLength::addToLengthString(QString & totalLength, QString length, QString array)
+void EncodedLength::addToLengthString(QString & totalLength, QString length, QString array, QString array2d)
 {
     bool ok;
     double number;
@@ -155,10 +157,20 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length, QSt
         // operators, or the only operators are multipliers, then we don't need
         // the parenthesis. Otherwise we do need them.
 
-        if(length.contains("+") || length.contains("-") || length.contains("/"))
-            length = array + "*(" + length + ")";
+        if(array2d.isEmpty() || (array2d == "1"))
+        {
+            if(length.contains("+") || length.contains("-") || length.contains("/"))
+                length = array + "*(" + length + ")";
+            else
+                length = array + "*" + length;
+        }
         else
-            length = array + "*" + length;
+        {
+            if(length.contains("+") || length.contains("-") || length.contains("/"))
+                length = array + "*" + array2d + "*(" + length + ")";
+            else
+                length = array + "*" + array2d + "*" + length;
+        }
     }
 
 

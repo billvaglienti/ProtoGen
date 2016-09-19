@@ -51,7 +51,7 @@ public:
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
 
     //! Return the value of an attribute from a Dom Element
-    static QString getAttribute(QString name, const QDomNamedNodeMap& map);
+    static QString getAttribute(QString name, const QDomNamedNodeMap& map, QString defaultIfNone = QString());
 
     //! Output a long string of text which should be wrapped at 80 characters.
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);

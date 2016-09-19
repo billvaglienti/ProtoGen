@@ -6,18 +6,14 @@
  * Construct the object that parses structure descriptions
  * \param parse points to the global protocol parser that owns everything
  * \param protocolName is the name of the protocol
- * \param protocolPrefix is the prefix string to use
  * \param supported gives the supported features of the protocol
  * \param protocolApi is the API string of the protocol
  * \param protocolVersion is the version string of the protocol
- * \param bigendian should be true to encode multi-byte fields with the most
- *        significant byte first.
  */
-ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian) :
-    ProtocolStructure(parse, protocolName, protocolName, protocolPrefix, supported),
+ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
+    ProtocolStructure(parse, protocolName, protocolName, supported),
     api(protocolApi),
     version(protocolVersion),
-    isBigEndian(bigendian),
     encode(true),
     decode(true)
 {
@@ -80,6 +76,8 @@ void ProtocolStructureModule::parse(void)
         emitWarning("top level structure cannot be an array");
         array.clear();
         variableArray.clear();
+        array2d.clear();
+        variable2dArray.clear();
     }
 
     if(!dependsOn.isEmpty())
@@ -95,8 +93,8 @@ void ProtocolStructureModule::parse(void)
     if(moduleName.isEmpty())
     {
         // The file names
-        header.setModuleName(prefix + name);
-        source.setModuleName(prefix + name);
+        header.setModuleName(support.prefix + name);
+        source.setModuleName(support.prefix + name);
         header.setPath(support.outputpath);
         source.setPath(support.outputpath);
 
@@ -250,17 +248,17 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
         if(encode)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeEncodeString(isBigEndian));
+            source.write(encodables[i]->getPrototypeEncodeString(support.bigendian));
             source.makeLineSeparator();
-            source.write(encodables[i]->getFunctionEncodeString(isBigEndian));
+            source.write(encodables[i]->getFunctionEncodeString(support.bigendian));
         }
 
         if(decode)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeDecodeString(isBigEndian));
+            source.write(encodables[i]->getPrototypeDecodeString(support.bigendian));
             source.makeLineSeparator();
-            source.write(encodables[i]->getFunctionDecodeString(isBigEndian));
+            source.write(encodables[i]->getFunctionDecodeString(support.bigendian));
         }
     }
 
@@ -278,17 +276,17 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
     if(encode)
     {
         header.makeLineSeparator();
-        header.write(getPrototypeEncodeString(isBigEndian, false));
+        header.write(getPrototypeEncodeString(support.bigendian, false));
         source.makeLineSeparator();
-        source.write(getFunctionEncodeString(isBigEndian, false));
+        source.write(getFunctionEncodeString(support.bigendian, false));
     }
 
     if(decode)
     {
         header.makeLineSeparator();
-        header.write(getPrototypeDecodeString(isBigEndian, false));
+        header.write(getPrototypeDecodeString(support.bigendian, false));
         source.makeLineSeparator();
-        source.write(getFunctionDecodeString(isBigEndian, false));
+        source.write(getFunctionDecodeString(support.bigendian, false));
     }
 
     header.makeLineSeparator();

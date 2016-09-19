@@ -12,12 +12,12 @@ class Encodable : public ProtocolDocumentation
 public:
 
     //! Constructor for basic encodable that sets protocl name and prefix
-    Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QDomElement& field);
+    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field);
 
     //! Reset all data to defaults
     virtual void clear(void);
@@ -73,14 +73,20 @@ public:
     //! Get details needed to produce documentation for this encodable.
     virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
 
+    //! Get documentation repeat details for array or 2d arrays
+    QString getRepeatsDocumentationDetails(void) const;
+
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}
 
     //! Determine if this encodable a primitive object or a structure?
     virtual bool isPrimitive(void) const = 0;
 
-    //! Determine if this encodable an array
+    //! Determine if this encodable is an array
     bool isArray(void) const {return !array.isEmpty();}
+
+    //! Determine if this encodable is a 2d array
+    bool is2dArray(void) const {return (isArray() && !array2d.isEmpty());}
 
     //! True if this encodable is NOT encoded
     virtual bool isNotEncoded(void) const {return false;}
@@ -115,6 +121,12 @@ public:
     //! True if this encodable has a direct child that needs an iterator for decoding
     virtual bool usesDecodeIterator(void) const = 0;
 
+    //! True if this encodable has a direct child that needs a second iterator for encoding
+    virtual bool uses2ndEncodeIterator(void) const = 0;
+
+    //! True if this encodable has a direct child that needs a second iterator for decoding
+    virtual bool uses2ndDecodeIterator(void) const = 0;
+
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const = 0;
 
@@ -127,10 +139,11 @@ public:
 public:
     ProtocolSupport support;//!< Information about what is supported
     QString protoName;      //!< Name of the protocol
-    QString prefix;         //!< Prefix of names
     QString typeName;       //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
     QString array;          //!< The array length of this encodable, empty if no array
+    QString array2d;        //!< The second dimension array length of this encodable, empty if no 2nd dimension
     QString variableArray;  //!< variable that gives the length of the array in a packet
+    QString variable2dArray;//!< variable that gives the length of the 2nd array dimension in a packet
     QString dependsOn;      //!< variable that determines if this field is present
     EncodedLength encodedLength;    //!< The lengths of the encodables
 };

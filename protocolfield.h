@@ -50,7 +50,7 @@ class ProtocolField : public Encodable
 public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported);
+    ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, ProtocolSupport supported);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
@@ -129,6 +129,12 @@ public:
 
     //! True if this encodable has a direct child that needs an iterator on decode
     virtual bool usesDecodeIterator(void) const {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+
+    //! True if this encodable has a direct child that needs an iterator on encode
+    virtual bool uses2ndEncodeIterator(void) const {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
+
+    //! True if this encodable has a direct child that needs an iterator on decode
+    virtual bool uses2ndDecodeIterator(void) const {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}

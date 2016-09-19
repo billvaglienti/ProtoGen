@@ -32,6 +32,7 @@ interpretation
         <Value name="GPS" comment="Data for a single GPS"/>
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
+        <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
 
     </Enum>
 
@@ -58,8 +59,8 @@ interpretation
 
     <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>
 
-    <Structure name="GPS" comment="Information from a GPS including the position, velocity, and quality data.
-                                   This is a generic GPS description that should suffice for most GPS devices">
+    <Packet name="GPS" file="GPS" useInOtherPackets="true" comment="Information from a GPS including the position, velocity, and quality data.
+                                           This is a generic GPS description that should suffice for most GPS devices">
 
         <Structure name="PositionLLA" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
             <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="pi/2" comment="The latitude of the position in radians, positive North"/>
@@ -88,10 +89,7 @@ interpretation
             <Data name="healthy" inMemoryType="bitfield1" comment="Set if the satellite is reporting itself as health"/>
             <Data name="used" inMemoryType="bitfield1" comment="Set if the satellite is used in the current PVT solution"/>
         </Structure>
-    </Structure>
 
-    <Packet name="GPS" file="GPS" comment="Packet for a single GPS">
-        <Data name="gps" struct="GPS"/>
     </Packet>
 
     <Packet name="EngineCommand" file="Engine" ID="ENGINECOMMAND"
@@ -105,6 +103,15 @@ interpretation
 
     </Packet>
    
+    <Packet name="MultiDimensionTable" ID="MULTIDIMENSIONTABLE">
+        <Data name="numRows" inMemoryType="unsigned8"/>
+        <Data name="numCols" inMemoryType="unsigned8"/>
+        <Data name="floatData" inMemoryType="float32" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
+        <Data name="scaledData" inMemoryType="float32" encodedType="signed16" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed16" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="dates" struct="Date" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
+    </Packet>
+
     <Packet name="EngineSettings" file="Engine" ID="ENGINESETTINGS"
             comment="Change the engine control settings, including the operating
             mode and feedback gains. Engine settings are stored non-volatilely each

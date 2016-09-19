@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.5.3.b";
+const QString ProtocolParser::genVersion = "1.6.0.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -126,41 +126,8 @@ bool ProtocolParser::parse(QString filename, QString path)
         return false;
     }
 
-    // 64-bit support can be turned off
-    if(isFieldClear(docElem, "supportInt64"))
-        support.int64 = false;
-
-    // double support can be turned off
-    if(isFieldClear(docElem, "supportFloat64"))
-        support.float64 = false;
-
-    // special float support can be turned off
-    if(isFieldClear(docElem, "supportSpecialFloat"))
-        support.specialFloat = false;
-
-    // bitfield support can be turned off
-    if(isFieldClear(docElem, "supportBitfield"))
-        support.bitfield = false;
-
-    // long bitfield support can be turned on
-    if(support.int64 && isFieldSet(docElem, "supportLongBitfield"))
-        support.longbitfield = true;
-
-    // bitfield test support can be turned on
-    if(isFieldSet(docElem, "bitfieldTest"))
-        support.bitfieldtest = true;
-
-    QDomNamedNodeMap map = docElem.attributes();
-
-    // Global file names can be specified
-    support.globalFileName = getAttribute("file", map);
-
-    // Prefix is not required
-    prefix = getAttribute("prefix", map).trimmed();
-
-    bool bigendian = true;
-    if(getAttribute("endian", map).contains("little", Qt::CaseInsensitive))
-        bigendian = false;
+    // Protocol support options specified in the xml
+    support.parse(docElem);
 
     // All of the top level Structures, which stand alone in their own modules
     QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
@@ -174,7 +141,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     for(int i = 0; i < structlist.size(); i++)
     {
         // Create the module object
-        ProtocolStructureModule* module = new ProtocolStructureModule(this, name, prefix, support, api, version, bigendian);
+        ProtocolStructureModule* module = new ProtocolStructureModule(this, name, support, api, version);
 
         // Remember its xml
         module->setElement(structlist.at(i).toElement());
@@ -190,7 +157,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
         {
             // Create the module object
-            ProtocolPacket* packet = new ProtocolPacket(this, name, prefix, support, api, version, bigendian);
+            ProtocolPacket* packet = new ProtocolPacket(this, name, support, api, version);
 
             // Remember its xml
             packet->setElement(doclist.at(i).toElement());
@@ -252,11 +219,35 @@ bool ProtocolParser::parse(QString filename, QString path)
 
     }// for all top level structures
 
-    // And the global packets
+    // And the global packets. We want to sort the packets into two batches:
+    // those packets which can be used by other packets; and those which cannot.
+    // This way we can parse the first batch ahead of the second
     for(int i = 0; i < packets.size(); i++)
     {
-        // Create the module object
         ProtocolPacket* packet = packets[i];
+
+        if(!isFieldSet(packet->getElement(), "useInOtherPackets"))
+            continue;
+
+        // Parse its XML
+        packet->parse();
+
+        // The structures have been parsed, adding this packet to the list
+        // makes it available for other packets to find as structure reference
+        structures.append(packet);
+
+        // Keep a list of all the file names
+        fileNameList.append(packet->getHeaderFileName());
+        fileNameList.append(packet->getSourceFileName());
+    }
+
+    // And the packets which are not available for other packets
+    for(int i = 0; i < packets.size(); i++)
+    {
+        ProtocolPacket* packet = packets[i];
+
+        if(isFieldSet(packet->getElement(), "useInOtherPackets"))
+            continue;
 
         // Parse its XML
         packet->parse();
@@ -313,7 +304,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     }
 
     if(!nomarkdown)
-        outputMarkdown(bigendian, inlinecss);
+        outputMarkdown(support.bigendian, inlinecss);
 
     #ifndef _DEBUG
     if(!nodoxygen)
@@ -633,9 +624,10 @@ QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QSt
  * Return the value of an attribute from a node map
  * \param name is the name of the attribute to return. name is not case sensitive
  * \param map is the attribute node map from a DOM element.
- * \return the value of the "name" attribute, or an empty string if none found
+ * \param defaultIfNone is returned if no name attribute is found.
+ * \return the value of the name attribute, or defaultIfNone if none found
  */
-QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map)
+QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map, QString defaultIfNone)
 {
     // We use name as part of our debug outputs, so its good to have it first.
     for(int i = 0; i < map.count(); i++)
@@ -649,7 +641,7 @@ QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map)
             return attr.value().trimmed();
     }
 
-    return QString();
+    return defaultIfNone;
 
 }// ProtocolParser::getAttribute
 

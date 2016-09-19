@@ -11,7 +11,7 @@ class ProtocolStructureModule : public ProtocolStructure
 {
 public:
     //! Construct the structure parsing object, with details about the overall protocol
-    ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, const QString& protocolPrefix, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion, bool bigendian);
+    ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
     //! Parse a packet from the DOM
     virtual void parse(void);
@@ -43,7 +43,6 @@ protected:
     ProtocolHeaderFile header;      //!< The header file (*.c)
     QString api;                    //!< The protocol API enumeration
     QString version;                //!< The version string
-    bool isBigEndian;               //!< True if this packets data are encoded in Big Endian
     bool encode;                    //!< True if the encode function is output
     bool decode;                    //!< True if the decode function is output
 

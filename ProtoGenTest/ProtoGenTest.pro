@@ -51,3 +51,11 @@ HEADERS += \
 
 OTHER_FILES += \
     Doxyfile
+
+
+protogen.target = $$PWD/Demolink.markdown
+protogen.commands = $$PWD/../ProtoGenInstall/ProtoGen.exe $$PWD/../exampleprotocol.xml $$PWD -no-doxygen
+protogen.depends = FORCE
+
+PRE_TARGETDEPS += $$PWD/Demolink.markdown
+QMAKE_EXTRA_TARGETS += protogen

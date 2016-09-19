@@ -12,10 +12,10 @@ public:
     void addToLength(const QString & length, bool isString = false, bool isVariable = false, bool  isDependent = false, bool isDefault = false);
 
     //! Add a grouping of length strings
-    void addToLength(const EncodedLength& rightLength, const QString& array = QString(), bool isVariable = false, bool isDependent = false);
+    void addToLength(const EncodedLength& rightLength, const QString& array = QString(), bool isVariable = false, bool isDependent = false, const QString& array2d = QString());
 
     //! Add a grouping of length strings
-    static void add(EncodedLength* leftLength, const EncodedLength& rightLength, const QString& array = QString(), bool isVariable = false, bool isDependent = false);
+    static void add(EncodedLength* leftLength, const EncodedLength& rightLength, const QString& array = QString(), bool isVariable = false, bool isDependent = false, const QString& array2d = QString());
 
     //! Clear the encoded length
     void clear(void);
@@ -44,7 +44,7 @@ public:
 private:
 
     //! Create a length string like "4 + 3 + N3D*2" by adding successive length strings
-    static void addToLengthString(QString & totalLength, QString length, QString array = QString());
+    static void addToLengthString(QString & totalLength, QString length, QString array = QString(), QString array2d = QString());
 
     //! Determine if text is a number for our cases
     static bool isNumber(const QString& text);
