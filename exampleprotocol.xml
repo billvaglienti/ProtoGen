@@ -33,7 +33,7 @@ interpretation
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
         <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
-
+        <Value name="ORION_PKT_KLV_USER_DATA"/>
     </Enum>
 
     <Enum name="ThreeD" comment="3D axis enumeration">
@@ -52,9 +52,15 @@ interpretation
     <Documentation comment="------------"/>
     <Documentation name="Packets" paragraph="1"/>
 
+    <Packet name="KlvUserData" ID="ORION_PKT_KLV_USER_DATA" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags">
+        <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
+        <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
+        <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>
+    </Packet>
+
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
-        <Data name="version" inMemoryType="unsigned8" array="16" constant="getDemolinkVersion()" checkConstant="true" encodedType="fixedstring" comment="the version of the sending side"/>
+        <Data name="version" inMemoryType="fixedstring" array="16" constant="getDemolinkVersion()" checkConstant="true" comment="the version of the sending side"/>
     </Packet>
 
     <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>
@@ -179,8 +185,7 @@ interpretation
         <Data name="sub" inMemoryType="unsigned8" comment="sub version of the software"/>
         <Data name="patch" inMemoryType="unsigned8" comment="patch version of the software"/>
         <Data name="date" struct="Date" comment="the release date of the software"/>
-        <Data name="description" inMemoryType="signed8" array = "64" encodedType = "string"
-              comment="description of the software version"/>
+        <Data name="description" inMemoryType="string" array = "64" comment="description of the software version"/>
         
     </Packet>
     
@@ -222,7 +227,7 @@ interpretation
     
     <Packet name="Constant" file="TelemetryPacket" comment="This packet demonstrates all the different ways that a constant value can be used." structureInterface="true" parameterInterface="true">
         <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t" checkConstant="true"/>
-        <Data name="constant2" inMemoryType="signed8" array="24" encodedType="string" constant="To be or not to be" comment="encoding a string constant"/>
+        <Data name="constant2" inMemoryType="string" array="24" constant="To be or not to be" comment="encoding a string constant"/>
         <Data name="cos45" inMemoryType="float32" constant="0.70710678118654752440084436210485" comment="directly encoding floating point constant"/>
         <Data name="sin45" inMemoryType="float32" array="3" constant="0.70710678118654752440084436210485" encodedType="signed8" max ="1" comment="scaling a floating point constant"/>
         <Data name="constant3" inMemoryType="unsigned32" constant="327612" comment="encoding an integer constant"/>

@@ -667,6 +667,9 @@ void ProtocolField::parse(void)
     // if either type says string, than they both are string
     if(inMemoryType.isString != encodedType.isString)
     {
+        if(!inMemoryType.isNull && !encodedType.isNull)
+            emitWarning("String type requires that inMemory and encoded types both be strings");
+
         inMemoryType.isString = encodedType.isString = true;
         inMemoryType.bits = encodedType.bits = 8;
     }
@@ -1415,7 +1418,17 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
         return output;
 
     // Write out the defaults code
-    if(isArray())
+    if(inMemoryType.isString)
+    {
+        if(isStructureMember)
+            access = "user->";
+
+        if(defaultValue.compare("null", Qt::CaseInsensitive) == 0)
+            output += "    " + access + name + "[0] = 0;\n";
+        else
+            output += "    strncpy((char*)" + access + name + ", \"" + defaultValue + "\", " + array + ");\n";
+    }
+    else if(isArray())
     {
         if(isStructureMember)
             access = "user->";
