@@ -182,7 +182,7 @@ protected:
     QString getEncodeStringForField(bool isBigEndian, bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a bitfield field
-    QString getDecodeStringForBitfield(int* bitcount, bool isStructureMember) const;
+    QString getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the next lines of source needed to decode a string field
     QString getDecodeStringForString(bool isStructureMember) const;
@@ -191,7 +191,7 @@ protected:
     QString getDecodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a field, which is not a bitfield or a string
-    QString getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled = false) const;
+    QString getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the source needed to close out a string of bitfields in the encode function.
     QString getCloseBitfieldString(int* bitcount) const;

@@ -1384,7 +1384,7 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
 
     if(encodedType.isBitfield)
     {
-        output += getDecodeStringForBitfield(bitcount, isStructureMember);
+        output += getDecodeStringForBitfield(bitcount, isStructureMember, defaultEnabled);
 
         // Close the bitfield if its the last one
         if(lastBitfield && ((*bitcount) != 0))
@@ -1551,17 +1551,32 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
+ * \param defaultEnabled should be true to enable defaults for this decode
  * \return The string to add to the source file that decodes this field.
  */
-QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructureMember) const
+QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
     QString output;
+    QString spacing = "    ";
 
     if(encodedType.isNull)
         return output;
 
+    // If this field has a default value
+    if(defaultEnabled && !defaultValue.isEmpty())
+    {
+        // Number of bytes. From 1 to 8 bits is one byte, from 9 to 16 bits is two bytes
+        QString lengthString = QString::number((encodedType.bits + 7)/8);
+
+        output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
+        output += spacing + "    return 1;\n";
+        output += spacing + "else\n";
+        output += spacing + "{\n";
+        spacing += "    ";
+    }
+
     if(!comment.isEmpty())
-        output += "    // " + comment + "\n";
+        output += spacing + "// " + comment + "\n";
 
     QString constantstring = getConstantString();
 
@@ -1577,7 +1592,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     if(encodedMax > encodedMin)
     {
         // Additional commenting to describe the scaling
-        output += "    // Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+        output += spacing + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
 
         if(encodedType.bits > 32)
         {
@@ -1607,16 +1622,16 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     if(inMemoryType.isNull)
     {
         if(comment.isEmpty())
-            output += "    // reserved bits\n";
+            output += spacing + "// reserved bits\n";
 
         if(checkConstant)
         {
-            output += "    // Decoded value must be " + constantstring + "\n";
-            output += "    if (" + decodestring + " != " + constantstring + ")\n";
-            output += "        return 0;\n";
+            output += spacing + "// Decoded value must be " + constantstring + "\n";
+            output += spacing + "if (" + decodestring + " != " + constantstring + ")\n";
+            output += spacing + "    return 0;\n";
         }
         else
-            output += "    " + decodestring + ";\n";
+            output += spacing + decodestring + ";\n";
     }
     else
     {
@@ -1627,15 +1642,23 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
             lhs = "*";      // Access via direct pointer
 
         // we cast here, because the inMemoryType might not be a unsigned int
-        output += "    " + lhs + name + " = (" + typeName + ")" + decodestring + ";\n";
+        output += spacing + lhs + name + " = (" + typeName + ")" + decodestring + ";\n";
 
         if(checkConstant)
         {
             output += "\n";
-            output += "    // Decoded value must be " + constantstring + "\n";
-            output += "    if (" + lhs + name + " != " + constantstring + ")\n";
-            output += "        return 0;\n";
+            output += spacing + "// Decoded value must be " + constantstring + "\n";
+            output += spacing + "if (" + lhs + name + " != " + constantstring + ")\n";
+            output += spacing + "    return 0;\n";
         }
+    }
+
+    // Close the default block
+    if(defaultEnabled && !defaultValue.isEmpty())
+    {
+        // Remove the last four spaces
+        spacing.remove(spacing.size()-4, 4);
+        output += spacing + "}\n";
     }
 
     *bitcount += encodedType.bits;

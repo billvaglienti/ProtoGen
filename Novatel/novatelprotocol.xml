@@ -5,7 +5,7 @@
 
  Since the novatel header includes information which is interesting to the
  decoded data, the header is included as part of the ProtoGen defined data.
- This implies that a *packet* is just a hunk of bytes, there is no seaprate
+ This implies that a *packet* is just a hunk of bytes, there is no separate
  header from ProtoGen's persepctive. Hence the *size* of a packet includes
  everything except the crc; i.e the sync bytes, the header data, and the body
  data. The size of a packet is computed by summing the header length and the
@@ -17,9 +17,12 @@
         <Value name="GPSEPHEM" value="7" comment="GPS ephemeris for a single satellite"/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
         <Value name="RANGE" value="43" comment="This log contains the channel measurements for the currently tracked satellites."/>
+        <Value name="TIME" value="101" comment="UTC time information, included the leap seconds"/>
         <Value name="RANGECMP" value="140" comment="This log contains the compressed channel measurements for the currently tracked satellites."/>
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
         <Value name="BESTXYZ" value="241" comment="Best cartesion position and velocity."/>
+        <Value name="PSRXYZ" value="243" comment="Pseudo range based cartesion position and velocity."/>
+        <Value name="HEADING" value="971" comment="Heading and pitch from the align system"/>
         <Value name="SERIALCONFIG" value="1246" comment="Used to configure serial port settings on the receiver."/>
         <Value name="SATXYZ2" value="1451" comment="Satellite positions in ECEF."/>
     </Enum>
@@ -470,7 +473,11 @@
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
-        <Structure name="range" array="24" variableArray="numObs" comment="The raw measurements from each channel">
+        <Enum name="MaxRanges_t" comment="Maximum number of range measurements">
+            <Value name="maxRanges" value="24" comment="Maximum number of range measurements."/>
+        </Enum>
+
+        <Structure name="range" array="maxRanges" variableArray="numObs" comment="The raw measurements from each channel">
             <Code name="trackingStatusVar1" decode="int trackcount = 0;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
             <Code name="trackingStatusVar2" decode="uint8_t temp;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
             <Data name="prn" inMemoryType="uint16_t" comment="Satellite PRN number"/>
@@ -487,7 +494,38 @@
             <Code name="swapone" decode="temp = user->trackingStatusBytes[3]; user->trackingStatusBytes[3] = user->trackingStatusBytes[0]; user->trackingStatusBytes[0] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
             <Code name="swaptwo" decode="temp = user->trackingStatusBytes[2]; user->trackingStatusBytes[2] = user->trackingStatusBytes[1]; user->trackingStatusBytes[1] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
             <Code name="trackingStatusFixup" decode="decodeTrackingStatus_t(user->trackingStatusBytes, &amp;trackcount, &amp;user->trackingStatus);" comment="Channel tracking status bits"/>
+            <Data name="phaseRangeRate" inMemoryType="float32" encodedType="null" comment="Time rate of change of accumulatedDoppler, converted to meters per second. Compute locally based on successive measurements"/>
+            <Data name="phaseRangeRateDeviation" inMemoryType="float32" encodedType="null" comment="Standard deviation of phaseRangeRate in meters per second. Compute locally based on successive measurements"/>
+            <Data name="phaseRangeRateValid" inMemoryType="bitfield1" encodedType="null" comment="Set if the phaseRangeRate has valid data"/>
+            <Code name="phaseRangeRateSet" decode="user->phaseRangeRate = user->phaseRangeRateDeviation = 0; user->phaseRangeRateValid = 0;" comment="Initialize these to zero before they are computed"/>    
         </Structure>
+    </Packet>
+
+    <Packet name="Time" file="NovatelPackets" ID="TIME" encode="false" comment="Time information needed to determine difference between GPS and UTC time">
+        <Enum name="ClockStatus_t" comment="Clock status information">
+            <Value name="CLOCK_VALID" comment="Clock is valid"/>
+            <Value name="CLOCK_CONVERGING" comment="Clock is nearing validity"/>
+            <Value name="CLOCK_ITERATING" comment="Clock is moving towards validity"/>
+            <Value name="CLOCK_INVALID" comment="Clock is not valid"/>
+        </Enum>
+        <Enum name="UtcStatus_t" comment="UTC status information">
+            <Value name="UTC_INVALID" comment="No UTC data"/>
+            <Value name="UTC_VALID" comment="UTC data is good"/>
+            <Value name="UTC_WARNING" comment="UTC data based on almanac"/>
+        </Enum>
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="clockStatus" enum="ClockStatus_t" encodedType="unsigned32" comment="clock status enumeration"/>
+        <Data name="offset" inMemoryType="float64" comment="Receiver clock offset in seconds from GPS time"/>
+        <Data name="offsetDev" inMemoryType="float64" comment="Receiver clock offset standard deviation"/>
+        <Data name="utcoffset" inMemoryType="float64" comment="UTC clock offset"/>
+        <Data name="utcYear" inMemoryType="unsigned32" comment="UTC year"/>
+        <Data name="utcMonth" inMemoryType="unsigned8" comment="UTC month from 1 to 12, 0 if UTC time is unknown"/>
+        <Data name="utcDay" inMemoryType="unsigned8" comment="UTC day from 1 to 31, 0 if UTC time is unknown"/>
+        <Data name="utcHour" inMemoryType="unsigned8" comment="UTC hour of the day from 0 to 23"/>
+        <Data name="utcMin" inMemoryType="unsigned8" comment="UTC minute of the hour from 0 to 59"/>
+        <Data name="utcms" inMemoryType="unsigned32" comment="UTC milliseconds of the minute from 0 to 60999"/>
+        <Data name="utcStatus" enum="UtcStatus_t" encodedType="unsigned32" comment="UTC status enumeration"/>
     </Packet>
 
     <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" encode="false" comment="Pseudo range dilution of precision">
@@ -502,13 +540,31 @@
         <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
     </Packet>
 
+    <Packet name="PsrXYZ" file="NovatelPackets" ID="PSRXYZ" encode="false" comment="Pseudo range based cartesian position and velocity">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
+    </Packet>
+
+    <Packet name="Heading" file="NovatelPackets" ID="HEADING" encode="false" comment="Yaw and pitch from the align system">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
+        <Data name="posType" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
+        <Data name="length" inMemoryType="float32" comment="Baseline length between the align master and align rover in meters"/>
+        <Data name="heading" inMemoryType="float32" scaler="180/pi" comment="Heading angle with respect to true North of the vector from the master to the rover in radians from 0 to 2pi"/>
+        <Data name="pitch" inMemoryType="float32" comment="Pitch angle of the vector from the master to the rover in radians from -pi to pi"/>
+        <Code name="headingfix" decode="user->heading /= 57.29577951308232f" comment="This is here because Protogen 1.4.5.b has a bug on scaling float32"/>
+        <Code name="pitchfix" decode="user->pitch /= 57.29577951308232f" comment="This is here because Protogen 1.4.5.b has a bug on scaling float32"/>
+    </Packet>
+
     <Packet name="SerialConfig" file="NovatelPackets" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
         <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Enum name="Parity_t" comment="Parity options for a serial port">
-            <Value name="NOPARITY" comment="No parity"/>
-            <Value name="EVENPARITY" comment="Even parity"/>
-            <Value name="ODDPARITY" comment="Odd parity"/>
+            <Value name="NOV_NOPARITY" comment="No parity"/>
+            <Value name="NOV_EVENPARITY" comment="Even parity"/>
+            <Value name="NOV_ODDPARITY" comment="Odd parity"/>
         </Enum>
         <Enum name="HandShaking_t" comment="Handshake options for a serial port">
             <Value name="NOHANDSHAKE" comment="No handshaking"/>
@@ -532,7 +588,7 @@
             <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="unsigned32" comment="Type of navigation system"/>
             <Data name="satelliteID" inMemoryType="unsigned32" comment="Satellite ID (PRN number for GPS)"/>
             <Data name="posEcef" inMemoryType="float64" array="3" comment="Position of the satellite in x,y,z ECEF meters"/>
-            <Data name="clockCorrection" inMemoryType="float64" comment="Satellite clock correction in meters (subtract from pseudo range to apply correction)"/>
+            <Data name="clockCorrection" inMemoryType="float64" comment="Satellite clock correction in meters (add to pseudo range to apply correction)"/>
             <Data name="ionoDelay" inMemoryType="float64" comment="Ionospheric delay in meters (subtract from pseudo range to apply correction)"/>
             <Data name="tropoDelay" inMemoryType="float64" comment="Tropospheric delay in meters (subtract from pseudo range to apply correction)"/>
             <Data name="reserved" inMemoryType="null" encodedType="unsigned8" array="16" comment="Reserved space in the message"/>

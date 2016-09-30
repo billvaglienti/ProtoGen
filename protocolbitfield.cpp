@@ -323,7 +323,7 @@ unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int
         // Remove any left most bits that we have already decoded\n\
         byte = byte << count;\n\
 \n\
-        // Put the remaining bytes back in least significant position\n\
+        // Put the remaining bits back in least significant position\n\
         byte = byte >> count;\n\
 \n\
         // Number of bits in the current byte that we could move\n\
