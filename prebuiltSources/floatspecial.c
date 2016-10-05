@@ -336,7 +336,7 @@ int testSpecialFloat(void)
         error += (float)fabs((dataIn[i] - dataOut24[i])/dataIn[i]);
     }
 
-    if(error < 0.01)
+    if(error < 0.01f)
         return 1;
     else
         return 0;
