@@ -1,0 +1,1 @@
+This file is here so the ProtoGenInstall directory is re-created by the version control tool. The directory must exist for the build process to complete.

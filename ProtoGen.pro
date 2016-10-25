@@ -9,23 +9,16 @@ contains(QT_VERSION, ^4.*) {
     error("Use at least Qt 5.0")
 }
 
-TARGET = ProtoGen
-TEMPLATE = app
-
 QT       += core
 QT       += xml
+
 QT       -= gui
 
+TARGET = ProtoGen
 CONFIG   += console
+CONFIG   -= app_bundle
 
-!macx{
-    CONFIG   -= app_bundle
-}
-
-macx{
-    CONFIG   += app_bundle
-}
-
+TEMPLATE = app
 
 QMAKE_CXXFLAGS += -Wno-unused-parameter
 
@@ -89,16 +82,38 @@ win32{
 
 macx{
     CONFIG(release, debug|release){
+        # Copy key files to the ProtoGenInstall directory
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD\ProtoGenInstall\exampleprotocol.xml)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD\ProtoGenInstall\LICENSE.txt)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$shadowed($$PWD)/ProtoGen)) $$quote($$shell_path($$PWD\ProtoGenInstall\ProtoGen)) $$escape_expand(\n\t)
+
         # Build top level documentation
         QMAKE_POST_LINK += $$quote(/usr/local/bin/MultiMarkdown) $$quote($$shell_path($$PWD/README.md)) > $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.html)) $$escape_expand(\n\t)
 
-        # Run macdeployqt to copy necessary frameworks
-        QMAKE_POST_LINK +=$$[QT_INSTALL_BINS]/macdeployqt $$quote($$shadowed($$PWD)/ProtoGen.app) -no-plugins -always-overwrite $$escape_expand(\n\t)
+        # ProtoGen depends on QtXML, copy it over, and then reset the paths in both the library and ProtoGen
+        QMAKE_POST_LINK += $$QMAKE_COPY_DIR $$quote($$shell_path($$[QT_INSTALL_LIBS]/QtXml.framework/Versions/5/QtXml)) $$quote($$shell_path($$PWD/ProtoGenInstall/QtXml)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += install_name_tool -id @executable_path/QtXml $$quote($$shell_path($$PWD/ProtoGenInstall/QtXml)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += install_name_tool -change $$[QT_INSTALL_LIBS]/QtXml.framework/Versions/5/QtXml @executable_path/QtXml $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen)) $$escape_expand(\n\t)
 
-        # Copy key files to the ProtoGenInstall directory
-        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD/ProtoGenInstall/exampleprotocol.xml)) $$escape_expand(\n\t)
-        QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD/ProtoGenInstall/LICENSE.txt)) $$escape_expand(\n\t)
-        QMAKE_POST_LINK += $$QMAKE_COPY -r $$quote($$shell_path($$shadowed($$PWD)/ProtoGen.app)) $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.app/)) $$escape_expand(\n\t)
+        # QtXml depends on QtCore, but it will look in the wrong place for it, so fix that too.
+        QMAKE_POST_LINK += install_name_tool -change $$[QT_INSTALL_LIBS]/QtCore.framework/Versions/5/QtCore @executable_path/QtCore $$quote($$shell_path($$PWD/ProtoGenInstall/QtXml)) $$escape_expand(\n\t)
+
+        # ProtoGen depends on QtCore, copy it over, and then reset the paths in both the library and ProtoGen
+        QMAKE_POST_LINK += $$QMAKE_COPY_DIR $$quote($$shell_path($$[QT_INSTALL_LIBS]/QtCore.framework/Versions/5/QtCore)) $$quote($$shell_path($$PWD/ProtoGenInstall/QtCore)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += install_name_tool -id @executable_path/QtCore $$quote($$shell_path($$PWD/ProtoGenInstall/QtCore)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += install_name_tool -change $$[QT_INSTALL_LIBS]/QtCore.framework/Versions/5/QtCore @executable_path/QtCore $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen)) $$escape_expand(\n\t)
+
+        # Standard library that ProtoGen needs, however this should already be on the users machine
+        # QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path(/usr/lib/libstdc++.6.dylib)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+        # QMAKE_POST_LINK += install_name_tool -id @executable_path/libstdc++.6.dylib $$quote($$shell_path($$PWD/ProtoGenInstall/libstdc++.6.dylib)) $$escape_expand(\n\t)
+        # QMAKE_POST_LINK += install_name_tool -change /usr/lib/libstdc++.6.dylib @executable_path/libstdc++.6.dylib $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen)) $$escape_expand(\n\t)
+
+        # Standard library that ProtoGen needs, however this should already be on the users machine
+        # QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path(/usr/lib/libSystem.B.dylib)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
+        # QMAKE_POST_LINK += install_name_tool -id @executable_path/libSystem.B.dylib $$quote($$shell_path($$PWD/ProtoGenInstall/libSystem.B.dylib)) $$escape_expand(\n\t)
+        # QMAKE_POST_LINK += install_name_tool -change /usr/lib/libSystem.B.dylib @executable_path/libSystem.B.dylib $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen)) $$escape_expand(\n\t)
+
+        QMAKE_POST_LINK += zip -j -r $$quote($$shell_path($$PWD/ProtoGenMac.zip)) $$quote($$shell_path($$PWD\ProtoGenInstall)) $$escape_expand(\n\t)
     }
 }
 
