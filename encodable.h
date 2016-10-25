@@ -19,6 +19,9 @@ public:
     //! Construct a protocol field by parsing a DOM element
     static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field);
 
+    //! Check names against the list of C keywords
+    virtual void checkAgainstKeywords(void);
+
     //! Reset all data to defaults
     virtual void clear(void);
 

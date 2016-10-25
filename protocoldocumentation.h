@@ -35,6 +35,9 @@ public:
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
+    //! Check names against the list of C keywords
+    virtual void checkAgainstKeywords(void){}
+
     //! Output a warning
     void emitWarning(QString warning) const;
 
@@ -49,6 +52,8 @@ protected:
     ProtocolParser* parser; //!< The parser object
     QString parent;         //!< The parent name of this encodable
     QDomElement e;          //!< The DOM element which is the source of this object's data
+
+    static QStringList keywords;//!< keywords for the C language
 
 private:
     int outlineLevel;       //!< The paragraph outline level

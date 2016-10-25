@@ -107,6 +107,12 @@ void ProtocolPacket::parse(void)
         dependsOn.clear();
     }
 
+    if(keywords.contains(id))
+    {
+        emitWarning("id matches C keyword, changed to _id");
+        id = "_" + id;
+    }
+
     // The file directive allows us to override the file name
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;

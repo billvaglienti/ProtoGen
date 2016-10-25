@@ -966,6 +966,10 @@ void ProtocolField::parse(void)
         }
     }
 
+    // Make sure no keyword conflicts
+    checkAgainstKeywords();
+
+    // Compute the data length
     computeEncodedLength();
 
 }// ProtocolField::parse
@@ -1038,7 +1042,51 @@ void ProtocolField::computeEncodedLength(void)
 
     }
 
-}
+}// ProtocolField::computeEncodedLength
+
+
+//! Check names against the list of C keywords
+void ProtocolField::checkAgainstKeywords(void)
+{
+    Encodable::checkAgainstKeywords();
+
+    if(keywords.contains(enumName))
+    {
+        emitWarning("enum name matches C keyword, changed to _name");
+        enumName = "_" + enumName;
+    }
+
+    if(keywords.contains(maxString))
+    {
+        emitWarning("max value matches C keyword, changed to _max");
+        maxString = "_" + maxString;
+    }
+
+    if(keywords.contains(minString))
+    {
+        emitWarning("min value matches C keyword, changed to _min");
+        minString = "_" + minString;
+    }
+
+    if(keywords.contains(scalerString))
+    {
+        emitWarning("scaler value matches C keyword, changed to _scaler");
+        scalerString = "_" + scalerString;
+    }
+
+    if(keywords.contains(defaultValue))
+    {
+        emitWarning("default value matches C keyword, changed to _default");
+        defaultValue = "_" + defaultValue;
+    }
+
+    if(keywords.contains(constantValue))
+    {
+        emitWarning("constant value matches C keyword, changed to _constant");
+        constantValue = "_" + constantValue;
+    }
+
+}// ProtocolField::checkAgainstKeywords
 
 
 /*!

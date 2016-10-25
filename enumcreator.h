@@ -26,6 +26,9 @@ public:
     //! Parse the DOM to fill out the enumeration list
     virtual void parse(void);
 
+    //! Check names against the list of C keywords
+    virtual void checkAgainstKeywords(void);
+
     //! Get the markdown documentation for this enumeration
     virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
 
@@ -54,6 +57,7 @@ public:
     virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
 protected:
+
     //! Parse the enumeration values to build the number list
     void computeNumberList(void);
 

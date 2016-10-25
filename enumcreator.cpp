@@ -164,6 +164,9 @@ void EnumCreator::parse(void)
 
     }// for all enum entries
 
+    // Check for keywords that will cause compilation problems
+    checkAgainstKeywords();
+
     // Figure out the number list we will use for markdown
     computeNumberList();
 
@@ -205,6 +208,34 @@ void EnumCreator::parse(void)
     output += ";\n";
 
 }// EnumCreator::parse
+
+
+//! Check names against the list of C keywords, this includes the global enumeration name as well as all the value names
+void EnumCreator::checkAgainstKeywords(void)
+{
+    if(keywords.contains(name))
+    {
+        emitWarning("name matches C keyword, changed to _name");
+        name = "_" + name;
+    }
+
+    for(int i = 0; i < nameList.size(); i++)
+    {
+        if(keywords.contains(nameList.at(i)))
+        {
+            emitWarning("enum value name matches C keyword, changed to _name");
+            nameList[i] = "_" + nameList.at(i);
+        }
+
+        if(keywords.contains(valueList.at(i)))
+        {
+            emitWarning("enum value matches C keyword, changed to _value");
+            valueList[i] = "_" + valueList.at(i);
+        }
+
+    }
+
+}// EnumCreator::checkAgainstKeywords
 
 
 /*!

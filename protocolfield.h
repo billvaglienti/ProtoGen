@@ -67,6 +67,9 @@ public:
     //! Parse the DOM element
     virtual void parse(void);
 
+    //! Check names against the list of C keywords
+    virtual void checkAgainstKeywords(void);
+
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 

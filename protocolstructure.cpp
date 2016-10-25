@@ -120,6 +120,9 @@ void ProtocolStructure::parse(void)
         dependsOn.clear();
     }
 
+    // Check to make sure we did not step on any keywords
+    checkAgainstKeywords();
+
     // Get any enumerations
     parseEnumerations(e);
 

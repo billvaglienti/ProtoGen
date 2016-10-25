@@ -3,6 +3,9 @@
 #include <QDir>
 #include <QFile>
 
+//! The list of C language keywords, visible to all encodables
+QStringList ProtocolDocumentation::keywords = QStringList() << "auto" << "double" << "int" << "struct" << "break" << "else" << "long" << "switch" << "case" << "enum" << "register" << "typedef" << "char" << "extern" << "return" << "union" << "const" << "float" << "short" << "unsigned" << "continue" << "for" << "signed" << "void" << "default" << "goto" << "sizeof" << "volatile" << "do" << "if" << "static" << "while";
+
 //! Construct the document object, with details about the overall protocol
 ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, QString Parent) :
     parser(parse),
@@ -72,7 +75,10 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
 }
 
 
-//! Output a warning
+/*!
+ * Output a warning to stdout. The warning will include the hierarchical name used to describe this objects location in the xml
+ * \param warning is the warning text
+ */
 void ProtocolDocumentation::emitWarning(QString warning) const
 {
     QString name = getHierarchicalName();

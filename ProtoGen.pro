@@ -98,6 +98,7 @@ macx{
         # Copy key files to the ProtoGenInstall directory
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\exampleprotocol.xml)) $$quote($$shell_path($$PWD/ProtoGenInstall/exampleprotocol.xml)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD/ProtoGenInstall/LICENSE.txt)) $$escape_expand(\n\t)
+        QMAKE_POST_LINK += rm -r -d -f $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.app/)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY -r $$quote($$shell_path($$shadowed($$PWD)/ProtoGen.app)) $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.app/)) $$escape_expand(\n\t)
     }
 }

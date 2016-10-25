@@ -15,6 +15,52 @@ Encodable::Encodable(ProtocolParser* parse, QString Parent, const QString& proto
 {
 }
 
+
+/*!
+ * Check all names against C keyword and issue a warning if any of them match.
+ * In addition the matching names will be updated to have a leading underscore
+ */
+void Encodable::checkAgainstKeywords(void)
+{
+    if(keywords.contains(name))
+    {
+        emitWarning("name matches C keyword, changed to _name");
+        name = "_" + name;
+    }
+
+    if(keywords.contains(array))
+    {
+        emitWarning("array matches C keyword, changed to _array");
+        array = "_" + array;
+    }
+
+    if(keywords.contains(variableArray))
+    {
+        emitWarning("variableArray matches C keyword, changed to _variableArray");
+        variableArray = "_" + variableArray;
+    }
+
+    if(keywords.contains(array2d))
+    {
+        emitWarning("array2d matches C keyword, changed to _array2d");
+        array2d = "_" + array2d;
+    }
+
+    if(keywords.contains(variable2dArray))
+    {
+        emitWarning("variable2dArray matches C keyword, changed to _variable2dArray");
+        variable2dArray = "_" + variable2dArray;
+    }
+
+    if(keywords.contains(dependsOn))
+    {
+        emitWarning("dependsOn matches C keyword, changed to _dependsOn");
+        dependsOn = "_" + dependsOn;
+    }
+
+}// Encodable::checkAgainstKeywords
+
+
 /*!
  * Reset all data to defaults
  */

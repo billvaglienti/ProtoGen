@@ -15,11 +15,11 @@ public:
     //! Construct the packet parsing object, with details about the overall protocol
     ProtocolPacket(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
-    //! Parse a packet from the DOM
-    virtual void parse(void);
-
     //! Destroy the protocol packet
     virtual ~ProtocolPacket(void);
+
+    //! Parse a packet from the DOM
+    virtual void parse(void);
 
     //! Clear out any data
     virtual void clear(void);
