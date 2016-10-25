@@ -28,7 +28,7 @@ This document refers to ProtoGen version 1.6.2. You can download the prebuilt ve
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`.
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS protogen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
 
 - `Protocol.xml` is the file that defines the protocol details.
 
