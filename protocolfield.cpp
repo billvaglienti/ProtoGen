@@ -949,6 +949,18 @@ void ProtocolField::parse(void)
         emitWarning("max is not more than min, encoding not scaled");
     }
 
+    if(inMemoryType.isFloat && !encodedType.isFloat && !inMemoryType.isNull && !encodedType.isNull)
+    {
+        // If the user wants to convert a float to an integer they should be
+        // applying a scaler. If they don't then there is the potential for
+        // truncation and overflow problems. However its possible they actually
+        // *want* the truncation, hence warning without fixing.
+        if(encodedMin == encodedMax)
+        {
+            emitWarning("Casting float to integer without truncation, consider setting scaler=\"1.0\"");
+        }
+    }
+
     // Just the type data
     typeName = inMemoryType.toTypeString(enumName, support.prefix + structName);
 
