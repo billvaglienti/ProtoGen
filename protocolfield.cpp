@@ -2403,23 +2403,49 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     else
         endian = "";
 
-    QString lengthString;
+    QString maxlengthString;
 
     // What is the length in bytes of this field, remember that we could be encoding an array
-    lengthString.setNum(length);
+    maxlengthString.setNum(length);
+
+    QString lengthString = maxlengthString;
 
     if(isArray())
-        lengthString += "*" + array;
+    {
+        maxlengthString += "*" + array;
+
+        if(variableArray.isEmpty())
+            lengthString += "*" + array;
+        else
+        {
+            if(isStructureMember)
+                lengthString += "*user->" + variableArray;
+            else
+                lengthString += "*(*" + variableArray + ")";
+        }
+    }
 
     if(is2dArray())
-        lengthString += "*" + array2d;
+    {
+        maxlengthString += "*" + array2d;
+
+        if(variable2dArray.isEmpty())
+            lengthString += "*" + array2d;
+        else
+        {
+            if(isStructureMember)
+                lengthString += "*user->" + variable2dArray;
+            else
+                lengthString += "*(*" + variable2dArray + ")";
+        }
+    }
 
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
             output += spacing + "if(user->" + dependsOn + ")\n";
         else
-            output += spacing + "if(" + dependsOn + ")\n";
+            output += spacing + "if(*" + dependsOn + ")\n";
         output += spacing + "{\n";
         spacing += "    ";
     }
@@ -2436,14 +2462,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 
     if(inMemoryType.isNull)
     {
-        // Skip over reserved space
-        if(!array.isEmpty())
-        {
-            QString math = EncodedLength::collapseLengthString(lengthString, true);
-
-            output += spacing + "byteindex += " + math + ";\n";
-        }
-        else if (checkConstant)
+        if (checkConstant && array.isEmpty())
         {
             output += spacing + "// Decoded value must be " + constantstring + "\n";
 
@@ -2466,7 +2485,12 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         }
         else
         {
-            output += spacing + "byteindex += " + lengthString + ";\n";
+            // Skip over reserved space
+            if(comment.isEmpty())
+                output += spacing + "// Skip over reserved space\n";
+
+            // Note how it's not possible to skip a variable amount of space
+            output += spacing + "byteindex += " + EncodedLength::collapseLengthString(maxlengthString, true) + ";\n";
         }
 
     }
