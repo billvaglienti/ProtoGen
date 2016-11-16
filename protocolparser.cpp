@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.6.4.b";
+const QString ProtocolParser::genVersion = "1.6.4.c";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -96,22 +96,26 @@ bool ProtocolParser::parse(QString filename, QString path)
     QDomElement docElem = doc.documentElement();
 
     // Set our output directory
-    if(!path.isEmpty())
-    {
-        // Make the path as short as possible
-        path = ProtocolFile::sanitizePath(path);
+    // Make the path as short as possible
+    path = ProtocolFile::sanitizePath(path);
 
-        // Make sure the path exists
-        if(QDir::current().mkpath(path))
-        {
-            // Remember the output path for all users
-            support.outputpath = path;
-        }
-        else
-        {
-            std::cerr << "error: Failed to create output path: " << QDir::toNativeSeparators(path).toStdString() << std::endl;
-            return false;
-        }
+    // There is an interesting case here: the user's output path is not
+    // empty, but after sanitizing it is empty, which implies the output
+    // path is the same as the current working directory. If this happens
+    // then mkpath() will fail because the input string cannot be empty,
+    // so we must test path.isEmpty() again. Note that in this case the
+    // path definitely exists (since its our working directory)
+
+    // Make sure the path exists
+    if(path.isEmpty() || QDir::current().mkpath(path))
+    {
+        // Remember the output path for all users
+        support.outputpath = path;
+    }
+    else
+    {
+        std::cerr << "error: Failed to create output path: " << QDir::toNativeSeparators(path).toStdString() << std::endl;
+        return false;
     }
 
     // This element must have the "Protocol" tag
