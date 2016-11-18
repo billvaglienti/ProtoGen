@@ -49,8 +49,8 @@ public:
     //! Return the string that is used to declare this encodable
     virtual QString getDeclaration(void) const = 0;
 
-    //! Return the inclue directive needed for this encodable
-    virtual QString getIncludeDirective(void) {return QString();}
+    //! Return the include directives needed for this encodable
+    virtual void getIncludeDirectives(QStringList& list) const {}
 
     //! Return the string that declares the whole structure
     virtual QString getStructureDeclaration(bool alwaysCreate) const {return QString();}

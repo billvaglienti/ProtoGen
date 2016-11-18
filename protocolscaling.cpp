@@ -67,11 +67,7 @@ bool ProtocolScaling::generate(void)
  */
 bool ProtocolScaling::generateEncodeHeader(void)
 {
-    header.setModuleName("scaledencode");
-    header.setPath(support.outputpath);
-
-    // Make sure empty
-    header.clear();
+    header.setModuleNameAndPath("scaledencode", support.outputpath);
 
     // Top level comment
     header.write(
@@ -187,13 +183,9 @@ bool ProtocolScaling::generateEncodeHeader(void)
  */
 bool ProtocolScaling::generateEncodeSource(void)
 {
-    // Make sure empty
-    source.clear();
+    source.setModuleNameAndPath("scaledencode", support.outputpath);
 
-    source.setModuleName("scaledencode");
-    source.setPath(support.outputpath);
-
-    source.write("#include \"fieldencode.h\"\n");
+    source.writeIncludeDirective("fieldencode.h");
     source.write("\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
@@ -550,11 +542,7 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
  */
 bool ProtocolScaling::generateDecodeHeader(void)
 {
-    header.setModuleName("scaleddecode");
-    header.setPath(support.outputpath);
-
-    // Make sure empty
-    header.clear();
+    header.setModuleNameAndPath("scaleddecode", support.outputpath);
 
     // Top level comment
     header.write(
@@ -640,13 +628,9 @@ bool ProtocolScaling::generateDecodeHeader(void)
  */
 bool ProtocolScaling::generateDecodeSource(void)
 {
-    // Make sure empty
-    source.clear();
+    source.setModuleNameAndPath("scaleddecode", support.outputpath);
 
-    source.setModuleName("scaleddecode");
-    source.setPath(support.outputpath);
-
-    source.write("#include \"fielddecode.h\"\n");
+    source.writeIncludeDirective("fielddecode.h");
     source.write("\n");
 
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)

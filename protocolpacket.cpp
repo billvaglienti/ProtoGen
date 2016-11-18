@@ -120,22 +120,15 @@ void ProtocolPacket::parse(void)
     if(moduleName.isEmpty())
     {
         // The file names
-        header.setModuleName(support.prefix + name + support.packetParameterSuffix + "");
-        source.setModuleName(support.prefix + name + support.packetParameterSuffix + "");
+        header.setModuleNameAndPath(support.prefix + name + support.packetParameterSuffix + "", support.outputpath);
+        source.setModuleNameAndPath(support.prefix + name + support.packetParameterSuffix + "", support.outputpath);
     }
     else
     {
         // The file names
-        header.setModuleName(moduleName);
-        source.setModuleName(moduleName);
+        header.setModuleNameAndPath(moduleName, support.outputpath);
+        source.setModuleNameAndPath(moduleName, support.outputpath);
     }
-
-    header.setPath(support.outputpath);
-    source.setPath(support.outputpath);
-
-    // We may be appending data to an already existing file
-    header.prepareToAppend();
-    source.prepareToAppend();
 
     if(!header.isAppending())
     {
@@ -167,8 +160,10 @@ void ProtocolPacket::parse(void)
     parser->outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
+    QStringList list;
     for(int i = 0; i < encodables.length(); i++)
-        header.writeIncludeDirective(encodables[i]->getIncludeDirective());
+        encodables[i]->getIncludeDirectives(list);
+    header.writeIncludeDirectives(list);
 
     // White space is good
     header.makeLineSeparator();
@@ -236,10 +231,6 @@ void ProtocolPacket::parse(void)
     header.flush();
     source.flush();
 
-    // Make sure these are empty for next time around
-    header.clear();
-    source.clear();
-
 }// ProtocolPacket::parse
 
 
@@ -254,6 +245,11 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
     // assuming that the user will define it elsewhere
     if(id.isEmpty())
         id = name.toUpper();
+
+    // The ID may be a value defined somewhere else
+    QString include = parser->lookUpIncludeName(id);
+    if(!include.isEmpty())
+        header.writeIncludeDirective(include);
 
     // The macro for the packet ID
     header.makeLineSeparator();

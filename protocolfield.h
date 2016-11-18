@@ -103,8 +103,8 @@ public:
     //! Get the declaration for this field
     virtual QString getDeclaration(void) const;
 
-    //! Return the inclue directive needed for this encodable
-    virtual QString getIncludeDirective(void);
+    //! Return the include directives needed for this encodable
+    virtual void getIncludeDirectives(QStringList& list) const;
 
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const;

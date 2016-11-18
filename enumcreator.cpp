@@ -22,6 +22,7 @@ EnumCreator::~EnumCreator(void)
 
 void EnumCreator::clear(void)
 {
+    file.clear();
     minbitwidth = 0;
     hidden = false;
     name.clear();
@@ -47,6 +48,26 @@ void EnumCreator::clear(void)
     // clear the list
     documentList.clear();
 
+}
+
+
+/*!
+ * Parse the DOM to fill out the enumeration list for a global enum. This sill
+ * also set the header reference file name that others need to include to use
+ * this enum.
+ * \param filename is the reference file if none is specified in the xml
+ */
+void EnumCreator::parseGlobal(QString filename)
+{
+    isglobal = true;
+
+    parse();
+
+    // Global enums must have a reference file
+    if(file.isEmpty())
+        file = filename;
+
+    isglobal = false;
 }
 
 
@@ -81,9 +102,10 @@ void EnumCreator::parse(void)
             description = attr.value().trimmed();
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
+        else if(isglobal && attrname.compare("file", Qt::CaseInsensitive) == 0)
+            file = attr.value().trimmed();
         else if(support.disableunrecognized == false)
             emitWarning("Unrecognized attribute: " + attrname);
-
     }
 
     QDomNodeList list = e.elementsByTagName("Value");

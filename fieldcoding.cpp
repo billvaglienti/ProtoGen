@@ -66,11 +66,7 @@ bool FieldCoding::generate(void)
  */
 bool FieldCoding::generateEncodeHeader(void)
 {
-    header.setModuleName("fieldencode");
-    header.setPath(support.outputpath);
-
-    // Make sure empty
-    header.clear();
+    header.setModuleNameAndPath("fieldencode", support.outputpath);
 
     // Top level comment
     header.write("\
@@ -157,14 +153,10 @@ bool FieldCoding::generateEncodeHeader(void)
  */
 bool FieldCoding::generateEncodeSource(void)
 {
-    source.setModuleName("fieldencode");
-    source.setPath(support.outputpath);
-
-    // Make sure empty
-    source.clear();
+    source.setModuleNameAndPath("fieldencode", support.outputpath);
 
     if(support.specialFloat)
-        source.write("#include \"floatspecial.h\"\n");
+        source.writeIncludeDirective("floatspecial.h");
 
     source.write("\n\n");
 
@@ -488,11 +480,7 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
  */
 bool FieldCoding::generateDecodeHeader(void)
 {
-    header.setModuleName("fielddecode");
-    header.setPath(support.outputpath);
-
-    // Make sure empty
-    header.clear();
+    header.setModuleNameAndPath("fielddecode", support.outputpath);
 
     // Top level comment
     header.write("\
@@ -580,14 +568,10 @@ bool FieldCoding::generateDecodeHeader(void)
  */
 bool FieldCoding::generateDecodeSource(void)
 {
-    source.setModuleName("fielddecode");
-    source.setPath(support.outputpath);
-
-    // Make sure empty
-    source.clear();
+    source.setModuleNameAndPath("fielddecode", support.outputpath);
 
     if(support.specialFloat)
-        source.write("#include \"floatspecial.h\"\n");
+        source.writeIncludeDirective("floatspecial.h");
 
     source.write("\n\n");
 

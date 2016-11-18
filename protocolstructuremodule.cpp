@@ -93,10 +93,8 @@ void ProtocolStructureModule::parse(void)
     if(moduleName.isEmpty())
     {
         // The file names
-        header.setModuleName(support.prefix + name);
-        source.setModuleName(support.prefix + name);
-        header.setPath(support.outputpath);
-        source.setPath(support.outputpath);
+        header.setModuleNameAndPath(support.prefix + name, support.outputpath);
+        source.setModuleNameAndPath(support.prefix + name, support.outputpath);
 
         // Comment block at the top of the header file
         header.write("/*!\n");
@@ -120,14 +118,8 @@ void ProtocolStructureModule::parse(void)
     else
     {
         // The file names
-        header.setModuleName(moduleName);
-        source.setModuleName(moduleName);
-        header.setPath(support.outputpath);
-        source.setPath(support.outputpath);
-
-        // We may be appending data to an already existing file
-        header.prepareToAppend();
-        source.prepareToAppend();
+        header.setModuleNameAndPath(moduleName, support.outputpath);
+        source.setModuleNameAndPath(moduleName, support.outputpath);
 
         // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
         if(!header.isAppending())
@@ -153,8 +145,10 @@ void ProtocolStructureModule::parse(void)
     parser->outputIncludes(getHierarchicalName(), header, e);
 
     // Include directives that may be needed for our children
+    QStringList list;
     for(int i = 0; i < encodables.length(); i++)
-        header.writeIncludeDirective(encodables[i]->getIncludeDirective());
+        encodables[i]->getIncludeDirectives(list);
+    header.writeIncludeDirectives(list);
 
     // White space is good
     header.makeLineSeparator();
@@ -209,10 +203,6 @@ void ProtocolStructureModule::parse(void)
     // Write to disk
     header.flush();
     source.flush();
-
-    // Make sure these are empty for next time around
-    header.clear();
-    source.clear();
 
 }// ProtocolStructureModule::parse
 

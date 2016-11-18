@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.6.4.c";
+const QString ProtocolParser::genVersion = "1.7.donotuse";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -180,11 +180,12 @@ bool ProtocolParser::parse(QString filename, QString path)
 
             // Enums can be parsed now
             Enum->setElement(doclist.at(i).toElement());
-            Enum->parse();
+
+            // A global parse
+            Enum->parseGlobal(name + "Protocol");
 
             // Keep it around in the global list
-            if(!Enum->getOutput().isEmpty())
-                globalEnums.append(Enum);
+            globalEnums.append(Enum);
 
             // Keep it in the master document list as well
             alldocumentsinorder.append(Enum);
@@ -211,12 +212,34 @@ bool ProtocolParser::parse(QString filename, QString path)
     // The list of our output files
     QStringList fileNameList;
 
+    // Build the top level module
+    createProtocolFiles(docElem);
+
+    // And record its file name
+    fileNameList.append(header.fileName());
+
+    // Now output the global enumerations, they will go in the main
+    // header file by default, unless the enum specifies otherwise
+    ProtocolHeaderFile enumfile;
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        EnumCreator* module = globalEnums.at(i);
+
+        enumfile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
+        enumfile.write(module->getOutput());
+        enumfile.makeLineSeparator();
+        enumfile.flush();
+
+        // Keep a list of all the file names we used
+        fileNameList.append(enumfile.fileName());
+    }
+
     // Now parse the global structures
     for(int i = 0; i < structures.size(); i++)
     {
         ProtocolStructureModule* module = structures[i];
 
-        // Parse its XML
+        // Parse its XML and generate the output
         module->parse();
 
         // Keep a list of all the file names
@@ -262,11 +285,6 @@ bool ProtocolParser::parse(QString filename, QString path)
         fileNameList.append(packet->getHeaderFileName());
         fileNameList.append(packet->getSourceFileName());
     }
-
-    // Build the top level module
-    createProtocolFiles(docElem);
-
-    fileNameList.append(header.fileName());
 
     if(!nohelperfiles)
     {
@@ -317,8 +335,6 @@ bool ProtocolParser::parse(QString filename, QString path)
         outputDoxygen();
     #endif
 
-    header.flush();
-
     // This is fun...replace all the temporary files with real ones if needed
     fileNameList.removeDuplicates();
     for(int i = 0; i < fileNameList.count(); i++)
@@ -352,8 +368,7 @@ void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     QString nameex = name + "Protocol";
 
     // The file names
-    header.setModuleName(nameex);
-    header.setPath(support.outputpath);
+    header.setModuleNameAndPath(nameex, support.outputpath);
 
     comment = docElem.attribute("comment");
 
@@ -404,13 +419,6 @@ void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     // Add other includes
     outputIncludes(name, header, docElem);
 
-    // Output the global enumerations to my header
-    for(int i = 0; i < globalEnums.size(); i++)
-    {
-        header.makeLineSeparator();
-        header.write(globalEnums.at(i)->getOutput());
-    }
-
     // API functions
     if(!api.isEmpty())
     {
@@ -446,6 +454,8 @@ void ProtocolParser::createProtocolFiles(const QDomElement& docElem)
     header.write("//! \\return the ID of a packet from the packet header\n");
     header.write("uint32_t get" + name + "PacketID(const void* pkt);\n");
     header.write("\n");
+
+    header.flush();
 
 }// ProtocolParser::createProtocolFiles
 
@@ -686,9 +696,7 @@ const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomEl
 
     Enum->setElement(element);
     Enum->parse();
-
-    if(!Enum->getOutput().isEmpty())
-        enums.append(Enum);
+    enums.append(Enum);
 
     return Enum;
 
@@ -742,7 +750,7 @@ void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QD
 
 
 /*!
- * Find the include name for a specific global structure type
+ * Find the include name for a specific global structure type or enumeration type
  * \param typeName is the type to lookup
  * \return the file name to be included to reference this global structure type
  */
@@ -761,6 +769,14 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
         if(packets.at(i)->typeName == typeName)
         {
             return packets.at(i)->getHeaderFileName();
+        }
+    }
+
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        if((globalEnums.at(i)->getName() == typeName) || globalEnums.at(i)->isEnumerationValue(typeName))
+        {
+            return globalEnums.at(i)->getHeaderFileName();
         }
     }
 

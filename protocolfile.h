@@ -23,14 +23,14 @@ public:
     //! Append to the current contents of the file
     void write(const QString& text);
 
+    //! Output a list of include directives
+    void writeIncludeDirectives(const QStringList& list);
+
     //! Output an include directive
     void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool Global = false);
 
     //! Set the name of the module
-    void setModuleName(const QString& name);
-
-    //! Set the path to the module
-    void setPath(const QString& filepath);
+    void setModuleNameAndPath(QString name, QString filepath);
 
     //! Return the filename
     virtual QString fileName(void) const {return module;}
@@ -67,13 +67,15 @@ public:
 
 protected:
 
+    //! Prepare to do an append operation
+    virtual void prepareToAppend(void){}
+
     //! Return the correct on disk name
     QString fileNameOnDisk(void) const;
 
     QString path;       //!< Output path for the file
     QString module;     //!< The module name, not including the file extension
     QString contents;   //!< The contents, not including the prologue or epilogue
-    QString prototypeContents;  //!< Contents that go before the main body of the file
 
     bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
     bool appending;     //!< Flag set if an append operation is in progress
@@ -91,10 +93,11 @@ public:
     //! Return the filename
     virtual QString fileName(void) const;
 
-    //! Prepare to do an append operation
-    void prepareToAppend(void);
-
 protected:
+
+    //! Prepare to do an append operation
+    virtual void prepareToAppend(void);
+
     //! \return the text that is appended to close a header file
     QString getClosingStatement(void);
 };
@@ -113,10 +116,10 @@ public:
     //! Return the filename
     virtual QString fileName(void) const;
 
-    //! Prepare to do an append operation
-    void prepareToAppend(void);
-
 protected:
+
+    //! Prepare to do an append operation
+    virtual void prepareToAppend(void);
 
     //! \return the text that is appended to close a source file
     QString getClosingStatement(void);

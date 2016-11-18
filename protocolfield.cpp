@@ -1143,40 +1143,63 @@ QString ProtocolField::getDeclaration(void) const
 
 
 /*!
- * Return the inclue directive needed for this encodable. Mostly this is empty,
- * but for external structures we need to bring in the include file
+ * Append the include directives needed for this encodable. Mostly this is empty,
+ * but for external structures or enumerations we need to bring in the include file
+ * \param list is appended with any directives this encodable requires.
  */
-QString ProtocolField::getIncludeDirective(void)
+void ProtocolField::getIncludeDirectives(QStringList& list) const
 {
-    if(inMemoryType.isStruct)
-    {
-        QString output = parser->lookUpIncludeName(typeName);
+    QString include;
 
-        if(output.isEmpty())
+    // Array sizes could be enumerations that need an include directive
+    if(!array.isEmpty())
+    {
+        include = parser->lookUpIncludeName(array);
+        if(!include.isEmpty())
+            list.append(include);
+    }
+
+    // Array sizes could be enumerations that need an include directive
+    if(!array2d.isEmpty())
+    {
+        include = parser->lookUpIncludeName(array2d);
+        if(!include.isEmpty())
+            list.append(include);
+    }
+
+    if(inMemoryType.isEnum)
+    {
+        include = parser->lookUpIncludeName(typeName);
+        if(!include.isEmpty())
+            list.append(include);
+
+    }// if enum
+    else if(inMemoryType.isStruct)
+    {
+        include = parser->lookUpIncludeName(typeName);
+
+        if(include.isEmpty())
         {
             if(!isNotEncoded())
             {
                 // In this case, we guess at the include name
-                output = typeName;
-                output.remove("_t");
-                output += ".h";
+                include = typeName;
+                include.remove("_t");
+                include += ".h";
+                list.append(include);
                 emitWarning("unknown include for " + typeName + "; guess supplied");
             }
-            else
-            {
-                // If there is no encoding for this field, then we assume its
-                // some externally supplied struct definition, and its up to the
-                // user to specify the correct include file, since we don't need
-                // the encoding functions anyway.
-                return QString();
-            }
-        }
 
-        return output;
-    }
-    else
-        return QString();
-}
+        }
+        else
+            list.append(include);
+
+    }// else if struct
+
+    // Only need one of each include
+    list.removeDuplicates();
+
+}// ProtocolField::getIncludeDirectives
 
 
 /*!

@@ -21,11 +21,7 @@ void ProtocolBitfield::generate(void)
  */
 void ProtocolBitfield::generateHeader(void)
 {
-    header.setModuleName("bitfieldspecial");
-    header.setPath(support.outputpath);
-
-    // Make sure empty
-    header.clear();
+    header.setModuleNameAndPath("bitfieldspecial", support.outputpath);
 
     // Top level comment
     header.write(
@@ -119,11 +115,7 @@ void ProtocolBitfield::generateHeader(void)
  */
 void ProtocolBitfield::generateSource(void)
 {
-    source.setModuleName("bitfieldspecial");
-    source.setPath(support.outputpath);
-
-    // Make sure empty
-    source.clear();
+    source.setModuleNameAndPath("bitfieldspecial", support.outputpath);
 
     if(support.bitfieldtest)
         source.write("#include <string.h>\n");

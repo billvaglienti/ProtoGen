@@ -15,6 +15,7 @@ public:
         ProtocolDocumentation(parse, Parent),
         minbitwidth(0),
         hidden(false),
+        isglobal(false),
         support(supported)
     {}
 
@@ -25,6 +26,9 @@ public:
 
     //! Parse the DOM to fill out the enumeration list
     virtual void parse(void);
+
+    //! Parse the DOM to fill out the enumeration list for a global enum
+    void parseGlobal(QString filename);
 
     //! Check names against the list of C keywords
     virtual void checkAgainstKeywords(void);
@@ -56,6 +60,9 @@ public:
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
 
+    //! Return the header file name (if any) of the file holding this enumeration
+    QString getHeaderFileName(void) const {return file;}
+
 protected:
 
     //! Parse the enumeration values to build the number list
@@ -67,18 +74,40 @@ protected:
     //! Determine if a character is a math operator
     bool isMathOperator(QChar op) const;
 
+    //! Output file for global enumerations
+    QString file;
+
+    //! List of enumeration names
     QStringList nameList;
+
+    //! List of enumeration comments
     QStringList commentList;
+
+    //! List of enumeration values (as strings)
     QStringList valueList;
+
+    //! List of enumeration values (as numbers)
     QStringList numberList;
+
+    //! List of enumeration value hidden flags
     QList<bool> hiddenList;
 
-    QString description;//!< A longer description is possible for enums (will be displayed in the documentation)
-    QString output;     //!< The header file output string of the enumeration
-    int minbitwidth;    //!< Minimum number of bits needed to encode the enumeration
+    //! A longer description is possible for enums (will be displayed in the documentation)
+    QString description;
 
-    bool hidden;        //!< Determines if this enum will be hidden from the documentation
+    //! The header file output string of the enumeration
+    QString output;
 
+    //! Minimum number of bits needed to encode the enumeration
+    int minbitwidth;
+
+    //! Determines if this enum will be hidden from the documentation
+    bool hidden;
+
+    //! Flag set true if parseGlobal() is called
+    bool isglobal;
+
+    //! Protocol options details
     ProtocolSupport support;
 
     //! List of document objects

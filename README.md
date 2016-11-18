@@ -86,7 +86,7 @@ The Protocol tag supports the following attributes:
 
 - `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any structures or packets which have their own `file` attribute.
 
-- `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions. A common way to use the `prefix` is to make it the same as `name`.
+- `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
 - `api` : An enumeration that can be used to determine API compatibility. Changes to the protocol definition that break backwards compatibility should increment this value. Calling code can access the api value and use it to (for example) seed a packet checksum/CRC to prevent clashes with different versions of the protocol.
 
@@ -131,7 +131,7 @@ Other comments are output as single line doxygen comments:
 
     //!< This is a single line comment that appears after the object it documents, on the same line.
 
-The reflow logic can be suspended by placing comment text between "\verbatim" escapes. Text between the "\verbatim" escapts is simply output in the comment without reflow or interpretation. This makes it possible to insert more advanced markdown features, such as tables.
+The reflow logic can be suspended by placing comment text between "\verbatim" escapes. Text between the "\verbatim" escapes is simply output in the comment without reflow or interpretation. This makes it possible to insert more advanced markdown features, such as tables.
 
 Include tag
 -----------
@@ -155,7 +155,7 @@ The Include tag supports the following attributes:
 Enum tag
 --------
 
-The Enum tag is used to create a named C language typedef enumeration. As with the Include tag the enumeration is created in the header file that represents the parent of this tag. An example Enum tag is:
+The Enum tag is used to create a named C language typedef enumeration. The enumeration is typically created in the header file that represents the parent of this tag. An example Enum tag is:
 
     <Enum name="packetIds" comment="The list of packet identifiers">
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
@@ -182,6 +182,8 @@ which produces this output:
 Enum tag attributes:
   
 - `name` : gives the typedef name of the enumeration
+
+- `file` : Optional attribute that gives the header file name (.h) that will be used for this enumeration. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. Protogen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
 

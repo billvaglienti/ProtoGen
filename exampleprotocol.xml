@@ -22,7 +22,7 @@ interpretation
 
     <Documentation name="Enumerations" paragraph="1"/>
 
-    <Enum name="packetIds" comment="The list of packet identifiers" description="even more stuff!">
+    <Enum name="packetIds" file="globalenum" comment="The list of packet identifiers" description="even more stuff!">
         <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
@@ -36,7 +36,7 @@ interpretation
         <Value name="ORION_PKT_KLV_USER_DATA"/>
     </Enum>
 
-    <Enum name="ThreeD" comment="3D axis enumeration">
+    <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">
         <Value name="X"/>
         <Value name="Y"/>
         <Value name="Z"/>

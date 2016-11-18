@@ -92,7 +92,6 @@ void ProtocolStructure::parse(void)
         name = "_unknown";
 
     // Look for any other attributes that we don't recognize
-    // Look for any other attributes that we don't recognize
     for(int i = 0; i < map.count(); i++)
     {
         QDomAttr attr = map.item(i).toAttr();
