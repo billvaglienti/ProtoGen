@@ -100,6 +100,8 @@ macx{
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$PWD\LICENSE.txt)) $$quote($$shell_path($$PWD/ProtoGenInstall/LICENSE.txt)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += rm -r -d -f $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.app/)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY -r $$quote($$shell_path($$shadowed($$PWD)/ProtoGen.app)) $$quote($$shell_path($$PWD/ProtoGenInstall/ProtoGen.app/)) $$escape_expand(\n\t)
+
+        QMAKE_POST_LINK += tar czvf $$quote($$shell_path($$PWD\ProtoGenMac.tgz)) -C $$quote($$shell_path($$PWD)) ProtoGenInstall$$escape_expand(\n\t)
     }
 }
 
@@ -118,7 +120,7 @@ unix:!macx{
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicui18n.so.5?)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
         QMAKE_POST_LINK += $$QMAKE_COPY $$quote($$shell_path($$[QT_INSTALL_LIBS]/libicuuc.so.5?)) $$quote($$shell_path($$PWD/ProtoGenInstall)) $$escape_expand(\n\t)
 
-        QMAKE_POST_LINK += tar czvf $$quote($$shell_path($$PWD\ProtoGenLinux.tgz)) -C $$quote($$shell_path($$PWD)) ProtoGenInstall --exclude=\.svn$$escape_expand(\n\t)
+        QMAKE_POST_LINK += tar czvf $$quote($$shell_path($$PWD\ProtoGenLinux.tgz)) -C $$quote($$shell_path($$PWD)) ProtoGenInstall$$escape_expand(\n\t)
     }
 }
 
