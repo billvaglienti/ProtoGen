@@ -449,6 +449,37 @@ int ProtocolStructure::getNumberInMemory(void) const
 
 
 /*!
+ * Append the include directives needed for this encodable. Mostly this is empty,
+ * but for external structures or enumerations we need to bring in the include file
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getIncludeDirectives(QStringList& list) const
+{
+    // Includes that our enocable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getIncludeDirectives(list);
+
+    // Array sizes could be enumerations that need an include directive
+    if(!array.isEmpty())
+    {
+        QString include = parser->lookUpIncludeName(array);
+        if(!include.isEmpty())
+            list.append(include);
+    }
+
+    // Array sizes could be enumerations that need an include directive
+    if(!array2d.isEmpty())
+    {
+        QString include = parser->lookUpIncludeName(array2d);
+        if(!include.isEmpty())
+            list.append(include);
+    }
+
+    list.removeDuplicates();
+}
+
+
+/*!
  * Return the string used to declare this encodable as part of a structure.
  * This includes the spacing, typename, name, semicolon, comment, and linefeed
  * \return the declaration string for this encodable

@@ -61,6 +61,9 @@ public:
     //! Get the number of fields in memory
     int getNumberInMemory(void) const;
 
+    //! Return the include directives needed for this encodable
+    virtual void getIncludeDirectives(QStringList& list) const;
+
     //! Get the declaration for this structure as a member of another
     virtual QString getDeclaration(void) const;
 

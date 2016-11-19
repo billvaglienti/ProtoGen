@@ -198,7 +198,7 @@ int testTelemetryPacket(void)
 
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
+    if(pkt.length != (13 + 1*60 + 1 + 14*2 + 1 + 3*2 + 5 + 10) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;
@@ -230,7 +230,7 @@ int testTelemetryPacket(void)
     telemetry.mag[0] = telemetry.mag[1] = telemetry.mag[2] = telemetry.compassHeading = 0;
     encodeTelemetryPacketStructure(&pkt, &telemetry);
 
-    if(pkt.length != (13 + 1*55 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
+    if(pkt.length != (13 + 1*60 + 1 + 14*2 + 1 + 3*2 + 5 + 2) )
     {
         std::cout << "Telemetry packet has the wrong length" << std::endl;
         return 0;
@@ -544,7 +544,7 @@ int testGPSPacket(void)
     fillOutGPSTest(gps);
     encodeGPSPacketStructure(&pkt, &gps);
 
-    if(pkt.length != (25 + 5*6) )
+    if(pkt.length != (25 + 5*7) )
     {
         std::cout << "GPS packet has the wrong length" << std::endl;
         return 0;
@@ -591,8 +591,8 @@ void fillOutGPSTest(GPS_t& gps)
     gps.svInfo[0].azimuth = deg2rad(91);
     gps.svInfo[0].elevation = deg2rad(77);
     gps.svInfo[0].healthy = 1;
-    gps.svInfo[0].L1CNo = 50;
-    gps.svInfo[0].L2CNo = 33;
+    gps.svInfo[0].CNo[GPS_BAND_L1] = 50;
+    gps.svInfo[0].CNo[GPS_BAND_L2] = 33;
     gps.svInfo[0].PRN = 12;
     gps.svInfo[0].tracked = 1;
     gps.svInfo[0].used = 1;
@@ -630,8 +630,8 @@ int verifyGPSData(GPS_t gps)
     if(fcompare(gps.svInfo[0].azimuth, deg2rad(91), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[0].elevation, deg2rad(77), 1.0/40.42535554534142)) return 0;
     if(gps.svInfo[0].healthy != 1) return 0;
-    if(gps.svInfo[0].L1CNo != 50) return 0;
-    if(gps.svInfo[0].L2CNo != 33) return 0;
+    if(gps.svInfo[0].CNo[GPS_BAND_L1] != 50) return 0;
+    if(gps.svInfo[0].CNo[GPS_BAND_L2] != 33) return 0;
     if(gps.svInfo[0].PRN != 12) return 0;
     if(gps.svInfo[0].tracked != 1) return 0;
     if(gps.svInfo[0].used != 1) return 0;
@@ -640,8 +640,8 @@ int verifyGPSData(GPS_t gps)
     if(fcompare(gps.svInfo[1].azimuth, deg2rad(-179.99), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[1].elevation, deg2rad(-23), 1.0/40.42535554534142)) return 0;
     if(gps.svInfo[1].healthy != 1) return 0;
-    if(gps.svInfo[1].L1CNo != 50) return 0;
-    if(gps.svInfo[1].L2CNo != 33) return 0;
+    if(gps.svInfo[1].CNo[GPS_BAND_L1] != 50) return 0;
+    if(gps.svInfo[1].CNo[GPS_BAND_L2] != 33) return 0;
     if(gps.svInfo[1].PRN != 13) return 0;
     if(gps.svInfo[1].tracked != 1) return 0;
     if(gps.svInfo[1].used != 1) return 0;
@@ -650,8 +650,8 @@ int verifyGPSData(GPS_t gps)
     if(fcompare(gps.svInfo[2].azimuth, deg2rad(179.1), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[2].elevation, deg2rad(66), 1.0/40.42535554534142)) return 0;
     if(gps.svInfo[2].healthy != 1) return 0;
-    if(gps.svInfo[2].L1CNo != 50) return 0;
-    if(gps.svInfo[2].L2CNo != 33) return 0;
+    if(gps.svInfo[2].CNo[GPS_BAND_L1] != 50) return 0;
+    if(gps.svInfo[2].CNo[GPS_BAND_L2] != 33) return 0;
     if(gps.svInfo[2].PRN != 23) return 0;
     if(gps.svInfo[2].tracked != 1) return 0;
     if(gps.svInfo[2].used != 1) return 0;
@@ -660,8 +660,8 @@ int verifyGPSData(GPS_t gps)
     if(fcompare(gps.svInfo[3].azimuth, deg2rad(90), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[3].elevation, deg2rad(0), 1.0/40.42535554534142)) return 0;
     if(gps.svInfo[3].healthy != 0) return 0;
-    if(gps.svInfo[3].L1CNo != 50) return 0;
-    if(gps.svInfo[3].L2CNo != 33) return 0;
+    if(gps.svInfo[3].CNo[GPS_BAND_L1] != 50) return 0;
+    if(gps.svInfo[3].CNo[GPS_BAND_L2] != 33) return 0;
     if(gps.svInfo[3].PRN != 1) return 0;
     if(gps.svInfo[3].tracked != 1) return 0;
     if(gps.svInfo[3].used != 0) return 0;
@@ -670,8 +670,8 @@ int verifyGPSData(GPS_t gps)
     if(fcompare(gps.svInfo[4].azimuth, deg2rad(0), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[4].elevation, deg2rad(0), 1.0/40.42535554534142)) return 0;
     if(gps.svInfo[4].healthy != 0) return 0;
-    if(gps.svInfo[4].L1CNo != 0) return 0;
-    if(gps.svInfo[4].L2CNo != 0) return 0;
+    if(gps.svInfo[4].CNo[GPS_BAND_L1] != 0) return 0;
+    if(gps.svInfo[4].CNo[GPS_BAND_L2] != 0) return 0;
     if(gps.svInfo[4].PRN != 0) return 0;
     if(gps.svInfo[4].tracked != 0) return 0;
     if(gps.svInfo[4].used != 0) return 0;
