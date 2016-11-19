@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.6.4. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.7.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -84,7 +84,7 @@ The Protocol tag supports the following attributes:
 
 - `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink".
 
-- `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any structures or packets which have their own `file` attribute.
+- `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any structures or packets which have their own `file` attribute. If the `file` attribute includes and extension it will be ignored. 
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
@@ -183,7 +183,7 @@ Enum tag attributes:
   
 - `name` : gives the typedef name of the enumeration
 
-- `file` : Optional attribute that gives the header file name (.h) that will be used for this enumeration. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. Protogen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
+- `file` : Optional attribute that gives the header file name that will be used for this enumeration. Any extension to the `file` attribute will be ignored. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. Protogen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
 
@@ -231,7 +231,9 @@ Structure tag Attributes:
 
 - `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
 
-- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
+- `file` : Gives the name of the source and header file name (.c and .h). If this is ommitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file. Any extension to the `file` attribute will be ignored.
+
+- `deffile` : Optional attribute used to specify a definition file which receives the structure definition (and any enumeration which is a child of the structure), in place of the normal file location for the structure definition. As with other file attributes the definition file will be correctly appended if it is used multiple times. Any extension to the `deffile` attribute will be ignored.
 
 - `encode` : By default encode functions will be output. This can be suppressed by setting `encode`="false".
 

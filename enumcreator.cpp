@@ -65,7 +65,7 @@ void EnumCreator::parseGlobal(QString filename)
 
     // Global enums must have a reference file
     if(file.isEmpty())
-        file = filename;
+        file = filename.left(filename.indexOf("."));    // remove any extension
 
     isglobal = false;
 }
@@ -103,7 +103,11 @@ void EnumCreator::parse(void)
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(isglobal && attrname.compare("file", Qt::CaseInsensitive) == 0)
+        {
+            // Remove the extension if any
             file = attr.value().trimmed();
+            file = file.left(file.indexOf("."));
+        }
         else if(support.disableunrecognized == false)
             emitWarning("Unrecognized attribute: " + attrname);
     }
@@ -377,7 +381,6 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         {
             bool link = false;
 
-
             // Check to see if this enumeration is a packet identifier
             for(int j = 0; j < packetids.size(); j++)
             {
@@ -401,7 +404,6 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             if(thirdColumnSpacing < commentList.at(i).length())
                 thirdColumnSpacing = commentList.at(i).length();
         }
-
 
         // The outline paragraph
         if(global)

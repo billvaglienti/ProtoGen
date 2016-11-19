@@ -18,7 +18,7 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, const QS
     decode(true)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file";
+    attriblist << "encode" << "decode" << "file" << "deffile";
 }
 
 
@@ -36,6 +36,7 @@ void ProtocolStructureModule::clear(void)
     ProtocolStructure::clear();
     source.clear();
     header.clear();
+    defheadermodulename.clear();
     encode = decode = true;
 
     // Note that data set during constructor are not changed
@@ -57,6 +58,7 @@ void ProtocolStructureModule::parse(void)
     QDomNamedNodeMap map = e.attributes();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
+    defheadermodulename = ProtocolParser::getAttribute("deffile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
 
@@ -90,12 +92,29 @@ void ProtocolStructureModule::parse(void)
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
+    // Remove any extensions the user may have erroneously included
+    moduleName = moduleName.left(moduleName.indexOf("."));
+    defheadermodulename = defheadermodulename.left(defheadermodulename.indexOf("."));
+
+    // The file names
     if(moduleName.isEmpty())
     {
-        // The file names
         header.setModuleNameAndPath(support.prefix + name, support.outputpath);
         source.setModuleNameAndPath(support.prefix + name, support.outputpath);
+    }
+    else
+    {
+        header.setModuleNameAndPath(moduleName, support.outputpath);
+        source.setModuleNameAndPath(moduleName, support.outputpath);
+    }
 
+    // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
+    if(header.isAppending())
+    {
+        header.makeLineSeparator();
+    }
+    else
+    {
         // Comment block at the top of the header file
         header.write("/*!\n");
         header.write(" * \\file\n");
@@ -115,43 +134,44 @@ void ProtocolStructureModule::parse(void)
         // Include the protocol top level module
         header.writeIncludeDirective(protoName + "Protocol.h");
     }
+
+    // Handle the idea that the structure might be defined elsewhere
+    ProtocolHeaderFile structheader;
+    ProtocolHeaderFile* structfile = &structheader;
+
+    if(defheadermodulename.isEmpty())
+    {
+        defheadermodulename = header.moduleName();
+        structfile = &header;
+    }
     else
     {
-        // The file names
-        header.setModuleNameAndPath(moduleName, support.outputpath);
-        source.setModuleNameAndPath(moduleName, support.outputpath);
+        structheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+        structfile = &structheader;
 
-        // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
-        if(!header.isAppending())
-        {
-            // Comment block at the top of the header file
-            header.write("/*!\n");
-            header.write(" * \\file\n");
-            header.write(" * " + header.fileName() + " is part of the " + protoName + " protocol stack\n");
-
-            // Finish the top comment block
-            header.write(" */\n");
-            header.write("\n");
-
-            // Include the protocol top level module
-            header.writeIncludeDirective(protoName + "Protocol.h");
-        }
-        else
-            header.makeLineSeparator();
-
+        // In this instance we know that the normal header file needs to include
+        // the file with the structure definition
+        header.writeIncludeDirective(structheader.fileName());
     }
 
     // Add other includes specific to this structure
-    parser->outputIncludes(getHierarchicalName(), header, e);
+    parser->outputIncludes(getHierarchicalName(), *structfile, e);
 
     // Include directives that may be needed for our children
     QStringList list;
     for(int i = 0; i < encodables.length(); i++)
         encodables[i]->getIncludeDirectives(list);
-    header.writeIncludeDirectives(list);
+    structfile->writeIncludeDirectives(list);
 
     // White space is good
-    header.makeLineSeparator();
+    structfile->makeLineSeparator();
+
+    // Create the structure definition in the header.
+    // This includes any sub-structures as well
+    structfile->write(getStructureDeclaration(true));
+
+    // White space is good
+    structfile->makeLineSeparator();
 
     // Include the helper files in the source, but only do this once
     if(!source.isAppending())
@@ -170,16 +190,6 @@ void ProtocolStructureModule::parse(void)
         source.writeIncludeDirective("scaleddecode.h");
         source.writeIncludeDirective("scaledencode.h");
     }
-
-    // White space is good
-    header.makeLineSeparator();
-
-    // Create the structure definition in the header.
-    // This includes any sub-structures as well
-    header.write(getStructureDeclaration(true));
-
-    // White space is good
-    header.makeLineSeparator();
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -203,6 +213,9 @@ void ProtocolStructureModule::parse(void)
     // Write to disk
     header.flush();
     source.flush();
+
+    // This may be one of the files above, in which case this will do nothing
+    structfile->flush();
 
 }// ProtocolStructureModule::parse
 

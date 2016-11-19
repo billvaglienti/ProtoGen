@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.7.donotuse";
+const QString ProtocolParser::genVersion = "1.7.0.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -243,6 +243,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         module->parse();
 
         // Keep a list of all the file names
+        fileNameList.append(module->getDefinitionFileName());
         fileNameList.append(module->getHeaderFileName());
         fileNameList.append(module->getSourceFileName());
 
@@ -266,6 +267,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         structures.append(packet);
 
         // Keep a list of all the file names
+        fileNameList.append(packet->getDefinitionFileName());
         fileNameList.append(packet->getHeaderFileName());
         fileNameList.append(packet->getSourceFileName());
     }
@@ -282,6 +284,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         packet->parse();
 
         // Keep a list of all the file names
+        fileNameList.append(packet->getDefinitionFileName());
         fileNameList.append(packet->getHeaderFileName());
         fileNameList.append(packet->getSourceFileName());
     }
@@ -760,7 +763,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
     {
         if(structures.at(i)->typeName == typeName)
         {
-            return structures.at(i)->getHeaderFileName();
+            return structures.at(i)->getDefinitionFileName();
         }
     }
 
@@ -768,7 +771,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
     {
         if(packets.at(i)->typeName == typeName)
         {
-            return packets.at(i)->getHeaderFileName();
+            return packets.at(i)->getDefinitionFileName();
         }
     }
 

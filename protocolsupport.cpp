@@ -46,6 +46,7 @@ void ProtocolSupport::parse(QDomElement& e)
 
     // Global file names can be specified
     globalFileName = ProtocolParser::getAttribute("file", map);
+    globalFileName = globalFileName.left(globalFileName.indexOf("."));
 
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);

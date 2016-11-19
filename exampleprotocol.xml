@@ -136,7 +136,7 @@ interpretation
         <Code name="codeexample" decode="if(user->maxRPM &lt;= 0) return 0;" comment="Packet is not valid if maximum RPM is zero"/>
     </Packet>
 
-    <Packet name="ThrottleSettings" file="Engine" ID="THROTTLESETTINGS"
+    <Packet name="ThrottleSettings" file="Engine" deffile="EngineDefinitions.h" ID="THROTTLESETTINGS"
             comment="Change the throttle control settings. The engine control
             laws output a throttle command signal from 0 to 1. The data in this
             packet are used to determine what pulse width to send to the servo 
@@ -161,7 +161,7 @@ interpretation
         
     </Packet>
             
-    <Structure name="Date" comment="Calendar date information">
+    <Structure name="Date" deffile="OtherDefinitions" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" comment="day of the month, from 1 to 31"/>

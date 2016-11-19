@@ -35,6 +35,9 @@ public:
     //! Return the filename
     virtual QString fileName(void) const {return module;}
 
+    //! Return the module name
+    QString moduleName(void) const {return module;}
+
     //! \return true if an append operation is in progress
     bool isAppending(void) const {return appending;}
 
