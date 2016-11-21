@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.7.0.b";
+const QString ProtocolParser::genVersion = "1.7.1.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -648,7 +648,6 @@ QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QSt
  */
 QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map, QString defaultIfNone)
 {
-    // We use name as part of our debug outputs, so its good to have it first.
     for(int i = 0; i < map.count(); i++)
     {
         QDomAttr attr = map.item(i).toAttr();
@@ -978,7 +977,8 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     QStringList packetids;
     for(int i = 0; i < packets.size(); i++)
-        packetids.append(packets.at(i)->getId());
+        packets.at(i)->appendIds(packetids);
+    packetids.removeDuplicates();
 
     for(int i = 0; i < alldocumentsinorder.size(); i++)
     {

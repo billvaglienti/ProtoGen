@@ -33,7 +33,12 @@ interpretation
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
         <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
-        <Value name="ORION_PKT_KLV_USER_DATA"/>
+        <Value name="ORION_PKT_KLV_USER_DATA1"/>
+        <Value name="ORION_PKT_KLV_USER_DATA2"/>
+        <Value name="ORION_PKT_KLV_USER_DATA3"/>
+        <Value name="ORION_PKT_KLV_USER_DATA4"/>
+        <Value name="ORION_PKT_KLV_USER_DATA5"/>
+        <Value name="ORION_PKT_KLV_USER_DATA6"/>
     </Enum>
 
     <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">
@@ -60,7 +65,8 @@ interpretation
     <Documentation comment="------------"/>
     <Documentation name="Packets" paragraph="1"/>
 
-    <Packet name="KlvUserData" ID="ORION_PKT_KLV_USER_DATA" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags">
+    <Packet name="KlvUserData" structureInterface="true" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags"
+        ID="ORION_PKT_KLV_USER_DATA1, ORION_PKT_KLV_USER_DATA2;ORION_PKT_KLV_USER_DATA3 ORION_PKT_KLV_USER_DATA4    ORION_PKT_KLV_USER_DATA5 ORION_PKT_KLV_USER_DATA6">
         <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
         <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
         <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>

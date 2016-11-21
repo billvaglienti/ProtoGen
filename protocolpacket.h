@@ -30,8 +30,8 @@ public:
     //! Return top level markdown documentation for this packet
     virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
 
-    //! Get the ID string of this packet
-    QString getId(void) const {return id;}
+    //! Get all the ID strings of this packet
+    void appendIds(QStringList& list) const {list.append(ids);}
 
 protected:
 
@@ -77,7 +77,7 @@ protected:
 protected:
 
     //! Packet identifier string
-    QString id;
+    QStringList ids;
 
     //! List of document objects
     QList<ProtocolDocumentation*> documentList;

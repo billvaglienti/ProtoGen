@@ -45,6 +45,44 @@ void ProtocolStructureModule::clear(void)
 
 
 /*!
+ * Issue warnings for the structure module. This should be called after the
+ * attributes have been parsed.
+ */
+void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
+{
+    // Look for any other attributes that we don't recognize
+    if(support.disableunrecognized == false)
+    {
+        for(int i = 0; i < map.count(); i++)
+        {
+            QDomAttr attr = map.item(i).toAttr();
+            if(attr.isNull())
+                continue;
+
+            if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
+                emitWarning("Unrecognized attribute " + attr.name());
+        }
+    }
+
+    if(isArray())
+    {
+        emitWarning("top level object cannot be an array");
+        array.clear();
+        variableArray.clear();
+        array2d.clear();
+        variable2dArray.clear();
+    }
+
+    if(!dependsOn.isEmpty())
+    {
+        emitWarning("dependsOn makes no sense for a top level object");
+        dependsOn.clear();
+    }
+
+}// ProtocolStructureModule::issueWarnings
+
+
+/*!
  * Create the source and header files that represent a packet
  */
 void ProtocolStructureModule::parse(void)
@@ -62,31 +100,8 @@ void ProtocolStructureModule::parse(void)
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
 
-    // Look for any other attributes that we don't recognize
-    for(int i = 0; i < map.count(); i++)
-    {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            emitWarning("Unrecognized attribute " + attr.name());
-    }
-
-    if(isArray())
-    {
-        emitWarning("top level structure cannot be an array");
-        array.clear();
-        variableArray.clear();
-        array2d.clear();
-        variable2dArray.clear();
-    }
-
-    if(!dependsOn.isEmpty())
-    {
-        emitWarning("dependsOn makes no sense for a top level structure");
-        dependsOn.clear();
-    }
+    // Warnings for users
+    issueWarnings(map);
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())

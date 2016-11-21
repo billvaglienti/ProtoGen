@@ -33,6 +33,9 @@ public:
 
 protected:
 
+    //! Issue warnings for the structure module.
+    void issueWarnings(const QDomNamedNodeMap& map);
+
     //! Write data to the source and header files to encode and decode this structure and all its children
     void createStructureFunctions(void);
 
