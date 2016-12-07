@@ -49,7 +49,7 @@ void ProtocolCode::parse(void)
 
         if(attrname.compare("name", Qt::CaseInsensitive) == 0)
             name = attr.value().trimmed();
-        else if(attrname.compare("encdoe", Qt::CaseInsensitive) == 0)
+        else if(attrname.compare("encode", Qt::CaseInsensitive) == 0)
             encode = attr.value().trimmed();
         else if(attrname.compare("decode", Qt::CaseInsensitive) == 0)
             decode = attr.value().trimmed();

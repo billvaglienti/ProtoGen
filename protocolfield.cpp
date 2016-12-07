@@ -1026,11 +1026,11 @@ void ProtocolField::computeEncodedLength(void)
 
         // Account for array, variable array, and depends on
         if(struc != NULL)
-            encodedLength.addToLength(struc->encodedLength, array, !(variableArray.isEmpty() || variable2dArray.isEmpty()), !dependsOn.isEmpty(), array2d);
+            encodedLength.addToLength(struc->encodedLength, array, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), array2d);
         else
         {
             if(is2dArray())
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !(variableArray.isEmpty() || variable2dArray.isEmpty()), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
             else if(isArray())
                 encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
             else
@@ -1050,7 +1050,7 @@ void ProtocolField::computeEncodedLength(void)
         if(is2dArray())
             lengthString += "*" + array2d;
 
-        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
 
     }
 
