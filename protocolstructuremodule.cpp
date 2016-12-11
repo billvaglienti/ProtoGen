@@ -27,6 +27,26 @@ ProtocolStructureModule::~ProtocolStructureModule(void)
     clear();
 }
 
+//! Get the name of the header file that encompasses this structure definition
+QString ProtocolStructureModule::getDefinitionFileName(void) const
+{
+    if(defheader.moduleName().isEmpty())
+        return header.fileName();
+    else
+        return defheader.fileName();
+}
+
+
+
+//! Get the path of the header file that encompasses this structure definition
+QString ProtocolStructureModule::getDefinitionFilePath(void) const
+{
+    if(defheader.moduleName().isEmpty())
+        return header.filePath();
+    else
+        return defheader.filePath();
+}
+
 
 /*!
  * Clear out any data, resetting for next packet parse operation
@@ -36,7 +56,7 @@ void ProtocolStructureModule::clear(void)
     ProtocolStructure::clear();
     source.clear();
     header.clear();
-    defheadermodulename.clear();
+    defheader.clear();
     encode = decode = true;
 
     // Note that data set during constructor are not changed
@@ -96,7 +116,7 @@ void ProtocolStructureModule::parse(void)
     QDomNamedNodeMap map = e.attributes();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
-    defheadermodulename = ProtocolParser::getAttribute("deffile", map);
+    QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
 
@@ -107,15 +127,11 @@ void ProtocolStructureModule::parse(void)
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
-    // Remove any extensions the user may have erroneously included
-    moduleName = moduleName.left(moduleName.indexOf("."));
-    defheadermodulename = defheadermodulename.left(defheadermodulename.indexOf("."));
-
     // The file names
     if(moduleName.isEmpty())
     {
-        header.setModuleNameAndPath(support.prefix + name, support.outputpath);
-        source.setModuleNameAndPath(support.prefix + name, support.outputpath);
+        header.setModuleNameAndPath(support.prefix, name, support.outputpath);
+        source.setModuleNameAndPath(support.prefix, name, support.outputpath);
     }
     else
     {
@@ -150,23 +166,19 @@ void ProtocolStructureModule::parse(void)
         header.writeIncludeDirective(protoName + "Protocol.h");
     }
 
-    // Handle the idea that the structure might be defined elsewhere
-    ProtocolHeaderFile structheader;
-    ProtocolHeaderFile* structfile = &structheader;
+    // Handle the idea that the structure might be defined in a different file
+    ProtocolHeaderFile* structfile = &header;
+    if(!defheadermodulename.isEmpty())
+    {
+        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+        if(defheader.isAppending())
+            defheader.makeLineSeparator();
 
-    if(defheadermodulename.isEmpty())
-    {
-        defheadermodulename = header.moduleName();
-        structfile = &header;
-    }
-    else
-    {
-        structheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
-        structfile = &structheader;
+        structfile = &defheader;
 
         // In this instance we know that the normal header file needs to include
         // the file with the structure definition
-        header.writeIncludeDirective(structheader.fileName());
+        header.writeIncludeDirective(structfile->fileName());
     }
 
     // Add other includes specific to this structure

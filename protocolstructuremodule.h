@@ -23,13 +23,22 @@ public:
     ~ProtocolStructureModule(void);
 
     //! Get the name of the header file that encompasses this structure definition
-    QString getDefinitionFileName(void) const {return defheadermodulename + ".h";}
+    QString getDefinitionFileName(void) const;
 
     //! Get the name of the header file that encompasses this structure interface functions
     QString getHeaderFileName(void) const {return header.fileName();}
 
     //! Get the name of the source file for this structure
     QString getSourceFileName(void) const {return source.fileName();}
+
+    //! Get the path of the header file that encompasses this structure definition
+    QString getDefinitionFilePath(void) const;
+
+    //! Get the path of the header file that encompasses this structure interface functions
+    QString getHeaderFilePath(void) const {return header.filePath();}
+
+    //! Get the path of the source file for this structure
+    QString getSourceFilePath(void) const {return source.filePath();}
 
 protected:
 
@@ -47,7 +56,7 @@ protected:
 
     ProtocolSourceFile source;      //!< The source file (*.c)
     ProtocolHeaderFile header;      //!< The header file (*.h)
-    QString defheadermodulename;    //!< The header file name for the structure definition
+    ProtocolHeaderFile defheader;   //!< The header file name for the structure definition
     QString api;                    //!< The protocol API enumeration
     QString version;                //!< The version string
     bool encode;                    //!< True if the encode function is output

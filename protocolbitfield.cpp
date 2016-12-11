@@ -170,7 +170,7 @@ source.write("\
 void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits)\n\
 {\n\
     // Bits are encoded left-to-right from most-significant to least-significant.\n\
-    // The least signficiant bits are moved first, as that allows us to keep the\n\
+    // The least significant bits are moved first, as that allows us to keep the\n\
     // shifts to 8 bits or less, which some compilers need.\n\
 \n\
     // The value of the bit count after moving all the bits\n\

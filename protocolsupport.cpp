@@ -44,7 +44,7 @@ void ProtocolSupport::parse(QDomElement& e)
     if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("bitfieldTest", map)))
         bitfieldtest = true;
 
-    // Global file names can be specified
+    // Global file names can be specified, but cannot have a "." in it
     globalFileName = ProtocolParser::getAttribute("file", map);
     globalFileName = globalFileName.left(globalFileName.indexOf("."));
 

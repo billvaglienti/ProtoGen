@@ -41,13 +41,53 @@ ProtocolFile::ProtocolFile() :
 
 void ProtocolFile::setModuleNameAndPath(QString name, QString filepath)
 {
-    module = name;
+    setModuleNameAndPath(QString(), name, filepath);
+}
+
+
+void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString filepath)
+{
+    // Remove any contents we currently have
+    clear();
+
+    // Handle the case where the file includes "./" to reference the current working
+    // directory. We just remove this as its not needed.
+    if(name.startsWith("./"))
+        name.remove("./");
+    else if(name.startsWith(".\\"))
+        name.remove(".\\");
+
+    // Does the name include some path information?
+    int index = name.lastIndexOf("/");
+    if(index < 0)
+        index = name.lastIndexOf("\\");
+
+    if(index >= 0)
+    {
+        // The path information in the name (including the path separator)
+        QString namepath = name.left(index+1);
+
+        // In case the user gave path information in the name which
+        // references a global location, ignore the filepath (i.e. user
+        // can override the working directory)
+        if(namepath.contains(":") || namepath.startsWith('\\') || namepath.startsWith('/'))
+            filepath = namepath;
+        else
+            filepath += "\\" + namepath;
+
+        // The name without the path data
+        name = name.right(name.size() - index - 1);
+
+    }// If name contains a path separator
+
+    // Remove and log the extension
+    extractExtension(name);
+
+    // Remember the module name
+    module = prefix + name;
 
     // Make sure the path uses native separators and ends with a separator (unless its empty)
     path = sanitizePath(filepath);
-
-    // Remove any contents we currently have
-    clear();
 
     // This will see if the file already exists and will setup the initial output
     prepareToAppend();
@@ -55,7 +95,29 @@ void ProtocolFile::setModuleNameAndPath(QString name, QString filepath)
 
 
 /*!
- * Clear the contents of the file. This will also clear the warning indicator and mark the file as clean
+ * Get the extension information for this name, and remove it from the name.
+ * \param name has its extension (if any) logged and removed
+ */
+void ProtocolFile::extractExtension(QString& name)
+{
+    // Note that "." as the first character is not an extension, it indicates a hidden file
+    int index = name.lastIndexOf(".");
+    if(index >= 1)
+    {
+        // The extension, including the "."
+        extension = name.right(name.size() - index);
+
+        // The name without the extension
+        name = name.left(index);
+    }
+    else
+        extension.clear();
+
+}// ProtocolFile::extractExtension
+
+
+/*!
+ * Clear the contents of the file. This will also mark the file as clean
  */
 void ProtocolFile::clear()
 {
@@ -304,6 +366,7 @@ void ProtocolFile::copyTemporaryFile(const QString& path, const QString& fileNam
     QFile tempfile(tempFileName);
     QFile permfile(permFileName);
 
+    // Its possible we already copied and deleted the file, so this isn't an error
     if(!tempfile.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
 
@@ -355,7 +418,7 @@ ProtocolFile::~ProtocolFile()
  * \return the the correct on disk name. This name will include the temporary
  *         prefix if needed
  */
-QString ProtocolFile::fileNameOnDisk(void) const
+QString ProtocolFile::fileNameAndPathOnDisk(void) const
 {
     if(temporary)
         return path + tempprefix+fileName();
@@ -380,7 +443,11 @@ bool ProtocolFile::flush(void)
         return false;
     }
 
-    QFile file(fileNameOnDisk());
+    QFile file(fileNameAndPathOnDisk());
+
+    // Make sure the path exists
+    if(!path.isEmpty())
+        QDir::current().mkpath(path);
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -403,13 +470,18 @@ bool ProtocolFile::flush(void)
 
 
 /*!
- * Return the filename, which is the module name plus ".h"
- * \return the filename
+ * Get the extension information for this name, and remove it from the name.
+ * \param name has its extension (if any) logged and removed
  */
-QString ProtocolHeaderFile::fileName(void) const
+void ProtocolHeaderFile::extractExtension(QString& name)
 {
-    return module + ".h";
-}
+    ProtocolFile::extractExtension(name);
+
+    // A head file extension must start with ".h" (.h, .hpp, .hxx, etc.)
+    if(!extension.contains(".h", Qt::CaseInsensitive))
+        extension = ".h";
+
+}// ProtocolHeaderFile::extractExtension
 
 
 /*!
@@ -428,7 +500,11 @@ bool ProtocolHeaderFile::flush(void)
         return false;
     }
 
-    QFile file(fileNameOnDisk());
+    QFile file(fileNameAndPathOnDisk());
+
+    // Make sure the path exists
+    if(!path.isEmpty())
+        QDir::current().mkpath(path);
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -479,7 +555,7 @@ QString ProtocolHeaderFile::getClosingStatement(void)
  */
 void ProtocolHeaderFile::prepareToAppend(void)
 {    
-    QFile file(fileNameOnDisk());
+    QFile file(fileNameAndPathOnDisk());
 
     if(file.exists())
     {
@@ -524,13 +600,18 @@ void ProtocolHeaderFile::prepareToAppend(void)
 
 
 /*!
- * Return the filename, which is the module name plus ".h"
- * \return the filename
+ * Get the extension information for this name, and remove it from the name.
+ * \param name has its extension (if any) logged and removed
  */
-QString ProtocolSourceFile::fileName(void) const
+void ProtocolSourceFile::extractExtension(QString& name)
 {
-    return module + ".c";
-}
+    ProtocolFile::extractExtension(name);
+
+    // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
+    if(!extension.contains(".c", Qt::CaseInsensitive))
+        extension = ".c";
+
+}// ProtocolSourceFile::extractExtension
 
 
 /*!
@@ -549,7 +630,11 @@ bool ProtocolSourceFile::flush(void)
         return false;
     }
 
-    QFile file(fileNameOnDisk());
+    QFile file(fileNameAndPathOnDisk());
+
+    // Make sure the path exists
+    if(!path.isEmpty())
+        QDir::current().mkpath(path);
 
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -595,7 +680,7 @@ QString ProtocolSourceFile::getClosingStatement(void)
  */
 void ProtocolSourceFile::prepareToAppend(void)
 {
-    QFile file(fileNameOnDisk());
+    QFile file(fileNameAndPathOnDisk());
 
     if(file.exists())
     {

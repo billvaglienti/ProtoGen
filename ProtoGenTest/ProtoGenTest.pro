@@ -47,11 +47,14 @@ HEADERS += \
     scaledencode.h \
     TelemetryPacket.h \
     linkcode.h \
-    packetinterface.h
+    packetinterface.h \
+    definitions/EngineDefinitions.hpp
 
 OTHER_FILES += \
     Doxyfile
 
+INCLUDEPATH += ./ \
+               ./definitions
 
 #protogen.target = $$PWD/Demolink.markdown
 #protogen.commands = $$PWD/../ProtoGenInstall/ProtoGen.exe $$PWD/../exampleprotocol.xml $$PWD -no-doxygen

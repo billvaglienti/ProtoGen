@@ -7,8 +7,10 @@
 class ProtocolFile
 {
 public:
+    //! Construct the protocol file
     ProtocolFile(const QString& moduleName, bool temporary = true);
 
+    //! Construct the protocol file
     ProtocolFile();
 
     //! Destructor that performs the actual file write
@@ -32,8 +34,14 @@ public:
     //! Set the name of the module
     void setModuleNameAndPath(QString name, QString filepath);
 
+    //! Set the name of the module
+    void setModuleNameAndPath(QString prefix, QString name, QString filepath);
+
+    //! Return the path
+    virtual QString filePath(void) const {return path;}
+
     //! Return the filename
-    virtual QString fileName(void) const {return module;}
+    virtual QString fileName(void) const {return module+extension;}
 
     //! Return the module name
     QString moduleName(void) const {return module;}
@@ -73,9 +81,13 @@ protected:
     //! Prepare to do an append operation
     virtual void prepareToAppend(void){}
 
-    //! Return the correct on disk name
-    QString fileNameOnDisk(void) const;
+    //! Get the extension information for this name
+    virtual void extractExtension(QString& name);
 
+    //! Return the correct on disk name
+    QString fileNameAndPathOnDisk(void) const;
+
+    QString extension;  //!< The file extension
     QString path;       //!< Output path for the file
     QString module;     //!< The module name, not including the file extension
     QString contents;   //!< The contents, not including the prologue or epilogue
@@ -93,13 +105,13 @@ public:
     //! Write the file to disc, including any prologue/epilogue
     virtual bool flush(void);
 
-    //! Return the filename
-    virtual QString fileName(void) const;
-
 protected:
 
     //! Prepare to do an append operation
     virtual void prepareToAppend(void);
+
+    //! Get the extension information for this name
+    virtual void extractExtension(QString& name);
 
     //! \return the text that is appended to close a header file
     QString getClosingStatement(void);
@@ -116,13 +128,13 @@ public:
     //! Write the file to disc, including any prologue/epilogue
     bool flush(void);
 
-    //! Return the filename
-    virtual QString fileName(void) const;
-
 protected:
 
     //! Prepare to do an append operation
     virtual void prepareToAppend(void);
+
+    //! Get the extension information for this name
+    virtual void extractExtension(QString& name);
 
     //! \return the text that is appended to close a source file
     QString getClosingStatement(void);

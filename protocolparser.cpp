@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.7.1.b";
+const QString ProtocolParser::genVersion = "1.7.2.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -211,12 +211,14 @@ bool ProtocolParser::parse(QString filename, QString path)
 
     // The list of our output files
     QStringList fileNameList;
+    QStringList filePathList;
 
     // Build the top level module
     createProtocolFiles(docElem);
 
     // And record its file name
     fileNameList.append(header.fileName());
+    filePathList.append(header.filePath());
 
     // Now output the global enumerations, they will go in the main
     // header file by default, unless the enum specifies otherwise
@@ -232,6 +234,7 @@ bool ProtocolParser::parse(QString filename, QString path)
 
         // Keep a list of all the file names we used
         fileNameList.append(enumfile.fileName());
+        filePathList.append(enumfile.filePath());
     }
 
     // Now parse the global structures
@@ -244,8 +247,11 @@ bool ProtocolParser::parse(QString filename, QString path)
 
         // Keep a list of all the file names
         fileNameList.append(module->getDefinitionFileName());
+        filePathList.append(module->getDefinitionFilePath());
         fileNameList.append(module->getHeaderFileName());
+        filePathList.append(module->getHeaderFilePath());
         fileNameList.append(module->getSourceFileName());
+        filePathList.append(module->getSourceFilePath());
 
     }// for all top level structures
 
@@ -268,8 +274,12 @@ bool ProtocolParser::parse(QString filename, QString path)
 
         // Keep a list of all the file names
         fileNameList.append(packet->getDefinitionFileName());
+        filePathList.append(packet->getDefinitionFilePath());
         fileNameList.append(packet->getHeaderFileName());
+        filePathList.append(packet->getHeaderFilePath());
         fileNameList.append(packet->getSourceFileName());
+        filePathList.append(packet->getSourceFilePath());
+
     }
 
     // And the packets which are not available for other packets
@@ -285,8 +295,11 @@ bool ProtocolParser::parse(QString filename, QString path)
 
         // Keep a list of all the file names
         fileNameList.append(packet->getDefinitionFileName());
+        filePathList.append(packet->getDefinitionFilePath());
         fileNameList.append(packet->getHeaderFileName());
+        filePathList.append(packet->getHeaderFilePath());
         fileNameList.append(packet->getSourceFileName());
+        filePathList.append(packet->getSourceFilePath());
     }
 
     if(!nohelperfiles)
@@ -296,18 +309,28 @@ bool ProtocolParser::parse(QString filename, QString path)
         FieldCoding(support).generate();
 
         fileNameList.append("scaledencode.h");
+        filePathList.append(support.outputpath);
         fileNameList.append("scaledencode.c");
+        filePathList.append(support.outputpath);
         fileNameList.append("scaleddecode.h");
+        filePathList.append(support.outputpath);
         fileNameList.append("scaleddecode.c");
+        filePathList.append(support.outputpath);
         fileNameList.append("fieldencode.h");
+        filePathList.append(support.outputpath);
         fileNameList.append("fieldencode.c");
+        filePathList.append(support.outputpath);
         fileNameList.append("fielddecode.h");
+        filePathList.append(support.outputpath);
         fileNameList.append("fielddecode.c");
+        filePathList.append(support.outputpath);
 
         if(support.bitfield)
         {
             fileNameList.append("bitfieldspecial.h");
+            filePathList.append(support.outputpath);
             fileNameList.append("bitfieldspecial.c");
+            filePathList.append(support.outputpath);
             ProtocolBitfield(support).generate();
         }
 
@@ -315,19 +338,17 @@ bool ProtocolParser::parse(QString filename, QString path)
         // This is where the files are stored in the resources
         QString sourcePath = ":/files/prebuiltSources/";
 
-        QStringList fileNames;
         if(support.specialFloat)
         {
             fileNameList.append("floatspecial.h");
+            filePathList.append(support.outputpath);
             fileNameList.append("floatspecial.c");
-            fileNames << "floatspecial.c" << "floatspecial.h";
+            filePathList.append(support.outputpath);
+
+            QFile::copy(sourcePath + "floatspecial.c", support.outputpath + ProtocolFile::tempprefix + "floatspecial.c");
+            QFile::copy(sourcePath + "floatspecial.h", support.outputpath + ProtocolFile::tempprefix + "floatspecial.h");
         }
 
-        for(int i = 0; i < fileNames.length(); i++)
-        {
-            // ProtocolFile::deleteFile(fileNames[i]);
-            QFile::copy(sourcePath + fileNames[i], support.outputpath + ProtocolFile::tempprefix + fileNames[i]);
-        }
     }
 
     if(!nomarkdown)
@@ -339,9 +360,8 @@ bool ProtocolParser::parse(QString filename, QString path)
     #endif
 
     // This is fun...replace all the temporary files with real ones if needed
-    fileNameList.removeDuplicates();
     for(int i = 0; i < fileNameList.count(); i++)
-        ProtocolFile::copyTemporaryFile(support.outputpath, fileNameList.at(i));
+        ProtocolFile::copyTemporaryFile(filePathList.at(i), fileNameList.at(i));
 
     // If we are putting the files in our local directory then we don't just want an empty string in our printout
     if(path.isEmpty())

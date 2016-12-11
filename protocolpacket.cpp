@@ -76,7 +76,7 @@ void ProtocolPacket::parse(void)
     QDomNamedNodeMap map = e.attributes();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
-    defheadermodulename = ProtocolParser::getAttribute("deffile", map);
+    QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("useInOtherPackets", map));
@@ -101,15 +101,11 @@ void ProtocolPacket::parse(void)
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
-    // Remove any extensions the user may have erroneously included
-    moduleName = moduleName.left(moduleName.indexOf("."));
-    defheadermodulename = defheadermodulename.left(defheadermodulename.indexOf("."));
-
     if(moduleName.isEmpty())
     {
         // The file names
-        header.setModuleNameAndPath(support.prefix + name + support.packetParameterSuffix + "", support.outputpath);
-        source.setModuleNameAndPath(support.prefix + name + support.packetParameterSuffix + "", support.outputpath);
+        header.setModuleNameAndPath(support.prefix, name + support.packetParameterSuffix, support.outputpath);
+        source.setModuleNameAndPath(support.prefix, name + support.packetParameterSuffix, support.outputpath);
     }
     else
     {
@@ -146,22 +142,19 @@ void ProtocolPacket::parse(void)
         header.writeIncludeDirective(protoName + "Protocol.h");
     }
 
-    // Handle the idea that the structure might be defined elsewhere
-    ProtocolHeaderFile structheader;
-    ProtocolHeaderFile* structfile = &structheader;
-    if(defheadermodulename.isEmpty())
+    // Handle the idea that the structure might be defined in a different file
+    ProtocolHeaderFile* structfile = &header;
+    if(!defheadermodulename.isEmpty())
     {
-        defheadermodulename = header.moduleName();
-        structfile = &header;
-    }
-    else
-    {
-        structheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
-        structfile = &structheader;
+        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+        if(defheader.isAppending())
+            defheader.makeLineSeparator();
+
+        structfile = &defheader;
 
         // In this instance we know that the normal header file needs to include
         // the file with the structure definition
-        header.writeIncludeDirective(structheader.fileName());
+        header.writeIncludeDirective(structfile->fileName());
     }
 
     // Add other includes specific to this packet
