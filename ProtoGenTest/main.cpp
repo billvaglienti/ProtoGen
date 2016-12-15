@@ -26,54 +26,61 @@ static int testKeepAlivePacket(void);
 static int testVersionPacket(void);
 static int verifyVersionData(Version_t version);
 static int testZeroLengthPacket(void);
+static int testBitfieldGroupPacket(void);
 
 static int fcompare(double input1, double input2, double epsilon);
 
 
 int main(int argc, char *argv[])
 {
+    int Return = 1;
 
     if(testSpecialFloat() == 0)
     {
         std::cout << "Special float failed test" << std::endl;
-        return 0;
+        Return = 0;
     }
 
     if(testBitfield() == 0)
     {
         std::cout << "Bitfield failed test" << std::endl;
-        return 0;
+        Return = 0;
     }
 
     if(testConstantPacket() == 0)
-        return 0;
+        Return = 0;
 
     if(testTelemetryPacket() == 0)
-        return 0;
+        Return = 0;
 
     if(testThrottleSettingsPacket()==0)
-        return 0;
+        Return = 0;
 
     if(testEngineSettingsPacket()==0)
-        return 0;
+        Return = 0;
 
     if(testEngineCommandPacket()==0)
-        return 0;
+        Return = 0;
 
     if(testGPSPacket()== 0)
-        return 0;
+        Return = 0;
 
     if(testVersionPacket() == 0)
-        return 0;
+        Return = 0;
 
     if(testKeepAlivePacket() == 0)
-        return 0;
+        Return = 0;
 
     if(testZeroLengthPacket() == 0)
-        return 0;
+        Return = 0;
 
-    std::cout << "All tests passed" << std::endl;
-    return 1;
+    if(testBitfieldGroupPacket() == 0)
+        Return = 0;
+
+    if(Return == 1)
+        std::cout << "All tests passed" << std::endl;
+
+    return Return;
 }
 
 
@@ -104,8 +111,8 @@ int testConstantPacket(void)
     {
         constant.constant5 = constant5;
 
-        if( (pkt.data[0] != 0x12)   ||
-            (pkt.data[1] != 0x34)   ||
+        if( (pkt.data[0] != 0x34)   ||
+            (pkt.data[1] != 0x12)   ||
             (constant.token != 127) ||
             (strcmp(constant.constant2, "To be or not to be") != 0) ||
             fcompare(constant.cos45, 0.70710678118654752440084436210485f, 0.00000001f) ||
@@ -132,8 +139,8 @@ int testConstantPacket(void)
     {
         constant.constant5 = constant5;
 
-        if( (pkt.data[0] != 0x12)   ||
-            (pkt.data[1] != 0x34)   ||
+        if( (pkt.data[0] != 0x34)   ||
+            (pkt.data[1] != 0x12)   ||
             (constant.token != 127) ||
             (strcmp(constant.constant2, "To be or not to be") != 0) ||
             fcompare(constant.cos45, 0.70710678118654752440084436210485f, 0.00000001f) ||
@@ -880,6 +887,43 @@ int testZeroLengthPacket(void)
 
 }
 
+
+int testBitfieldGroupPacket(void)
+{
+    BitfieldTester_t bits = BitfieldTester_t();
+    testPacket_t pkt;
+
+    bits.field1 = 1111;
+    bits.field2 = 1;
+    bits.field3 = 20;
+    bits.field4 = 44739242;
+    bits.field5 = 1;
+    bits.field6 = 23456248059221ULL;
+
+    encodeBitfieldTesterPacketStructure(&pkt, &bits);
+
+    if(pkt.length != 13)
+    {
+        std::cout << "Bitfield group packet length is wrong" << std::endl;
+        return 0;
+    }
+
+    bits = BitfieldTester_t();
+    decodeBitfieldTesterPacketStructure(&pkt, &bits);
+
+    if( (bits.field1 != 1111) ||
+        (bits.field2 != 1)    ||
+        (bits.field3 != 20)   ||
+        (bits.field4 != 44739242) ||
+        (bits.field5 != 1)    ||
+        (bits.field6 != 23456248059221ULL))
+    {
+        std::cout << "Bitfield group packet decoded wrong data" << std::endl;
+        return 0;
+    }
+
+    return 1;
+}
 
 int fcompare(double input1, double input2, double epsilon)
 {

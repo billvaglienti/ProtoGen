@@ -13,6 +13,7 @@
  */
 ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported) :
     Encodable(parse, Parent, protocolName, supported),
+    numbitfieldgroupbytes(0),
     bitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
@@ -62,6 +63,7 @@ void ProtocolStructure::clear(void)
     enumList.clear();
 
     // The rest of the metadata
+    numbitfieldgroupbytes = 0;
     bitfields = false;
     needsEncodeIterator = false;
     needsDecodeIterator = false;
@@ -176,7 +178,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     {
         Encodable* encodable = generateEncodable(parser, getHierarchicalName(), protoName, support, children.at(i).toElement());
         if(encodable != NULL)
-        {
+        {            
             // If the encodable is null, then none of the metadata
             // matters, its not going to end up in the output
             if(!encodable->isNotEncoded())
@@ -185,7 +187,10 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                 {
                     // Track our metadata
                     if(encodable->usesBitfields())
+                    {
+                        encodable->getBitfieldGroupNumBytes(&numbitfieldgroupbytes);
                         bitfields = true;
+                    }
 
                     if(encodable->usesEncodeIterator())
                         needsEncodeIterator = true;
@@ -233,20 +238,20 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     int prev;
                     for(prev = 0; prev < encodables.size(); prev++)
                     {
-                       Encodable* prevEncodable = encodables.at(prev);
-                       if(prevEncodable == NULL)
+                       Encodable* previous = encodables.at(prev);
+                       if(previous == NULL)
                            continue;
 
                        // It has to be a named variable that is both in memory and encoded
-                       if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
+                       if(previous->isNotEncoded() || previous->isNotInMemory())
                            continue;
 
                        // It has to be a primitive, and it cannot be an array itself
-                       if(!prevEncodable->isPrimitive() && !prevEncodable->isArray())
+                       if(!previous->isPrimitive() && !previous->isArray())
                            continue;
 
                        // Now check to see if this previously defined encodable is our variable
-                       if(prevEncodable->name == encodable->variableArray)
+                       if(previous->name == encodable->variableArray)
                            break;
                     }
 
@@ -264,20 +269,20 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     int prev;
                     for(prev = 0; prev < encodables.size(); prev++)
                     {
-                       Encodable* prevEncodable = encodables.at(prev);
-                       if(prevEncodable == NULL)
+                       Encodable* previous = encodables.at(prev);
+                       if(previous == NULL)
                            continue;
 
                        // It has to be a named variable that is both in memory and encoded
-                       if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
+                       if(previous->isNotEncoded() || previous->isNotInMemory())
                            continue;
 
                        // It has to be a primitive, and it cannot be an array itself
-                       if(!prevEncodable->isPrimitive() && !prevEncodable->isArray())
+                       if(!previous->isPrimitive() && !previous->isArray())
                            continue;
 
                        // Now check to see if this previously defined encodable is our variable
-                       if(prevEncodable->name == encodable->variable2dArray)
+                       if(previous->name == encodable->variable2dArray)
                            break;
                     }
 
@@ -302,20 +307,20 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                         int prev;
                         for(prev = 0; prev < encodables.size(); prev++)
                         {
-                           Encodable* prevEncodable = encodables.at(prev);
-                           if(prevEncodable == NULL)
+                           Encodable* previous = encodables.at(prev);
+                           if(previous == NULL)
                                continue;
 
                            // It has to be a named variable that is both in memory and encoded
-                           if(prevEncodable->isNotEncoded() || prevEncodable->isNotInMemory())
+                           if(previous->isNotEncoded() || previous->isNotInMemory())
                                continue;
 
                            // It has to be a primitive, and it cannot be an array itself
-                           if(!prevEncodable->isPrimitive() && !prevEncodable->isArray())
+                           if(!previous->isPrimitive() && !previous->isArray())
                                continue;
 
                            // Now check to see if this previously defined encodable is our variable
-                           if(prevEncodable->name == encodable->dependsOn)
+                           if(previous->name == encodable->dependsOn)
                                break;
                         }
 
@@ -328,26 +333,13 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                 }// if this field depends on another
 
-                // If this is a bitfield, assume it terminates the bitfield group until we learn otherwise
-                if(encodable->isBitfield())
-                    encodable->setTerminatesBitfield(true);
+                // Let the new encodable know about the preceding one
+                encodable->setPreviousEncodable(prevEncodable);
 
-                // We need to know when the bitfields end
-                if(prevEncodable != NULL)
-                {
-                    if(prevEncodable->isBitfield())
-                    {
-                        if(encodable->isBitfield())
-                        {
-                            // previous is not the terminator
-                            prevEncodable->setTerminatesBitfield(false);
-
-                            encodable->setStartingBitCount(prevEncodable->getEndingBitCount());
-                        }
-
-                    }// if the previous was a bitfield
-
-                }// if we have a previous encodable
+                // We can only determine bitfield group numBytes after
+                // we have given the encodable a look at its preceding members
+                if(encodable->isPrimitive() && encodable->usesBitfields())
+                    encodable->getBitfieldGroupNumBytes(&numbitfieldgroupbytes);
 
                 // Remember who our previous encodable was
                 prevEncodable = encodable;
@@ -362,6 +354,14 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     }// for all children
 
 }// ProtocolStructure::parseChildren
+
+
+//! Get the maximum number of temporary bytes needed for a bitfield group of our children
+void ProtocolStructure::getBitfieldGroupNumBytes(int* num) const
+{
+    if(numbitfieldgroupbytes > (*num))
+        (*num) = numbitfieldgroupbytes;
+}
 
 
 /*!
@@ -709,6 +709,12 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     if(bitfields)
         output += "    int bitcount = 0;\n";
 
+    if(numbitfieldgroupbytes > 0)
+    {
+        output += "    int bitfieldindex = 0;\n";
+        output += "    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+    }
+
     if(needsEncodeIterator)
         output += "    int i = 0;\n";
 
@@ -815,6 +821,12 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
 
     if(bitfields)
         output += "    int bitcount = 0;\n";
+
+    if(numbitfieldgroupbytes > 0)
+    {
+        output += "    int bitfieldindex = 0;\n";
+        output += "    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+    }
 
     if(needsDecodeIterator)
         output += "    int i = 0;\n";

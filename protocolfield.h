@@ -32,10 +32,10 @@ public:
     int bits;           //!< number of bits used by type
 
     //! Pull a positive integer value from a string
-    int extractPositiveInt(const QString& string, bool* ok = 0);
+    static int extractPositiveInt(const QString& string, bool* ok = 0);
 
     //! Pull a double precision value from a string
-    double extractDouble(const QString& string, bool* ok = 0);
+    static double extractDouble(const QString& string, bool* ok = 0);
 
     //! Create the type string
     QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
@@ -45,12 +45,47 @@ private:
 };
 
 
+class BitfieldData
+{
+public:
+
+    //! Construct empty type data
+    BitfieldData(void) :
+        startingBitCount(0),
+        groupBits(0),
+        groupStart(false),
+        groupMember(false),
+        lastBitfield(true)
+    {}
+
+
+    //! Reset all members to default except the protocol support
+    void clear(void)
+    {
+        startingBitCount = 0;
+        groupBits = 0;
+        groupStart = false;
+        groupMember = false;
+        lastBitfield = true;
+    }
+
+    int startingBitCount;   //!< The starting bit count for this field if a bitfield
+    int groupBits;          //!< number of bits in the bitfield group, same for all members
+    bool groupStart;        //!< true if this bitfield starts a group
+    bool groupMember;       //!< true if this bitfield is a member of a group
+    bool lastBitfield;      //!< true if this bitfield is the last in a list of bitfields
+};
+
+
 class ProtocolField : public Encodable
 {
 public:
 
     //! Construct a field, setting the protocol name and name prefix
     ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, ProtocolSupport supported);
+
+    //! Provide the pointer to a previous encodable in the list
+    virtual void setPreviousEncodable(Encodable* prev);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
@@ -88,17 +123,11 @@ public:
     //! True if this encoable is a primitive bitfield
     virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
-    //! Indicate if this bitfield is the last bitfield in this group
-    virtual void setTerminatesBitfield(bool terminate) {lastBitfield = terminate; computeEncodedLength();}
-
-    //! Set the starting bitcount for this fields bitfield
-    virtual void setStartingBitCount(int bitcount) {startingBitCount = bitcount; computeEncodedLength();}
-
-    //! Get the ending bitcount for this fields bitfield
-    virtual int getEndingBitCount(void){return startingBitCount + encodedType.bits;}
-
     //! True if this encodable has a default value
     virtual bool isDefault(void) const {return !defaultValue.isEmpty();}
+
+    //! Get the maximum number of temporary bytes needed for a bitfield group
+    virtual void getBitfieldGroupNumBytes(int* num) const;
 
     //! Get the declaration for this field
     virtual QString getDeclaration(void) const;
@@ -142,7 +171,6 @@ public:
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}
 
-
 protected:
     QString enumName;
     double encodedMin;
@@ -156,12 +184,12 @@ protected:
     bool checkConstant;
     TypeData inMemoryType;
     TypeData encodedType;
+    BitfieldData bitfieldData;
 
     QStringList extraInfoNames; //!< List of extra fields that can be appended to a <Data> tag within a packet description
     QStringList extraInfoValues;
 
-    bool lastBitfield;      //!< True if this is the last bitfield in the local group
-    int startingBitCount;   //!< The starting bit count for this field
+    ProtocolField* prevField;   //!< Pointer to the previous protocol field, or NULL if none
 
     //! Extract the type information from the type string
     void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);
@@ -171,6 +199,15 @@ protected:
 
     //! Compute the encoded length string
     void computeEncodedLength(void);
+
+    //! Indicate if this bitfield is the last bitfield in this group
+    void setTerminatesBitfield(bool terminate) {bitfieldData.lastBitfield = terminate; computeEncodedLength();}
+
+    //! Set the starting bitcount for this fields bitfield
+    void setStartingBitCount(int bitcount) {bitfieldData.startingBitCount = bitcount; computeEncodedLength();}
+
+    //! Get the ending bitcount for this fields bitfield
+    int getEndingBitCount(void){return bitfieldData.startingBitCount + encodedType.bits;}
 
     //! Get the next lines(s) of source coded needed to encode a bitfield field
     QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;

@@ -19,6 +19,9 @@ public:
     //! Construct a protocol field by parsing a DOM element
     static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field);
 
+    //! Provide the pointer to a previous encodable in the list
+    virtual void setPreviousEncodable(Encodable* prev) {}
+
     //! Check names against the list of C keywords
     virtual void checkAgainstKeywords(void);
 
@@ -103,17 +106,11 @@ public:
     //! True if this encodable is a primitive bitfield
     virtual bool isBitfield(void) const {return false;}
 
-    //! Indicate if this bitfield is the last bitfield in this group
-    virtual void setTerminatesBitfield(bool terminate) {;}
-
-    //! Set the starting bitcount for this fields bitfield
-    virtual void setStartingBitCount(int bitcount) {;}
-
-    //! Get the ending bitcount for this fields bitfield
-    virtual int getEndingBitCount(void){return 0;}
-
     //! True if this encodable has a default value
     virtual bool isDefault(void) const {return false;}
+
+    //! Get the maximum number of temporary bytes needed for a bitfield group
+    virtual void getBitfieldGroupNumBytes(int* num) const {}
 
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const = 0;

@@ -179,10 +179,8 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, const QStrin
     checkConstant(false),
     inMemoryType(supported),
     encodedType(supported),
-    lastBitfield(false),
-    startingBitCount(0)
+    prevField(0)
 {
-
 }
 
 
@@ -200,15 +198,71 @@ void ProtocolField::clear(void)
     constantValue.clear();
     checkConstant = false;
     encodedType = inMemoryType = TypeData(support);
+    bitfieldData.clear();
     scalerString.clear();
     minString.clear();
     maxString.clear();
-    lastBitfield = false;
-    startingBitCount = 0;
+    prevField = 0;
     extraInfoNames.clear();
     extraInfoValues.clear();
 
 }// ProtocolField::clear
+
+
+//! Provide the pointer to a previous encodable in the list
+void ProtocolField::setPreviousEncodable(Encodable* prev)
+{
+    prevField = NULL;
+
+    // We need to know when the bitfields end
+    if(prev != NULL)
+    {
+        // Does prev point to a ProtocolField?
+        prevField = dynamic_cast<ProtocolField*>(prev);
+    }
+
+    if(prevField == NULL)
+        return;
+
+    // Are we the start of part of a new bitfield group (or are we not a bitfield at all)?
+    // Which means the previous field terminates that group (if any)
+    if(bitfieldData.groupStart || !encodedType.isBitfield)
+        prevField->setTerminatesBitfield(true);
+
+    if(prevField->isBitfield() && (encodedType.isBitfield))
+    {
+        // Are we part of a bitfield group?
+        if(!bitfieldData.groupStart)
+        {
+            // We did not start a group, we might be a member of a previous group
+            bitfieldData.groupMember = prevField->bitfieldData.groupMember;
+
+            // Previous bitfield does not terminate the bitfields
+            prevField->setTerminatesBitfield(false);
+
+            // We start at some nonzero bitcount that continues from the previous
+            setStartingBitCount(prevField->getEndingBitCount());
+        }
+
+    }// if previous and us are bitfields
+
+    computeEncodedLength();
+
+}// ProtocolField::setPreviousEncodable
+
+
+//! Get the maximum number of temporary bytes needed for a bitfield group of our children
+void ProtocolField::getBitfieldGroupNumBytes(int* num) const
+{
+    if(encodedType.isBitfield && bitfieldData.lastBitfield && bitfieldData.groupMember)
+    {
+        int length = ((bitfieldData.groupBits+7)/8);
+
+        if(length > (*num))
+            (*num) = length;
+    }
+
+}
 
 
 /*!
@@ -498,6 +552,8 @@ void ProtocolField::parse(void)
             extraInfoNames.append("Notes");
             extraInfoValues.append(attr.value());
         }
+        else if(attrname.compare("bitfieldGroup", Qt::CaseInsensitive) == 0)
+            bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(support.disableunrecognized == false)
         {
             emitWarning("Unrecognized attribute of Data: " + attrname);
@@ -647,6 +703,20 @@ void ProtocolField::parse(void)
     // enumeration in which the maximum enumeration fits in fewer than 8 bits
     if(encodedType.isBitfield)
     {
+        // We always terminate the bitfield until we know otherwise
+        bitfieldData.lastBitfield = true;
+
+        // Do we start a bitfield group?
+        if(bitfieldData.groupMember)
+        {
+            if(!defaultValue.isEmpty())
+            {
+                emitWarning("bitfield groups cannot have default values");
+                defaultValue.clear();
+            }
+
+        }
+
         if(!dependsOn.isEmpty())
         {
             emitWarning("bitfields cannot use dependsOn");
@@ -662,6 +732,18 @@ void ProtocolField::parse(void)
             variable2dArray.clear();
         }
 
+        // We assume we are the last member of the bitfield, until we learn otherwise
+        bitfieldData.lastBitfield = true;
+    }
+    else
+    {
+        if(bitfieldData.groupMember || bitfieldData.groupStart)
+        {
+            emitWarning("bitfieldGroup applied to non-bitfield, ignored");
+            bitfieldData.groupBits = 0;
+            bitfieldData.groupStart = false;
+            bitfieldData.groupMember = false;
+        }
     }
 
     // if either type says string, than they both are string
@@ -729,7 +811,6 @@ void ProtocolField::parse(void)
         }
 
     }
-
 
     if(!maxString.isEmpty() || !minString.isEmpty())
     {
@@ -999,22 +1080,75 @@ void ProtocolField::computeEncodedLength(void)
 
     if(encodedType.isBitfield)
     {
-        int length = 0;
-
-        // As a bitfield our length in bytes is given by the number of 8 bit boundaries we cross
-        int bitcount = startingBitCount;
-        while(bitcount < getEndingBitCount())
+        if(bitfieldData.groupMember)
         {
-            bitcount++;
-            if((bitcount % 8) == 0)
+            // If we are a group member, we need to figure out the number of bits in
+            // the group, we can only do this if we are the last member of the group
+            if(bitfieldData.lastBitfield)
+            {
+                int bits = 0;
+                ProtocolField* prev = this;
+
+                // Count backwards until our bitfield group ends in order to
+                // determine the number of bits in the group
+                while(prev != NULL)
+                {
+                    if(prev->encodedType.isBitfield && prev->bitfieldData.groupMember)
+                    {
+                        bits += prev->encodedType.bits;
+
+                        if(prev->bitfieldData.groupStart)
+                            break;
+                        else
+                            prev = prev->prevField;
+                    }
+                    else
+                        break;
+                }
+
+                // Now we know the group bits, apply this to all members of the group
+                prev = this;
+                while(prev != NULL)
+                {
+                    if(prev->encodedType.isBitfield && prev->bitfieldData.groupMember)
+                    {
+                        prev->bitfieldData.groupBits = bits;
+
+                        if(prev->bitfieldData.groupStart)
+                            break;
+                        else
+                            prev = prev->prevField;
+                    }
+                    else
+                        break;
+                }
+
+                // groupBits is visible to all fields in the group, but we only
+                // want to count it once, so we only count for the lastBitfield
+                encodedLength.addToLength(QString().setNum((bitfieldData.groupBits+7)/8));
+
+            }// if we are the last member of the group
+
+        }// if we are a group member
+        else
+        {
+            int length = 0;
+
+            // As a bitfield our length in bytes is given by the number of 8 bit boundaries we cross
+            int bitcount = bitfieldData.startingBitCount;
+            while(bitcount < getEndingBitCount())
+            {
+                bitcount++;
+                if((bitcount % 8) == 0)
+                    length++;
+            }
+
+            // If we are the last bitfield, and if we have any bits left, then add a byte
+            if(bitfieldData.lastBitfield && ((bitcount % 8) != 0))
                 length++;
+
+            encodedLength.addToLength(QString().setNum(length));
         }
-
-        // If we are the last bitfield, and if we have any bits left, then add a byte
-        if(lastBitfield && ((bitcount % 8) != 0))
-            length++;
-
-        encodedLength.addToLength(QString().setNum(length));
     }
     else if(inMemoryType.isString)
         encodedLength.addToLength(array, !inMemoryType.isFixedString, false, !dependsOn.isEmpty(), !defaultValue.isEmpty());
@@ -1251,7 +1385,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         QString range;
 
         // the starting bit count is the full count, not the count in the byte
-        int startCount = startingBitCount % 8;
+        int startCount = bitfieldData.startingBitCount % 8;
 
         if(startByte.isEmpty())
             range = "0:" + QString().setNum(7 - startCount);
@@ -1431,10 +1565,6 @@ QString ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool isS
     if(encodedType.isBitfield)
     {
         output = getEncodeStringForBitfield(bitcount, isStructureMember);
-
-        // Close the bitfield if its the last one
-        if(lastBitfield && ((*bitcount) != 0))
-            output += getCloseBitfieldString(bitcount);
     }
     else
     {
@@ -1468,10 +1598,6 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
     if(encodedType.isBitfield)
     {
         output += getDecodeStringForBitfield(bitcount, isStructureMember, defaultEnabled);
-
-        // Close the bitfield if its the last one
-        if(lastBitfield && ((*bitcount) != 0))
-            output += getCloseBitfieldString(bitcount);
     }
     else
     {
@@ -1619,8 +1745,51 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if((encodedType.bits > 32) && (support.longbitfield))
         output += "Long";
 
-    output += "Bitfield(" + argument + ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+    // We either encode directly to the packet data or to the temporary bytes used for bitfield groups
+    if(bitfieldData.groupMember)
+        output += "Bitfield(" + argument + ", bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+    else
+        output += "Bitfield(" + argument + ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+
+    // Keep track of the total bits
     *bitcount += encodedType.bits;
+
+    if(bitfieldData.lastBitfield)
+    {
+        if((bitfieldData.groupMember) && (bitfieldData.groupBits > 0))
+        {
+            // Number of bytes needed for all the bits
+            int num = ((bitfieldData.groupBits+7)/8);
+
+            output += "\n";
+
+            output += "    // Encode the entire group of bits in one shot\n";
+
+            if(support.bigendian)
+                output += "    bytesToBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+            else
+                output += "    bytesToLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+
+            output += "    bitcount = bitfieldindex = 0;\n\n";
+
+        }// if terminating a group
+        else if((*bitcount) != 0)
+        {
+            // If bitcount is not modulo 8, then the last byte was still in
+            // progress, so increment past that
+            if((*bitcount) % 8)
+                output += "    bitcount = 0; byteindex++; // close bit field, go to next byte\n";
+            else
+               output += "    bitcount = 0; // close bit field, byte index already advanced\n";
+
+            output += "\n";
+
+        }// else if terminating a non-group
+
+        // Reset bit counter
+        *bitcount = 0;
+
+    }// if this is a terminating bit field
 
     return output;
 
@@ -1658,6 +1827,18 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         spacing += "    ";
     }
 
+    if(bitfieldData.groupStart)
+    {
+        int num = (bitfieldData.groupBits+7)/8;
+        output += spacing + "// Decode the entire group of bits in one shot\n";
+        if(support.bigendian)
+            output += spacing + "bytesFromBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+        else
+            output += spacing + "bytesFromLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+
+        output += "\n";
+    }
+
     if(!comment.isEmpty())
         output += spacing + "// " + comment + "\n";
 
@@ -1666,10 +1847,20 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     // The actual decode code is the same no matter the trimmings around it
     QString decodestring;
 
-    if((encodedType.bits > 32) && (support.longbitfield))
-        decodestring = "decodeLongBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    if(bitfieldData.groupMember)
+    {
+        if((encodedType.bits > 32) && (support.longbitfield))
+            decodestring = "decodeLongBitfield(bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+        else
+            decodestring = "decodeBitfield(bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    }
     else
-        decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    {
+        if((encodedType.bits > 32) && (support.longbitfield))
+            decodestring = "decodeLongBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+        else
+            decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+    }
 
     // Check for scaled bitfield, which adds to the decode string
     if(encodedMax > encodedMin)
@@ -1745,6 +1936,31 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     }
 
     *bitcount += encodedType.bits;
+
+    if(bitfieldData.lastBitfield)
+    {
+        if((bitfieldData.groupMember) && (bitfieldData.groupBits > 0))
+        {
+            output += "    bitcount = bitfieldindex = 0;\n";
+
+        }// if terminating a group
+        else if((*bitcount) != 0)
+        {
+            // If bitcount is not modulo 8, then the last byte was still in
+            // progress, so increment past that
+            if((*bitcount) % 8)
+                output += "    bitcount = 0; byteindex++; // close bit field, go to next byte\n";
+            else
+               output += "    bitcount = 0; // close bit field, byte index already advanced\n";
+
+        }// else if terminating a non-group
+
+        output += "\n";
+
+        // Reset bit counter
+        *bitcount = 0;
+
+    }// if this is a terminating bit field
 
     return output;
 

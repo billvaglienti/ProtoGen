@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" prefix="" file="linkcode" api="1" version="1.0.0.a" endian="big" supportLongBitfield="true" bitfieldTest="true" comment=
+<Protocol name="Demolink" prefix="" file="linkcode" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
 "This is an demonstration protocol definition. This file demonstrates most things
 that the ProtoGen application can do regarding automatic protocol packing/upacking
 code generation.
@@ -33,6 +33,7 @@ interpretation
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
         <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
+        <Value name="BITFIELDTEST" comment="This packet tests bitfield groups"/>
         <Value name="ORION_PKT_KLV_USER_DATA1"/>
         <Value name="ORION_PKT_KLV_USER_DATA2"/>
         <Value name="ORION_PKT_KLV_USER_DATA3"/>
@@ -250,5 +251,16 @@ interpretation
     </Packet>
 
     <Packet name="Zero" ID="ZEROLENGTH" comment="This demonstrates a zero length packet"/>
+
+    <Packet name="BitfieldTester" ID="BITFIELDTEST" comment="This packet demonstrates using bitfield groups">
+        <Data name="field1" inMemoryType="bitfield11" bitfieldGroup="true" comment="first field in the first group"/>
+        <Data name="field2" inMemoryType="bitfield2" comment="second field in the first group"/>
+        <Data name="field3" inMemoryType="bitfield5" comment="third field in the first group"/>
+        <Data name="field4" inMemoryType="bitfield27" bitfieldGroup="true" comment="first field in the second group"/>
+        <Data name="field5" inMemoryType="bitfield1" comment="second field in the second group"/>
+        <Data name="field6" inMemoryType="bitfield45" comment="third field in the second group"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield7" comment="reserved space in the second group"/>
+
+    </Packet>
 
 </Protocol>

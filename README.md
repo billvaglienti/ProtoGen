@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.7.2. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.8.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -348,7 +348,7 @@ Data subtag attributes:
     - `floatX` : is a floating point with X bits, where X can be 32 or 64.
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
-    - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to 32 bits.
+    - `bitfieldX` : is a bitfield with X bits where X can go from 1 to the number of bits in an int, or 64 bits if long bitfields are supported.
     - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates empty (i.e. reserved for future expansion) space in the packet.
@@ -363,16 +363,18 @@ Data subtag attributes:
     - `floatX` : is a floating point with X bits, where X can be 16, 24, 32, or 64.
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
-    - `bitfieldX_t` : is a bitfield with X bits where X can go from 1 to the number of bits in an int.
+    - `bitfieldX` : is a bitfield with X bits where X can go from 1 to the number of bits in an int, or 64 bits if long bitfields are supported.
     - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates no encoding. The data exist in memory but are not encoded in the packet.
 
-- `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
+- `bitfieldGroup` : If set to "true" indicates that this bitfield is the first in a group of bitfields. A bitfield group is handled differently then normal bitfields. When decoding a bitfield group the bytes are first decoded from the bytestream, reversing the byte order if the protocol is little endian. Then the bitfields of the group are pulled from the decoded bytes. When encoding a bitfield group the bitfields are put into an array of bytes which are then encoded to the byte stream, reversing the byte order if the protocol is little endian. The `bitfieldGroup="true"` attribute should be applied to the first bitfield of the group, all subsequent bitfields will be assumed to be in the same group. The bitfield group is terminated by a non-bitfield field, or by another bitfield with the `bitfieldGroup="true"` attribute.
+
+- `array` : The array size. If array is not provided then the data are simply one element. `array` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an array of structures, but not to have an array of bitfields. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array` is a simple number, or an enumeration defined in the protocol; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
 
 - `variableArray` : If this Data are an array, then the `variableArray` attribute indicates that the array length is variable (up to `array` size). The `variableArray` attribute indicates which previously defined data item in the encoding gives the size of the array in the encoding. `variableArray` is a powerful tool for efficiently encoding an a-priori unknown range of data. The `variableArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variableArray` attribute. Note: for text it is better to use the encodedType "string", since this will result in a variable length array which is null terminated, and is therefore compatible with C-style string functions.
 
-- `array2d` : For two dimensional arrays, the size of the second dimension. `array2d` is invalid if `array` is not also specified. If `array2d` is not provided the array is one dimensional. `array2d` can be a number, or an enum, or any defined value from an include file. Note that it is possible to have an two dimensional array of structures. Although any string that is resolvable at compile time can be used, the generated documentation will be clearer if `array2d` is a simple number; since ProtoGen will be able to calculate the length of the array and the byte location of data that follows it.
+- `array2d` : For two dimensional arrays, the size of the second dimension. `array2d` is invalid if `array` is not also specified. If `array2d` is not provided the array is one dimensional. It is possible to have an two dimensional array of structures.
 
 - `variable2dArray` : If this Data are a two dimensional array, then the `variable2dArray` attribute indicates that the second dimension length is variable (up to `array2d` size). The `variable2dArray` attribute indicates which previously defined data item in the encoding gives the size of the array in the encoding. The `variable2dArray` variable must exist as a primitive non-array member of the encoding, *before* the definition of the variable array. If the referenced data item does not exist ProtoGen will ignore the `variable2dArray` attribute.
 

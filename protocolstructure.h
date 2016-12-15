@@ -31,6 +31,9 @@ public:
     //! Determine if this encodable is a primitive, rather than a structure
     virtual bool isPrimitive(void) const {return false;}
 
+    //! Get the maximum number of temporary bytes needed for a bitfield group
+    virtual void getBitfieldGroupNumBytes(int* num) const;
+
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void ) const {return bitfields;}
 
@@ -111,6 +114,7 @@ protected:
     //! The list of our enumerations
     QList<const EnumCreator*> enumList;
 
+    int  numbitfieldgroupbytes; //!< Number of temporary bytes needed by children with bitfield groups
     bool bitfields;             //!< True if this structure uses bitfields
     bool needsEncodeIterator;   //!< True if this structure uses arrays iterators on encode
     bool needsDecodeIterator;   //!< True if this structure uses arrays iterators on decode

@@ -110,6 +110,12 @@ bool FieldCoding::generateEncodeHeader(void)
     header.write("\n");
     header.write("//! Encode a null terminated string on a byte stream\n");
     header.write("void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+    header.write("\n");
+    header.write("//! Copy an array of bytes to a byte stream without changing the order.\n");
+    header.write("void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);\n");
+    header.write("\n");
+    header.write("//! Copy an array of bytes to a byte stream while reversing the order.\n");
+    header.write("void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);\n");
 
     if(support.int64)
     {
@@ -160,7 +166,7 @@ bool FieldCoding::generateEncodeSource(void)
 
     source.write("\n\n");
 
-    // The string function, this was hand-written and pasted in here
+    // The string functions, these were hand-written and pasted in here
     source.write("\
 /*!\n\
 * Encode a null terminated string on a byte stream\n\
@@ -203,7 +209,62 @@ void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength
     // Return for the number of bytes we encoded\n\
     (*index) += i;\n\
 \n\
-}// stringToBytes\n");
+}// stringToBytes\n\
+\n\
+\n\
+/*!\n\
+ * Copy an array of bytes to a byte stream without changing the order.\n\
+ * \\param data is the array of bytes to copy.\n\
+ * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by num when this function is complete.\n\
+ * \\param num is the number of bytes to copy\n\
+ */\n\
+void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
+{\n\
+    // increment byte pointer for starting point\n\
+    bytes += (*index);\n\
+\n\
+    // Increment byte index to indicate number of bytes copied\n\
+    (*index) += num;\n\
+\n\
+    // Copy the bytes without changing the order\n\
+    while(num > 0)\n\
+    {\n\
+        *(bytes++) = *(data++);\n\
+        num--;\n\
+    }\n\
+\n\
+}// bytesToBeBytes\n\
+\n\
+\n\
+/*!\n\
+ * Copy an array of bytes to a byte stream while reversing the order.\n\
+ * \\param data is the array of bytes to copy.\n\
+ * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by num when this function is complete.\n\
+ * \\param num is the number of bytes to copy\n\
+ */\n\
+void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
+{\n\
+    // increment byte pointer for starting point\n\
+    bytes += (*index);\n\
+\n\
+    // Increment byte index to indicate number of bytes copied\n\
+    (*index) += num;\n\
+\n\
+    // To encode as \"little endian bytes\", (a nonsensical statement), reverse the byte order\n\
+    bytes += (num - 1);\n\
+\n\
+    // Copy the bytes, reversing the order\n\
+    while(num > 0)\n\
+    {\n\
+        *(bytes--) = *(data++);\n\
+        num--;\n\
+    }\n\
+\n\
+}// bytesToLeBytes\n");
 
     if(support.int64)
     {
@@ -527,6 +588,12 @@ bool FieldCoding::generateDecodeHeader(void)
     header.write("\n");
     header.write("//! Decode a null terminated string from a byte stream\n");
     header.write("void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
+    header.write("\n");
+    header.write("//! Copy an array of bytes from a byte stream without changing the order.\n");
+    header.write("void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);\n");
+    header.write("\n");
+    header.write("//! Copy an array of bytes from a byte stream while reversing the order.\n");
+    header.write("void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);\n");
 
     if(support.int64)
     {
@@ -611,7 +678,62 @@ void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLeng
     else\n\
         (*index) += i;\n\
 \n\
-}// stringFromBytes\n");
+}// stringFromBytes\n\
+\n\
+\n\
+/*!\n\
+ * Copy an array of bytes from a byte stream without changing the order.\n\
+ * \\param data receives the copied bytes\n\
+ * \\param bytes is a pointer to the byte stream to be copied from.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by num when this function is complete.\n\
+ * \\param num is the number of bytes to copy\n\
+ */\n\
+void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\n\
+{\n\
+    // increment byte pointer for starting point\n\
+    bytes += (*index);\n\
+\n\
+    // Increment byte index to indicate number of bytes copied\n\
+    (*index) += num;\n\
+\n\
+    // Copy the bytes without changing the order\n\
+    while(num > 0)\n\
+    {\n\
+        *(data++) = *(bytes++);\n\
+        num--;\n\
+    }\n\
+\n\
+}// bytesFromBeBytes\n\
+\n\
+\n\
+/*!\n\
+ * Copy an array of bytes from a byte stream, reversing the order.\n\
+ * \\param data receives the copied bytes\n\
+ * \\param bytes is a pointer to the byte stream to be copied.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by num when this function is complete.\n\
+ * \\param num is the number of bytes to copy\n\
+ */\n\
+void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\n\
+{\n\
+    // increment byte pointer for starting point\n\
+    bytes += (*index);\n\
+\n\
+    // Increment byte index to indicate number of bytes copied\n\
+    (*index) += num;\n\
+\n\
+    // To encode as \"little endian bytes\", (a nonsensical statement), reverse the byte order\n\
+    bytes += (num - 1);\n\
+\n\
+    // Copy the bytes, reversing the order\n\
+    while(num > 0)\n\
+    {\n\
+        *(data++) = *(bytes--);\n\
+        num--;\n\
+    }\n\
+\n\
+}// bytesFromLeBytes\n");
 
     if(support.int64)
     {

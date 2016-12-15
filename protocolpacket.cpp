@@ -367,6 +367,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(bitfields)
             source.write("    int bitcount = 0;\n");
 
+        if(numbitfieldgroupbytes > 0)
+        {
+            source.write("    int bitfieldindex = 0;\n");
+            source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+        }
+
         if(needsEncodeIterator)
             source.write("    int i = 0;\n");
 
@@ -417,6 +423,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write("    const uint8_t* data;\n");
             if(bitfields)
                 source.write("    int bitcount = 0;\n");
+
+            if(numbitfieldgroupbytes > 0)
+            {
+                source.write("    int bitfieldindex = 0;\n");
+                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+            }
 
             if(needsDecodeIterator)
                 source.write("    int i = 0;\n");
@@ -585,6 +597,12 @@ void ProtocolPacket::createPacketFunctions(void)
             if(bitfields)
                 source.write("    int bitcount = 0;\n");
 
+            if(numbitfieldgroupbytes > 0)
+            {
+                source.write("    int bitfieldindex = 0;\n");
+                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+            }
+
             if(needsEncodeIterator)
                 source.write("    int i = 0;\n");
 
@@ -637,6 +655,13 @@ void ProtocolPacket::createPacketFunctions(void)
         {
             if(bitfields)
                 source.write("    int bitcount = 0;\n");
+
+            if(numbitfieldgroupbytes > 0)
+            {
+                source.write("    int bitfieldindex = 0;\n");
+                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+            }
+
             if(needsDecodeIterator)
                 source.write("    int i = 0;\n");
             if(needs2ndDecodeIterator)
