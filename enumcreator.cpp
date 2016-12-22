@@ -30,6 +30,7 @@ void EnumCreator::clear(void)
     description.clear();
     output.clear();
     nameList.clear();
+    prefix.clear();
     commentList.clear();
     valueList.clear();
     numberList.clear();
@@ -93,19 +94,22 @@ void EnumCreator::parse(void)
             continue;
 
         QString attrname = attr.name();
+        QString attrval = attr.value().trimmed();
 
         if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-            name = attr.value().trimmed();
+            name = attrval;
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
             comment = ProtocolParser::reflowComment(attr.value());
         else if(attrname.compare("description", Qt::CaseInsensitive) == 0)
-            description = attr.value().trimmed();
+            description = attrval;
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
-            hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
+            hidden = ProtocolParser::isFieldSet(attrval);
+        else if(attrname.compare("prefix", Qt::CaseInsensitive) == 0)
+            prefix = attrval;
         else if(isglobal && attrname.compare("file", Qt::CaseInsensitive) == 0)
         {
             // Remove the extension if any
-            file = attr.value().trimmed();
+            file = attrval;
             file = file.left(file.indexOf("."));
         }
         else if(support.disableunrecognized == false)
@@ -143,6 +147,7 @@ void EnumCreator::parse(void)
         QString value;
         QString comment;
         bool hiddenvalue = false;
+        bool ignorePrefix = false;
 
         for(int i = 0; i < map.count(); i++)
         {
@@ -151,17 +156,26 @@ void EnumCreator::parse(void)
                 continue;
 
             QString attrname = attr.name();
+            QString attrval = attr.value().trimmed();
 
             if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-                valueName = attr.value().trimmed();
+                valueName = attrval;
             else if(attrname.compare("value", Qt::CaseInsensitive) == 0)
-                value = attr.value().trimmed();
+                value = attrval;
             else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
                 comment = ProtocolParser::reflowComment(attr.value());
             else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
-                hiddenvalue = ProtocolParser::isFieldSet(attr.value().trimmed());
+                hiddenvalue = ProtocolParser::isFieldSet(attrval);
+            else if(attrname.compare("ignorePrefix", Qt::CaseInsensitive) == 0)
+                ignorePrefix = ProtocolParser::isFieldSet(attrval);
             else if(support.disableunrecognized == false)
                 emitWarning(":" + valueName + ": Unrecognized attribute: " + attrname);
+        }
+
+        // Add the enum prefix if applicable
+        if ( !prefix.isEmpty() && !ignorePrefix )
+        {
+            valueName = prefix + valueName;
         }
 
         // Add it to our list

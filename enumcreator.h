@@ -95,6 +95,9 @@ protected:
     //! A longer description is possible for enums (will be displayed in the documentation)
     QString description;
 
+    //! A prefix can be specified for each element in the enum
+    QString prefix;
+
     //! The header file output string of the enumeration
     QString output;
 
