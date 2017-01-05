@@ -164,11 +164,11 @@ Enum tag
 
 The Enum tag is used to create a named C language typedef enumeration. The enumeration is typically created in the header file that represents the parent of this tag. An example Enum tag is:
 
-    <Enum name="packetIds" comment="The list of packet identifiers">
+    <Enum name="packetIds" prefix="PKT_" comment="The list of packet identifiers">
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
         <Value name="THROTTLESETTINGS" comment="Throttle settings packet"/>
-        <Value name="VERSION" value="20" comment="Version reporting packet"/>
+        <Value name="VERSION" ignorePrefix="true" value="20" comment="Version reporting packet"/>
         <Value name="TELEMETRY" comment="Regular elemetry packet"/>
     </Enum>
 
@@ -179,11 +179,11 @@ which produces this output:
      */
     typedef enum
     {
-        ENGINECOMMAND = 10,  //!< Engine command packet
-        ENGINESETTINGS,      //!< Engine settings packet
-        THROTTLESETTINGS,    //!< Throttle settings packet
+        PKT_ENGINECOMMAND = 10,  //!< Engine command packet
+        PKT_ENGINESETTINGS,      //!< Engine settings packet
+        PKT_THROTTLESETTINGS,    //!< Throttle settings packet
         VERSION = 20,        //!< Version reporting packet
-        TELEMETRY            //!< Regular elemetry packet
+        PKT_TELEMETRY            //!< Regular elemetry packet
     }packetIds;
 
 Enum tag attributes:
@@ -194,9 +194,11 @@ Enum tag attributes:
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
 
+- `prefix` : Gives a string that will be prefixed to the name of each element within the enumeration.
+
 - `description` : If provided, a long-form description can be prepended to the given enumeration (in the documentation markdown). This allows for a more verbose description of the particular enumeration to be added to the docs. NOTE: This description will *not* appear in the generated code.
 
-- `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. NOTE: This enumeartion will still appear in the generated code.
+- `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. NOTE: This enumeration will still appear in the generated code.
 
 ###Enum : Value subtag attributes:
 
@@ -207,6 +209,8 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 - `value` : is an optional attribute that sets the value of this enumeration element. If value is left out the element will get its value in the normal C language way (by incrementing from the previous element, or starting at 0). Note that non numeric values may be used, as long as those strings are resolved by an include directive or previous enumeration.
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
+
+- `ignorePrefix` : is used to specify that this particular enumeartion element will *not* be assigned a prefix (if a prefix is specifed for this enumeration).
 
 - `hidden` : is used to specify that this particular enumeration element will *not* appear in the generated documentation markdown.
 
