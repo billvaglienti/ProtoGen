@@ -80,8 +80,23 @@ void ProtocolPacket::parse(void)
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("useInOtherPackets", map));
+
+    // Typically "parameterInterface" and "structureInterface" are only ever set to "true".
+    // However we do handle the case where someone uses "false"
     bool parameterFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("parameterInterface", map));
     bool structureFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("structureInterface", map));
+
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("parameterInterface", map)))
+    {
+        parameterFunctions = false;
+        structureFunctions = true;
+    }
+
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("structureInterface", map)))
+    {
+        parameterFunctions = true;
+        structureFunctions = false;
+    }
 
     // Its possible to have multiple ID attributes which are separated by white space
     ids = ProtocolParser::getAttribute("ID", map).split(QRegExp("[,;:\\s]+"), QString::SkipEmptyParts);
