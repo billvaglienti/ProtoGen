@@ -15,6 +15,7 @@ public:
         ProtocolDocumentation(parse, Parent),
         minbitwidth(0),
         hidden(false),
+        lookup(false),
         isglobal(false),
         support(supported)
     {}
@@ -44,6 +45,9 @@ public:
 
     //! Return the header file output string
     QString getOutput(void) const {return output;}
+
+    //! Return the source file output string
+    QString getSourceOutput(void) const { return sourceOutput; }
 
     //! Replace any text that matches an enumeration name with the value of that enumeration
     QString& replaceEnumerationNameWithValue(QString& text) const;
@@ -77,6 +81,9 @@ protected:
     //! Output file for global enumerations
     QString file;
 
+    //! Output file for source code file (may not be used)
+    QString sourceOutput;
+
     //! List of enumeration names
     QStringList nameList;
 
@@ -106,6 +113,9 @@ protected:
 
     //! Determines if this enum will be hidden from the documentation
     bool hidden;
+
+    //! Determines if this enumeration will support revese-lookup of label (based on value)
+    bool lookup;
 
     //! Flag set true if parseGlobal() is called
     bool isglobal;

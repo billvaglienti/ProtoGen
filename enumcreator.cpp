@@ -23,6 +23,7 @@ EnumCreator::~EnumCreator(void)
 void EnumCreator::clear(void)
 {
     file.clear();
+    sourceOutput.clear();
     minbitwidth = 0;
     hidden = false;
     name.clear();
@@ -104,6 +105,8 @@ void EnumCreator::parse(void)
             description = attrval;
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attrval);
+        else if(attrname.compare("lookup", Qt::CaseInsensitive) == 0)
+            lookup = ProtocolParser::isFieldSet(attrval);
         else if(attrname.compare("prefix", Qt::CaseInsensitive) == 0)
             prefix = attrval;
         else if(isglobal && attrname.compare("file", Qt::CaseInsensitive) == 0)
@@ -246,6 +249,41 @@ void EnumCreator::parse(void)
     output += "}";
     output += name;
     output += ";\n";
+
+    if (lookup)
+    {
+        output += "\n";
+        output += "//! \\return the label of a '" + name + "' enum entry, based on its value\n";
+
+        QString func = "char* " + name + "_Label(int value)";
+
+        output += func + ";\n";
+
+        // Add reverse-lookup code to the source file
+        sourceOutput += "\n/*!\n";
+        sourceOutput += " * \\brief Lookup label for '" + name + "' enum entry\n";
+        sourceOutput += " * \n";
+        sourceOutput += " * \\param value is the integer value of the enum entry\n";
+        sourceOutput += " * \\return string label of the given entry (emptry string if not found)\n";
+        sourceOutput += " */\n";
+
+        sourceOutput += func + "\n";
+        sourceOutput += "{\n";
+
+        sourceOutput += "\tswitch (value)\n";
+        sourceOutput += "\t{\n";
+        sourceOutput += "\tdefault:\n";
+        sourceOutput += "\t\treturn \"\";\n";
+
+        for (int i=0; i < nameList.size(); i++ )
+        {
+            sourceOutput += "\tcase " + nameList.at(i) + ":\n";
+            sourceOutput += "\t\treturn \"" + nameList.at(i) + "\";\n";
+        }
+
+        sourceOutput += "\t}\n";
+        sourceOutput += "}\n";
+    }
 
 }// EnumCreator::parse
 
