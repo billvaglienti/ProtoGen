@@ -223,6 +223,8 @@ bool ProtocolParser::parse(QString filename, QString path)
     // Now output the global enumerations, they will go in the main
     // header file by default, unless the enum specifies otherwise
     ProtocolHeaderFile enumfile;
+    ProtocolSourceFile enumSourceFile;
+
     for(int i = 0; i < globalEnums.size(); i++)
     {
         EnumCreator* module = globalEnums.at(i);
@@ -231,6 +233,21 @@ bool ProtocolParser::parse(QString filename, QString path)
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();
+
+        // If there is source-code available
+        QString source = module->getSourceOutput();
+
+        if (!source.isEmpty())
+        {
+            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
+
+            enumSourceFile.write(source);
+            enumSourceFile.makeLineSeparator();
+            enumSourceFile.flush();
+
+            fileNameList.append(enumSourceFile.fileName());
+            filePathList.append(enumSourceFile.filePath());
+        }
 
         // Keep a list of all the file names we used
         fileNameList.append(enumfile.fileName());
