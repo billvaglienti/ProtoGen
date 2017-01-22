@@ -270,18 +270,18 @@ void EnumCreator::parse(void)
         sourceOutput += func + "\n";
         sourceOutput += "{\n";
 
-        sourceOutput += "\tswitch (value)\n";
-        sourceOutput += "\t{\n";
-        sourceOutput += "\tdefault:\n";
-        sourceOutput += "\t\treturn \"\";\n";
+        sourceOutput += "    switch (value)\n";
+        sourceOutput += "    {\n";
+        sourceOutput += "    default:\n";
+        sourceOutput += "        return \"\";\n";
 
         for (int i=0; i < nameList.size(); i++ )
         {
-            sourceOutput += "\tcase " + nameList.at(i) + ":\n";
-            sourceOutput += "\t\treturn \"" + nameList.at(i) + "\";\n";
+            sourceOutput += "    case " + nameList.at(i) + ":\n";
+            sourceOutput += "        return \"" + nameList.at(i) + "\";\n";
         }
 
-        sourceOutput += "\t}\n";
+        sourceOutput += "    }\n";
         sourceOutput += "}\n";
     }
 

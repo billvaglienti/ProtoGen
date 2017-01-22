@@ -194,8 +194,10 @@ void ProtocolField::clear(void)
     enumName.clear();
     encodedMin = encodedMax = 0;
     scaler = 1;
-    defaultValue.clear();
-    constantValue.clear();
+    defaultString.clear();
+    defaultStringForDisplay.clear();
+    constantString.clear();
+    constantStringForDisplay.clear();
     checkConstant = false;
     encodedType = inMemoryType = TypeData(support);
     bitfieldData.clear();
@@ -530,9 +532,9 @@ void ProtocolField::parse(void)
         else if(attrname.compare("enum", Qt::CaseInsensitive) == 0)
             enumName = attr.value().trimmed();
         else if(attrname.compare("default", Qt::CaseInsensitive) == 0)
-            defaultValue = attr.value().trimmed();
+            defaultString = attr.value().trimmed();
         else if(attrname.compare("constant", Qt::CaseInsensitive) == 0)
-            constantValue = attr.value().trimmed();
+            constantString = attr.value().trimmed();
         else if(attrname.compare("checkConstant", Qt::CaseInsensitive) == 0)
             checkConstant = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
@@ -602,7 +604,7 @@ void ProtocolField::parse(void)
         // Null types are not in memory, therefore cannot have defaults or variable arrays
         variableArray.clear();
         variable2dArray.clear();
-        defaultValue.clear();
+        defaultString.clear();
 
         // A special case, where we use the encoded type data in place of the
         // in memory type. This handles cases where (for example) we want to
@@ -677,9 +679,9 @@ void ProtocolField::parse(void)
             structName = "unknown";
         }
 
-        if(!constantValue.isEmpty() || checkConstant)
+        if(!constantString.isEmpty() || checkConstant)
         {
-            constantValue.clear();
+            constantString.clear();
             checkConstant = false;
             emitWarning("structure cannot be a constant");
         }
@@ -709,10 +711,10 @@ void ProtocolField::parse(void)
         // Do we start a bitfield group?
         if(bitfieldData.groupMember)
         {
-            if(!defaultValue.isEmpty())
+            if(!defaultString.isEmpty())
             {
                 emitWarning("bitfield groups cannot have default values");
-                defaultValue.clear();
+                defaultString.clear();
             }
 
         }
@@ -823,7 +825,7 @@ void ProtocolField::parse(void)
 
     }
 
-    if(constantValue.isEmpty() && checkConstant)
+    if(constantString.isEmpty() && checkConstant)
     {
         emitWarning("\"checkConstant\" cannot be applied unless the field is constant");
         checkConstant = false;
@@ -871,10 +873,10 @@ void ProtocolField::parse(void)
 
     if(encodedType.isNull)
     {
-        if(!constantValue.isEmpty())
+        if(!constantString.isEmpty())
         {
             emitWarning("constant value does not make sense for types that are not encoded (null)");
-            constantValue.clear();
+            constantString.clear();
             checkConstant = false;
         }
 
@@ -1045,22 +1047,64 @@ void ProtocolField::parse(void)
     // Just the type data
     typeName = inMemoryType.toTypeString(enumName, support.prefix + structName);
 
-    if(!constantValue.isEmpty())
+    if(!constantString.isEmpty())
     {
         if(inMemoryType.isStruct)
         {
             emitWarning("structure cannot have a constant value");
-            constantValue.clear();
+            constantString.clear();
         }
-        else if(!defaultValue.isEmpty())
+        else if(!defaultString.isEmpty())
         {
             emitWarning("fields with default values cannot also be constant");
-            constantValue.clear();
+            constantString.clear();
         }
     }
 
     // Make sure no keyword conflicts
     checkAgainstKeywords();
+
+    // Support the case where the default string uses "pi" or "e".
+    if(!defaultString.isEmpty())
+    {
+        bool ok;
+        ShuntingYard::computeInfix(defaultString, &ok);
+
+        // Save the original user input string
+        defaultStringForDisplay = defaultString;
+
+        // We only do the replacement if the pi or e is part of a number
+        if(ok)
+        {
+            // Perform the replacement for code
+            ShuntingYard::replacePie(defaultString);
+
+            // And for HTML outputs
+            defaultStringForDisplay.replace("pi", "&pi", Qt::CaseInsensitive);
+        }
+
+    }// if we have a default string
+
+    // Support the case where the constant string uses "pi" or "e".
+    if(!constantString.isEmpty())
+    {
+        bool ok;
+        ShuntingYard::computeInfix(constantString, &ok);
+
+        // Save the original user input string
+        constantStringForDisplay = constantString;
+
+        // We only do the replacement if the pi or e is part of a number
+        if(ok)
+        {
+            // Perform the replacement for code
+            ShuntingYard::replacePie(constantString);
+
+            // And for HTML outputs
+            constantStringForDisplay.replace("pi", "&pi", Qt::CaseInsensitive);
+        }
+
+    }// if we have a constant string
 
     // Compute the data length
     computeEncodedLength();
@@ -1151,7 +1195,7 @@ void ProtocolField::computeEncodedLength(void)
         }
     }
     else if(inMemoryType.isString)
-        encodedLength.addToLength(array, !inMemoryType.isFixedString, false, !dependsOn.isEmpty(), !defaultValue.isEmpty());
+        encodedLength.addToLength(array, !inMemoryType.isFixedString, false, !dependsOn.isEmpty(), !defaultString.isEmpty());
     else if(inMemoryType.isStruct)
     {
         encodedLength.clear();
@@ -1164,11 +1208,11 @@ void ProtocolField::computeEncodedLength(void)
         else
         {
             if(is2dArray())
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
             else if(isArray())
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
             else
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), !defaultValue.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), !defaultString.isEmpty());
         }
     }
     else
@@ -1184,7 +1228,7 @@ void ProtocolField::computeEncodedLength(void)
         if(is2dArray())
             lengthString += "*" + array2d;
 
-        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultValue.isEmpty());
+        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
 
     }
 
@@ -1220,16 +1264,16 @@ void ProtocolField::checkAgainstKeywords(void)
         scalerString = "_" + scalerString;
     }
 
-    if(keywords.contains(defaultValue))
+    if(keywords.contains(defaultString))
     {
         emitWarning("default value matches C keyword, changed to _default");
-        defaultValue = "_" + defaultValue;
+        defaultString = "_" + defaultString;
     }
 
-    if(keywords.contains(constantValue))
+    if(keywords.contains(constantString))
     {
         emitWarning("constant value matches C keyword, changed to _constant");
-        constantValue = "_" + constantValue;
+        constantString = "_" + constantString;
     }
 
 }// ProtocolField::checkAgainstKeywords
@@ -1259,13 +1303,13 @@ QString ProtocolField::getDeclaration(void) const
 
     if(comment.isEmpty())
     {
-        if(!constantValue.isEmpty())
+        if(!constantString.isEmpty())
             output += " //!< Field is encoded constant.";
     }
     else
     {
         output += " //!< " + comment;
-        if(!constantValue.isEmpty())
+        if(!constantString.isEmpty())
             output += ". Field is encoded constant.";
     }
 
@@ -1520,14 +1564,14 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
                 description += "<br>Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
         }
 
-        if(!constantValue.isEmpty())
-            description += "<br>Data are given constant value on encode " + constantValue + ".";
+        if(!constantString.isEmpty())
+            description += "<br>Data are given constant value on encode " + constantStringForDisplay + ".";
 
         if(!dependsOn.isEmpty())
             description += "<br>Only included if " + dependsOn + " is non-zero.";
 
-        if(!defaultValue.isEmpty())
-            description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultValue + ".";
+        if(!defaultString.isEmpty())
+            description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultStringForDisplay + ".";
 
         for (int i=0;i<extraInfoNames.count();i++)
         {
@@ -1623,7 +1667,7 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
     QString output;
     QString access;
 
-    if(defaultValue.isEmpty())
+    if(defaultString.isEmpty())
         return output;
 
     // Write out the defaults code
@@ -1632,10 +1676,10 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
         if(isStructureMember)
             access = "user->";
 
-        if(defaultValue.compare("null", Qt::CaseInsensitive) == 0)
+        if(defaultString.compare("null", Qt::CaseInsensitive) == 0)
             output += "    " + access + name + "[0] = 0;\n";
         else
-            output += "    strncpy((char*)" + access + name + ", \"" + defaultValue + "\", " + array + ");\n";
+            output += "    strncpy((char*)" + access + name + ", \"" + defaultString + "\", " + array + ");\n";
     }
     else if(isArray())
     {
@@ -1646,12 +1690,12 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
         {
             output += "    for(i = 0; i < " + array + "; i++)\n";
             output += "        for(j = 0; j < " + array2d + "; j++)\n";
-            output += "            " + access + name + "[i][j] = " + defaultValue + ";\n";
+            output += "            " + access + name + "[i][j] = " + defaultString + ";\n";
         }
         else
         {
             output += "    for(i = 0; i < " + array + "; i++)\n";
-            output += "        " + access + name + "[i] = " + defaultValue + ";\n";
+            output += "        " + access + name + "[i] = " + defaultString + ";\n";
         }
     }
     else
@@ -1662,7 +1706,7 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
             access = "*";
 
         // Direct pointer access
-        output += "    " + access + name + " = " + defaultValue + ";\n";
+        output += "    " + access + name + " = " + defaultString + ";\n";
     }
 
     return output;
@@ -1815,7 +1859,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         return output;
 
     // If this field has a default value
-    if(defaultEnabled && !defaultValue.isEmpty())
+    if(defaultEnabled && !defaultString.isEmpty())
     {
         // Number of bytes. From 1 to 8 bits is one byte, from 9 to 16 bits is two bytes
         QString lengthString = QString::number((encodedType.bits + 7)/8);
@@ -1928,7 +1972,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     }
 
     // Close the default block
-    if(defaultEnabled && !defaultValue.isEmpty())
+    if(defaultEnabled && !defaultString.isEmpty())
     {
         // Remove the last four spaces
         spacing.remove(spacing.size()-4, 4);
@@ -2292,20 +2336,20 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
  */
 QString ProtocolField::getConstantString(void) const
 {
-    if (!constantValue.isEmpty())
+    if (!constantString.isEmpty())
     {
         if(encodedType.isString)
         {
             // constantValue is a string literal, so include the quotes. Except for
             // a special case. If constantValue ends in "()" then we assume its a
             // function or macro call
-            if(constantValue.contains("(") && constantValue.contains(")"))
-                return constantValue;
+            if(constantString.contains("(") && constantString.contains(")"))
+                return constantString;
             else
-                return "\"" + constantValue + "\"";
+                return "\"" + constantString + "\"";
         }
         else
-            return constantValue;
+            return constantString;
     }
     else if(inMemoryType.isNull)
     {
@@ -2690,7 +2734,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     }
 
     // If this field has a default value
-    if(defaultEnabled && !defaultValue.isEmpty())
+    if(defaultEnabled && !defaultString.isEmpty())
     {
         output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
         output += spacing + "    return 1;\n";
@@ -2911,7 +2955,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     }
 
     // Close the default block
-    if(defaultEnabled && !defaultValue.isEmpty())
+    if(defaultEnabled && !defaultString.isEmpty())
     {
         // Remove the last four spaces
         spacing.remove(spacing.size()-4, 4);

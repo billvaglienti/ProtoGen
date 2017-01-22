@@ -118,13 +118,13 @@ public:
     virtual bool isNotInMemory(void) const {return inMemoryType.isNull;}
 
     //! True if this encodable is a constant
-    virtual bool isConstant(void) const {return !constantValue.isEmpty();}
+    virtual bool isConstant(void) const {return !constantString.isEmpty();}
 
     //! True if this encoable is a primitive bitfield
     virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
     //! True if this encodable has a default value
-    virtual bool isDefault(void) const {return !defaultValue.isEmpty();}
+    virtual bool isDefault(void) const {return !defaultString.isEmpty();}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
     virtual void getBitfieldGroupNumBytes(int* num) const;
@@ -151,7 +151,7 @@ public:
     virtual QString getSetToDefaultsString(bool isStructureMember) const;
 
     //! Make this primitive not a default
-    virtual void clearDefaults(void) {defaultValue.clear();}
+    virtual void clearDefaults(void) {defaultString.clear();}
 
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const {return (encodedType.isBitfield && !isNotEncoded());}
@@ -179,8 +179,10 @@ protected:
     QString maxString;
     QString minString;
     QString scalerString;
-    QString defaultValue;
-    QString constantValue;
+    QString defaultString;
+    QString defaultStringForDisplay;
+    QString constantString;
+    QString constantStringForDisplay;
     bool checkConstant;
     TypeData inMemoryType;
     TypeData encodedType;

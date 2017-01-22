@@ -44,6 +44,9 @@ public:
     //! Test if input character is a number
     static bool isNumber(const QChar& input);
 
+    //! Replace "pi" or "e" in the string with the numeric values
+    static QString& replacePie(QString& input);
+
     //! Test the ShartingYard class
     static bool test();
 

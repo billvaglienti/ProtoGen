@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.8.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.8.2. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -179,11 +179,11 @@ which produces this output:
      */
     typedef enum
     {
-        PKT_ENGINECOMMAND = 10,  //!< Engine command packet
-        PKT_ENGINESETTINGS,      //!< Engine settings packet
-        PKT_THROTTLESETTINGS,    //!< Throttle settings packet
-        VERSION = 20,        //!< Version reporting packet
-        PKT_TELEMETRY            //!< Regular elemetry packet
+        PKT_ENGINECOMMAND = 10, //!< Engine command packet
+        PKT_ENGINESETTINGS,     //!< Engine settings packet
+        PKT_THROTTLESETTINGS,   //!< Throttle settings packet
+        VERSION = 20,        	//!< Version reporting packet
+        PKT_TELEMETRY           //!< Regular elemetry packet
     }packetIds;
 
 Enum tag attributes:
@@ -200,7 +200,7 @@ Enum tag attributes:
 
 - `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. NOTE: This enumeration will still appear in the generated code.
 
-- `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.
+- `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.f
 
 ###Enum : Value subtag attributes:
 
@@ -212,7 +212,7 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 
 - `comment` : gives a one line doxygen comment that follows the enumeration element.
 
-- `ignorePrefix` : is used to specify that this particular enumeartion element will *not* be assigned a prefix (if a prefix is specifed for this enumeration).
+- `ignorePrefix` : is used to specify that this particular enumeration element will *not* be assigned a prefix (if a prefix is specifed for this enumeration).
 
 - `hidden` : is used to specify that this particular enumeration element will *not* appear in the generated documentation markdown.
 
@@ -300,7 +300,7 @@ Packet tag attributes:
 
 ###Packet : Data subtags
 
-The Packet tag supports Data subtags. The Data tag is the most complex part of the packet definition. Each Data tag represents one line in the packets structure definition, and one hunk of data in the packets encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
+The Packet tag supports Data subtags. The Data tag is the most complex part of the packet definition. Each Data tag represents one line in the packet structure definition, and one hunk of data in the packet encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
 	        
     <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
     <Data name="reserved" inMemoryType="bitfield3"/>
@@ -390,11 +390,11 @@ Data subtag attributes:
 
 - `max` : The maximum value that can be encoded. `max` is ignored if the encoded type is floating, or string. If the encoded type is signed, then the minimum encoded value is `-max`. If the encoded type is unsigned, then the minimum value is `min` (or 0 if `min` is not given). If `max` or `scaler` are not given then the in memory data are not scaled, but simply cast to the encoded type. `max` can be input as a mathematical expression in the same way as `min`.
 
-- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` : `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is string or structure. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`. Although it is unusual `scaler` can be used with floating point encoded types. This would be useful for cases where the units of the floating point encoded type do not match the desired units of the data in memory.
+- `scaler` : The scaler that is multiplied by the in-memory type to convert to the encoded type. `scaler` is ignored if `max` is present. `scaler` and `max` (along with `min`) are different ways to represent the same thing. For signed encoded types `scaler` is converted to `max` as: `max = ((2^(numbits-1) - 1)/scaler`. For unsigned encoded types `scaler` is converted to `max` as: `max = min + ((2^numbits)-1)/scaler`. `scaler` is ignored if the encoded type is string or structure. If `scaler` or `max` are not given then the in memory data are not scaled, but simply cast to the encoded type. `scaler` can be input as a mathematical expression in the same way as `min`. Although it is unusual `scaler` can be used with floating point encoded types. This would be useful for cases where the units of the floating point encoded type do not match the desired units of the data in memory.
 
-- `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted. In the case of a `string` or `fixedstring` type the default value is treated as a string of characters rather than converted to a number. In addition, in the string case, if the default string should be empty the default attribute should be set to "null". 
+- `default` : The default value for this Data. The default value is used if the received packet length is not long enough to encode all the Data. Defaults can only be used as the last element(s) of a packet. Using defaults it is possible to augment a previously defined packet in a backwards compatible way, by extending the length of the packet and adding new fields with default values so that older packets can still be interpreted. In the case of a `string` or `fixedstring` type the default value is treated as a string of characters rather than converted to a number. In addition, in the string case, if the default string should be empty the default attribute should be set to "null". In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values; but only if the entire string can be evaluated numerically. Hence "180/pi" will be evaluated as 57.295779513082321 but "piedpiper" will not be altered.
 
-- `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it. If the inMemoryType is null, the constant value will not be decoded, instead the bytes containing the constant value will simply be skipped over in the decode function.
+- `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it. If the inMemoryType is null, the constant value will not be decoded, instead the bytes containing the constant value will simply be skipped over in the decode function. In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values; but only if the entire string can be evaluated numerically. Hence "180/pi" will be evaluated as 57.295779513082321 but "piedpiper" will not be altered.
 
 - `checkConstant` : If set to "true" this attribute affects the interpretation of `constant` in the decode function. When checkConstant is set the decode function evaluates the decoded data and returns a fail state if the value is not equal to the supplied constant.
 
@@ -583,7 +583,7 @@ bitfieldspecial
 
 bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` this file will not be output. In addition any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and the long bitfield functions will be used for that bitfield. The normal bitfield support routines use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` a test function will be written into bitfieldspecial which can be used to test the bitfield routines on your compiler.
 
-Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last.
+Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last. This can be changed by putting the bitfields into a "bitfield group", see the section on bitfield groups for more details.
 
 Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield. The only drawback to this usage case is that ProtoGen will not enforce the minimum or maximum value that can be encoded. The normal scaling routines in scaleencode will check for and handle an overflow or underflow, because those routines know at compile time how many bits are available. Since the bitfield scaling routines do not know at compile time how many bits are being used, adding checks for overflow or underflow would be too burdensome. User beware; if you choose to scale a value to a bitfield you must ensure that the scaled value does not overflow the encoded bits.
 

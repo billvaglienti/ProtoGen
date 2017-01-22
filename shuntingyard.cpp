@@ -5,6 +5,21 @@
 
 
 /*!
+ * Replace "pi" or "e" in the string with the numeric values. This replacement
+ * does not check to determine if "pi" or "e" are part of some other word.
+ * \param input is the input string, which will be modified
+ * \return a reference to input.
+ */
+QString& ShuntingYard::replacePie(QString& input)
+{
+    input.replace("pi", "3.14159265358979323846", Qt::CaseInsensitive);
+    input.replace("e" , "2.71828182845904523536", Qt::CaseInsensitive);
+    return input;
+
+}// ShuntingYard::replacePie
+
+
+/*!
  * Given a raw (untokenized) mathematical expression in infix notation, compute
  * the result. Allowable operators are " ( ) + - * / ^ ".
  * \param infix is the infix expresions to compute
@@ -358,8 +373,7 @@ QString ShuntingYard::tokenize(const QString& raw)
 
     // Handle special numbers. There are enough characters here to exceed the
     // double precision representation
-    input.replace("pi", "3.14159265358979323846", Qt::CaseInsensitive);
-    input.replace("e" , "2.71828182845904523536", Qt::CaseInsensitive);
+    replacePie(input);
 
     for(i = 0; i < input.size(); i++)
     {

@@ -234,8 +234,8 @@ interpretation
         <Data name="staticP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" max="115000" comment="Static pressure in Pascals"/>
         <Data name="OAT" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint8_t" min="200" max="400" comment="Outside air temperature in Kelvin"/>
         <Data name="mag" inMemoryType="float" array="N3D" dependsOn="magIncluded" encodedType="int16_t" max="100000" comment="magnetic field in nanoTesla in body X, Y, Z"/>
-        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" encodedType="int16_t" max="3.15" comment="True heading computed by magnetic field in radians"/>
-        <Data name="laserAGL" inMemoryType="float" dependsOn="laserIncluded" encodedType="uint16_t" min="-5" max="145" comment="Altitude above ground in meters as measured by the laser altimeter"/>
+        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" encodedType="int16_t" max="3.15" default="pi/2" comment="True heading computed by magnetic field in radians"/>
+        <Data name="laserAGL" inMemoryType="float" dependsOn="laserIncluded" encodedType="uint16_t" min="-5" max="145" default="10" comment="Altitude above ground in meters as measured by the laser altimeter"/>
 
     </Packet>
     
