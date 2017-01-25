@@ -166,7 +166,7 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
 
     QString directive = include.trimmed();
 
-    // Technically things other than .h could be included, but not by ProtoGen
+    // Technically things other than .h* could be included, but not by ProtoGen
     if(!directive.contains(".h"))
         directive += ".h";
 
@@ -206,6 +206,7 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
 
     // If we get here there were no #includes in the file, this is the first
     // one; which we put at the current end of the file
+    makeLineSeparator();
     write(directive);
 
 }// ProtocolFile::writeIncludeDirective

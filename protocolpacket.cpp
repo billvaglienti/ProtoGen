@@ -152,10 +152,10 @@ void ProtocolPacket::parse(void)
 
         // White space is good
         header.makeLineSeparator();
-
-        // Include the protocol top level module
-        header.writeIncludeDirective(protoName + "Protocol.h");
     }
+
+    // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
+    header.writeIncludeDirective(protoName + "Protocol.h");
 
     // Handle the idea that the structure might be defined in a different file
     ProtocolHeaderFile* structfile = &header;
