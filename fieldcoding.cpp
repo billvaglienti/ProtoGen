@@ -382,6 +382,8 @@ QString FieldCoding::fullEncodeComment(int type, bool bigendian)
     comment += " * \\param bytes is a pointer to the byte stream which receives the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
     comment += " *        will be incremented by " + QString().setNum(typeSizes[type]) + " when this function is complete.\n";
+    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+        comment += " * \\param sigbits is the number of bits to use in the significand of the float.\n";
     comment += " */";
 
     return comment;
@@ -407,7 +409,10 @@ QString FieldCoding::encodeSignature(int type, bool bigendian)
             endian = "Le";
     }
 
-    return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
+    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+        return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index, int sigbits)");
+    else
+        return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
 
 }// FieldCoding::encodeSignature
 
@@ -467,10 +472,10 @@ QString FieldCoding::floatEncodeFunction(int type, bool bigendian)
     }
     else if(typeSizes[type] == 3)
     {
-        function += "    uint24To" + endian + "Bytes(float32ToFloat24((float)number), bytes, index);\n";
+        function += "    uint24To" + endian + "Bytes(float32ToFloat24ex((float)number, sigbits), bytes, index);\n";
     }
     else
-        function += "    uint16To" + endian + "Bytes(float32ToFloat16((float)number), bytes, index);\n";
+        function += "    uint16To" + endian + "Bytes(float32ToFloat16ex((float)number, sigbits), bytes, index);\n";
 
     function += "}\n";
 
@@ -812,10 +817,14 @@ QString FieldCoding::fullDecodeComment(int type, bool bigendian)
 {
     QString comment= ("/*!\n");
 
-    comment += ProtocolParser::outputLongComment(" *", briefEncodeComment(type, bigendian)) + "\n";
+    comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(type, bigendian)) + "\n";
     comment += " * \\param bytes is a pointer to the byte stream which contains the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
     comment += " *        will be incremented by " + QString().setNum(typeSizes[type]) + " when this function is complete.\n";
+
+    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+        comment += " * \\param sigbits is the number of bits to use in the significand of the float.\n";
+
     comment += " * \\return the number decoded from the byte stream\n";
     comment += " */";
 
@@ -841,7 +850,10 @@ QString FieldCoding::decodeSignature(int type, bool bigendian)
             endian = "Le";
     }
 
-    return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
+    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+        return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index, int sigbits)");
+    else
+        return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
 
 }// FieldCoding::decodeSignature
 
@@ -914,10 +926,10 @@ QString FieldCoding::floatDecodeFunction(int type, bool bigendian)
     }
     else if(typeSizes[type] == 3)
     {
-        function += "    return float24ToFloat32(uint24From" + endian + "Bytes(bytes, index));\n";
+        function += "    return float24ToFloat32ex(uint24From" + endian + "Bytes(bytes, index), sigbits);\n";
     }
     else
-        function += "    return float16ToFloat32(uint16From" + endian + "Bytes(bytes, index));\n";
+        function += "    return float16ToFloat32ex(uint16From" + endian + "Bytes(bytes, index), sigbits);\n";
 
     function += "}\n";
 

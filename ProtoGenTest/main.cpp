@@ -302,7 +302,7 @@ int verifyTelemetryData(Telemetry_t telemetry)
         if(telemetry.mag[0] != 0) return 0;
         if(telemetry.mag[1] != 0) return 0;
         if(telemetry.mag[2] != 0) return 0;
-        if(telemetry.compassHeading != 0) return 0;
+        if(fcompare(telemetry.compassHeading, deg2rad(90), deg2rad(180)/32768.0)) return 0;
     }
 
     if(telemetry.numControls != 14) return 0;

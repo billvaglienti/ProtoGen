@@ -2,7 +2,6 @@
 #include <math.h>
 
 
-
 /*!
  * Determine if a 32-bit field represents a valid 32-bit IEEE-754 floating
  * point number. If the field is infinity, NaN, or de-normalized then it is
@@ -80,14 +79,29 @@ int isFloat64Valid(uint64_t value)
 
 
 /*!
+ * \deprecated
  * Convert a 32-bit floating point value (IEEE-754 binary32) to 24-bit floating
- * point value. This is done by limiting the signficand to 16 bits. Underflow
- * will be returned as zero and overflow as the maximum possible value
+ * point representation with 15 bits significand. Underflow will be returned as
+ * zero and overflow as the maximum possible value.
  * \param value is the 32-bit floating point data to convert.
  * \return The 24-bit floating point as a simple 32-bit integer with the most
  *         significant byte clear.
  */
 uint32_t float32ToFloat24(float value)
+{
+    return float32ToFloat24ex(value, 15);
+}
+
+
+/*!
+ * Convert a 32-bit floating point value (IEEE-754 binary32) to 24-bit floating
+ * point representation with a variable number of bits for the significand.
+ * Underflow will be returned as zero and overflow as the maximum possible value.
+ * \param value is the 32-bit floating point data to convert.
+ * \param sigbits is the number of bits to use for the significand.
+ * \return The float24 as a simple 24-bit integer (most significant byte clear).
+ */
+uint32_t float32ToFloat24ex(float value, int sigbits)
 {
     union
     {
@@ -97,7 +111,13 @@ uint32_t float32ToFloat24(float value)
 
     uint32_t significand;
     uint32_t unsignedExponent;
+    int32_t  signedExponent;
     uint32_t output;
+
+    // The bias is computed as 2 raised to the number of exponent bits divided
+    // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
+    // The number of exponent bits is 24 - 1 - sigbits
+    int bias = (1 << (22 - sigbits)) - 1;
 
     // Write the floating point value to our union so we can access its bits.
     // Note that C99 and C++2011 have built in goodness for this sort of
@@ -111,7 +131,7 @@ uint32_t float32ToFloat24(float value)
     unsignedExponent = (field.Integer & 0x7F800000) >> 23;
 
     // Get rid of some bits, here is where we sacrifice resolution
-    output = (uint32_t)(significand >> 8);
+    output = (uint16_t)(significand >> (23-sigbits));
 
     // If significand and exponent are zero means a number of zero
     if((output == 0) && (unsignedExponent == 0))
@@ -123,8 +143,26 @@ uint32_t float32ToFloat24(float value)
             return 0;
     }
 
-    // Put the exponent in the output
-    output |= unsignedExponent << 15;
+    // Get the un-biased exponent. Binary32 is biased by 127
+    signedExponent = unsignedExponent - 127;
+
+    if(signedExponent < -bias)
+        output = 0;   // underflow to zero
+    else
+    {
+        if(signedExponent > bias)
+        {
+            // Largest possible exponent and significand without making a NaN or Inf
+            signedExponent = bias;
+            significand = (uint32_t)(1 << sigbits) - 1;
+        }
+
+        // re-bias with the new bias
+        unsignedExponent = (uint32_t)(signedExponent + bias);
+
+        // Put the exponent in the output
+        output |= (uint32_t)(unsignedExponent << sigbits);
+    }
 
     // Account for the sign
     if(field.Integer & 0x80000000)
@@ -133,15 +171,30 @@ uint32_t float32ToFloat24(float value)
     // return the 24-bit representation
     return output;
 
-}// float32ToFloat24
+}// float32ToFloat24ex
 
 
 /*!
- * Convert a 24-bit floating point representation to binary32 (IEEE-754)
+ * \deprecated
+ * Convert a 24 bit floating point representation with 15 bits significand to
+ * binary32.
  * \param value is the 24-bit representation to convert.
  * \return the binary32 version as a float.
  */
 float float24ToFloat32(uint32_t value)
+{
+    return float24ToFloat32ex(value, 15);
+}
+
+
+/*!
+ * Convert a 24-bit floating point representation with variable number of
+ * significand bits to binary32
+ * \param value is the float16 representation to convert.
+ * \param sigbits is the number of bits to use for the significand of the 24-bit float.
+ * \return the binary32 version as a float.
+ */
+float float24ToFloat32ex(uint32_t value, int sigbits)
 {
     union
     {
@@ -156,11 +209,22 @@ float float24ToFloat32(uint32_t value)
     }
     else
     {
-        // 8 bits of exponent, biased with 127
-        uint32_t unsignedExponent = (value >> 15) & 0xFF;
+        // The mask for the significand bits
+        int sigmask = (1 << sigbits) - 1;
 
-        // 15 bits of signficand, shift it up to 23 bits
-        field.Integer = (value & 0x00007FFF) << 8;
+        // The unsigned exponent, mask off the leading sign bit
+        uint32_t unsignedExponent = ((value & 0x007FFFFF) >> sigbits);
+
+        // The bias is computed as 2 raised to the number of exponent bits divided
+        // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
+        // The number of exponent bits is 24 - 1 - sigbits
+        int bias = (1 << (22 - sigbits)) - 1;
+
+        // We want to subtract our bias to get un-biased, and then add 127 for the new bias
+        unsignedExponent += (127 - bias);
+
+        // Reduced bits of signficand, shift it up to 23 bits
+        field.Integer = (value & sigmask) << (23-sigbits);
 
         // Put the exponent in
         field.Integer |= (unsignedExponent << 23);
@@ -172,18 +236,47 @@ float float24ToFloat32(uint32_t value)
 
     return field.Float;
 
-}// float24ToFloat32
+}// float24ToFloat32ex
 
 
 /*!
+ * \deprecated
  * Convert a 32-bit floating point value (IEEE-754 binary32) to 16-bit floating
- * point value (IEEE-754 binary16). This is done by limiting the exponent to 6
- * bits and the signficand to 9 bits. Underflow will be returned as zero and
- * overflow as the maximum possible value.
+ * point representation with 9 bits significand. Underflow will be returned as
+ * zero and overflow as the maximum possible value.
  * \param value is the 32-bit floating point data to convert.
  * \return The binary16 as a simple 16-bit integer.
  */
 uint16_t float32ToFloat16(float value)
+{
+    return float32ToFloat16ex(value, 9);
+
+}// float32ToFloat16
+
+
+/*!
+ * \deprecated
+ * Convert a 16 bit floating point representation with 9 bits significand to
+ * binary32.
+ * \param value is the binary16 representation to convert.
+ * \return the binary32 version as a float.
+ */
+float float16ToFloat32(uint16_t value)
+{
+    return float16ToFloat32ex(value, 9);
+
+}// float16ToFloat32
+
+
+/*!
+ * Convert a 32-bit floating point value (IEEE-754 binary32) to 16-bit floating
+ * point representation with a variable number of bits for the significand.
+ * Underflow will be returned as zero and overflow as the maximum possible value.
+ * \param value is the 32-bit floating point data to convert.
+ * \param sigbits is the number of bits to use for the significand.
+ * \return The float16 as a simple 16-bit integer.
+ */
+uint16_t float32ToFloat16ex(float value, int sigbits)
 {
     union
     {
@@ -195,6 +288,11 @@ uint16_t float32ToFloat16(float value)
     uint32_t unsignedExponent;
     int32_t  signedExponent;
     uint16_t output;
+
+    // The bias is computed as 2 raised to the number of exponent bits divided
+    // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
+    // The number of exponent bits is 16 - 1 - sigbits
+    int bias = (1 << (14 - sigbits)) - 1;
 
     // Write the floating point value to our union so we can access its bits.
     // Note that C99 and C++2011 have built in goodness for this sort of
@@ -208,7 +306,7 @@ uint16_t float32ToFloat16(float value)
     unsignedExponent = (field.Integer & 0x7F800000) >> 23;
 
     // Get rid of some bits, here is where we sacrifice resolution
-    output = (uint16_t)(significand >> 14);
+    output = (uint16_t)(significand >> (23-sigbits));
 
     // If significand and exponent are zero means a number of zero
     if((output == 0) && (unsignedExponent == 0))
@@ -233,21 +331,32 @@ uint16_t float32ToFloat16(float value)
     //  31      : 62
     //  32      : NaN (all exponent bits are 1)
 
-    // We can support (un-biased) exponents of -62 through 63 inclusive
-    if(signedExponent < -31)
+    // With a 5-bit exponent we get
+    // exponent : biased value
+    // -15      : 0 (value is zero or denormalized)
+    // -14      : 1
+    //  -1      : 14
+    //   0      : 15
+    //   1      : 16
+    //  15      : 32
+    //  16      : NaN (all exponent bits are 1)
+
+    if(signedExponent < -bias)
         output = 0;   // underflow to zero
-    else if(signedExponent > 31)
-    {
-        // Largest possible exponent and significand without making a NaN or Inf
-        output = (uint16_t)(0x7DFF);
-    }
     else
     {
-        // re-bias with 31
-        unsignedExponent = (uint32_t)(signedExponent + 31);
+        if(signedExponent > bias)
+        {
+            // Largest possible exponent and significand without making a NaN or Inf
+            signedExponent = bias;
+            significand = (uint32_t)(1 << sigbits) - 1;
+        }
+
+        // re-bias with the new bias
+        unsignedExponent = (uint32_t)(signedExponent + bias);
 
         // Put the exponent in the output
-        output |= (uint16_t)(unsignedExponent << 9);
+        output |= (uint16_t)(unsignedExponent << sigbits);
     }
 
     // Account for the sign
@@ -257,15 +366,17 @@ uint16_t float32ToFloat16(float value)
     // return the binary16 representation
     return output;
 
-}// float32ToFloat16
+}// float32ToFloat16ex
 
 
 /*!
- * Convert a IEEE-754 binary16 floating point representation to binary32
- * \param value is the binary16 representation to convert.
+ * Convert a 16-bit floating point representation with variable number of
+ * significand bits to binary32
+ * \param value is the float16 representation to convert.
+ * \param sigbits is the number of bits to use for the significand of the 16-bit float.
  * \return the binary32 version as a float.
  */
-float float16ToFloat32(uint16_t value)
+float float16ToFloat32ex(uint16_t value, int sigbits)
 {
     union
     {
@@ -280,14 +391,22 @@ float float16ToFloat32(uint16_t value)
     }
     else
     {
-        // 6 bits of exponent, biased with 31
-        uint32_t unsignedExponent = (value >> 9) & 0x3F;
+        // The mask for the significand bits
+        int sigmask = (1 << sigbits) - 1;
 
-        // We want to subtract 31 to get un-biased, and then add 127 for the new bias
-        unsignedExponent += (127 - 31);
+        // The unsigned exponent, mask off the leading sign bit
+        uint32_t unsignedExponent = ((value & 0x7FFF) >> sigbits);
 
-        // 9 bits of signficand, shift it up to 23 bits
-        field.Integer = (value & 0x01FF) << 14;
+        // The bias is computed as 2 raised to the number of exponent bits divided
+        // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
+        // The number of exponent bits is 16 - 1 - sigbits
+        int bias = (1 << (14 - sigbits)) - 1;
+
+        // We want to subtract our bias to get un-biased, and then add 127 for the new bias
+        unsignedExponent += (127 - bias);
+
+        // Reduced bits of signficand, shift it up to 23 bits
+        field.Integer = (value & sigmask) << (23-sigbits);
 
         // Put the exponent in
         field.Integer |= (unsignedExponent << 23);
@@ -299,7 +418,7 @@ float float16ToFloat32(uint16_t value)
 
     return field.Float;
 
-}// float16ToFloat32
+}// float16ToFloat32ex
 
 
 /*!

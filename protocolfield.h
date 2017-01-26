@@ -30,6 +30,7 @@ public:
     bool isFixedString; //!< true if type is a fixed length string
     bool isNull;        //!< true if type is null, i.e not in memory OR not encoded
     int bits;           //!< number of bits used by type
+    int sigbits;        //!< number of bits for the significand of a float16 or float24
 
     //! Pull a positive integer value from a string
     static int extractPositiveInt(const QString& string, bool* ok = 0);

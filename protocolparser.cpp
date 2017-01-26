@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.8.2.b";
+const QString ProtocolParser::genVersion = "1.9.0.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1057,10 +1057,10 @@ most of the work of encoding data from memory to the wire, and vice versa.\n");
 | UX                           | Unsigned integer X bits long          | X must be: 8, 16, 24, 32, 40, 48, 56, or 64                                 |\n\
 | IX                           | Signed integer X bits long            | X must be: 8, 16, 24, 32, 40, 48, 56, or 64                                 |\n\
 | BX                           | Unsigned integer bitfield X bits long | X must be greater than 0 and less than 32                                   |\n\
-| F16                          | 16 bit floating point                 | 1 sign bit : 6 exponent bits : 9 significant bits with implied leading 1    |\n\
-| F24                          | 24 bit floating point                 | 1 sign bit : 8 exponent bits : 15 significant bits with implied leading 1   |\n\
-| F32                          | 32 bit floating point (IEEE-754)      | 1 sign bit : 8 exponent bits : 23 significant bits with implied leading 1   |\n\
-| F64                          | 64 bit floating point (IEEE-754)      | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n");
+| F16:X                        | 16 bit float with X significand bits  | 1 sign bit : 15-X exponent bits : X significant bits with implied leading 1 |\n\
+| F24:X                        | 24 bit float with X significand bits  | 1 sign bit : 23-X exponent bits : X significant bits with implied leading 1 |\n\
+| F32                          | 32 bit float (IEEE-754)               | 1 sign bit : 8 exponent bits : 23 significant bits with implied leading 1   |\n\
+| F64                          | 64 bit float (IEEE-754)               | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n");
     file.write("\n");
 
     file.write("## Size of fields");

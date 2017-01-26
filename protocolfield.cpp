@@ -15,6 +15,7 @@ TypeData::TypeData(ProtocolSupport sup) :
     isFixedString(false),
     isNull(false),
     bits(8),
+    sigbits(0),
     support(sup)
 {
 }
@@ -30,6 +31,7 @@ TypeData::TypeData(const TypeData& that) :
     isFixedString(that.isFixedString),
     isNull(that.isNull),
     bits(that.bits),
+    sigbits(that.sigbits),
     support(that.support)
 {
 }
@@ -49,6 +51,7 @@ void TypeData::clear(void)
     isFixedString = false;
     isNull = false;
     bits = 8;
+    sigbits = 0;
 }
 
 
@@ -367,6 +370,19 @@ void ProtocolField::extractType(TypeData& data, const QString& typeString, const
 
             if(type.startsWith("f", Qt::CaseInsensitive))
             {
+                // we want to handle the cas where the user types "float16:10" to specify the number of significands
+                if(type.contains(":"))
+                {
+                    QStringList list = type.split(":", QString::SkipEmptyParts);
+
+                    if(list.count() >= 2)
+                    {
+                        data.bits = data.extractPositiveInt(list.at(0));
+                        data.sigbits = data.extractPositiveInt(list.at(1));
+                    }
+
+                }
+
                 data.isFloat = true;
 
                 // "float" is not a warning
@@ -400,26 +416,71 @@ void ProtocolField::extractType(TypeData& data, const QString& typeString, const
                     else
                         data.bits = 64;
                 }
-            }
-            else if((data.bits != 16) && (data.bits != 24) && (data.bits != 32) && (data.bits != 64))
-            {
-                emitWarning("encoded float types must be 16, 24, 32, or 64 bits");
 
-                if(data.bits < 16)
-                    data.bits = 16;
-                else if(data.bits < 24)
-                    data.bits = 24;
-                else if(data.bits < 32)
-                    data.bits = 32;
-                else
-                    data.bits = 64;
-
-                if((data.bits < 32) && (support.specialFloat == false))
+                if(data.sigbits != 0)
                 {
-                    emitWarning("non-standard float bit widths are disabled in this protocol");
-                    data.bits = 32;
+                    data.sigbits = 0;
+                    emitWarning("in memory float types do not have variable resolution");
                 }
             }
+            else
+            {
+                if((data.bits != 16) && (data.bits != 24) && (data.bits != 32) && (data.bits != 64))
+                {
+                    emitWarning("encoded float types must be 16, 24, 32, or 64 bits");
+
+                    if(data.bits < 16)
+                        data.bits = 16;
+                    else if(data.bits < 24)
+                        data.bits = 24;
+                    else if(data.bits < 32)
+                        data.bits = 32;
+                    else
+                        data.bits = 64;
+
+                    if((data.bits < 32) && (support.specialFloat == false))
+                    {
+                        emitWarning("non-standard float bit widths are disabled in this protocol");
+                        data.bits = 32;
+                        data.sigbits = 0;
+                    }
+                }
+
+                if(data.sigbits != 0)
+                {
+                    if(data.bits >= 32)
+                    {
+                        emitWarning("float type must be 16 or 24 bit to specify resolution");
+                        data.sigbits = 0;
+                    }
+                    else if(data.bits == 24)
+                    {
+                        if((data.sigbits < 4) || (data.sigbits > 20))
+                        {
+                            emitWarning("significand (resolution) of float24 must be between 4 and 20 bits inclusive, defaulted to 15");
+                            data.sigbits = 15;
+                        }
+                    }
+                    else if(data.bits == 16)
+                    {
+                        if((data.sigbits < 4) || (data.sigbits > 12))
+                        {
+                            emitWarning("significand (resolution) of float16 must be between 4 and 12 bits inclusive, defaulted to 9");
+                            data.sigbits = 9;
+                        }
+                    }
+
+                }// if user specified significant bits
+                else
+                {
+                    // Default significand bits for float16 and float24
+                    if(data.bits == 16)
+                        data.sigbits = 9;
+                    else if(data.bits == 24)
+                        data.sigbits = 15;
+                }
+
+            }// else if not in memory float
 
             if((data.bits > 32) && (support.float64 == false))
             {
@@ -1527,7 +1588,12 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             if(encodedType.isBitfield)
                 encodings.append("B" + QString().setNum(encodedType.bits));
             else if(encodedType.isFloat)
-                encodings.append("F" + QString().setNum(encodedType.bits));
+            {
+                if(encodedType.bits < 32)
+                    encodings.append("F" + QString().setNum(encodedType.bits) + ":" + QString::number(encodedType.sigbits));
+                else
+                    encodings.append("F" + QString().setNum(encodedType.bits));
+            }
             else if(encodedType.isSigned)
                 encodings.append("I" + QString().setNum(encodedType.bits));
             else
@@ -2455,9 +2521,14 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
         if(array.isEmpty())
         {
             if(constantstring.isEmpty())
-                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + scalestring + ", data, &byteindex);\n";
+                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name + scalestring + ", data, &byteindex";
             else
-                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+                output += spacing + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex";
+
+            if((encodedType.bits == 16) || (encodedType.bits == 24))
+                output += ", " + QString().setNum(encodedType.sigbits);
+
+            output += ");\n";
         }
         else
         {
@@ -2474,16 +2545,26 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                     output += spacing + "    for(j = 0; j < (int)" + lhs + variable2dArray + " && j < " + array2d + "; j++)\n";
 
                 if(constantstring.isEmpty())
-                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i][j], data, &byteindex);\n";
+                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i][j], data, &byteindex";
                 else
-                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+                    output += spacing + "        float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex";
+
+                if((encodedType.bits == 16) || (encodedType.bits == 24))
+                    output += ", " + QString().setNum(encodedType.sigbits);
+
+                output += ");\n";
             }
             else
             {
                 if(constantstring.isEmpty())
-                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i], data, &byteindex);\n";
+                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[i], data, &byteindex";
                 else
-                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex);\n";
+                    output += spacing + "    float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + constantstring + ", data, &byteindex";
+
+                if((encodedType.bits == 16) || (encodedType.bits == 24))
+                    output += ", " + QString().setNum(encodedType.sigbits);
+
+                output += ");\n";
             }
         }
     }
@@ -2522,7 +2603,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         // If we are scaling, then we are going to use a float-encoding
         // function, since even an integer encoding function would still
-        // have to cast to float to apply the scaler. Note that
+        // have to cast to float to apply the scaler.
         if((inMemoryType.bits > 32) && support.float64)
             output += "float64";
         else
@@ -2748,22 +2829,31 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         if (checkConstant && array.isEmpty())
         {
             output += spacing + "// Decoded value must be " + constantstring + "\n";
-
             output += spacing + "if (";
 
             if (encodedType.isFloat)
             {
-                if((inMemoryType.bits > 32) && support.float64)
-                    output += "float64";
+                if(encodedType.bits == 16)
+                    output += "float16From" + endian + "Bytes(data, &byteindex, " + QString::number(encodedType.sigbits) + ")";
+                else if(encodedType.bits == 24)
+                    output += "float24From" + endian + "Bytes(data, &byteindex, " + QString::number(encodedType.sigbits) + ")";
+                else if((inMemoryType.bits > 32) && support.float64)
+                    output += "float64From" + endian + "Bytes(data, &byteindex)";
                 else
-                    output += "float32";
+                    output += "float32From" + endian + "Bytes(data, &byteindex)";
             }
-            else if (encodedType.isSigned)
-                output += "int";
             else
-                output += "uint";
+            {
+                if (encodedType.isSigned)
+                    output += "int";
+                else
+                    output += "uint";
 
-            output += QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex)" + " != (" + encodedType.toTypeString() + ") " + constantstring + ")\n";
+                output += QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex)";
+
+            }
+
+            output += " != (" + encodedType.toTypeString() + ") " + constantstring + ")\n";
             output += spacing + "    return 0;\n";
         }
         else
@@ -2795,7 +2885,14 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         }
 
         if(array.isEmpty())
-            output += spacing + lhs + name + " = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+        {
+            output += spacing + lhs + name + " = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex";
+
+            if((encodedType.bits == 16) || (encodedType.bits == 24))
+                output += ", " + QString::number(encodedType.sigbits);
+
+            output += ");\n";
+        }
         else
         {
             if(variableArray.isEmpty())
@@ -2820,10 +2917,22 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                         output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
                 }
 
-                output += spacing + "        " + lhs + name + "[i][j] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+                output += spacing + "        " + lhs + name + "[i][j] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex";
+
+                if((encodedType.bits == 16) || (encodedType.bits == 24))
+                    output += ", " + QString::number(encodedType.sigbits);
+
+                output += ");\n";
             }
             else
-                output += spacing + "    " + lhs + name + "[i] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex);\n";
+            {
+                output += spacing + "    " + lhs + name + "[i] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(data, &byteindex";
+
+                if((encodedType.bits == 16) || (encodedType.bits == 24))
+                    output += ", " + QString::number(encodedType.sigbits);
+
+                output += ");\n";
+            }
 
         }// if array
 

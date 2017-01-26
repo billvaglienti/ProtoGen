@@ -229,7 +229,7 @@ interpretation
         <Data name="numControls" inMemoryType="unsigned8" comment="number of control signals"/>
         <Data name="controls" inMemoryType="float" array="16" variableArray="numControls" encodedType="int16_t" max="1.5" comment="control signals in radians or -1.0 to 1.0 for dimensionless controls"/>
         <Data name="numFueltanks" inMemoryType="uint8_t" comment="number of fuel tanks intalled"/>
-        <Data name="fuel" inMemoryType="float" array="8" variableArray="numFueltanks" encodedType="float16" comment="kilograms of fuel remaining in each tank"/>
+        <Data name="fuel" inMemoryType="float" array="8" variableArray="numFueltanks" encodedType="float16:8" comment="kilograms of fuel remaining in each tank"/>
         <Data name="dynamicP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" min="-200" max="16000" comment="Dynamic pressure in Pascals"/>
         <Data name="staticP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" max="115000" comment="Static pressure in Pascals"/>
         <Data name="OAT" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint8_t" min="200" max="400" comment="Outside air temperature in Kelvin"/>
