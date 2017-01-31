@@ -66,6 +66,22 @@ interpretation
     <Documentation comment="------------"/>
     <Documentation name="Packets" paragraph="1"/>
 
+    <Structure name="testPacket" encode="false" decode="false" file="DemolinkProtocol.h" comment="A simple packet structure demonstrating that you can output basic structures without encodings">
+        <Enum name="testPktIds" comment="Values used in the definition of the generic packet">
+            <Value name="TEST_PKT_SYNC_BYTE0" value="0x55" comment="First synchronization byte"/>
+            <Value name="TEST_PKT_SYNC_BYTE1" value="0xAA" comment="Second synchronization byte"/>
+            <Value name="TEST_PKT_MAX_DATA" value="255" comment="Maximum number of data bytes in a test packet"/>
+            <Value name="TEST_PKT_OVERHEAD" value="6" comment="Overhead of a packet beyond the number of data bytes"/>
+
+        </Enum>
+        <Data name="sync0" inMemoryType="unsigned8" comment="First synchronization byte to indicate a packet may be forthcoming"/>
+        <Data name="sync1" inMemoryType="unsigned8" comment="Second synchronization byte to indicate a packet may be forthcoming"/>
+        <Data name="length" inMemoryType="unsigned8" comment="Number of data bytes in the packet"/>
+        <Data name="pkttype" inMemoryType="unsigned8" comment="Packet type identifier"/>
+        <Data name="data" inMemoryType="unsigned8" array="TEST_PKT_MAX_DATA+2" comment="Packet data space, plus 2 bytes checksum"/>
+        <Data name="rxstate" inMemoryType="unsigned16" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
+    </Structure>
+
     <Packet name="KlvUserData" structureInterface="true" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags"
         ID="ORION_PKT_KLV_USER_DATA1, ORION_PKT_KLV_USER_DATA2;ORION_PKT_KLV_USER_DATA3 ORION_PKT_KLV_USER_DATA4    ORION_PKT_KLV_USER_DATA5 ORION_PKT_KLV_USER_DATA6">
         <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
