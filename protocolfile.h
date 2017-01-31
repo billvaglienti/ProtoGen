@@ -122,9 +122,6 @@ class ProtocolSourceFile : public ProtocolFile
 {
 public:
 
-    //! Append to the prototype section of the file
-    void writePrototype(const QString& text);
-
     //! Write the file to disc, including any prologue/epilogue
     bool flush(void);
 

@@ -434,7 +434,8 @@ QString ProtocolFile::fileNameAndPathOnDisk(void) const
  */
 bool ProtocolFile::flush(void)
 {
-    if(!dirty)
+    // Nothing to write
+    if(!dirty || contents.isEmpty())
         return false;
 
     // Got to have a name
@@ -491,7 +492,8 @@ void ProtocolHeaderFile::extractExtension(QString& name)
  */
 bool ProtocolHeaderFile::flush(void)
 {
-    if(!dirty)
+    // Nothing to write
+    if(!dirty || contents.isEmpty())
         return false;
 
     // Got to have a name
@@ -621,7 +623,8 @@ void ProtocolSourceFile::extractExtension(QString& name)
  */
 bool ProtocolSourceFile::flush(void)
 {
-    if(!dirty)
+    // Nothing to write
+    if(!dirty || contents.isEmpty())
         return false;
 
     // Got to have a name

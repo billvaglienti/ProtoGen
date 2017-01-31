@@ -201,23 +201,19 @@ void ProtocolStructureModule::parse(void)
     // White space is good
     structfile->makeLineSeparator();
 
-    // Include the helper files in the source, but only do this once
-    if(!source.isAppending())
-    {
-        // White space is good
-        source.makeLineSeparator();
+    // White space is good
+    source.makeLineSeparator();
 
-        if(support.specialFloat)
-            source.writeIncludeDirective("floatspecial.h");
+    if(support.specialFloat)
+        source.writeIncludeDirective("floatspecial.h");
 
-        if(support.bitfield)
-            source.writeIncludeDirective("bitfieldspecial.h");
+    if(support.bitfield)
+        source.writeIncludeDirective("bitfieldspecial.h");
 
-        source.writeIncludeDirective("fielddecode.h");
-        source.writeIncludeDirective("fieldencode.h");
-        source.writeIncludeDirective("scaleddecode.h");
-        source.writeIncludeDirective("scaledencode.h");
-    }
+    source.writeIncludeDirective("fielddecode.h");
+    source.writeIncludeDirective("fieldencode.h");
+    source.writeIncludeDirective("scaleddecode.h");
+    source.writeIncludeDirective("scaledencode.h");
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -240,7 +236,11 @@ void ProtocolStructureModule::parse(void)
 
     // Write to disk
     header.flush();
-    source.flush();
+
+    if(encode || decode)
+        source.flush();
+    else
+        source.clear();
 
     // This may be one of the files above, in which case this will do nothing
     structfile->flush();
