@@ -56,7 +56,7 @@ void ProtocolCode::parse(void)
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
             comment = attr.value().trimmed();
         else if(support.disableunrecognized == false)
-            emitWarning("Unrecognized attribute: " + attrname);
+            emitWarning("Unrecognized attribute \"" + attrname + "\"");
 
     }// for all attributes
 

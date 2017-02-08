@@ -5,6 +5,7 @@
 #include "protocolstructure.h"
 #include "protocolparser.h"
 #include "protocoldocumentation.h"
+#include "shuntingyard.h"
 #include <QDateTime>
 #include <QStringList>
 #include <iostream>
@@ -101,8 +102,27 @@ void ProtocolPacket::parse(void)
     // Its possible to have multiple ID attributes which are separated by white space
     ids = ProtocolParser::getAttribute("ID", map).split(QRegExp("[,;:\\s]+"), QString::SkipEmptyParts);
 
+    // Warnings common to structures and packets
     issueWarnings(map);
 
+    // Warning about maximum data size, only applies to packets
+    if(support.maxdatasize > 0)
+    {
+        // The length strings, which may include enumerated identiers such as "N3D"
+        QString maxLength = encodedLength.maxEncodedLength;
+
+        // Replace any defined enumerations with their actual value
+        parser->replaceEnumerationNameWithValue(maxLength);
+
+        // maxdatasize will be zero if the length string cannot be computed
+        int maxdatasize = (int)(ShuntingYard::computeInfix(maxLength) + 0.5);
+
+        // Warn the user if the packet might be too big
+        if(maxdatasize > support.maxdatasize)
+            emitWarning("Maximum packet size of " + QString::number(maxdatasize) + " bytes exceeds limit of " + QString::number(support.maxdatasize) + " bytes");
+    }
+
+    // Warnings about C keywords
     for(int i = 0; i < ids.count(); i++)
     {
         if(keywords.contains(ids.at(i)))

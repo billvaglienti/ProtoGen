@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.9.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.9.1. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -82,17 +82,19 @@ The root element of the XML is "Protocol". It must be present for ProtoGen to ge
 
 The Protocol tag supports the following attributes:
 
-- `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink".
+- `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink". This attribute is mandatory, all other Protcol attributes are optional.
 
 - `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any objects which have their own `file` attribute.
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
+- `maxSize` : A number that specifies the maximum number of data bytes that a packet can support. If this is provided, and is greater than zero, ProtoGen will issue a warning for any packet whose maximum encoded size is greater than this.
+
 - `api` : An enumeration that can be used to determine API compatibility. Changes to the protocol definition that break backwards compatibility should increment this value. Calling code can access the api value and use it to (for example) seed a packet checksum/CRC to prevent clashes with different versions of the protocol.
 
 - `version` : A human readable version string to describe the protocol. Calling code can access the version string.
 
-- `endian` : By default the generated code will encode to and decode from big endian byte order. setting this attribute to "little" will cause the generated code to use little endian byte order. This attribute is *not* the byte order of the computer that executes the auto generated code. It *is* the byte order of the data *on the wire*.
+- `endian` : By default the generated code will encode to and decode from big endian byte order. Setting this attribute to "little" will cause the generated code to use little endian byte order. This attribute is *not* the byte order of the computer that executes the auto generated code. It *is* the byte order of the data *on the wire*.
 
 - `supportInt64` : if this attribute is set to `false` then integer types greater than 32 bits will not be allowed.
 
@@ -284,7 +286,7 @@ Packet tag attributes:
   
 - `name` : The same as the name attribute of a structure.
 
-- `ID` : gives the identifying value of the packet. This can be any resolvable string, though typically it will be an element of an enumeration. If the ID attribute is missing the all-caps name of the packet is used as the ID. In some cases multiple packets may be identical except for the identifier. It is possible to simply define multiple packets in the XML, however a better solution is to specify multiple identifiers by using spaces or commas to delimit the identifers in the ID attribute. If multiple identifiers are given the encode function is changed so the caller provides the desired id. In addition the decode function is changed so that any of given identifiers can be used for a successful packet decode.
+- `ID` : gives the identifying value of the packet. This can be any resolvable string, though typically it will be an element of an enumeration. If the ID attribute is missing the all-caps name of the packet is used as the ID. In some cases multiple packets may be identical except for the identifier. It is possible to simply define multiple packets in the XML, however a better solution is to specify multiple identifiers by using spaces or commas to delimit the identifers in the ID attribute. If multiple identifiers are given the encode function is changed so the caller provides the desired id. In addition the decode function is changed so that any of the given identifiers can be used for a successful packet decode.
 
 - `file` : The same as the file attribute of a structure.
 

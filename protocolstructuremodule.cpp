@@ -80,7 +80,7 @@ void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
                 continue;
 
             if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-                emitWarning("Unrecognized attribute " + attr.name());
+                emitWarning("Unrecognized attribute \"" + attr.name() + "\"");
         }
     }
 

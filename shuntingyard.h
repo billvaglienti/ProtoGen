@@ -47,7 +47,7 @@ public:
     //! Replace "pi" or "e" in the string with the numeric values
     static QString& replacePie(QString& input);
 
-    //! Test the ShartingYard class
+    //! Test the ShuntingYard class
     static bool test();
 
 private:

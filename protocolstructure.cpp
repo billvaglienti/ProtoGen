@@ -101,7 +101,7 @@ void ProtocolStructure::parse(void)
             continue;
 
         if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            emitWarning("Unrecognized attribute " + attr.name());
+            emitWarning("Unrecognized attribute \"" + attr.name() + "\"");
     }
 
     // for now the typename is derived from the name

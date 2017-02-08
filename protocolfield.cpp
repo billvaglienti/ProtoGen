@@ -619,7 +619,7 @@ void ProtocolField::parse(void)
             bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(support.disableunrecognized == false)
         {
-            emitWarning("Unrecognized attribute of Data: " + attrname);
+            emitWarning("Unrecognized attribute of Data \"" + attrname + "\"");
         }
 
     }// for all attributes

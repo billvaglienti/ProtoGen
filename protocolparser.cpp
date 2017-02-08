@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.9.0.b";
+const QString ProtocolParser::genVersion = "1.9.1.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -133,7 +133,31 @@ bool ProtocolParser::parse(QString filename, QString path)
     }
 
     // Protocol support options specified in the xml
-    support.parse(docElem);
+    QDomNamedNodeMap map = docElem.attributes();
+    support.parse(map);
+
+    // Warn the user if any attributes were in the ProtocolTag that we don't understand
+    if(support.disableunrecognized == false)
+    {
+        // All the attributes understood by the protocol support
+        QStringList attriblist = support.getAttriblist();
+
+        // And the ones we understand
+        attriblist << "name" << "api" << "version" << "comment";
+
+        for(int i = 0; i < map.count(); i++)
+        {
+            QDomAttr attr = map.item(i).toAttr();
+            if(attr.isNull())
+                continue;
+
+            if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
+            {
+                int line = getLineNumber(name);
+                emitWarning(QString::number(line) + ":0: warning: " + name + ": Unrecognized attribute \"" + attr.name() + "\"");
+            }
+        }
+    }
 
     // All of the top level Structures, which stand alone in their own modules
     QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
@@ -776,7 +800,7 @@ void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QD
             else if(attrname.compare("global", Qt::CaseInsensitive) == 0)
                 global = ProtocolParser::isFieldSet(attr.value().trimmed());
             else if(support.disableunrecognized == false)
-                emitWarning(parent + ":" + include + ": Unrecognized attribute " + attrname);
+                emitWarning(parent + ":" + include + ": Unrecognized attribute \"" + attrname + "\"");
 
         }// for all attributes
 

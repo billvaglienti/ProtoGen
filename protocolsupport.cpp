@@ -2,6 +2,7 @@
 #include "protocolparser.h"
 
 ProtocolSupport::ProtocolSupport() :
+    maxdatasize(0),
     int64(true),
     float64(true),
     specialFloat(true),
@@ -16,9 +17,21 @@ ProtocolSupport::ProtocolSupport() :
 }
 
 
-void ProtocolSupport::parse(QDomElement& e)
+//! Return the list of attributes understood by ProtocolSupport
+QStringList ProtocolSupport::getAttriblist(void) const
 {
-    QDomNamedNodeMap map = e.attributes();
+    QStringList attribs;
+
+    attribs << "maxSize" << "supportInt64" << "supportFloat64" << "supportSpecialFloat" << "supportBitfield" << "supportLongBitfield" << "bitfieldTest" << "file" << "prefix" << "packetStructureSuffix" << "packetParameterSuffix" << "endian";
+
+    return attribs;
+}
+
+
+void ProtocolSupport::parse(const QDomNamedNodeMap& map)
+{
+    // Maximum bytes of data in a packet.
+    maxdatasize = ProtocolParser::getAttribute("maxSize", map, "0").toInt();
 
     // 64-bit support can be turned off
     if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("supportInt64", map)))

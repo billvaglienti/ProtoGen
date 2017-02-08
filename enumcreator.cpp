@@ -116,7 +116,7 @@ void EnumCreator::parse(void)
             file = file.left(file.indexOf("."));
         }
         else if(support.disableunrecognized == false)
-            emitWarning("Unrecognized attribute: " + attrname);
+            emitWarning("Unrecognized attribute \"" + attrname + "\"");
     }
 
     QDomNodeList list = e.elementsByTagName("Value");
@@ -172,7 +172,7 @@ void EnumCreator::parse(void)
             else if(attrname.compare("ignorePrefix", Qt::CaseInsensitive) == 0)
                 ignorePrefix = ProtocolParser::isFieldSet(attrval);
             else if(support.disableunrecognized == false)
-                emitWarning(":" + valueName + ": Unrecognized attribute: " + attrname);
+                emitWarning(":" + valueName + ": Unrecognized attribute \"" + attrname + "\"");
         }
 
         // Add the enum prefix if applicable
@@ -578,7 +578,7 @@ QStringList EnumCreator::splitAroundMathOperators(QString text) const
     {
         if(isMathOperator(text.at(i)))
         {
-            // If we got a math operator, then appen the preceding token to the list
+            // If we got a math operator, then append the preceding token to the list
             if(!token.isEmpty())
             {
                 output.append(token);
