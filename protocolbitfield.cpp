@@ -177,7 +177,7 @@ void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcoun
     int bitoffset = (*bitcount) + numbits;\n\
 \n\
     // The byte offset of the least significant block of 8 bits to move\n\
-    int byteoffset = (bitoffset-1)/8;\n\
+    int byteoffset = (bitoffset-1) >> 3;\n\
 \n\
     // The remainder bits (modulo 8) which are the least significant bits to move\n\
     int remainder = bitoffset & 0x07;\n\
