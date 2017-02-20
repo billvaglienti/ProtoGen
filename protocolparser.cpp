@@ -1,7 +1,7 @@
 #include "protocolparser.h"
+#include "protocolstructuremodule.h"
 #include "protocolpacket.h"
 #include "enumcreator.h"
-#include "protocolscaling.h"
 #include "protocolscaling.h"
 #include "fieldcoding.h"
 #include "protocolsupport.h"
@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.9.1.a";
+const QString ProtocolParser::genVersion = "1.9.2.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -83,9 +83,13 @@ bool ProtocolParser::parse(QString filename, QString path)
     file.close();
 
     // Qt's XML parsing
-    if(!doc.setContent(contents))
+    QString errorMsg;
+    int errorLine;
+    int errorCol;
+
+    if(!doc.setContent(contents, false, &errorMsg, &errorLine, &errorCol))
     {
-        emitWarning(" error: Failed to validate xml from file");
+        emitWarning(QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + errorMsg);
         return false;
     }
 
@@ -125,8 +129,8 @@ bool ProtocolParser::parse(QString filename, QString path)
         return false;
     }
 
-    name = docElem.attribute("name").trimmed();
-    if(name.isEmpty())
+    support.protoName = name = docElem.attribute("name").trimmed();
+    if(support.protoName.isEmpty())
     {
         emitWarning(" error: Protocol name not found in Protocol tag");
         return false;
@@ -136,27 +140,24 @@ bool ProtocolParser::parse(QString filename, QString path)
     QDomNamedNodeMap map = docElem.attributes();
     support.parse(map);
 
-    // Warn the user if any attributes were in the ProtocolTag that we don't understand
-    if(support.disableunrecognized == false)
+    // All the attributes understood by the protocol support
+    QStringList attriblist = support.getAttriblist();
+
+    // and the ones we understand
+    attriblist << "name" << "api" << "version" << "comment";
+
+    for(int i = 0; i < map.count(); i++)
     {
-        // All the attributes understood by the protocol support
-        QStringList attriblist = support.getAttriblist();
+        QDomAttr attr = map.item(i).toAttr();
+        if(attr.isNull())
+            continue;
 
-        // And the ones we understand
-        attriblist << "name" << "api" << "version" << "comment";
-
-        for(int i = 0; i < map.count(); i++)
+        if(support.disableunrecognized == false)
         {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
-
             if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-            {
-                int line = getLineNumber(name);
-                emitWarning(QString::number(line) + ":0: warning: " + name + ": Unrecognized attribute \"" + attr.name() + "\"");
-            }
+                emitWarning(QString::number(getLineNumber(support.protoName)) + ":0: warning: " + support.protoName + ": Unrecognized attribute \"" + attr.name() + "\"");
         }
+
     }
 
     // All of the top level Structures, which stand alone in their own modules
@@ -171,7 +172,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     for(int i = 0; i < structlist.size(); i++)
     {
         // Create the module object
-        ProtocolStructureModule* module = new ProtocolStructureModule(this, name, support, api, version);
+        ProtocolStructureModule* module = new ProtocolStructureModule(this, support, api, version);
 
         // Remember its xml
         module->setElement(structlist.at(i).toElement());
@@ -187,7 +188,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
         {
             // Create the module object
-            ProtocolPacket* packet = new ProtocolPacket(this, name, support, api, version);
+            ProtocolPacket* packet = new ProtocolPacket(this, support, api, version);
 
             // Remember its xml
             packet->setElement(doclist.at(i).toElement());
@@ -217,7 +218,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         else
         {
             // Create the module object
-            ProtocolDocumentation* document = new ProtocolDocumentation(this, name);
+            ProtocolDocumentation* document = new ProtocolDocumentation(this, name, support);
 
             // Documents can be parsed now
             document->setElement(doclist.at(i).toElement());

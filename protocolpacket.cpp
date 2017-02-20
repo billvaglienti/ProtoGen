@@ -14,15 +14,14 @@
 /*!
  * Construct the object that parses packet descriptions
  * \param parse points to the global protocol parser that owns everything
- * \param protocolName is the name of the protocol
  * \param supported gives the supported features of the protocol
  * \param protocolApi is the API string of the protocol
  * \param protocolVersion is the version string of the protocol
  * \param bigendian should be true to encode multi-byte fields with the most
  *        significant byte first.
  */
-ProtocolPacket::ProtocolPacket(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
-    ProtocolStructureModule(parse, protocolName, supported, protocolApi, protocolVersion)
+ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
+    ProtocolStructureModule(parse, supported, protocolApi, protocolVersion)
 {
     // These are attributes on top of the normal structureModule that we support
     attriblist << "structureInterface" << "parameterInterface" << "ID" << "useInOtherPackets";
@@ -70,7 +69,7 @@ void ProtocolPacket::parse(void)
     clear();
 
     // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), e, documentList);
+    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
 
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse();
@@ -159,7 +158,7 @@ void ProtocolPacket::parse(void)
         // Comment block at the top of the header file
         header.write("/*!\n");
         header.write(" * \\file\n");
-        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + name + " packet of the " + protoName + " protocol stack\n");
+        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + name + " packet of the " + support.protoName + " protocol stack\n");
 
         // A potentially long comment that should be wrapped at 80 characters
         if(!comment.isEmpty())
@@ -176,7 +175,7 @@ void ProtocolPacket::parse(void)
     }
 
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
-    header.writeIncludeDirective(protoName + "Protocol.h");
+    header.writeIncludeDirective(support.protoName + "Protocol.h");
 
     // Handle the idea that the structure might be defined in a different file
     ProtocolHeaderFile* structfile = &header;
@@ -397,7 +396,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write("{\n");
         }
 
-        source.write("    uint8_t* data = get" + protoName + "PacketData(pkt);\n");
+        source.write("    uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
         source.write("    int byteindex = 0;\n");
 
         if(bitfields)
@@ -426,9 +425,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         source.write("    // complete the process of creating the packet\n");
 
         if(ids.count() <= 1)
-            source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+            source.write("    finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
         else
-            source.write("    finish" + protoName + "Packet(pkt, byteindex, id);\n");
+            source.write("    finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
 
         source.write("}\n");
     }
@@ -475,12 +474,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
                 source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ protoName + "PacketID(pkt);\n");
+                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
                 source.write("    if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
@@ -490,12 +489,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write("        return 0;\n");
             source.write("\n");
             source.write("    // Verify the packet size\n");
-            source.write("    numBytes = get" + protoName + "PacketSize(pkt);\n");
+            source.write("    numBytes = get" + support.protoName + "PacketSize(pkt);\n");
             source.write("    if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
             source.write("        return 0;\n");
             source.write("\n");
             source.write("    // The raw data from the packet\n");
-            source.write("    data = get" + protoName + "PacketDataConst(pkt);\n");
+            source.write("    data = get" + support.protoName + "PacketDataConst(pkt);\n");
             source.makeLineSeparator();
             if(defaults)
             {
@@ -560,12 +559,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
                 source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ protoName + "PacketID(pkt);\n");
+                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
                 source.write("    if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
@@ -627,7 +626,7 @@ void ProtocolPacket::createPacketFunctions(void)
 
         if(!encodedLength.isZeroLength())
         {
-            source.write("    uint8_t* data = get"+ protoName + "PacketData(pkt);\n");
+            source.write("    uint8_t* data = get"+ support.protoName + "PacketData(pkt);\n");
             source.write("    int byteindex = 0;\n");
 
             if(bitfields)
@@ -655,17 +654,17 @@ void ProtocolPacket::createPacketFunctions(void)
             source.makeLineSeparator();
             source.write("    // complete the process of creating the packet\n");
             if(ids.count() <= 1)
-                source.write("    finish" + protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+                source.write("    finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write("    finish" + protoName + "Packet(pkt, byteindex, id);\n");
+                source.write("    finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
         }
         else
         {
             source.write("    // Zero length packet, no data encoded\n");
             if(ids.count() <= 1)
-                source.write("    finish" + protoName + "Packet(pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+                source.write("    finish" + support.protoName + "Packet(pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write("    finish" + protoName + "Packet(pkt, 0, id);\n");
+                source.write("    finish" + support.protoName + "Packet(pkt, 0, id);\n");
         }
 
         source.write("}\n");
@@ -703,19 +702,19 @@ void ProtocolPacket::createPacketFunctions(void)
             if(needs2ndDecodeIterator)
                 source.write("    int j = 0;\n");
             source.write("    int byteindex = 0;\n");
-            source.write("    const uint8_t* data = get" + protoName + "PacketDataConst(pkt);\n");
-            source.write("    int numBytes = get" + protoName + "PacketSize(pkt);\n");
+            source.write("    const uint8_t* data = get" + support.protoName + "PacketDataConst(pkt);\n");
+            source.write("    int numBytes = get" + support.protoName + "PacketSize(pkt);\n");
             source.write("\n");
 
             if(ids.count() <= 1)
             {
                 source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
                 source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ protoName + "PacketID(pkt);\n");
+                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
                 source.write("    if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
@@ -776,12 +775,12 @@ void ProtocolPacket::createPacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
                 source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ protoName + "PacketID(pkt);\n");
+                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
                 source.write("    if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
@@ -882,7 +881,7 @@ QString ProtocolPacket::getDataDecodeParameterList(void) const
  */
 QString ProtocolPacket::getDataEncodeBriefComment(void) const
 {
-    return QString("Encode the data from the " + protoName + " " + name + " structure");
+    return QString("Encode the data from the " + support.protoName + " " + name + " structure");
 }
 
 
@@ -891,7 +890,7 @@ QString ProtocolPacket::getDataEncodeBriefComment(void) const
  */
 QString ProtocolPacket::getDataDecodeBriefComment(void) const
 {
-    return QString("Decode the data from the " + protoName + " " + name + " structure");
+    return QString("Decode the data from the " + support.protoName + " " + name + " structure");
 }
 
 

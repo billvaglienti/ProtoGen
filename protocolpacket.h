@@ -13,7 +13,7 @@ class ProtocolPacket : public ProtocolStructureModule
 {
 public:
     //! Construct the packet parsing object, with details about the overall protocol
-    ProtocolPacket(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
+    ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
     //! Destroy the protocol packet
     virtual ~ProtocolPacket(void);

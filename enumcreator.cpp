@@ -6,6 +6,18 @@
 #include <math.h>
 #include <iostream>
 
+
+//! Create an empty enumeration list
+EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, Parent, supported),
+    minbitwidth(0),
+    hidden(false),
+    lookup(false),
+    isglobal(false)
+{
+}
+
+
 EnumCreator::~EnumCreator(void)
 {
     // Delete all the objects in the list
@@ -80,43 +92,29 @@ void EnumCreator::parse(void)
 {
     clear();
 
-    // Get any documentation for this packet
-    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), e, documentList);
+    // Get any documentation for this enumeration
+    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
 
     QDomNamedNodeMap map = e.attributes();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
 
-    for(int i = 0; i < map.count(); i++)
+    // Tell the user of any problems in the attributes
+    testAndWarnAttributes(map, QStringList() <<  "name" << "comment" << "description" << "hidden" << "lookup" << "prefix" << "file");
+
+    // Go get the rest of the attributes
+    description = ProtocolParser::getAttribute("description", map);
+    prefix = ProtocolParser::getAttribute("prefix", map);
+    comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
+    hidden = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
+    lookup = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("lookup", map));
+
+    if(isglobal)
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        QString attrname = attr.name();
-        QString attrval = attr.value().trimmed();
-
-        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-            name = attrval;
-        else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-            comment = ProtocolParser::reflowComment(attr.value());
-        else if(attrname.compare("description", Qt::CaseInsensitive) == 0)
-            description = attrval;
-        else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
-            hidden = ProtocolParser::isFieldSet(attrval);
-        else if(attrname.compare("lookup", Qt::CaseInsensitive) == 0)
-            lookup = ProtocolParser::isFieldSet(attrval);
-        else if(attrname.compare("prefix", Qt::CaseInsensitive) == 0)
-            prefix = attrval;
-        else if(isglobal && attrname.compare("file", Qt::CaseInsensitive) == 0)
-        {
-            // Remove the extension if any
-            file = attrval;
-            file = file.left(file.indexOf("."));
-        }
-        else if(support.disableunrecognized == false)
-            emitWarning("Unrecognized attribute \"" + attrname + "\"");
+        // Remove the extension if any
+        file = ProtocolParser::getAttribute("file", map);
+        file = file.left(file.indexOf("."));
     }
 
     QDomNodeList list = e.elementsByTagName("Value");
@@ -147,39 +145,19 @@ void EnumCreator::parse(void)
 
         // We use name as part of our debug outputs, so its good to have it first.
         QString valueName = ProtocolParser::getAttribute("name", map);
-        QString value;
-        QString comment;
-        bool hiddenvalue = false;
-        bool ignorePrefix = false;
 
-        for(int i = 0; i < map.count(); i++)
-        {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
+        // Tell the user of any problems in the attributes
+        testAndWarnAttributes(map, QStringList() <<  "name" << "value" << "comment" << "hidden" << "ignorePrefix", valueName);
 
-            QString attrname = attr.name();
-            QString attrval = attr.value().trimmed();
-
-            if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-                valueName = attrval;
-            else if(attrname.compare("value", Qt::CaseInsensitive) == 0)
-                value = attrval;
-            else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-                comment = ProtocolParser::reflowComment(attr.value());
-            else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
-                hiddenvalue = ProtocolParser::isFieldSet(attrval);
-            else if(attrname.compare("ignorePrefix", Qt::CaseInsensitive) == 0)
-                ignorePrefix = ProtocolParser::isFieldSet(attrval);
-            else if(support.disableunrecognized == false)
-                emitWarning(":" + valueName + ": Unrecognized attribute \"" + attrname + "\"");
-        }
+        // Now get the attributes
+        QString value = ProtocolParser::getAttribute("value", map);
+        QString comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
+        bool hiddenvalue = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
+        bool ignorePrefix = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("ignorePrefix", map));
 
         // Add the enum prefix if applicable
         if ( !prefix.isEmpty() && !ignorePrefix )
-        {
             valueName = prefix + valueName;
-        }
 
         // Add it to our list
         nameList.append(valueName);

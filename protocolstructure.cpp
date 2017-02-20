@@ -9,10 +9,10 @@
  * Construct a protocol structure
  * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the object that owns this object.
- * \param protocolName is the name of the protocol
+ * \param support are the protocol support details
  */
-ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported) :
-    Encodable(parse, Parent, protocolName, supported),
+ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+    Encodable(parse, Parent, supported),
     numbitfieldgroupbytes(0),
     bitfields(false),
     needsEncodeIterator(false),
@@ -93,16 +93,7 @@ void ProtocolStructure::parse(void)
     if(name.isEmpty())
         name = "_unknown";
 
-    // Look for any other attributes that we don't recognize
-    for(int i = 0; i < map.count(); i++)
-    {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false) && (support.disableunrecognized == false))
-            emitWarning("Unrecognized attribute \"" + attr.name() + "\"");
-    }
+    testAndWarnAttributes(map, attriblist);
 
     // for now the typename is derived from the name
     typeName = support.prefix + name + "_t";
@@ -176,7 +167,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
     // Make encodables out of them, and add to our list
     for (int i = 0; i < children.size(); i++)
     {
-        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), protoName, support, children.at(i).toElement());
+        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), support, children.at(i).toElement());
         if(encodable != NULL)
         {            
             // If the encodable is null, then none of the metadata

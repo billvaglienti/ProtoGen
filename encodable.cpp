@@ -8,10 +8,8 @@
 /*!
  * Constructor for encodable
  */
-Encodable::Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported) :
-    ProtocolDocumentation(parse, Parent),
-    support(supported),
-    protoName(protocolName)
+Encodable::Encodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, Parent, supported)
 {
 }
 
@@ -218,22 +216,21 @@ QString Encodable::getRepeatsDocumentationDetails(void) const
  * created will be either a ProtocolStructure or a ProtocolField
  * \param parse points to the global protocol parser that owns everything
  * \param Parent is the hierarchical name of the objec which owns the newly created object
- * \param protocolName is the name of the protocol
  * \param supported describes what the protocol can support
  * \param field is the DOM element to parse (including its children)
  * \return a pointer to a newly allocated encodable. The caller is
  *         responsible for deleting this object.
  */
-Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field)
+Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const QDomElement& field)
 {
     Encodable* enc = NULL;
 
     if(field.tagName().contains("Structure", Qt::CaseInsensitive))
-        enc = new ProtocolStructure(parse, Parent, protocolName, supported);
+        enc = new ProtocolStructure(parse, Parent, supported);
     else if(field.tagName().contains("Data", Qt::CaseInsensitive))
-        enc = new ProtocolField(parse, Parent, protocolName, supported);
+        enc = new ProtocolField(parse, Parent, supported);
     else if(field.tagName().contains("Code", Qt::CaseInsensitive))
-        enc = new ProtocolCode(parse, Parent, protocolName, supported);
+        enc = new ProtocolCode(parse, Parent, supported);
 
     if(enc != NULL)
     {

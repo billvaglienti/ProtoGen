@@ -1,6 +1,8 @@
 #include "protocolfield.h"
 #include "protocolparser.h"
 #include "shuntingyard.h"
+#include "enumcreator.h"
+#include "protocolstructure.h"
 #include <QString>
 #include <QDomElement>
 #include <math.h>
@@ -171,11 +173,10 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
  * Construct a blank protocol field
  * \param parse points to the global protocol parser that owns everything
  * \param parent is the hierarchical name of the parent object
- * \param protocolName is the name of the protocol
  * \param supported indicates what the protocol can support
  */
-ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, ProtocolSupport supported):
-    Encodable(parse, parent, protocolName, supported),
+ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported):
+    Encodable(parse, parent, supported),
     encodedMin(0),
     encodedMax(0),
     scaler(1),
@@ -558,6 +559,29 @@ void ProtocolField::parse(void)
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
 
+    // Tell the user of attribute problems
+    testAndWarnAttributes(map, QStringList() << "name"
+                                             << "inMemoryType"
+                                             << "encodedType"
+                                             << "struct"
+                                             << "max"
+                                             << "min"
+                                             << "scaler"
+                                             << "array"
+                                             << "variableArray"
+                                             << "array2d"
+                                             << "variable2dArray"
+                                             << "dependsOn"
+                                             << "enum"
+                                             << "default"
+                                             << "constant"
+                                             << "checkConstant"
+                                             << "comment"
+                                             << "Units"
+                                             << "Range"
+                                             << "Notes"
+                                             << "bitfieldGroup");
+
     for(int i = 0; i < map.count(); i++)
     {
         QDomAttr attr = map.item(i).toAttr();
@@ -566,9 +590,7 @@ void ProtocolField::parse(void)
 
         QString attrname = attr.name();
 
-        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-            name = attr.value().trimmed();
-        else if(attrname.compare("inMemoryType", Qt::CaseInsensitive) == 0)
+        if(attrname.compare("inMemoryType", Qt::CaseInsensitive) == 0)
             memoryTypeString = attr.value().trimmed();
         else if(attrname.compare("encodedType", Qt::CaseInsensitive) == 0)
             encodedTypeString = attr.value().trimmed();
@@ -617,10 +639,6 @@ void ProtocolField::parse(void)
         }
         else if(attrname.compare("bitfieldGroup", Qt::CaseInsensitive) == 0)
             bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
-        else if(support.disableunrecognized == false)
-        {
-            emitWarning("Unrecognized attribute of Data \"" + attrname + "\"");
-        }
 
     }// for all attributes
 

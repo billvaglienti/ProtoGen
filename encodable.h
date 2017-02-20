@@ -12,12 +12,12 @@ class Encodable : public ProtocolDocumentation
 public:
 
     //! Constructor for basic encodable that sets protocl name and prefix
-    Encodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported);
+    Encodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, const QString& protocolName, ProtocolSupport supported, const QDomElement& field);
+    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const QDomElement& field);
 
     //! Provide the pointer to a previous encodable in the list
     virtual void setPreviousEncodable(Encodable* prev) {}
@@ -140,8 +140,6 @@ public:
     static void addToLengthString(QString* totalLength, const QString & length);
 
 public:
-    ProtocolSupport support;//!< Information about what is supported
-    QString protoName;      //!< Name of the protocol
     QString typeName;       //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
     QString array;          //!< The array length of this encodable, empty if no array
     QString array2d;        //!< The second dimension array length of this encodable, empty if no 2nd dimension

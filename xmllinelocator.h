@@ -59,7 +59,7 @@ public:
     //! Input the contents of the XML file, this will trigger a parse operation
     void setXMLContents(QString text);
 
-    //! Fine the line number given a hierarchical name
+    //! Find the line number given a hierarchical name
     int getLineNumber(QString hierarchicalName) const;
 
 protected:

@@ -5,13 +5,12 @@
 /*!
  * Construct the object that parses structure descriptions
  * \param parse points to the global protocol parser that owns everything
- * \param protocolName is the name of the protocol
  * \param supported gives the supported features of the protocol
  * \param protocolApi is the API string of the protocol
  * \param protocolVersion is the version string of the protocol
  */
-ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, const QString& protocolName, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
-    ProtocolStructure(parse, protocolName, protocolName, supported),
+ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
+    ProtocolStructure(parse, supported.protoName, supported),
     api(protocolApi),
     version(protocolVersion),
     encode(true),
@@ -70,20 +69,6 @@ void ProtocolStructureModule::clear(void)
  */
 void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
 {
-    // Look for any other attributes that we don't recognize
-    if(support.disableunrecognized == false)
-    {
-        for(int i = 0; i < map.count(); i++)
-        {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
-
-            if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-                emitWarning("Unrecognized attribute \"" + attr.name() + "\"");
-        }
-    }
-
     if(isArray())
     {
         emitWarning("top level object cannot be an array");
@@ -149,7 +134,7 @@ void ProtocolStructureModule::parse(void)
         // Comment block at the top of the header file
         header.write("/*!\n");
         header.write(" * \\file\n");
-        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + typeName + " structure of the " + protoName + " protocol stack\n");
+        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + typeName + " structure of the " + support.protoName + " protocol stack\n");
 
         // A potentially long comment that should be wrapped at 80 characters
         if(!comment.isEmpty())
@@ -165,7 +150,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
-    header.writeIncludeDirective(protoName + "Protocol.h");
+    header.writeIncludeDirective(support.protoName + "Protocol.h");
 
     // Handle the idea that the structure might be defined in a different file
     ProtocolHeaderFile* structfile = &header;

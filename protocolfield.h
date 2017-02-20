@@ -83,7 +83,7 @@ class ProtocolField : public Encodable
 public:
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolField(ProtocolParser* parse, QString parent, const QString& protocolName, ProtocolSupport supported);
+    ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported);
 
     //! Provide the pointer to a previous encodable in the list
     virtual void setPreviousEncodable(Encodable* prev);

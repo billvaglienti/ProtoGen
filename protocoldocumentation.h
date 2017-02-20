@@ -4,6 +4,7 @@
 #include <QDomElement>
 #include <QString>
 #include <QStringList>
+#include "protocolsupport.h"
 
 class ProtocolParser;
 
@@ -12,7 +13,7 @@ class ProtocolDocumentation
 public:
 
     //! Construct the document object
-    ProtocolDocumentation(ProtocolParser* parse, QString Parent);
+    ProtocolDocumentation(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
 
     //! Virtual destructor
     virtual ~ProtocolDocumentation(void) {;}
@@ -39,16 +40,20 @@ public:
     virtual void checkAgainstKeywords(void){}
 
     //! Output a warning
-    void emitWarning(QString warning) const;
+    void emitWarning(QString warning, const QString& subname = QString()) const;
+
+    //! Test the list of attributes and warn if any of them are unrecognized or repeated
+    void testAndWarnAttributes(const QDomNamedNodeMap& map, const QStringList& attriblist = QStringList(), const QString& subname = QString()) const;
 
     //! Helper function to create a list of ProtocolDocumentation objects
-    static void getChildDocuments(ProtocolParser* parse, QString Parent, const QDomElement& e, QList<ProtocolDocumentation*>& list);
+    static void getChildDocuments(ProtocolParser* parse, QString Parent, ProtocolSupport support, const QDomElement& e, QList<ProtocolDocumentation*>& list);
 
 public:
     QString name;           //!< The name of this encodable
     QString comment;        //!< The comment that goes with this encodable
 
 protected:
+    ProtocolSupport support;//!< Information about what is supported
     ProtocolParser* parser; //!< The parser object
     QString parent;         //!< The parent name of this encodable
     QDomElement e;          //!< The DOM element which is the source of this object's data

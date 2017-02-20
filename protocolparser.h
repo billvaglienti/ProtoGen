@@ -6,10 +6,15 @@
 #include <QList>
 #include <iostream>
 #include "protocolfile.h"
-#include "protocolstructuremodule.h"
-#include "protocolpacket.h"
-#include "enumcreator.h"
 #include "xmllinelocator.h"
+#include "protocolsupport.h"
+
+// Forward declarations
+class ProtocolDocumentation;
+class ProtocolStructure;
+class ProtocolStructureModule;
+class ProtocolPacket;
+class EnumCreator;
 
 class ProtocolParser
 {
@@ -138,7 +143,6 @@ protected:
 
     ProtocolHeaderFile header;   //!< The header file (*.h)
     QString name;   //!< Base name of the protocol
-    QString prefix; //!< Naming prefix
     QString comment;//!< Comment description of the protocol
     QString version;//!< The version string
     QString api;    //!< The protocol API enumeration

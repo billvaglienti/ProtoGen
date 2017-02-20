@@ -28,6 +28,7 @@ public:
     QString outputpath;             //!< path to output files to
     QString packetStructureSuffix;  //!< Name to use at end of encode/decode Packet structure functions
     QString packetParameterSuffix;  //!< Name to use at end of encode/decode Packet parameter functions
+    QString protoName;              //!< Name of the protocol
     QString prefix;                 //!< Prefix name
 };
 

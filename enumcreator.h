@@ -10,15 +10,8 @@
 class EnumCreator : public ProtocolDocumentation
 {
 public:
-    //! Create an empty enumeration list
-    EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
-        ProtocolDocumentation(parse, Parent),
-        minbitwidth(0),
-        hidden(false),
-        lookup(false),
-        isglobal(false),
-        support(supported)
-    {}
+    //! Construct the enumeration object
+    EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
 
     ~EnumCreator(void);
 
@@ -119,9 +112,6 @@ protected:
 
     //! Flag set true if parseGlobal() is called
     bool isglobal;
-
-    //! Protocol options details
-    ProtocolSupport support;
 
     //! List of document objects
     QList<ProtocolDocumentation*> documentList;
