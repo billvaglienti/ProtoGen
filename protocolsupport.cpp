@@ -64,6 +64,9 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);
 
+    // Packet prefix is not required
+    pktPrefix = ProtocolParser::getAttribute("pktPrefix", map ).toUpper();
+
     // Packet name post fixes
     packetStructureSuffix = ProtocolParser::getAttribute("packetStructureSuffix", map, packetStructureSuffix);
     packetParameterSuffix = ProtocolParser::getAttribute("packetParameterSuffix", map, packetParameterSuffix);

@@ -283,7 +283,7 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
     // If no ID is supplied then use the packet name in upper case,
     // assuming that the user will define it elsewhere
     if(ids.count() <= 0)
-        ids.append(name.toUpper());
+        ids.append( support.pktPrefix +  name.toUpper());
 
     for(int i = 0; i < ids.count(); i++)
     {
