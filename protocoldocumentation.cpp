@@ -112,7 +112,7 @@ void ProtocolDocumentation::emitWarning(QString warning, const QString& subname)
 void ProtocolDocumentation::testAndWarnAttributes(const QDomNamedNodeMap& map, const QStringList& attriblist, const QString& subname) const
 {
     // The only thing we check for is unrecognized attributes
-    if(!support.disableunrecognized)
+    if(support.disableunrecognized)
         return;
 
     // Note: I would like to test for repeated attributes,
