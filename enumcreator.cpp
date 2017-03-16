@@ -233,7 +233,7 @@ void EnumCreator::parse(void)
         output += "\n";
         output += "//! \\return the label of a '" + name + "' enum entry, based on its value\n";
 
-        QString func = "char* " + name + "_Label(int value)";
+        QString func = "const char* " + name + "_Label(int value)";
 
         output += func + ";\n";
 

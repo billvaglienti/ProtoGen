@@ -241,6 +241,17 @@ void ProtocolPacket::parse(void)
     // packet. These need to be declared before the main functions
     createSubStructureFunctions();
 
+    // Outputs for the enumerations in source file, if any
+    for(int i = 0; i < enumList.count(); i++)
+    {
+        QString enumoutput = enumList.at(i)->getSourceOutput();
+        if(!enumoutput.isEmpty())
+        {
+            source.makeLineSeparator();
+            source.write(enumoutput);
+        }
+    }
+
     // For referencing this packet as a structure
     if(outputTopLevelStructureCode)
         createTopLevelStructureFunctions();

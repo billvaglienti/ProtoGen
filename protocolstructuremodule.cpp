@@ -200,6 +200,17 @@ void ProtocolStructureModule::parse(void)
     source.writeIncludeDirective("scaleddecode.h");
     source.writeIncludeDirective("scaledencode.h");
 
+    // Outputs for the enumerations in source file, if any
+    for(int i = 0; i < enumList.count(); i++)
+    {
+        QString enumoutput = enumList.at(i)->getSourceOutput();
+        if(!enumoutput.isEmpty())
+        {
+            source.makeLineSeparator();
+            source.write(enumoutput);
+        }
+    }
+
     // The functions to encoding and ecoding
     createStructureFunctions();
 
