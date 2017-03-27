@@ -42,3 +42,4 @@ Makefile**
 *.Release
 *.tmp
 ProtoGenMac.tgz
+-build-*/
