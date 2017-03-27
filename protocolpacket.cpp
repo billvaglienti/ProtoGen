@@ -10,6 +10,14 @@
 #include <QStringList>
 #include <iostream>
 
+/*
+ * Constant string defines that are re-used often
+ * Encoding them as constant values prevents typo mistakes
+ * and copying errors
+ */
+
+const QString VOID_ENCODE = "void encode";
+const QString INT_DECODE = "int decode";
 
 /*!
  * Construct the object that parses packet descriptions
@@ -340,16 +348,16 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(numEncodes > 0)
         {
             if(ids.count() <= 1)
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user);\n");
+                header.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user);\n");
             else
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user, uint32_t id);\n");
+                header.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user, uint32_t id);\n");
         }
         else
         {
             if(ids.count() <= 1)
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt);\n");
+                header.write(VOID_ENCODE + extendedName() + "(void* pkt);\n");
             else
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, uint32_t id);\n");
+                header.write(VOID_ENCODE + extendedName() + "(void* pkt, uint32_t id);\n");
         }
     }
 
@@ -360,9 +368,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user);\n");
+            header.write(INT_DECODE + extendedName() + "(const void* pkt, " + typeName + "* user);\n");
         else
-            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt);\n");
+            header.write(INT_DECODE + extendedName() + "(const void* pkt);\n");
     }
 
     if(encode)
@@ -381,13 +389,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user)\n");
+                source.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user, uint32_t id)\n");
+                source.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -396,13 +404,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt)\n");
+                source.write(VOID_ENCODE + extendedName() + "(void* pkt)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, uint32_t id)\n");
+                source.write(VOID_ENCODE + extendedName() + "(void* pkt, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -460,9 +468,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user)\n");
+                source.write(INT_DECODE + extendedName() + "(const void* pkt, " + typeName + "* user)\n");
             else
-                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
+                source.write(INT_DECODE + extendedName() + "(const void* pkt)\n");
             source.write("{\n");
             source.write("    int numBytes;\n");
             source.write("    int byteindex = 0;\n");
@@ -565,7 +573,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\param pkt points to the packet being decoded by this function\n");
             source.write(" * \\return 0 is returned if the packet ID is wrong, else 1\n");
             source.write(" */\n");
-            source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
+            source.write(INT_DECODE + extendedName() + "(const void* pkt)\n");
             source.write("{\n");
             if(ids.count() <= 1)
             {
@@ -815,7 +823,7 @@ void ProtocolPacket::createPacketFunctions(void)
  */
 QString ProtocolPacket::getPacketEncodeSignature(void) const
 {
-    QString output = "void encode" + support.prefix + name + support.packetParameterSuffix + "(void* pkt";
+    QString output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(void* pkt";
 
     output += getDataEncodeParameterList();
 
@@ -833,7 +841,7 @@ QString ProtocolPacket::getPacketEncodeSignature(void) const
  */
 QString ProtocolPacket::getPacketDecodeSignature(void) const
 {
-    QString output = "int decode" + support.prefix + name + support.packetParameterSuffix + "(const void* pkt";
+    QString output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const void* pkt";
 
     output += getDataDecodeParameterList() + ")";
 
