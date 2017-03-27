@@ -149,7 +149,7 @@ The Require tag is used to insert XML from an external protocol file at the spec
 
 In addition to allowing the protocol to be defined in multiple files, this functionality allows for common features to be inserted into multiple protocol files.
 
-    <Require file="..\version.xml"/>
+    <Require file="../version.xml"/>
     
 The Require tag supports the following attributes:
 
