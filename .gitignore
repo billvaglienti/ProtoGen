@@ -37,6 +37,8 @@ ProtoGenWin.zip
 ProtoGenMac.zip
 release/
 debug/
-MakeFile
+MakeFile**
 *.Debug
 *.Release
+*.tmp
+ProtoGenMac.tgz
