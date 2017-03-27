@@ -30,6 +30,7 @@ public:
     QString packetParameterSuffix;  //!< Name to use at end of encode/decode Packet parameter functions
     QString protoName;              //!< Name of the protocol
     QString prefix;                 //!< Prefix name
+    QString pointerType;            //!< Packet pointer type - default is "void*"
 };
 
 #endif // PROTOCOLSUPPORT_H
