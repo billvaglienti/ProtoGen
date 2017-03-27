@@ -157,82 +157,18 @@ bool ProtocolParser::parse(QString filename, QString path)
             if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
                 emitWarning(QString::number(getLineNumber(support.protoName)) + ":0: warning: " + support.protoName + ": Unrecognized attribute \"" + attr.name() + "\"");
         }
-
     }
 
-    // All of the top level Structures, which stand alone in their own modules
-    QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
+    /*
+     * The file heirarchy is parsed twice:
+     * - The first pass extracts structs, which *all* need to be enumerated first
+     * - The second pass extracts all other data
+     */
 
-    // All of the top level packets and top level documentation. Packets can only be at the top level
-    QList<QDomNode> doclist = childElementsByTagName(docElem, "Packet", "Enum", "Documentation");
+    QString basefile = fileinfo.absolutePath() + "/" + filename;
 
-    // We want to create the objects first, then parse them later. That way we
-    // can retain the order of their definition, but get enumerations and
-    // structures to parse first
-    for(int i = 0; i < structlist.size(); i++)
-    {
-        // Create the module object
-        ProtocolStructureModule* module = new ProtocolStructureModule(this, support, api, version);
-
-        // Remember its xml
-        module->setElement(structlist.at(i).toElement());
-
-        // Keep track of the structure
-        structures.append(module);
-    }
-    structlist.clear();
-
-    // Create the packets, enums, and documents
-    for(int i = 0; i < doclist.size(); i++)
-    {
-        if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
-        {
-            // Create the module object
-            ProtocolPacket* packet = new ProtocolPacket(this, support, api, version);
-
-            // Remember its xml
-            packet->setElement(doclist.at(i).toElement());
-
-            // Keep it around
-            packets.append(packet);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(packet);
-        }
-        else if(doclist.at(i).nodeName().contains("Enum", Qt::CaseInsensitive))
-        {
-            EnumCreator* Enum = new EnumCreator(this, name, support);
-
-            // Enums can be parsed now
-            Enum->setElement(doclist.at(i).toElement());
-
-            // A global parse
-            Enum->parseGlobal(name + "Protocol");
-
-            // Keep it around in the global list
-            globalEnums.append(Enum);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(Enum);
-        }
-        else
-        {
-            // Create the module object
-            ProtocolDocumentation* document = new ProtocolDocumentation(this, name, support);
-
-            // Documents can be parsed now
-            document->setElement(doclist.at(i).toElement());
-            document->parse();
-
-            // Keep it around
-            documents.append(document);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(document);
-        }
-
-    }// for all packets, enums, and documents
-    doclist.clear();
+    parseFile( basefile, true );
+    parseFile( basefile, false );
 
     // The list of our output files
     QStringList fileNameList;
@@ -415,6 +351,144 @@ bool ProtocolParser::parse(QString filename, QString path)
 
 }// ProtocolParser::parse
 
+/**
+ * @brief ProtocolParser::parseFile parses a single XML file
+ * This function is recursive and flattens a file heirarchy into a single flat structure
+ * @param xmlFilename
+ * @param onlyParseStructs indicates that the file should look only at struct defintions (this is necessary on a first-pass)
+ * @return
+ */
+bool ProtocolParser::parseFile(QString xmlFilename, bool onlyParseStructs)
+{
+    std::cout << "Parsing file " << xmlFilename.toStdString() << std::endl;
+
+    QFile xmlFile( xmlFilename );
+
+    if( !xmlFile.open( QIODevice::ReadOnly ) )
+    {
+        emitWarning( QString( " error opening file '" ) + xmlFilename + QString( "'" ) );
+        return false;
+    }
+
+    auto contents = xmlFile.readAll();
+
+    xmlFile.close();
+
+    // Error parsing
+    QString error;
+    int errorLine, errorCol;
+
+    QDomDocument xmlDoc;
+
+    // Extract XML data
+    if( !xmlDoc.setContent( contents, false, &error, &errorLine, &errorCol ) )
+    {
+        emitWarning( QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + error );
+        return false;
+    }
+
+    // Extract the outer-most tag from the document
+    auto top = xmlDoc.documentElement();
+
+    // Ensure that outer tag is correct
+    if( top.tagName().toLower() != "protocol" )
+    {
+        emitWarning( " 'Protocol' tag not found in file" );
+        return false;
+    }
+
+    // Iterate over each tag in the file
+    auto nodes = top.childNodes();
+
+    QDomNode node;
+
+    for( int ii=0; ii<nodes.size(); ii++ )
+    {
+        node = nodes.item(ii);
+
+        auto title = node.nodeName().toLower();
+
+        // Import another file (recursive)
+        // File recursion is handled first so that ordering is preserved
+        // This effectively creates a single flattened XML structure
+        if( title == "require" )
+        {
+            auto subfile = getAttribute( "file", node.attributes() );
+
+            if( subfile.isEmpty() )
+            {
+                emitWarning( "'file' attribute not found in 'Require' tag" );
+            }
+            else
+            {
+                // Create the new path
+                QFileInfo currentPath( xmlFilename );
+
+                QString newFile  = currentPath.absoluteDir().absolutePath() + "/" + subfile;
+
+                parseFile( newFile, onlyParseStructs );
+            }
+
+            continue;
+        }
+
+        if( onlyParseStructs )
+        {
+            if( title == "struct" || title == "structure" )
+            {
+                auto module = new ProtocolStructureModule( this, support, api, version );
+
+                // Remember the XML
+                module->setElement( node.toElement() );
+
+                structures.append( module );
+            }
+
+            // Ignore all other data types
+            continue;
+        }
+
+        // Look for other data types
+
+        // Define an enumeration
+        if( title == "enum" || title == "enumeration" )
+        {
+            auto Enum = new EnumCreator( this, name, support );
+
+            Enum->setElement( node.toElement() );
+
+            Enum->parseGlobal( name + "Protocol" );
+
+            globalEnums.append( Enum );
+            alldocumentsinorder.append( Enum );
+        }
+        // Define a packet
+        else if( title == "packet" || title == "pkt" )
+        {
+            auto packet = new ProtocolPacket( this, support, api, version );
+
+            packet->setElement( node.toElement() );
+
+            packets.append( packet );
+            alldocumentsinorder.append( packet );
+        }
+        else if ( title == "doc" || title == "documentation" )
+        {
+            auto document = new ProtocolDocumentation( this, name, support );
+
+            document->setElement( node.toElement() );
+
+            documents.append( document );
+            alldocumentsinorder.append( document );
+        }
+        else
+        {
+            //TODO
+        }
+    }
+
+    return true;
+}
 
 void ProtocolParser::emitWarning(QString warning) const
 {
