@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <iostream>
 
+const QString VOID_ENCODE = "void encode";
 
 /*!
  * Construct a protocol structure
@@ -616,6 +617,21 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
 
 }// ProtocolStructure::alignStructureData
 
+QString ProtocolStructure::getFunctionEncodePrototype() const
+{
+    QString output;
+
+    if(getNumberOfEncodeParameters() > 0)
+    {
+        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user)";
+    }
+    else
+    {
+        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount)";
+    }
+
+    return output;
+}
 
 /*!
  * Return the string that gives the prototype of the functions used to encode
@@ -643,10 +659,8 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, bool inclu
 
     // My encoding and decoding prototypes in the header file
     output += "//! Encode a " + typeName + " structure into a byte array\n";
-    if(getNumberOfEncodeParameters() > 0)
-        output += "void encode" + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user);\n";
-    else
-        output += "void encode" + typeName + "(uint8_t* data, int* bytecount);\n";
+
+    output += getFunctionEncodePrototype() + ";\n";
 
     return output;
 
@@ -689,10 +703,9 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     if(numEncodes > 0)
         output += " * \\param user is the data to encode in the byte array\n";
     output += " */\n";
-    if(numEncodes > 0)
-        output += "void encode" + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user)\n";
-    else
-        output += "void encode" + typeName + "(uint8_t* data, int* bytecount)\n";
+
+    output += getFunctionEncodePrototype() + "\n";
+
     output += "{\n";
 
     output += "    int byteindex = *bytecount;\n";
