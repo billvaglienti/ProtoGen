@@ -473,7 +473,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write(PKT_DECODE + " pkt, " + typeName + "* user)\n");
+                source.write(PKT_DECODE + ", " + typeName + "* user)\n");
             else
                 source.write(PKT_DECODE + ")\n");
             source.write("{\n");
