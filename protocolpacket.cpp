@@ -43,7 +43,6 @@ ProtocolPacket::~ProtocolPacket(void)
     clear();
 }
 
-
 /*!
  * Clear out any data, resetting for next packet parse operation
  */
@@ -350,16 +349,16 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(numEncodes > 0)
         {
             if(ids.count() <= 1)
-                header.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user);\n");
+                header.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, const " + typeName + "* user);\n");
             else
-                header.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user, uint32_t id);\n");
+                header.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, const " + typeName + "* user, uint32_t id);\n");
         }
         else
         {
             if(ids.count() <= 1)
-                header.write(VOID_ENCODE + extendedName() + "(void* pkt);\n");
+                header.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt);\n");
             else
-                header.write(VOID_ENCODE + extendedName() + "(void* pkt, uint32_t id);\n");
+                header.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, uint32_t id);\n");
         }
     }
 
@@ -370,9 +369,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write(INT_DECODE + extendedName() + "(const void* pkt, " + typeName + "* user);\n");
+            header.write(INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt, " + typeName + "* user);\n");
         else
-            header.write(INT_DECODE + extendedName() + "(const void* pkt);\n");
+            header.write(INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt);\n");
     }
 
     if(encode)
@@ -391,13 +390,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user)\n");
+                source.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, const " + typeName + "* user)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write(VOID_ENCODE + extendedName() + "(void* pkt, const " + typeName + "* user, uint32_t id)\n");
+                source.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, const " + typeName + "* user, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -406,13 +405,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write(VOID_ENCODE + extendedName() + "(void* pkt)\n");
+                source.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write(VOID_ENCODE + extendedName() + "(void* pkt, uint32_t id)\n");
+                source.write(VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -470,9 +469,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write(INT_DECODE + extendedName() + "(const void* pkt, " + typeName + "* user)\n");
+                source.write(INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt pkt, " + typeName + "* user)\n");
             else
-                source.write(INT_DECODE + extendedName() + "(const void* pkt)\n");
+                source.write(INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt)\n");
             source.write("{\n");
             source.write(TAB_IN + "int numBytes;\n");
             source.write(TAB_IN + "int byteindex = 0;\n");
@@ -575,7 +574,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\param pkt points to the packet being decoded by this function\n");
             source.write(" * \\return 0 is returned if the packet ID is wrong, else 1\n");
             source.write(" */\n");
-            source.write(INT_DECODE + extendedName() + "(const void* pkt)\n");
+            source.write(INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt)\n");
             source.write("{\n");
             if(ids.count() <= 1)
             {
@@ -825,7 +824,7 @@ void ProtocolPacket::createPacketFunctions(void)
  */
 QString ProtocolPacket::getPacketEncodeSignature(void) const
 {
-    QString output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(void* pkt";
+    QString output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(" + support.pointerType + " pkt";
 
     output += getDataEncodeParameterList();
 
@@ -843,7 +842,7 @@ QString ProtocolPacket::getPacketEncodeSignature(void) const
  */
 QString ProtocolPacket::getPacketDecodeSignature(void) const
 {
-    QString output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const void* pkt";
+    QString output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt";
 
     output += getDataDecodeParameterList() + ")";
 
