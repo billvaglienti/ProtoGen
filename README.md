@@ -114,6 +114,8 @@ The Protocol tag supports the following attributes:
 
 - `comment` : The comment for the Protocol tag will be placed at the top of the main header file as a multi-line doxygen comment with a \mainpage tag.
 
+- `pointer` : By default, the generated code does not know about the structure of the packet datatype, and uses generic pointers (void*) to reference packet data. This behaviour can be overridden by specifying the datatype of the packet. If this parameter is specified, the protocol file must include the header file where the packet is defined.
+
 Comments
 --------
 
