@@ -742,6 +742,19 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
 }// ProtocolStructure::getFunctionEncodeString
 
 
+QString ProtocolStructure::getFunctionDecodePrototype() const
+{
+    QString output;
+
+    if(getNumberOfDecodeParameters() > 0)
+        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user)";
+    else
+        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount)";
+
+    return output;
+}
+
+
 /*!
  * Return the string that gives the prototype of the functions used to decode
  * the structure. The encoding is to a simple byte array.
@@ -768,10 +781,7 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian, bool inclu
 
     output += "//! Decode a " + typeName + " structure from a byte array\n";
 
-    if(getNumberOfDecodeParameters() > 0)
-        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user);\n";
-    else
-        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount);\n";
+    output += getFunctionDecodePrototype() + ";\n";
 
     return output;
 
@@ -814,10 +824,8 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
         output += " * \\param user is the data to decode from the byte array\n";
     output += " * \\return 1 if the data are decoded, else 0. If 0 is returned bytecount will not be updated.\n";
     output += " */\n";
-    if(numDecodes > 0)
-        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user)\n";
-    else
-        output += "int decode" + typeName + "(const uint8_t* data, int* bytecount)\n";
+
+    output += getFunctionDecodePrototype() + "\n";
 
     output += "{\n";
 
