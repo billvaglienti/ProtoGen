@@ -173,7 +173,14 @@ void EnumCreator::parse(void)
     name = ProtocolParser::getAttribute("name", map);
 
     // Tell the user of any problems in the attributes
-    testAndWarnAttributes(map, QStringList() <<  "name" << "comment" << "description" << "hidden" << "lookup" << "prefix" << "file");
+    testAndWarnAttributes(map, QStringList()
+                          <<  "name"
+                          << "comment"
+                          << "description"
+                          << "hidden"
+                          << "lookup"
+                          << "prefix"
+                          << "file");
 
     // Go get the rest of the attributes
     description = ProtocolParser::getAttribute("description", map);
@@ -367,23 +374,23 @@ void EnumCreator::computeNumberList(void)
         }// if the xml was empty
         else
         {
-            bool ok;
+            bool ok = false;
 
-            if(stringValue.startsWith("0x", Qt::CaseInsensitive))
-                value = stringValue.toUInt(&ok, 16);
-            else if(stringValue.startsWith("0b", Qt::CaseInsensitive))
-                value = stringValue.toUInt(&ok, 2);
-            else
-                value = stringValue.toUInt(&ok, 10);
+            // First check that the value provided is numeric
+            ok = ProtocolParser::isNumber(stringValue, value);
 
-            // If we didn't get a value there is one remainaing
-            // possibility: this text refers to a previous enumeration
-            // whose value we *do* know. We can check that case for any
-            // enumeration which was defined before us
+            // Next, check if the value was defined in *this* enumeration
+            if (!ok)
+            {
+                replaceEnumerationNameWithValue(stringValue);
+                ok = ProtocolParser::isNumber(stringValue, value);
+            }
+
+            // Finally, check if the value was defined in a previous enumeration
             if(!ok)
             {
                 parser->replaceEnumerationNameWithValue(stringValue);
-                value = stringValue.toUInt(&ok, 10);
+                ok = ProtocolParser::isNumber(stringValue, value);
             }
 
             // If we didn't get a number, then this string has to be resolved
@@ -392,8 +399,6 @@ void EnumCreator::computeNumberList(void)
             {
                 baseString = stringValue;
                 value = 0;
-
-                stringValue = QString();
             }
             else
             {
@@ -558,6 +563,8 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
     // split words around mathematical operators
     QStringList tokens = splitAroundMathOperators(text);
 
+    int val;
+
     for(int j = 0; j < tokens.size(); j++)
     {
         QString token = tokens.at(j).trimmed();
@@ -566,12 +573,24 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
         if(isMathOperator(token.at(0)))
             continue;
 
+        // Don't look to replace elements that are already numeric
+        if (ProtocolParser::isNumber(token, val))
+            continue;
+
         for (auto element : elements )
         {
             // The entire token must match before we will replace it
             if(token.compare(element.getName().trimmed()) == 0)
             {
-                tokens[j] = element.getName();
+                if (!element.getNumber().isEmpty())
+                {
+                    tokens[j] = element.getNumber();
+                }
+                else if (!element.getValue().isEmpty())
+                {
+                    tokens[j] = element.getValue();
+                }
+                break;
             }
         }// for all names
 
