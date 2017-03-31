@@ -283,7 +283,7 @@ void EnumCreator::parse(void)
         output += "\n";
         output += "//! \\return the label of a '" + name + "' enum entry, based on its value\n";
 
-        QString func = "const char* " + name + "_Label(int value)";
+        QString func = "const char* " + name + "_EnumLabel(int value)";
 
         output += func + ";\n";
 
@@ -299,10 +299,11 @@ void EnumCreator::parse(void)
         sourceOutput += "{\n";
 
         sourceOutput += TAB + "switch (value)\n";
-        sourceOutput += TAB + "\n";
+        sourceOutput += TAB + "{\n";
         sourceOutput += TAB + "default:\n";
         sourceOutput += TAB + TAB + "return \"\";\n";
 
+        // Add the reverse-lookup text for each entry in the enumeration
         for (int i=0; i<elements.size(); i++)
         {
             auto element = elements.at(i);
@@ -408,7 +409,7 @@ void EnumCreator::computeNumberList(void)
 
         }// if we got a string from the xml
 
-        element.setNumber(stringValue);
+        element.setNumber(ProtocolParser::compressSum(stringValue));
 
         // keep track of maximum value
         if(value > maxValue)

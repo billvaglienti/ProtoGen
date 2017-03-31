@@ -1286,6 +1286,54 @@ bool ProtocolParser::isNumber(QString text, int &value)
            isBinNum(text, value);
 }
 
+/**
+ * @brief ProtocolParser::compressSum takes a string of summed elements
+ * and attempts to compress them into a simpler element
+ * e.g. "3 + CAT + DOG + 7" -> "CAT + DOG + 10"
+ * @param text
+ * @return
+ */
+QString ProtocolParser::compressSum(QString text)
+{
+    QStringList elements = text.split("+");
+
+    QStringList texts;
+
+    int value = 0;
+    int count = 0;
+    int accum = 0;
+
+    // Test each element to see if it is numeric (or not)
+    for (QString element : elements)
+    {
+        element = element.trimmed();
+
+        if (isNumber(element, value))
+        {
+            count++;
+            accum += value;
+        }
+        else
+        {
+            texts.append(element);
+        }
+    }
+
+
+    QString sum = texts.join( " + " );
+
+    if ( !sum.isEmpty() && accum != 0)
+    {
+        sum += " + ";
+    }
+    if ( !sum.isEmpty() || accum != 0)
+    {
+        sum += QString::number(accum);
+    }
+
+    return sum;
+}
+
 /*!
  * Get the string used for inline css. This must be bracketed in <style> tags in the html
  * \return the inline csss string

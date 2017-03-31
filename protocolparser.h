@@ -135,6 +135,9 @@ public:
 
     static bool isNumber(QString text, int& value);
 
+    //! Take a sum of numbers (e.g. an enumeration value) and attempt to compress it
+    static QString compressSum(QString text);
+
 protected:
 
     //! Create the source and header files that represent a packet
