@@ -6,6 +6,8 @@
 #include <math.h>
 #include <iostream>
 
+const QString TAB = "    ";
+
 EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, QString Parent, ProtocolSupport supported) :
     ProtocolDocumentation(parse, Parent, supported),
     parentEnum(creator)
@@ -22,6 +24,21 @@ EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport 
 {
 }
 
+void EnumElement::checkAgainstKeywords()
+{
+    if (keywords.contains(getName()))
+    {
+        emitWarning("enum value name matches C keyword, changed to name_");
+        m_name += "_";
+    }
+
+    if (keywords.contains(getValue()))
+    {
+        emitWarning("enum value matches C keyword, changed to value_");
+        m_value += "_";
+    }
+}
+
 void EnumElement::parse()
 {
     auto map = e.attributes();
@@ -35,13 +52,48 @@ void EnumElement::parse()
                           << "ignorePrefix"
                           << "ignoreLookup");
 
-    Name = ProtocolParser::getAttribute("name", map);
-    LookupName = ProtocolParser::getAttribute("lookupName", map);
-    Value = ProtocolParser::getAttribute("value", map);
-    Comment = ProtocolParser::getAttribute("comment", map);
-    IsHidden = ProtocolParser::isFieldSet("hidden", map);
-    IgnoresPrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
-    IgnoresLookup = ProtocolParser::isFieldSet("ignoreLookup", map);
+    m_name = ProtocolParser::getAttribute("name", map);
+    m_lookupName = ProtocolParser::getAttribute("lookupName", map);
+    m_value = ProtocolParser::getAttribute("value", map);
+    m_comment = ProtocolParser::getAttribute("comment", map);
+    m_isHidden = ProtocolParser::isFieldSet("hidden", map);
+    m_ignoresPrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
+    m_ignoresLookup = ProtocolParser::isFieldSet("ignoreLookup", map);
+
+    checkAgainstKeywords();
+}
+
+QString EnumElement::getName() const
+{
+    QString name = m_ignoresPrefix ? QString("") : parentEnum->getPrefix();
+
+    name += m_name;
+
+    return name;
+}
+
+QString EnumElement::getLookupName() const
+{
+    if (m_lookupName.isEmpty())
+    {
+        return getName();
+    }
+    else
+    {
+        return m_lookupName;
+    }
+}
+
+QString EnumElement::getDeclaration() const
+{
+    QString decl = getName();
+
+    if (!m_value.isEmpty())
+    {
+        decl += " = " + m_value;
+    }
+
+    return decl;
 }
 
 EnumCreator::~EnumCreator(void)
@@ -68,12 +120,7 @@ void EnumCreator::clear(void)
     comment.clear();
     description.clear();
     output.clear();
-    nameList.clear();
     prefix.clear();
-    commentList.clear();
-    valueList.clear();
-    numberList.clear();
-    hiddenList.clear();
 
     // Delete all the objects in the list
     for(int i = 0; i < documentList.count(); i++)
@@ -156,55 +203,22 @@ void EnumCreator::parse(void)
         output += " */\n";
     }
 
-    QStringList declarationList;
+    elements.clear();
 
     int maxLength = 0;
-    for(int i = 0; i < list.size(); i++)
+
+    for (int i=0; i<list.size(); i++)
     {
-        QDomElement field = list.at(i).toElement();
+        EnumElement elem(parser, this, parent, support);
 
-        if(field.isNull())
-            continue;
+        elem.setElement(list.at(i).toElement());
 
-        QDomNamedNodeMap map = field.attributes();
+        elem.parse();
 
-        // We use name as part of our debug outputs, so its good to have it first.
-        QString valueName = ProtocolParser::getAttribute("name", map);
-
-        // Tell the user of any problems in the attributes
-        testAndWarnAttributes(map, QStringList() <<  "name" << "value" << "comment" << "hidden" << "ignorePrefix", valueName);
-
-        // Now get the attributes
-        QString value = ProtocolParser::getAttribute("value", map);
-        QString comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
-        bool hiddenvalue = ProtocolParser::isFieldSet("hidden", map);
-        bool ignorePrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
-
-        // Add the enum prefix if applicable
-        if ( !prefix.isEmpty() && !ignorePrefix )
-            valueName = prefix + valueName;
-
-        // Add it to our list
-        nameList.append(valueName);
-
-        // The declared value, which may be empty
-        valueList.append(value);
-
-        // And don't forget the comment
-        commentList.append(comment);
-
-        // Specific enum values can be hidden
-        hiddenList.append(hiddenvalue);
-
-        // Form the declaration string
-        QString declaration = "    " + valueName;
-        if(!value.isEmpty())
-            declaration += " = " + value;
-
-        declarationList.append(declaration);
+        elements.append(elem);
 
         // Track the longest declaration
-        int length = declaration.length();
+        int length = elem.getDeclaration().length();
         if(length > maxLength)
             maxLength = length;
 
@@ -226,30 +240,34 @@ void EnumCreator::parse(void)
     output += "typedef enum\n";
     output += "{\n";
 
-    for(int i = 0; i < declarationList.size(); i++)
+    for(int i = 0; i < elements.size(); i++)
     {
+        auto element = elements.at(i);
+
+        auto declaration = TAB + element.getDeclaration();
+
         // Output the enumerator name and separator
-        output += declarationList.at(i);
+        output += declaration;
 
         // Output a comma separator or space for the last item
-        if(i < (declarationList.size() - 1))
+        if(i < (elements.size() - 1))
             output += ",";
         else
             output += " ";
 
         // Pad to maxLength
-        for(int j = declarationList.at(i).length(); j < maxLength; j++)
+        for(int j = declaration.length(); j < maxLength; j++)
             output += " ";
 
         // Output the comment
-        if(commentList.at(i).isEmpty())
+        if(element.getComment().isEmpty())
             output += "\n";
         else
-            output += "//!< " + commentList.at(i) + "\n";
+            output += "//!< " + element.getComment() + "\n";
 
     }// for all enumerators
 
-    output += "}";
+    output += "} ";
     output += name;
     output += ";\n";
 
@@ -273,18 +291,23 @@ void EnumCreator::parse(void)
         sourceOutput += func + "\n";
         sourceOutput += "{\n";
 
-        sourceOutput += "    switch (value)\n";
-        sourceOutput += "    {\n";
-        sourceOutput += "    default:\n";
-        sourceOutput += "        return \"\";\n";
+        sourceOutput += TAB + "switch (value)\n";
+        sourceOutput += TAB + "\n";
+        sourceOutput += TAB + "default:\n";
+        sourceOutput += TAB + TAB + "return \"\";\n";
 
-        for (int i=0; i < nameList.size(); i++ )
+        for (int i=0; i<elements.size(); i++)
         {
-            sourceOutput += "    case " + nameList.at(i) + ":\n";
-            sourceOutput += "        return \"" + nameList.at(i) + "\";\n";
+            auto element = elements.at(i);
+
+            if (element.ignoresLookup())
+                continue;
+
+            sourceOutput += TAB + "case " + element.getName() + ":\n";
+            sourceOutput += TAB + TAB + "return \"" + element.getLookupName() + "\";\n";
         }
 
-        sourceOutput += "    }\n";
+        sourceOutput += TAB + "}\n";
         sourceOutput += "}\n";
     }
 
@@ -298,22 +321,6 @@ void EnumCreator::checkAgainstKeywords(void)
     {
         emitWarning("name matches C keyword, changed to _name");
         name = "_" + name;
-    }
-
-    for(int i = 0; i < nameList.size(); i++)
-    {
-        if(keywords.contains(nameList.at(i)))
-        {
-            emitWarning("enum value name matches C keyword, changed to _name");
-            nameList[i] = "_" + nameList.at(i);
-        }
-
-        if(keywords.contains(valueList.at(i)))
-        {
-            emitWarning("enum value matches C keyword, changed to _value");
-            valueList[i] = "_" + valueList.at(i);
-        }
-
     }
 
 }// EnumCreator::checkAgainstKeywords
@@ -330,10 +337,13 @@ void EnumCreator::computeNumberList(void)
     int maxValue = 1;
     int value = -1;
     QString baseString;
-    for(int i = 0; i < valueList.length(); i++)
+
+    for (int i=0; i<elements.size(); i++)
     {
+        auto& element = elements[i];
+
         // The string from the XML, which may be empty
-        QString stringValue = valueList.at(i);
+        QString stringValue = element.getValue();
 
         // Clear any whitespace from it just to be sure
         stringValue = stringValue.trimmed();
@@ -346,12 +356,13 @@ void EnumCreator::computeNumberList(void)
             // Is this incremented value absolute, or referenced to
             // some other string we could not resolve?
             if(baseString.isEmpty())
+            {
                 stringValue.setNum(value);
+            }
             else
+            {
                 stringValue = baseString + " + " + QString().setNum(value);
-
-            // Append to the number list
-            numberList.append(stringValue);
+            }
 
         }// if the xml was empty
         else
@@ -382,19 +393,17 @@ void EnumCreator::computeNumberList(void)
                 baseString = stringValue;
                 value = 0;
 
-                // No useful information is available
-                numberList.append(QString());
+                stringValue = QString();
             }
             else
             {
                 baseString.clear();
                 stringValue.setNum(value);
-
-                // Append to the number list
-                numberList.append(stringValue);
             }
 
         }// if we got a string from the xml
+
+        element.setNumber(stringValue);
 
         // keep track of maximum value
         if(value > maxValue)
@@ -424,7 +433,7 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
 {
     QString output;
 
-    if(nameList.length() > 0)
+    if(elements.size() > 0)
     {
         QStringList codeNameList;
 
@@ -432,32 +441,40 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         int firstColumnSpacing = QString("Name").length();
         int secondColumnSpacing = QString("Value").length();
         int thirdColumnSpacing = QString("Description").length();
-        for(int i = 0; i < nameList.length(); i++)
+
+        for(int i = 0; i < elements.size(); i++)
         {
+            auto element = elements.at(i);
+
             bool link = false;
 
             // Check to see if this enumeration is a packet identifier
             for(int j = 0; j < packetids.size(); j++)
             {
-                if(packetids.at(j) == nameList.at(i))
+                if(packetids.at(j) == element.getName())
                 {
                     link = true;
                     break;
                 }
             }
 
+            QString linkText;
+
             // Mark name as code, with or without a link to an anchor elsewhere
             if(link)
-                codeNameList.append("[`" + nameList.at(i) + "`](#" + nameList.at(i) + ")");
+            {
+                linkText = "[`" + element.getName() + "`](#" + element.getName() + ")";
+            }
             else
-                codeNameList.append("`" + nameList.at(i) + "`");
+            {
+                linkText = "`" + element.getName() + "`";
+            }
 
-            if(firstColumnSpacing < codeNameList.at(i).length())
-                firstColumnSpacing = codeNameList.at(i).length();
-            if(secondColumnSpacing < numberList.at(i).length())
-                secondColumnSpacing = numberList.at(i).length();
-            if(thirdColumnSpacing < commentList.at(i).length())
-                thirdColumnSpacing = commentList.at(i).length();
+            codeNameList.append(linkText);
+
+            firstColumnSpacing = qMax(firstColumnSpacing, linkText.length());
+            secondColumnSpacing = qMax(secondColumnSpacing, element.getNumber().length());
+            thirdColumnSpacing = qMax(thirdColumnSpacing, element.getComment().length());
         }
 
         // The outline paragraph
@@ -506,18 +523,19 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         // Now write out the outputs
         for(int i = 0; i < codeNameList.length(); i++)
         {
+            auto element = elements.at(i);
+
             // Skip hidden values
-            if(hiddenList.at(i) == true)
+            if(element.isHidden())
                 continue;
 
             output += "| ";
-            output += spacedString(codeNameList.at(i), firstColumnSpacing);
+            output += spacedString(element.getName(), firstColumnSpacing);
             output += " | ";
-            output += spacedString(numberList.at(i), secondColumnSpacing);
+            output += spacedString(element.getNumber(), secondColumnSpacing);
             output += " | ";
-            output += spacedString(commentList.at(i), thirdColumnSpacing);
+            output += spacedString(element.getComment(), thirdColumnSpacing);
             output += " |\n";
-
         }
 
         output += "\n";
@@ -542,20 +560,19 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
 
     for(int j = 0; j < tokens.size(); j++)
     {
+        QString token = tokens.at(j).trimmed();
+
         // Don't look to replace the mathematical operators
-        if(isMathOperator(tokens.at(j).at(0)))
+        if(isMathOperator(token.at(0)))
             continue;
 
-        for(int i = 0; i < nameList.length(); i++)
+        for (auto element : elements )
         {
-            // If we don't have a name or number there is no point
-            if(nameList.at(i).isEmpty() || numberList.at(i).isEmpty())
-                continue;
-
             // The entire token must match before we will replace it
-            if(tokens.at(j).compare(nameList.at(i)) == 0)
-                tokens[j] = numberList.at(i);
-
+            if(token.compare(element.getName().trimmed()) == 0)
+            {
+                tokens[j] = element.getName();
+            }
         }// for all names
 
     }// for all tokens
@@ -634,13 +651,9 @@ bool EnumCreator::isMathOperator(QChar op) const
  */
 bool EnumCreator::isEnumerationValue(const QString& text) const
 {
-    for(int i = 0; i < nameList.length(); i++)
+    for (auto element : elements )
     {
-        // If we don't have a name there is no point
-        if(nameList.at(i).isEmpty())
-            continue;
-
-        if(text.compare(nameList.at(i)) == 0)
+        if (text.trimmed().compare(element.getName().trimmed()) == 0 )
             return true;
     }
 

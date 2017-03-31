@@ -11,23 +11,38 @@ class EnumCreator;
 
 class EnumElement : public ProtocolDocumentation
 {
+protected:
+    QString m_name;
+    QString m_lookupName;
+    QString m_value;
+    QString m_comment;
+    QString m_number;
+
+    bool m_isHidden = false;
+    bool m_ignoresPrefix = false;
+    bool m_ignoresLookup = false;
+
+    EnumCreator* parentEnum;
+
 public:
     EnumElement(ProtocolParser* parse, EnumCreator* creator, QString Parent, ProtocolSupport supported);
 
     virtual void parse() override;
+    virtual void checkAgainstKeywords() override;
 
-    QString Name;
-    QString LookupName;
-    QString Value;
-    QString Comment;
-    QString Number;
+    QString getName() const;
+    QString getLookupName() const;
+    QString getValue() const { return m_value; }
+    QString getDeclaration() const;
+    QString getComment() const { return m_comment; }
+    QString getNumber() const { return m_number; }
 
-    bool IsHidden = false;
-    bool IgnoresPrefix = false;
-    bool IgnoresLookup = false;
+    void setNumber(QString num) { m_number = num; }
 
-protected:
-    EnumCreator* parentEnum;
+    bool isHidden() const { return m_isHidden; }
+    bool ignoresPrefix() const { return m_ignoresPrefix; }
+    bool ignoresLookup() const { return m_ignoresLookup; }
+
 };
 
 class EnumCreator : public ProtocolDocumentation
@@ -61,6 +76,8 @@ public:
 
     //! Return the header file output string
     QString getOutput(void) const {return output;}
+
+    QString getPrefix() const { return prefix; }
 
     //! Return the source file output string
     QString getSourceOutput(void) const { return sourceOutput; }
@@ -102,21 +119,6 @@ protected:
 
     //! List of all the enumerated values
     QList<EnumElement> elements;
-
-    //! List of enumeration names
-    QStringList nameList;
-
-    //! List of enumeration comments
-    QStringList commentList;
-
-    //! List of enumeration values (as strings)
-    QStringList valueList;
-
-    //! List of enumeration values (as numbers)
-    QStringList numberList;
-
-    //! List of enumeration value hidden flags
-    QList<bool> hiddenList;
 
     //! A longer description is possible for enums (will be displayed in the documentation)
     QString description;
