@@ -177,8 +177,8 @@ void EnumCreator::parse(void)
         // Now get the attributes
         QString value = ProtocolParser::getAttribute("value", map);
         QString comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
-        bool hiddenvalue = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
-        bool ignorePrefix = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("ignorePrefix", map));
+        bool hiddenvalue = ProtocolParser::isFieldSet("hidden", map);
+        bool ignorePrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
 
         // Add the enum prefix if applicable
         if ( !prefix.isEmpty() && !ignorePrefix )

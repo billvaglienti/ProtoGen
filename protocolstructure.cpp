@@ -88,7 +88,7 @@ void ProtocolStructure::parse(void)
     variableArray = ProtocolParser::getAttribute("variableArray", map);
     dependsOn = ProtocolParser::getAttribute("dependsOn", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
-    hidden = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
+    hidden = ProtocolParser::isFieldSet("hidden", map);
 
     if(name.isEmpty())
         name = "_unknown";
