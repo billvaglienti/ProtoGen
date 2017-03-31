@@ -1330,6 +1330,15 @@ QString ProtocolParser::compressSum(QString text)
     {
         sum += QString::number(accum);
     }
+    else if ( sum.isEmpty() && accum == 0)
+    {
+        sum = "0";
+    }
+    else
+    {
+        // Should never get here
+        return text;
+    }
 
     return sum;
 }
