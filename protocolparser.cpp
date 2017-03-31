@@ -1288,8 +1288,8 @@ bool ProtocolParser::isNumber(QString text, int &value)
 
 /**
  * @brief ProtocolParser::compressSum takes a string of summed elements
- * and attempts to compress them into a simpler element
- * e.g. "3 + CAT + DOG + 7" -> "CAT + DOG + 10"
+ * and attempts to compress them into a simpler element, with consistent formatting
+ * e.g. "0x13 + CAT + DOG+7" -> "CAT + DOG + 26"
  * @param text
  * @return
  */
