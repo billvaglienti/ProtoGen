@@ -1168,6 +1168,10 @@ bool ProtocolParser::isFieldSet(const QDomElement &e, QString label)
     return isFieldSet(e.attribute(label).trimmed().toLower());
 }
 
+bool ProtocolParser::isFieldSet(QString value, QDomNamedNodeMap map)
+{
+    return isFieldSet(ProtocolParser::getAttribute(value,map));
+}
 
 /*!
  * Determine if the value of an attribute is either {'true','yes','1'}

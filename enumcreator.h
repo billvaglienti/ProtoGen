@@ -7,6 +7,29 @@
 #include "protocolsupport.h"
 #include "protocoldocumentation.h"
 
+class EnumCreator;
+
+class EnumElement : public ProtocolDocumentation
+{
+public:
+    EnumElement(ProtocolParser* parse, EnumCreator* creator, QString Parent, ProtocolSupport supported);
+
+    virtual void parse() override;
+
+    QString Name;
+    QString LookupName;
+    QString Value;
+    QString Comment;
+    QString Number;
+
+    bool IsHidden = false;
+    bool IgnoresPrefix = false;
+    bool IgnoresLookup = false;
+
+protected:
+    EnumCreator* parentEnum;
+};
+
 class EnumCreator : public ProtocolDocumentation
 {
 public:
@@ -19,7 +42,7 @@ public:
     void clear(void);
 
     //! Parse the DOM to fill out the enumeration list
-    virtual void parse(void);
+    virtual void parse() override;
 
     //! Parse the DOM to fill out the enumeration list for a global enum
     void parseGlobal(QString filename);
@@ -76,6 +99,9 @@ protected:
 
     //! Output file for source code file (may not be used)
     QString sourceOutput;
+
+    //! List of all the enumerated values
+    QList<EnumElement> elements;
 
     //! List of enumeration names
     QStringList nameList;

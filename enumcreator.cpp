@@ -6,6 +6,11 @@
 #include <math.h>
 #include <iostream>
 
+EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, QString Parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, Parent, supported),
+    parentEnum(creator)
+{
+}
 
 //! Create an empty enumeration list
 EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
@@ -17,6 +22,27 @@ EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport 
 {
 }
 
+void EnumElement::parse()
+{
+    auto map = e.attributes();
+
+    testAndWarnAttributes(map, QStringList()
+                          << "name"
+                          << "lookupName"
+                          << "value"
+                          << "comment"
+                          << "hidden"
+                          << "ignorePrefix"
+                          << "ignoreLookup");
+
+    Name = ProtocolParser::getAttribute("name", map);
+    LookupName = ProtocolParser::getAttribute("lookupName", map);
+    Value = ProtocolParser::getAttribute("value", map);
+    Comment = ProtocolParser::getAttribute("comment", map);
+    IsHidden = ProtocolParser::isFieldSet("hidden", map);
+    IgnoresPrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
+    IgnoresLookup = ProtocolParser::isFieldSet("ignoreLookup", map);
+}
 
 EnumCreator::~EnumCreator(void)
 {
@@ -61,7 +87,6 @@ void EnumCreator::clear(void)
 
     // clear the list
     documentList.clear();
-
 }
 
 
@@ -107,8 +132,8 @@ void EnumCreator::parse(void)
     description = ProtocolParser::getAttribute("description", map);
     prefix = ProtocolParser::getAttribute("prefix", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
-    hidden = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("hidden", map));
-    lookup = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("lookup", map));
+    hidden = ProtocolParser::isFieldSet("hidden", map);
+    lookup = ProtocolParser::isFieldSet("lookup", map);
 
     if(isglobal)
     {

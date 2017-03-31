@@ -118,8 +118,11 @@ public:
     //! Return true if the value set to {'true','yes','1'}
     static bool isFieldSet(QString value);
 
+    static bool isFieldSet(QString value, QDomNamedNodeMap map);
+
     //! Return true if the element has a particular attribute set to {'false','no','0'}
     static bool isFieldClear(const QDomElement &e, QString label);
+
 
     //! Return true if the value is set to {'false','no','0'}
     static bool isFieldClear(QString value);
