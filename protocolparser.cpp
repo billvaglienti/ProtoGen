@@ -1225,6 +1225,66 @@ bool ProtocolParser::isFieldClear(QString value)
     return result;
 }
 
+bool ProtocolParser::isDecNum(QString text, int &value)
+{
+    bool ok = false;
+    int toVal = text.toInt(&ok);
+
+    if (ok)
+    {
+        value = toVal;
+        return true;
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isHexNum(QString text, int &value)
+{
+    bool ok = false;
+
+    if (text.toLower().startsWith("0x"))
+    {
+        text.remove(0, 2);
+
+        int toVal = text.toInt(&ok, 16);
+
+        if (ok)
+        {
+            value = toVal;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isBinNum(QString text, int &value)
+{
+    bool ok = false;
+
+    if (text.toLower().startsWith("0b"))
+    {
+        text.remove(0,2);
+
+        int toVal = text.toInt(&ok, 2);
+
+        if (ok)
+        {
+            value = toVal;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isNumber(QString text, int &value)
+{
+    return isDecNum(text, value) ||
+           isHexNum(text, value) ||
+           isBinNum(text, value);
+}
 
 /*!
  * Get the string used for inline css. This must be bracketed in <style> tags in the html

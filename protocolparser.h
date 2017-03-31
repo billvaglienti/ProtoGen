@@ -123,9 +123,17 @@ public:
     //! Return true if the element has a particular attribute set to {'false','no','0'}
     static bool isFieldClear(const QDomElement &e, QString label);
 
-
     //! Return true if the value is set to {'false','no','0'}
     static bool isFieldClear(QString value);
+
+
+    /* Functions for converting a string to a numerical value */
+
+    static bool isDecNum(QString text, int& value);
+    static bool isHexNum(QString text, int& value);
+    static bool isBinNum(QString text, int& value);
+
+    static bool isNumber(QString text, int& value);
 
 protected:
 
