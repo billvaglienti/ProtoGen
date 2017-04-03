@@ -140,6 +140,16 @@ public:
     static void addToLengthString(QString* totalLength, const QString & length);
 
 public:
+
+    //! String frequently reused for the beginning of encode functions
+    static const QString VOID_ENCODE;
+
+    //! String frequently reused for the beginning of decode functions
+    static const QString INT_DECODE;
+
+    //! String used to tab code in (perhaps one day we'll make this user changeable)
+    static const QString TAB_IN;
+
     QString typeName;       //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
     QString array;          //!< The array length of this encodable, empty if no array
     QString array2d;        //!< The second dimension array length of this encodable, empty if no 2nd dimension

@@ -10,16 +10,6 @@
 #include <QStringList>
 #include <iostream>
 
-/*
- * Constant string defines that are re-used often
- * Encoding them as constant values prevents typo mistakes
- * and copying errors
- */
-
-const QString VOID_ENCODE = "void encode";
-const QString INT_DECODE = "int decode";
-
-const QString TAB_IN = "    ";
 
 /*!
  * Construct the object that parses packet descriptions

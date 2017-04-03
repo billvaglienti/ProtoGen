@@ -4,8 +4,6 @@
 #include <QStringList>
 #include <iostream>
 
-const QString VOID_ENCODE = "void encode";
-
 /*!
  * Construct a protocol structure
  * \param parse points to the global protocol parser that owns everything
