@@ -10,6 +10,16 @@
 #include <QStringList>
 #include <iostream>
 
+/*
+ * Constant string defines that are re-used often
+ * Encoding them as constant values prevents typo mistakes
+ * and copying errors
+ */
+
+const QString VOID_ENCODE = "void encode";
+const QString INT_DECODE = "int decode";
+
+const QString TAB_IN = "    ";
 
 /*!
  * Construct the object that parses packet descriptions
@@ -32,7 +42,6 @@ ProtocolPacket::~ProtocolPacket(void)
 {
     clear();
 }
-
 
 /*!
  * Clear out any data, resetting for next packet parse operation
@@ -332,6 +341,10 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     int numEncodes = getNumberOfEncodeParameters();
     int numDecodes = getNumberOfDecodeParameters();
 
+    // Helper strings to prevent code repetition
+    const QString PKT_ENCODE = VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt";
+    const QString PKT_DECODE = INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt";
+
     if(encode)
     {
         // The prototype for the packet encode function
@@ -340,16 +353,16 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(numEncodes > 0)
         {
             if(ids.count() <= 1)
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user);\n");
+                header.write(PKT_ENCODE + ", const " + typeName + "* user);\n");
             else
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user, uint32_t id);\n");
+                header.write(PKT_ENCODE + ", const " + typeName + "* user, uint32_t id);\n");
         }
         else
         {
             if(ids.count() <= 1)
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt);\n");
+                header.write(PKT_ENCODE + ");\n");
             else
-                header.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, uint32_t id);\n");
+                header.write(PKT_ENCODE + ", uint32_t id);\n");
         }
     }
 
@@ -360,9 +373,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user);\n");
+            header.write(PKT_DECODE + ", " + typeName + "* user);\n");
         else
-            header.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt);\n");
+            header.write(PKT_DECODE + ");\n");
     }
 
     if(encode)
@@ -381,13 +394,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user)\n");
+                source.write(PKT_ENCODE + ", const " + typeName + "* user)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, const " + typeName + "* user, uint32_t id)\n");
+                source.write(PKT_ENCODE + ", const " + typeName + "* user, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -396,34 +409,34 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt)\n");
+                source.write(PKT_ENCODE + ")\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write("void encode" + support.prefix + name + support.packetStructureSuffix + "(void* pkt, uint32_t id)\n");
+                source.write(PKT_ENCODE + ", uint32_t id)\n");
             }
             source.write("{\n");
         }
 
-        source.write("    uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
-        source.write("    int byteindex = 0;\n");
+        source.write(TAB_IN + "uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
+        source.write(TAB_IN + "int byteindex = 0;\n");
 
         if(bitfields)
-            source.write("    int bitcount = 0;\n");
+            source.write(TAB_IN + "int bitcount = 0;\n");
 
         if(numbitfieldgroupbytes > 0)
         {
-            source.write("    int bitfieldindex = 0;\n");
-            source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+            source.write(TAB_IN + "int bitfieldindex = 0;\n");
+            source.write(TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
         }
 
         if(needsEncodeIterator)
-            source.write("    int i = 0;\n");
+            source.write(TAB_IN + "int i = 0;\n");
 
         if(needs2ndEncodeIterator)
-            source.write("    int j = 0;\n");
+            source.write(TAB_IN + "int j = 0;\n");
 
         int bitcount = 0;
         for(int i = 0; i < encodables.length(); i++)
@@ -433,12 +446,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         }
 
         source.makeLineSeparator();
-        source.write("    // complete the process of creating the packet\n");
+        source.write(TAB_IN + "// complete the process of creating the packet\n");
 
         if(ids.count() <= 1)
-            source.write("    finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+            source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
         else
-            source.write("    finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
+            source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
 
         source.write("}\n");
     }
@@ -460,56 +473,56 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt, " + typeName + "* user)\n");
+                source.write(PKT_DECODE + ", " + typeName + "* user)\n");
             else
-                source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
+                source.write(PKT_DECODE + ")\n");
             source.write("{\n");
-            source.write("    int numBytes;\n");
-            source.write("    int byteindex = 0;\n");
-            source.write("    const uint8_t* data;\n");
+            source.write(TAB_IN + "int numBytes;\n");
+            source.write(TAB_IN + "int byteindex = 0;\n");
+            source.write(TAB_IN + "const uint8_t* data;\n");
             if(bitfields)
-                source.write("    int bitcount = 0;\n");
+                source.write(TAB_IN + "int bitcount = 0;\n");
 
             if(numbitfieldgroupbytes > 0)
             {
-                source.write("    int bitfieldindex = 0;\n");
-                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+                source.write(TAB_IN + "int bitfieldindex = 0;\n");
+                source.write(TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
             }
 
             if(needsDecodeIterator)
-                source.write("    int i = 0;\n");
+                source.write(TAB_IN + "int i = 0;\n");
             if(needs2ndDecodeIterator)
-                source.write("    int j = 0;\n");
+                source.write(TAB_IN + "int j = 0;\n");
             source.write("\n");
 
             if(ids.count() <= 1)
             {
-                source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write(TAB_IN + "// Verify the packet identifier\n");
+                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
-                source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
-                source.write("    if( packetid != " + ids.at(0));
+                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
+                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
+                source.write(TAB_IN + "if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
                 source.write(" )\n");
             }
 
-            source.write("        return 0;\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
             source.write("\n");
-            source.write("    // Verify the packet size\n");
-            source.write("    numBytes = get" + support.protoName + "PacketSize(pkt);\n");
-            source.write("    if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
-            source.write("        return 0;\n");
+            source.write(TAB_IN + "// Verify the packet size\n");
+            source.write(TAB_IN + "numBytes = get" + support.protoName + "PacketSize(pkt);\n");
+            source.write(TAB_IN + "if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
+            source.write(TAB_IN + "    return 0;\n");
             source.write("\n");
-            source.write("    // The raw data from the packet\n");
-            source.write("    data = get" + support.protoName + "PacketDataConst(pkt);\n");
+            source.write(TAB_IN + "// The raw data from the packet\n");
+            source.write(TAB_IN + "data = get" + support.protoName + "PacketDataConst(pkt);\n");
             source.makeLineSeparator();
             if(defaults)
             {
-                source.write("    // this packet has default fields, make sure they are set\n");
+                source.write(TAB_IN + "// this packet has default fields, make sure they are set\n");
 
                 for(int i = 0; i < encodables.size(); i++)
                     source.write(encodables[i]->getSetToDefaultsString(true));
@@ -538,9 +551,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
             {
                 source.makeLineSeparator();
-                source.write("    // Used variable length arrays or dependent fields, check actual length\n");
-                source.write("    if(numBytes < byteindex)\n");
-                source.write("        return 0;\n");
+                source.write(TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n");
+                source.write(TAB_IN + "if(numBytes < byteindex)\n");
+                source.write(TAB_IN + "    return 0;\n");
             }
 
             // Now finish the fields (if any defaults)
@@ -551,7 +564,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             }
 
             source.makeLineSeparator();
-            source.write("    return 1;\n");
+            source.write(TAB_IN + "return 1;\n");
             source.write("}\n");
 
         }// if fields to decode
@@ -565,25 +578,25 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\param pkt points to the packet being decoded by this function\n");
             source.write(" * \\return 0 is returned if the packet ID is wrong, else 1\n");
             source.write(" */\n");
-            source.write("int decode" + support.prefix + name + support.packetStructureSuffix + "(const void* pkt)\n");
+            source.write(PKT_DECODE + ")\n");
             source.write("{\n");
             if(ids.count() <= 1)
             {
-                source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write(TAB_IN + "// Verify the packet identifier\n");
+                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
-                source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
-                source.write("    if( packetid != " + ids.at(0));
+                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
+                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
+                source.write(TAB_IN + "if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
                 source.write(" )\n");
             }
-            source.write("        return 0;\n");
-            source.write("    else\n");
-            source.write("        return 1;\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
+            source.write(TAB_IN + "else\n");
+            source.write(TAB_IN + "    return 1;\n");
             source.write("}\n");
 
         }// else if no fields to decode
@@ -637,23 +650,23 @@ void ProtocolPacket::createPacketFunctions(void)
 
         if(!encodedLength.isZeroLength())
         {
-            source.write("    uint8_t* data = get"+ support.protoName + "PacketData(pkt);\n");
-            source.write("    int byteindex = 0;\n");
+            source.write(TAB_IN + "uint8_t* data = get"+ support.protoName + "PacketData(pkt);\n");
+            source.write(TAB_IN + "int byteindex = 0;\n");
 
             if(bitfields)
-                source.write("    int bitcount = 0;\n");
+                source.write(TAB_IN + "int bitcount = 0;\n");
 
             if(numbitfieldgroupbytes > 0)
             {
-                source.write("    int bitfieldindex = 0;\n");
-                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+                source.write(TAB_IN + "int bitfieldindex = 0;\n");
+                source.write(TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
             }
 
             if(needsEncodeIterator)
-                source.write("    int i = 0;\n");
+                source.write(TAB_IN + "int i = 0;\n");
 
             if(needs2ndEncodeIterator)
-                source.write("    int j = 0;\n");
+                source.write(TAB_IN + "int j = 0;\n");
 
             // Keep our own track of the bitcount so we know what to do when we close the bitfield
             for(i = 0; i < encodables.length(); i++)
@@ -663,19 +676,19 @@ void ProtocolPacket::createPacketFunctions(void)
             }
 
             source.makeLineSeparator();
-            source.write("    // complete the process of creating the packet\n");
+            source.write(TAB_IN + "// complete the process of creating the packet\n");
             if(ids.count() <= 1)
-                source.write("    finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write("    finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, byteindex, id);\n");
         }
         else
         {
-            source.write("    // Zero length packet, no data encoded\n");
+            source.write(TAB_IN + "// Zero length packet, no data encoded\n");
             if(ids.count() <= 1)
-                source.write("    finish" + support.protoName + "Packet(pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write("    finish" + support.protoName + "Packet(pkt, 0, id);\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(pkt, 0, id);\n");
         }
 
         source.write("}\n");
@@ -700,46 +713,46 @@ void ProtocolPacket::createPacketFunctions(void)
         if(!encodedLength.isZeroLength())
         {
             if(bitfields)
-                source.write("    int bitcount = 0;\n");
+                source.write(TAB_IN + "int bitcount = 0;\n");
 
             if(numbitfieldgroupbytes > 0)
             {
-                source.write("    int bitfieldindex = 0;\n");
-                source.write("    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
+                source.write(TAB_IN + "int bitfieldindex = 0;\n");
+                source.write(TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
             }
 
             if(needsDecodeIterator)
-                source.write("    int i = 0;\n");
+                source.write(TAB_IN + "int i = 0;\n");
             if(needs2ndDecodeIterator)
-                source.write("    int j = 0;\n");
-            source.write("    int byteindex = 0;\n");
-            source.write("    const uint8_t* data = get" + support.protoName + "PacketDataConst(pkt);\n");
-            source.write("    int numBytes = get" + support.protoName + "PacketSize(pkt);\n");
+                source.write(TAB_IN + "int j = 0;\n");
+            source.write(TAB_IN + "int byteindex = 0;\n");
+            source.write(TAB_IN + "const uint8_t* data = get" + support.protoName + "PacketDataConst(pkt);\n");
+            source.write(TAB_IN + "int numBytes = get" + support.protoName + "PacketSize(pkt);\n");
             source.write("\n");
 
             if(ids.count() <= 1)
             {
-                source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write(TAB_IN + "// Verify the packet identifier\n");
+                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
-                source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
-                source.write("    if( packetid != " + ids.at(0));
+                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
+                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
+                source.write(TAB_IN + "if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
                 source.write(" )\n");
             }
-            source.write("        return 0;\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
 
             source.write("\n");
-            source.write("    if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
-            source.write("        return 0;\n");
+            source.write(TAB_IN + "if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
             if(defaults)
             {
                 source.write("\n");
-                source.write("    // this packet has default fields, make sure they are set\n");
+                source.write(TAB_IN + "// this packet has default fields, make sure they are set\n");
 
                 for(int i = 0; i < encodables.size(); i++)
                     source.write(encodables[i]->getSetToDefaultsString(false));
@@ -765,9 +778,9 @@ void ProtocolPacket::createPacketFunctions(void)
             if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
             {
                 source.makeLineSeparator();
-                source.write("    // Used variable length arrays or dependent fields, check actual length\n");
-                source.write("    if(numBytes < byteindex)\n");
-                source.write("        return 0;\n");
+                source.write(TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n");
+                source.write(TAB_IN + "if(numBytes < byteindex)\n");
+                source.write(TAB_IN + TAB_IN + "return 0;\n");
             }
 
             // Now finish the fields (if any defaults)
@@ -778,28 +791,28 @@ void ProtocolPacket::createPacketFunctions(void)
             }
 
             source.makeLineSeparator();
-            source.write("    return 1;\n");
+            source.write(TAB_IN + "return 1;\n");
 
         }// if some fields to decode
         else
         {
             if(ids.count() <= 1)
             {
-                source.write("    // Verify the packet identifier\n");
-                source.write("    if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
+                source.write(TAB_IN + "// Verify the packet identifier\n");
+                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             }
             else
             {
-                source.write("    // Verify the packet identifier, multiple options exist\n");
-                source.write("    uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
-                source.write("    if( packetid != " + ids.at(0));
+                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
+                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(pkt);\n");
+                source.write(TAB_IN + "if( packetid != " + ids.at(0));
                 for(int i = 1; i < ids.count(); i++)
                     source.write(" &&\n        packetid != " + ids.at(i));
                 source.write(" )\n");
             }
-            source.write("        return 0;\n");
-            source.write("    else\n");
-            source.write("        return 1;\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
+            source.write(TAB_IN + "else\n");
+            source.write(TAB_IN + TAB_IN + "return 1;\n");
 
         }// If no fields to decode
 
@@ -815,7 +828,7 @@ void ProtocolPacket::createPacketFunctions(void)
  */
 QString ProtocolPacket::getPacketEncodeSignature(void) const
 {
-    QString output = "void encode" + support.prefix + name + support.packetParameterSuffix + "(void* pkt";
+    QString output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(" + support.pointerType + " pkt";
 
     output += getDataEncodeParameterList();
 
@@ -833,7 +846,7 @@ QString ProtocolPacket::getPacketEncodeSignature(void) const
  */
 QString ProtocolPacket::getPacketDecodeSignature(void) const
 {
-    QString output = "int decode" + support.prefix + name + support.packetParameterSuffix + "(const void* pkt";
+    QString output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt";
 
     output += getDataDecodeParameterList() + ")";
 

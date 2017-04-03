@@ -33,6 +33,9 @@ public:
     //! Get all the ID strings of this packet
     void appendIds(QStringList& list) const {list.append(ids);}
 
+    //! Return the extended packet name
+    QString extendedName() const { return support.prefix + this->name + support.packetStructureSuffix; }
+
 protected:
 
     //! Create the structure definition code

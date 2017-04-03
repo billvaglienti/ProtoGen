@@ -22,7 +22,19 @@ QStringList ProtocolSupport::getAttriblist(void) const
 {
     QStringList attribs;
 
-    attribs << "maxSize" << "supportInt64" << "supportFloat64" << "supportSpecialFloat" << "supportBitfield" << "supportLongBitfield" << "bitfieldTest" << "file" << "prefix" << "packetStructureSuffix" << "packetParameterSuffix" << "endian";
+    attribs << "maxSize"
+            << "supportInt64"
+            << "supportFloat64"
+            << "supportSpecialFloat"
+            << "supportBitfield"
+            << "supportLongBitfield"
+            << "bitfieldTest"
+            << "file"
+            << "prefix"
+            << "packetStructureSuffix"
+            << "packetParameterSuffix"
+            << "endian"
+            << "pointer";
 
     return attribs;
 }
@@ -63,6 +75,9 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
 
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);
+
+    // Packet pointer type (default is 'void')
+    pointerType = ProtocolParser::getAttribute("pointer", map, "void*");
 
     // Packet name post fixes
     packetStructureSuffix = ProtocolParser::getAttribute("packetStructureSuffix", map, packetStructureSuffix);
