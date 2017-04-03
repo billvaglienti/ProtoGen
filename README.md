@@ -204,7 +204,7 @@ Enum tag attributes:
 
 - `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. NOTE: This enumeration will still appear in the generated code.
 
-- `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.f
+- `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.
 
 ### Enum : Value subtag attributes:
 

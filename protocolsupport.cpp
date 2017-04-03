@@ -62,11 +62,11 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
         bitfield = false;
 
     // long bitfield support can be turned on
-    if(int64 && ProtocolParser::isFieldSet(ProtocolParser::getAttribute("supportLongBitfield", map)))
+    if(int64 && ProtocolParser::isFieldSet("supportLongBitfield", map))
         longbitfield = true;
 
     // bitfield test support can be turned on
-    if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("bitfieldTest", map)))
+    if(ProtocolParser::isFieldSet("bitfieldTest", map))
         bitfieldtest = true;
 
     // Global file names can be specified, but cannot have a "." in it

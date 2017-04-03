@@ -1168,6 +1168,10 @@ bool ProtocolParser::isFieldSet(const QDomElement &e, QString label)
     return isFieldSet(e.attribute(label).trimmed().toLower());
 }
 
+bool ProtocolParser::isFieldSet(QString value, QDomNamedNodeMap map)
+{
+    return isFieldSet(ProtocolParser::getAttribute(value,map));
+}
 
 /*!
  * Determine if the value of an attribute is either {'true','yes','1'}
@@ -1221,6 +1225,123 @@ bool ProtocolParser::isFieldClear(QString value)
     return result;
 }
 
+bool ProtocolParser::isDecNum(QString text, int &value)
+{
+    bool ok = false;
+    int toVal = text.toInt(&ok);
+
+    if (ok)
+    {
+        value = toVal;
+        return true;
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isHexNum(QString text, int &value)
+{
+    bool ok = false;
+
+    if (text.toLower().startsWith("0x"))
+    {
+        text.remove(0, 2);
+
+        int toVal = text.toInt(&ok, 16);
+
+        if (ok)
+        {
+            value = toVal;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isBinNum(QString text, int &value)
+{
+    bool ok = false;
+
+    if (text.toLower().startsWith("0b"))
+    {
+        text.remove(0,2);
+
+        int toVal = text.toInt(&ok, 2);
+
+        if (ok)
+        {
+            value = toVal;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ProtocolParser::isNumber(QString text, int &value)
+{
+    return isDecNum(text, value) ||
+           isHexNum(text, value) ||
+           isBinNum(text, value);
+}
+
+/**
+ * @brief ProtocolParser::compressSum takes a string of summed elements
+ * and attempts to compress them into a simpler element, with consistent formatting
+ * e.g. "0x13 + CAT + DOG+7" -> "CAT + DOG + 26"
+ * @param text
+ * @return
+ */
+QString ProtocolParser::compressSum(QString text)
+{
+    QStringList elements = text.split("+");
+
+    QStringList texts;
+
+    int value = 0;
+    int count = 0;
+    int accum = 0;
+
+    // Test each element to see if it is numeric (or not)
+    for (QString element : elements)
+    {
+        element = element.trimmed();
+
+        if (isNumber(element, value))
+        {
+            count++;
+            accum += value;
+        }
+        else
+        {
+            texts.append(element);
+        }
+    }
+
+
+    QString sum = texts.join( " + " );
+
+    if ( !sum.isEmpty() && accum != 0)
+    {
+        sum += " + ";
+    }
+    if ( !sum.isEmpty() || accum != 0)
+    {
+        sum += QString::number(accum);
+    }
+    else if ( sum.isEmpty() && accum == 0)
+    {
+        sum = "0";
+    }
+    else
+    {
+        // Should never get here
+        return text;
+    }
+
+    return sum;
+}
 
 /*!
  * Get the string used for inline css. This must be bracketed in <style> tags in the html

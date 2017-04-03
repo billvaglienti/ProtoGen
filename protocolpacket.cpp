@@ -78,12 +78,12 @@ void ProtocolPacket::parse(void)
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
-    bool outputTopLevelStructureCode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("useInOtherPackets", map));
+    bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
 
     // Typically "parameterInterface" and "structureInterface" are only ever set to "true".
     // However we do handle the case where someone uses "false"
-    bool parameterFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("parameterInterface", map));
-    bool structureFunctions = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("structureInterface", map));
+    bool parameterFunctions = ProtocolParser::isFieldSet("parameterInterface", map);
+    bool structureFunctions = ProtocolParser::isFieldSet("structureInterface", map);
 
     if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("parameterInterface", map)))
     {
