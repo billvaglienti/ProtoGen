@@ -206,7 +206,7 @@ Enum tag attributes:
 
 - `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.f
 
-###Enum : Value subtag attributes:
+### Enum : Value subtag attributes:
 
 The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. Attributes of the Value subtag are:
 
@@ -258,11 +258,11 @@ Structure tag Attributes:
 
 - `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once).
 
-###Structure : Data subtags
+### Structure : Data subtags
 
 The Structure tag supports Data subtags. Each data tag represents one line in the structure definition. The data tags are explained in more detail in the section on packets.
 
-###Structure : Code subtags
+### Structure : Code subtags
 
 The Structure tag supports Code subtags. Each code tag represents verbatim code that is inserted in either the encode or decode function. In most cases the code tags are not needed, but they can be useful in some cases.
 
@@ -302,7 +302,7 @@ Packet tag attributes:
 
 - `useInOtherPackets` : If set to `true` this attribute specifies that this packet will generate extra outputs as though it were a top level structure in addition to being a packet. This makes it possible to use this packet as a sub-structure of another packet. 
 
-###Packet : Data subtags
+### Packet : Data subtags
 
 The Packet tag supports Data subtags. The Data tag is the most complex part of the packet definition. Each Data tag represents one line in the packet structure definition, and one hunk of data in the packet encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
 	        
@@ -599,7 +599,7 @@ Documentation for a protocol is often the last task undertaken by a developer, b
 
 ProtoGen will also output a markdown file which provides a MultiMarkdown formatted document of the protocol. ProtoGen can feed this file to MultiMarkdown (if it is installed) in order to create a html file. This file is intended as a master document for the protocol that is suitable for developers and users alike. The author of the protocol xml is encouraged to be verbose in the comment attributes. The better you document your protocol the less users will bug you for help!
 
-###Documentation consequences of using the `Include` tag
+### Documentation consequences of using the `Include` tag
 
 The `Include` tag is most useful when integrating ProtoGen code with pre-existing software. However using it reduces the usefulness of ProtoGen's documentation. ProtoGen is not a compiler; it will not read the referenced include file and resolve all strings contained therein. For example if you define an array length enumeration (e.g. "#define N3D 3") in an included file and then use that as an array attribute (`array="N3D"`) ProtoGen will not *know* that the array is 3 elements long. The generated code will be perfectly readable and correct; however the ambiguous array length means that ProtoGen will not be able to document the exact byte location of the data in the packet.
 
