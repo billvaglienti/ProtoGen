@@ -7,44 +7,44 @@ static int validateDemolinkPacket(const testPacket_t* pkt);
 static uint16_t fletcher16( uint8_t const *data, int bytes );
 
 //! \return the packet data pointer from the packet
-uint8_t* getDemolinkPacketData(void* pkt)
+uint8_t* getDemolinkPacketData(testPacket_t* pkt)
 {
     return ((testPacket_t*)pkt)->data;
 }
 
 //! \return the packet data pointer from the packet
-const uint8_t* getDemolinkPacketDataConst(const void* pkt)
+const uint8_t* getDemolinkPacketDataConst(const testPacket_t* pkt)
 {
     return ((testPacket_t*)pkt)->data;
 }
 
 //! Complete a packet after the data have been encoded
-void finishDemolinkPacket(void* pkt, int size, uint32_t packetID)
+void finishDemolinkPacket(testPacket_t* pkt, int size, uint32_t packetID)
 {
     uint16_t check;
 
-    ((testPacket_t*)pkt)->sync0 = TEST_PKT_SYNC_BYTE0;
-    ((testPacket_t*)pkt)->sync1 = TEST_PKT_SYNC_BYTE1;
-    ((testPacket_t*)pkt)->pkttype = (uint8_t)packetID;
-    ((testPacket_t*)pkt)->length = (uint8_t)size;
+    pkt->sync0 = TEST_PKT_SYNC_BYTE0;
+    pkt->sync1 = TEST_PKT_SYNC_BYTE1;
+    pkt->pkttype = (uint8_t)packetID;
+    pkt->length = (uint8_t)size;
 
     // Compute and apply the checksum
-    check = fletcher16(pkt, size+4);
-    ((testPacket_t*)pkt)->data[size] = (uint8_t)(check>>8);
-    ((testPacket_t*)pkt)->data[size+1] = (uint8_t)(check);
+    check = fletcher16((uint8_t*)pkt, size+4);
+    pkt->data[size] = (uint8_t)(check>>8);
+    pkt->data[size+1] = (uint8_t)(check);
 
 }
 
 //! \return the size of a packet from the packet header
-int getDemolinkPacketSize(const void* pkt)
+int getDemolinkPacketSize(const testPacket_t* pkt)
 {
-    return ((testPacket_t*)pkt)->length;
+    return pkt->length;
 }
 
 //! \return the ID of a packet from the packet header
-uint32_t getDemolinkPacketID(const void* pkt)
+uint32_t getDemolinkPacketID(const testPacket_t* pkt)
 {
-    return ((testPacket_t*)pkt)->pkttype;
+    return pkt->pkttype;
 }
 
 

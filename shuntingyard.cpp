@@ -166,13 +166,18 @@ double ShuntingYard::computePostfix(const QString& postfix, bool* ok)
 
     for(int i = 0; i < list.size(); i++)
     {
+        double arg;
+        bool argok;
         QString o1 = list.at(i);
 
         if(o1.isEmpty())
             continue;
 
-        if(isNumber(o1))
-            arguments.push(o1.toDouble());
+        // The argument is either an operator or a number
+        arg = toNumber(o1, &argok);
+
+        if(argok)
+            arguments.push(arg);
         else if(arguments.size() >= 2)
         {
             // the rightmost argument is the top of the stack
@@ -279,14 +284,73 @@ bool ShuntingYard::isLeftAssociative(const QString& op)
 }
 
 
+
 /*!
- * \param input is the string to test
- * \return true if Qt can convert input to a double.
+ * Convert an input string to an integer.
+ * \param input is the string to convert. It can be a binary ("0b") or hex ("0x")
+ *        or a decimal number.
+ * \param ok will be set to true if the conversion is successful, else it will
+ *         be set to false
+ * \return the converted value, or 0 if the conversion fails
+ */
+int ShuntingYard::toInt(QString input, bool* ok)
+{
+    if(input.startsWith("0b", Qt::CaseInsensitive))
+        return input.remove(0, 2).toUInt(ok, 2);
+    else if(input.startsWith("0x", Qt::CaseInsensitive))
+        return input.remove(0, 2).toUInt(ok, 16);
+    else
+        return input.toInt(ok);
+
+}
+
+
+/*!
+ * \param input is the string to test. It can be a binary ("0b") or hex ("0x")
+ *        or an integer number
+ * \return true if we can convert input to an integer
+ */
+bool ShuntingYard::isInt(const QString& input)
+{
+    bool ok = false;
+
+    toInt(input, &ok);
+
+    return ok;
+}
+
+
+/*!
+ * Convert an input string to a number.
+ * \param input is the string to convert. It can be a binary ("0b") or hex ("0x")
+ *        or a decimal number.
+ * \param ok will be set to true if the conversion is successful, else it will
+ *         be set to false
+ * \return the converted value, or 0 if the conversion fails
+ */
+double ShuntingYard::toNumber(QString input, bool* ok)
+{
+    if(input.startsWith("0b", Qt::CaseInsensitive))
+        return input.remove(0, 2).toUInt(ok, 2);
+    else if(input.startsWith("0x", Qt::CaseInsensitive))
+        return input.remove(0, 2).toUInt(ok, 16);
+    else
+        return input.toDouble(ok);
+
+}
+
+
+/*!
+ * \param input is the string to test. It can be a binary ("0b") or hex ("0x")
+ *        or a decimal number
+ * \return true if we can convert input to a number
  */
 bool ShuntingYard::isNumber(const QString& input)
 {
-    bool ok;
-    input.toDouble(&ok);
+    bool ok = false;
+
+    toNumber(input, &ok);
+
     return ok;
 }
 
@@ -370,6 +434,7 @@ QString ShuntingYard::tokenize(const QString& raw)
     QString output;
     QString input = raw;
     tokentypes lasttoken = operation;
+    QChar lastcharacter = ' ';
 
     // Handle special numbers. There are enough characters here to exceed the
     // double precision representation
@@ -392,6 +457,17 @@ QString ShuntingYard::tokenize(const QString& raw)
             // And output the character
             output += character;
         }
+        else if(((character == 'x') || (character == 'X') || (character == 'b') || (character == 'B')) && (lastcharacter == '0'))
+        {
+            // Another hard case, we want to support hexadecimal and binary numbers,
+            // but we need to preserve the "0x" or "0b" prefix
+
+            // Treat this as a number, and note that lastcharacter must also have been a number
+            lasttoken = number;
+
+            // Output the character, no separator
+            output += character;
+        }
         else if(isOperator(character) || isParen(character))
         {
             // Whether following operator or number, add a separator
@@ -411,6 +487,9 @@ QString ShuntingYard::tokenize(const QString& raw)
             // And output the character, this is going to be a failure
             output += character;
         }
+
+        // Remember this for next pass
+        lastcharacter = character;
 
     }// for all input characters
 

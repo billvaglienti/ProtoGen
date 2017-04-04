@@ -7,41 +7,59 @@
 #include "protocolsupport.h"
 #include "protocoldocumentation.h"
 
+// Forward declaration of EnumCreator so EnumElement can see it
 class EnumCreator;
 
 class EnumElement : public ProtocolDocumentation
 {
-protected:
-    QString m_name;
-    QString m_lookupName;
-    QString m_value;
-    QString m_comment;
-    QString m_number;
-
-    bool m_isHidden = false;
-    bool m_ignoresPrefix = false;
-    bool m_ignoresLookup = false;
-
-    EnumCreator* parentEnum;
+    // So EnumCreator can access my protected members
+    friend class EnumCreator;
 
 public:
+
+    //! Cronstruct an enumeration element
     EnumElement(ProtocolParser* parse, EnumCreator* creator, QString Parent, ProtocolSupport supported);
 
+    //! Parse an enumeration element
     virtual void parse() override;
+
+    //! Check the enumeration element against C keywords
     virtual void checkAgainstKeywords() override;
 
+    //! Return true if this element is hidden from the documentation
+    virtual bool isHidden (void) const override {return hidden;}
+
+    //! The enumeration element name, with or without prefix
     QString getName() const;
+
+    //! The enumeration element lookup name
     QString getLookupName() const;
-    QString getValue() const { return m_value; }
+
+    //! The enumeration element declaration string
     QString getDeclaration() const;
-    QString getComment() const { return m_comment; }
-    QString getNumber() const { return m_number; }
 
-    void setNumber(QString num) { m_number = num; }
+protected:
 
-    bool isHidden() const { return m_isHidden; }
-    bool ignoresPrefix() const { return m_ignoresPrefix; }
-    bool ignoresLookup() const { return m_ignoresLookup; }
+    //! The name returned
+    QString lookupName;
+
+    //! The numeration value string
+    QString value;
+
+    //! The numeration number (if it can be computed)
+    QString number;
+
+    //! Indicates if this enumeration element is hidden from documentation
+    bool hidden;
+
+    //! Indicates if this enumeration element does not use the enumeration prefix
+    bool ignoresPrefix;
+
+    //! Indicates if this enumeration element does not produce lookup code
+    bool ignoresLookup;
+
+    //! Pointer to the parent enumeration that owns this element
+    EnumCreator* parentEnum;
 
 };
 
@@ -63,10 +81,10 @@ public:
     void parseGlobal(QString filename);
 
     //! Check names against the list of C keywords
-    virtual void checkAgainstKeywords(void);
+    virtual void checkAgainstKeywords(void) override;
 
     //! Get the markdown documentation for this enumeration
-    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
+    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const override;
 
     //! Return the enumeration name
     QString getName(void) const {return name;}
@@ -92,10 +110,10 @@ public:
     int getMinBitWidth(void) const {return minbitwidth;}
 
     //! Return true if this enumeration is hidden from the documentation
-    virtual bool isHidden(void) const {return hidden;}
+    virtual bool isHidden (void) const override {return hidden;}
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const override {return parent + ":" + name;}
 
     //! Return the header file name (if any) of the file holding this enumeration
     QString getHeaderFileName(void) const {return file;}

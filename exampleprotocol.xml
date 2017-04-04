@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" prefix="" file="linkcode" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
+<Protocol name="Demolink" prefix="" file="linkcode" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
 "This is an demonstration protocol definition. This file demonstrates most things
 that the ProtoGen application can do regarding automatic protocol packing/upacking
 code generation.
@@ -37,9 +37,9 @@ interpretation
         <Value name="ORION_PKT_KLV_USER_DATA1"/>
         <Value name="ORION_PKT_KLV_USER_DATA2"/>
         <Value name="ORION_PKT_KLV_USER_DATA3"/>
-        <Value name="ORION_PKT_KLV_USER_DATA4"/>
+        <Value name="ORION_PKT_KLV_USER_DATA4" value="0x01 + ORION_PKT_KLV_USER_DATA3"/>
         <Value name="ORION_PKT_KLV_USER_DATA5"/>
-        <Value name="ORION_PKT_KLV_USER_DATA6"/>
+        <Value name="ORION_PKT_KLV_USER_DATA6" value="0b101 + ORION_PKT_KLV_USER_DATA1" comment="Demonstrating that protogen can resolve simple math here"/>
     </Enum>
 
     <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">

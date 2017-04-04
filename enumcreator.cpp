@@ -1,15 +1,18 @@
 #include "enumcreator.h"
 #include "protocolparser.h"
+#include "shuntingyard.h"
+#include "encodedlength.h"
 #include <QStringList>
 #include <QRegularExpression>
 #include <QChar>
 #include <math.h>
 #include <iostream>
 
-const QString TAB = "    ";
-
 EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, QString Parent, ProtocolSupport supported) :
     ProtocolDocumentation(parse, Parent, supported),
+    hidden(false),
+    ignoresPrefix(false),
+    ignoresLookup(false),
     parentEnum(creator)
 {
 }
@@ -29,13 +32,13 @@ void EnumElement::checkAgainstKeywords()
     if (keywords.contains(getName()))
     {
         emitWarning("enum value name matches C keyword, changed to name_");
-        m_name += "_";
+        name += "_";
     }
 
-    if (keywords.contains(getValue()))
+    if (keywords.contains(value))
     {
         emitWarning("enum value matches C keyword, changed to value_");
-        m_value += "_";
+        value += "_";
     }
 }
 
@@ -52,35 +55,34 @@ void EnumElement::parse()
                           << "ignorePrefix"
                           << "ignoreLookup");
 
-    m_name = ProtocolParser::getAttribute("name", map);
-    m_lookupName = ProtocolParser::getAttribute("lookupName", map);
-    m_value = ProtocolParser::getAttribute("value", map);
-    m_comment = ProtocolParser::getAttribute("comment", map);
-    m_isHidden = ProtocolParser::isFieldSet("hidden", map);
-    m_ignoresPrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
-    m_ignoresLookup = ProtocolParser::isFieldSet("ignoreLookup", map);
+    name = ProtocolParser::getAttribute("name", map);
+    lookupName = ProtocolParser::getAttribute("lookupName", map);
+    value = ProtocolParser::getAttribute("value", map);
+    comment = ProtocolParser::getAttribute("comment", map);
+    hidden = ProtocolParser::isFieldSet("hidden", map);
+    ignoresPrefix = ProtocolParser::isFieldSet("ignorePrefix", map);
+    ignoresLookup = ProtocolParser::isFieldSet("ignoreLookup", map);
 
     checkAgainstKeywords();
 }
 
 QString EnumElement::getName() const
 {
-    QString name = m_ignoresPrefix ? QString("") : parentEnum->getPrefix();
-
-    name += m_name;
-
-    return name;
+    if(ignoresPrefix)
+        return name;
+    else
+        return parentEnum->getPrefix() + name;
 }
 
 QString EnumElement::getLookupName() const
 {
-    if (m_lookupName.isEmpty())
+    if (lookupName.isEmpty())
     {
         return getName();
     }
     else
     {
-        return m_lookupName;
+        return lookupName;
     }
 }
 
@@ -88,9 +90,9 @@ QString EnumElement::getDeclaration() const
 {
     QString decl = getName();
 
-    if (!m_value.isEmpty())
+    if (!value.isEmpty())
     {
-        decl += " = " + m_value;
+        decl += " = " + value;
     }
 
     return decl;
@@ -174,7 +176,7 @@ void EnumCreator::parse(void)
 
     // Tell the user of any problems in the attributes
     testAndWarnAttributes(map, QStringList()
-                          <<  "name"
+                          << "name"
                           << "comment"
                           << "description"
                           << "hidden"
@@ -251,7 +253,7 @@ void EnumCreator::parse(void)
     {
         auto element = elements.at(i);
 
-        auto declaration = TAB + element.getDeclaration();
+        auto declaration = TAB_IN + element.getDeclaration();
 
         // Output the enumerator name and separator
         output += declaration;
@@ -267,10 +269,10 @@ void EnumCreator::parse(void)
             output += " ";
 
         // Output the comment
-        if(element.getComment().isEmpty())
+        if(element.comment.isEmpty())
             output += "\n";
         else
-            output += "//!< " + element.getComment() + "\n";
+            output += "//!< " + element.comment + "\n";
 
     }// for all enumerators
 
@@ -298,24 +300,24 @@ void EnumCreator::parse(void)
         sourceOutput += func + "\n";
         sourceOutput += "{\n";
 
-        sourceOutput += TAB + "switch (value)\n";
-        sourceOutput += TAB + "{\n";
-        sourceOutput += TAB + "default:\n";
-        sourceOutput += TAB + TAB + "return \"\";\n";
+        sourceOutput += TAB_IN + "switch (value)\n";
+        sourceOutput += TAB_IN + "{\n";
+        sourceOutput += TAB_IN + "default:\n";
+        sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
 
         // Add the reverse-lookup text for each entry in the enumeration
         for (int i=0; i<elements.size(); i++)
         {
             auto element = elements.at(i);
 
-            if (element.ignoresLookup())
+            if (element.ignoresLookup)
                 continue;
 
-            sourceOutput += TAB + "case " + element.getName() + ":\n";
-            sourceOutput += TAB + TAB + "return \"" + element.getLookupName() + "\";\n";
+            sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
+            sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getLookupName() + "\";\n";
         }
 
-        sourceOutput += TAB + "}\n";
+        sourceOutput += TAB_IN + "}\n";
         sourceOutput += "}\n";
     }
 
@@ -351,7 +353,7 @@ void EnumCreator::computeNumberList(void)
         auto& element = elements[i];
 
         // The string from the XML, which may be empty
-        QString stringValue = element.getValue();
+        QString stringValue = element.value;
 
         // Clear any whitespace from it just to be sure
         stringValue = stringValue.trimmed();
@@ -378,20 +380,19 @@ void EnumCreator::computeNumberList(void)
             bool ok = false;
 
             // First check that the value provided is numeric
-            ok = ProtocolParser::isNumber(stringValue, value);
+            value = ShuntingYard::toInt(stringValue, &ok);
 
-            // Next, check if the value was defined in *this* enumeration
+            // Next, check if the value was defined in *this* enumeration or other enumerations
             if (!ok)
             {
                 replaceEnumerationNameWithValue(stringValue);
-                ok = ProtocolParser::isNumber(stringValue, value);
-            }
-
-            // Finally, check if the value was defined in a previous enumeration
-            if(!ok)
-            {
                 parser->replaceEnumerationNameWithValue(stringValue);
-                ok = ProtocolParser::isNumber(stringValue, value);
+
+                // If this string is a composite of numbers, add them together if we can
+                stringValue = EncodedLength::collapseLengthString(stringValue, true);
+
+                // Finally convert to integer
+                value = ShuntingYard::toInt(stringValue, &ok);
             }
 
             // If we didn't get a number, then this string has to be resolved
@@ -409,11 +410,12 @@ void EnumCreator::computeNumberList(void)
 
         }// if we got a string from the xml
 
-        element.setNumber(ProtocolParser::compressSum(stringValue));
-
         // keep track of maximum value
         if(value > maxValue)
             maxValue = value;
+
+        // Remember the value
+        element.number = stringValue;
 
     }// for the whole list of value strings
 
@@ -479,8 +481,8 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             codeNameList.append(linkText);
 
             firstColumnSpacing = qMax(firstColumnSpacing, linkText.length());
-            secondColumnSpacing = qMax(secondColumnSpacing, element.getNumber().length());
-            thirdColumnSpacing = qMax(thirdColumnSpacing, element.getComment().length());
+            secondColumnSpacing = qMax(secondColumnSpacing, element.number.length());
+            thirdColumnSpacing = qMax(thirdColumnSpacing, element.comment.length());
         }
 
         // The outline paragraph
@@ -538,9 +540,9 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             output += "| ";
             output += spacedString(element.getName(), firstColumnSpacing);
             output += " | ";
-            output += spacedString(element.getNumber(), secondColumnSpacing);
+            output += spacedString(element.number, secondColumnSpacing);
             output += " | ";
-            output += spacedString(element.getComment(), thirdColumnSpacing);
+            output += spacedString(element.comment, thirdColumnSpacing);
             output += " |\n";
         }
 
@@ -564,8 +566,6 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
     // split words around mathematical operators
     QStringList tokens = splitAroundMathOperators(text);
 
-    int val;
-
     for(int j = 0; j < tokens.size(); j++)
     {
         QString token = tokens.at(j).trimmed();
@@ -575,7 +575,7 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
             continue;
 
         // Don't look to replace elements that are already numeric
-        if (ProtocolParser::isNumber(token, val))
+        if (ShuntingYard::isInt(token))
             continue;
 
         for (auto element : elements )
@@ -583,13 +583,13 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
             // The entire token must match before we will replace it
             if(token.compare(element.getName().trimmed()) == 0)
             {
-                if (!element.getNumber().isEmpty())
+                if (!element.number.isEmpty())
                 {
-                    tokens[j] = element.getNumber();
+                    tokens[j] = element.number;
                 }
-                else if (!element.getValue().isEmpty())
+                else if (!element.value.isEmpty())
                 {
-                    tokens[j] = element.getValue();
+                    tokens[j] = element.value;
                 }
                 break;
             }
@@ -655,7 +655,7 @@ QStringList EnumCreator::splitAroundMathOperators(QString text) const
  */
 bool EnumCreator::isMathOperator(QChar op) const
 {
-    if((op == '^') || (op == '*') || (op == '/') || (op == '+') || (op == '-') || (op == '(') || (op == ')'))
+    if(ShuntingYard::isOperator(op) || ShuntingYard::isParen(op))
         return true;
     else
         return false;

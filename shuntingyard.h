@@ -38,6 +38,15 @@ public:
     //! Compute a properly delimited postfix expression
     static double computePostfix(const QString& postfix, bool* ok = 0);
 
+    //! Convert an input string to an integer
+    static int toInt(QString input, bool* ok);
+
+    //! Test if input string is an integer
+    static bool isInt(const QString& input);
+
+    //! Convert an input string to a number
+    static double toNumber(QString input, bool* ok);
+
     //! Test if input string is a number
     static bool isNumber(const QString& input);
 
@@ -46,6 +55,12 @@ public:
 
     //! Replace "pi" or "e" in the string with the numeric values
     static QString& replacePie(QString& input);
+
+    //! Test if input character is an operator
+    static bool isOperator(const QChar& input);
+
+    //! Test if input character is a parenthesis
+    static bool isParen(const QChar& input);
 
     //! Test the ShuntingYard class
     static bool test();
@@ -67,11 +82,6 @@ private:
     //! Test if input string is an operator
     static bool isOperator(const QString& input);
 
-    //! Test if input character is an operator
-    static bool isOperator(const QChar& input);
-
-    //! Test if input character is a parenthesis
-    static bool isParen(const QChar& input);
 };
 
 #endif // SHUNTINGYARD_H

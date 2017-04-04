@@ -49,6 +49,10 @@ public:
     static void getChildDocuments(ProtocolParser* parse, QString Parent, ProtocolSupport support, const QDomElement& e, QList<ProtocolDocumentation*>& list);
 
 public:
+
+    //! String used to tab code in (perhaps one day we'll make this user changeable)
+    static const QString TAB_IN;
+
     QString name;           //!< The name of this encodable
     QString comment;        //!< The comment that goes with this encodable
 

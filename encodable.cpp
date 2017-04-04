@@ -8,7 +8,6 @@
 // Initialize convenience strings
 const QString Encodable::VOID_ENCODE = "void encode";
 const QString Encodable::INT_DECODE = "int decode";
-const QString Encodable::TAB_IN = "    ";
 
 /*!
  * Constructor for encodable
