@@ -1,3 +1,4 @@
+#include <QCommandlineParser>
 #include <QCoreApplication>
 #include <QDomDocument>
 #include <QStringList>
@@ -11,95 +12,115 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+    QCoreApplication::setApplicationName( "Protogen" );
+    QCoreApplication::setApplicationVersion(ProtocolParser::genVersion);
+
+    QCommandLineParser argParser;
+
+    argParser.setApplicationDescription("Protocol generation tool");
+    argParser.addHelpOption();
+    argParser.addVersionOption();
+
+    argParser.addPositionalArgument("input", "Protocol defintion file, .xml");
+    argParser.addPositionalArgument("outputpath", "Path for generated protocol files (default = current working directory)");
+
+    argParser.addOption({{"d", "docs"}, "Path for generated documentation files (default = outputpath)", "docpath"});
+    argParser.addOption({"show-hidden-items", "Show all items in documentation even if they are marked as 'hidden'"});
+    argParser.addOption({"latex", "Enable extra documentation output required for LaTeX integration"});
+    argParser.addOption({{"l", "latex-header-level"}, "LaTeX header level", "latexlevel"});
+    argParser.addOption({"no-doxygen", "Skip generation of developer-level documentation"});
+    argParser.addOption({"no-markdown", "Skip generation of user-level documentation"});
+    argParser.addOption({"no-helper-files", "Skip creation of helper files not directly specifed by protocol .xml file"});
+    argParser.addOption({{"s", "style"}, "Specify a css file to override the default style for HTML documentation", "cssfile"});
+    argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
+
+    argParser.process(a);
+
     ProtocolParser parser;
 
-    // The list of arguments
-    QStringList arguments = a.arguments();
+    // Process the positional arguments
+    QStringList args = argParser.positionalArguments();
 
-    if(arguments.size() <= 1)
+    QString filename, path;
+
+    if (args.count() > 0 )
+        filename = args.at(0);
+
+    if (args.count() > 1)
+        path = args.at(1);
+
+    if (filename.isEmpty() || !filename.endsWith(".xml"))
     {
-        std::cout << "Protocol generator usage:" << std::endl;
-        std::cout << "ProtoGen input.xml [outputpath] [-docs docspath] [-show-hidden-items] [-latex] [-latex-header-level level] [-no-doxygen] [-no-markdown] [-no-helper-files] [-no-unrecognized-warnings]" << std::endl;
+        std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
         return 2;   // no input file
     }
 
-    // We expect the input file here
-    QString filename;
+    // Documentation directory
+    QString docs = argParser.value("docs");
 
-    // The output path
-    QString path;
-
-    // Skip the first argument "ProtoGen.exe"
-    for(int i = 1; i < arguments.size(); i++)
+    if (!docs.isEmpty() && !argParser.isSet("no-markdown"))
     {
-        QString arg = arguments.at(i);
+        docs = ProtocolFile::sanitizePath(docs);
 
-        if(arg.contains("-no-doxygen", Qt::CaseInsensitive))
-            parser.disableDoxygen(true);
-        else if(arg.contains("-no-markdown", Qt::CaseInsensitive))
-            parser.disableMarkdown(true);
-        else if(arg.contains("-no-helper-files", Qt::CaseInsensitive))
-            parser.disableHelperFiles(true);
-        else if (arg.contains("-show-hidden-items", Qt::CaseInsensitive))
-            parser.showHiddenItems(true);
-        else if(arg.endsWith(".xml"))
-            filename = arg;
-        else if (arg.startsWith("-latex-header-level"))
+        if (QDir::current().mkdir(docs))
         {
-            // Is there an argument following this one?
-            if (arguments.size() > (i + 1))
-            {
-                // Read the header-level and parse the header level (and auto-increment the argument index)
-                QString lvl = arguments.at(++i);
-
-                bool ok = false;
-
-                int header_level = lvl.toInt(&ok);
-
-                if (!ok)
-                {
-                    std::cerr << "warning: -latex-header-level argument '" << lvl.toStdString() << "' is invalid.";
-                }
-
-                else if (header_level > 0)
-                {
-                    parser.setLaTeXLevel(header_level);
-                }
-            }
+            parser.setDocsPath(docs);
         }
-        else if (arg.contains("-latex", Qt::CaseInsensitive))
-            parser.setLaTeXSupport(true);
-        else if (arg.contains("-no-unrecognized-warnings", Qt::CaseInsensitive))
-            parser.disableUnrecognizedWarnings(true);
-        else if(arg.endsWith(".css"))
+    }
+
+    // Process the optional arguments
+    parser.disableDoxygen(argParser.isSet("no-doxygen"));
+    parser.disableMarkdown(argParser.isSet("no-markdown"));
+    parser.disableHelperFiles(argParser.isSet("no-helper-files"));
+    parser.showHiddenItems(argParser.isSet("show-hidden-items"));
+    parser.disableUnrecognizedWarnings(argParser.isSet("no-unrecognized-warnings"));
+    parser.setLaTeXSupport(argParser.isSet("latex"));
+
+    QString latexLevel = argParser.value("latex-header-level");
+
+    if (!latexLevel.isEmpty())
+    {
+        bool ok = false;
+        int lvl = latexLevel.toInt(&ok);
+
+        if (ok)
         {
-            QFile file(arg);
-            if(file.open(QIODevice::ReadOnly | QIODevice::Text))
-            {
-                parser.setInlineCSS(file.readAll());
-                file.close();
-            }
-            else
-                std::cerr << "warning: Failed to open " << QDir::toNativeSeparators(arg).toStdString() << ", using default css" << std::endl;
+            parser.setLaTeXLevel(lvl);
         }
-        else if (arg.startsWith("-docs"))
+        else
         {
-            // Is there an argument following this?
-            if (arguments.size() > (i + 1))
-            {
-                // The following argument is the directory path for documents
-                QString docs = ProtocolFile::sanitizePath(arguments.at(++i));
-
-                // If the directory already exists, or we can make it, then use it
-                if(QDir::current().mkpath(docs))
-                    parser.setDocsPath(docs);
-            }
+            std::cerr << "warning: -latex-header-level argument '" << latexLevel.toStdString() << "' is invalid.";
         }
-        else if((path.isEmpty()) && (arg != filename))
-            path = arg;
+    }
 
-    }// for all input arguments
+    QString css = argParser.value("style");
 
+    if (!css.isEmpty() && css.endsWith(".css"))
+    {
+        // First attempt to open the file
+        QFile file(css);
+
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            parser.setInlineCSS(file.readAll());
+            file.close();
+        }
+        else
+        {
+            std::cerr << "warning: Failed to open " << QDir::toNativeSeparators(css).toStdString() << ", using default css" << std::endl;
+        }
+    }
+
+    if (parser.parse(filename, path))
+    {
+        // Normal exit
+        return 0;
+    }
+    else
+    {
+        // Input file in error
+        return 1;
+    }
 
     if(!filename.isEmpty())
     {
@@ -110,8 +131,6 @@ int main(int argc, char *argv[])
     }
     else
     {
-        std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
-        return 2;   // no input file
-    }
 
+    }
 }
