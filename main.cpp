@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
 
     if (!docs.isEmpty() && !argParser.isSet("no-markdown"))
     {
-        docs = ProtocolFile::sanitizePath(docs);
+        docs =  ProtocolFile::sanitizePath(docs);
 
-        if (QDir::current().mkdir(docs))
+        if (QDir(docs).exists() || QDir::current().mkdir(docs))
         {
             parser.setDocsPath(docs);
         }
