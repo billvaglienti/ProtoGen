@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
 
     QCommandLineParser argParser;
 
+    argParser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
     argParser.setApplicationDescription("Protocol generation tool");
     argParser.addHelpOption();
     argParser.addVersionOption();
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
     if (args.count() > 1)
         path = args.at(1);
 
-    if (filename.isEmpty() || !filename.endsWith(".xml"))
+    if (filename.isEmpty() || !filename.endsWith(".xml", Qt::CaseInsensitive))
     {
         std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
         return 2;   // no input file
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
     QString css = argParser.value("style");
 
-    if (!css.isEmpty() && css.endsWith(".css"))
+    if (!css.isEmpty() && css.endsWith(".css", Qt::CaseInsensitive))
     {
         // First attempt to open the file
         QFile file(css);
@@ -122,15 +123,4 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if(!filename.isEmpty())
-    {
-        if(parser.parse(filename, path))
-            return 0;   // normal exit
-        else
-            return 1;   // input file in error
-    }
-    else
-    {
-
-    }
 }

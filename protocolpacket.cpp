@@ -320,6 +320,15 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
     else
         header.write("("+encodedLength.minEncodedLength + ")\n");
 
+    // The macro for the maximum packet length
+    header.makeLineSeparator();
+    header.write("//! return the maximum data length for the " + support.prefix + name + " packet\n");
+    header.write("#define get" + support.prefix + name + "MaxDataLength() ");
+    if(encodedLength.maxEncodedLength.isEmpty())
+        header.write("0\n");
+    else
+        header.write("("+encodedLength.maxEncodedLength + ")\n");
+
 }// ProtocolPacket::createUtilityFunctions
 
 
