@@ -1,4 +1,4 @@
-#include <QCommandlineParser>
+#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDomDocument>
 #include <QStringList>
