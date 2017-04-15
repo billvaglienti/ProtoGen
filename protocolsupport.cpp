@@ -1,6 +1,8 @@
 #include "protocolsupport.h"
 #include "protocolparser.h"
 
+#include <QStringList>
+
 ProtocolSupport::ProtocolSupport() :
     maxdatasize(0),
     int64(true),
