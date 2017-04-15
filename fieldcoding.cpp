@@ -970,9 +970,9 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
             {
             default:
             case 3: function += "0x00800000;\n"; break;
-            case 5: function += "0x0000008000000000;\n"; break;
-            case 6: function += "0x0000800000000000;\n"; break;
-            case 7: function += "0x0080000000000000;\n"; break;
+            case 5: function += "0x0000008000000000LL;\n"; break;
+            case 6: function += "0x0000800000000000LL;\n"; break;
+            case 7: function += "0x0080000000000000LL;\n"; break;
             }
         }
 
