@@ -154,7 +154,7 @@ uint32_t float32ToFloat24ex(float value, int sigbits)
         {
             // Largest possible exponent and significand without making a NaN or Inf
             signedExponent = bias;
-            significand = (uint32_t)(1 << sigbits) - 1;
+            output = (uint32_t)(1 << sigbits) - 1;
         }
 
         // re-bias with the new bias
@@ -349,7 +349,7 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
         {
             // Largest possible exponent and significand without making a NaN or Inf
             signedExponent = bias;
-            significand = (uint32_t)(1 << sigbits) - 1;
+            output = (uint32_t)(1 << sigbits) - 1;
         }
 
         // re-bias with the new bias
@@ -429,35 +429,53 @@ int testSpecialFloat(void)
 {
     int i;
     float dataIn[6], dataOut16[6], dataOut24[6];
-    float test;
+
+    union
+    {
+        float Float;
+        uint32_t Integer;
+    }test;
+
     float error = 0;
 
-    test = -.123456789f;
+    test.Float = -.123456789f;
 
     for(i = 0; i < 3; i++)
     {
-        test *= 10.0f;
-        dataIn[i] = test;
+        test.Float *= 10.0f;
+        dataIn[i] = test.Float;
         dataOut16[i] = float16ToFloat32(float32ToFloat16(dataIn[i]));
         dataOut24[i] = float24ToFloat32(float32ToFloat24(dataIn[i]));
         error += (float)fabs((dataIn[i] - dataOut16[i])/dataIn[i]);
         error += (float)fabs((dataIn[i] - dataOut24[i])/dataIn[i]);
     }
 
-    test = 12.3456789f;
+    test.Float = 12.3456789f;
     for(;i < 6; i++)
     {
-        test /= 10.0f;
-        dataIn[i] = test;
+        test.Float /= 10.0f;
+        dataIn[i] = test.Float;
         dataOut16[i] = float16ToFloat32(float32ToFloat16(dataIn[i]));
         dataOut24[i] = float24ToFloat32(float32ToFloat24(dataIn[i]));
         error += (float)fabs((dataIn[i] - dataOut16[i])/dataIn[i]);
         error += (float)fabs((dataIn[i] - dataOut24[i])/dataIn[i]);
     }
 
-    if(error < 0.01f)
-        return 1;
-    else
+    if(error > 0.01f)
         return 0;
+
+    // Maximum possible float without Inf or Nan
+    test.Integer = 0x7F7FFFFF;
+
+    // This loop exercises the overflow and underflow, use the debugger to verify functionality
+    for(i = 0; i < 6; i++)
+    {
+        dataIn[i] = test.Float;
+        dataOut16[i] = float16ToFloat32(float32ToFloat16(dataIn[i]));
+        dataOut24[i] = float24ToFloat32(float32ToFloat24(dataIn[i]));
+        test.Float /= 1000000000000.0f;
+    }
+
+    return 1;
 
 }// testSpecialFloat
