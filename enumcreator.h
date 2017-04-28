@@ -21,13 +21,13 @@ public:
     EnumElement(ProtocolParser* parse, EnumCreator* creator, QString Parent, ProtocolSupport supported);
 
     //! Parse an enumeration element
-    virtual void parse() override;
+    virtual void parse() Q_DECL_OVERRIDE;
 
     //! Check the enumeration element against C keywords
-    virtual void checkAgainstKeywords() override;
+    virtual void checkAgainstKeywords() Q_DECL_OVERRIDE;
 
     //! Return true if this element is hidden from the documentation
-    virtual bool isHidden (void) const override {return hidden;}
+    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
 
     //! The enumeration element name, with or without prefix
     QString getName() const;
@@ -75,16 +75,16 @@ public:
     void clear(void);
 
     //! Parse the DOM to fill out the enumeration list
-    virtual void parse() override;
+    virtual void parse() Q_DECL_OVERRIDE;
 
     //! Parse the DOM to fill out the enumeration list for a global enum
     void parseGlobal(QString filename);
 
     //! Check names against the list of C keywords
-    virtual void checkAgainstKeywords(void) override;
+    virtual void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
 
     //! Get the markdown documentation for this enumeration
-    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const override;
+    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const Q_DECL_OVERRIDE;
 
     //! Return the enumeration name
     QString getName(void) const {return name;}
@@ -110,10 +110,10 @@ public:
     int getMinBitWidth(void) const {return minbitwidth;}
 
     //! Return true if this enumeration is hidden from the documentation
-    virtual bool isHidden (void) const override {return hidden;}
+    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const override {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Return the header file name (if any) of the file holding this enumeration
     QString getHeaderFileName(void) const {return file;}
