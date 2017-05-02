@@ -164,6 +164,7 @@ interpretation
         <Data name="gain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
         <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
         <Code name="codeexample" decode="if(user->maxRPM &lt;= 0) return 0;" comment="Packet is not valid if maximum RPM is zero"/>
+
     </Packet>
 
     <Packet name="ThrottleSettings" file="Engine" deffile="definitions/EngineDefinitions.hpp" ID="THROTTLESETTINGS"
@@ -252,6 +253,8 @@ interpretation
         <Data name="mag" inMemoryType="float" array="N3D" dependsOn="magIncluded" encodedType="int16_t" max="100000" comment="magnetic field in nanoTesla in body X, Y, Z"/>
         <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" encodedType="int16_t" max="3.15" default="pi/2" comment="True heading computed by magnetic field in radians"/>
         <Data name="laserAGL" inMemoryType="float" dependsOn="laserIncluded" encodedType="uint16_t" min="-5" max="145" default="10" comment="Altitude above ground in meters as measured by the laser altimeter"/>
+        <Data name="dynamicP" inMemoryType="override" encodedType="float32"/>
+        <Data name="fuel" inMemoryType="override" encodedType="float24"/>
 
     </Packet>
     

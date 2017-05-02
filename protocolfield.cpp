@@ -181,6 +181,7 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupp
     encodedMax(0),
     scaler(1),
     checkConstant(false),
+    overridesPrevious(false),
     inMemoryType(supported),
     encodedType(supported),
     prevField(0)
@@ -203,6 +204,7 @@ void ProtocolField::clear(void)
     constantString.clear();
     constantStringForDisplay.clear();
     checkConstant = false;
+    overridesPrevious = false;
     encodedType = inMemoryType = TypeData(support);
     bitfieldData.clear();
     scalerString.clear();
@@ -230,6 +232,8 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
     if(prevField == NULL)
         return;
 
+
+
     // Are we the start of part of a new bitfield group (or are we not a bitfield at all)?
     // Which means the previous field terminates that group (if any)
     if(bitfieldData.groupStart || !encodedType.isBitfield)
@@ -255,6 +259,65 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
     computeEncodedLength();
 
 }// ProtocolField::setPreviousEncodable
+
+
+/*!
+ * Get overriden type information.
+ * \param prev is the previous encodable to test if its the source of the data being overriden by this encodable. Can be null
+ * \return true if prev is the source of data being overriden
+ */
+bool ProtocolField::getOverriddenTypeData(const ProtocolField* prev)
+{
+    // If we are overriding then this function is not interesting
+    if(!overridesPrevious)
+        return false;
+
+    // Check to make sure that this previous actually exists
+    if(prev == NULL)
+        return false;
+
+    // Must have the same name if we are overriding it
+    if(prev->name != name)
+        return false;
+
+    // Must exist in memory, or we can't be overriding it
+    if(prev->isNotInMemory())
+        return false;
+
+    // If we get here, then this is our baby. Update the data being overriden.
+    inMemoryType = prev->inMemoryType;
+
+    if(!enumName.isEmpty())
+        emitWarning("Enumeration name ignored for overridden field");
+    enumName = prev->enumName;
+
+    if(!array.isEmpty())
+        emitWarning("Array information ignored for overridden field");
+    array = prev->array;
+
+    if(!array2d.isEmpty())
+        emitWarning("2D Array information ignored for overridden field");
+    array2d = prev->array2d;
+
+    // This information can be modified, but is typically taken from the original.
+    if(variableArray.isEmpty())
+        variableArray = prev->variableArray;
+
+    if(variable2dArray.isEmpty())
+        variable2dArray = prev->variable2dArray;
+
+    if(dependsOn.isEmpty())
+        dependsOn = prev->dependsOn;
+
+    if(comment.isEmpty())
+        comment = prev->comment;
+
+    // Recompute the length now that the array data are up to date
+    computeEncodedLength();
+
+    return true;
+
+}// ProtocolField::getOverriddenTypeData
 
 
 //! Get the maximum number of temporary bytes needed for a bitfield group of our children
@@ -286,6 +349,13 @@ void ProtocolField::extractType(TypeData& data, const QString& typeString, const
 
     if(type.startsWith("n", Qt::CaseInsensitive))
         data.isNull = true;
+    else if(type.startsWith("over", Qt::CaseInsensitive) && inMemory)
+    {
+        overridesPrevious = true;
+
+        // This is just a place holder, it will get overriden later
+        data.bits = 32;
+    }
     else if(type.startsWith("stru", Qt::CaseInsensitive))
     {
         if(inMemory)
@@ -669,6 +739,9 @@ void ProtocolField::parse(void)
     // The encoded type string, this can be empty which implies encoded is same as memory
     if(encodedTypeString.isEmpty())
     {
+        if(overridesPrevious)
+            emitWarning("encodedType cannot be empty if inMemoryType is override");
+
         encodedType = inMemoryType;
 
         // Encoded types are never enums
@@ -676,7 +749,14 @@ void ProtocolField::parse(void)
             encodedType.isEnum = false;
     }
     else
+    {
         extractType(encodedType, encodedTypeString, name, false);
+
+        // This is just a warning pacifier, we won't learn until later what the
+        // in memory type is
+        if(overridesPrevious)
+            inMemoryType = encodedType;
+    }
 
     if(inMemoryType.isNull)
     {
@@ -684,6 +764,7 @@ void ProtocolField::parse(void)
         variableArray.clear();
         variable2dArray.clear();
         defaultString.clear();
+        overridesPrevious = false;
 
         // A special case, where we use the encoded type data in place of the
         // in memory type. This handles cases where (for example) we want to
@@ -764,6 +845,13 @@ void ProtocolField::parse(void)
             checkConstant = false;
             emitWarning("structure cannot be a constant");
         }
+
+        if(overridesPrevious)
+        {
+            overridesPrevious = false;
+            emitWarning("structure cannot override a previous field");
+        }
+
     }
 
     if(inMemoryType.isBitfield)
@@ -1287,11 +1375,11 @@ void ProtocolField::computeEncodedLength(void)
         else
         {
             if(is2dArray())
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array + "*" + array2d, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), (!defaultString.isEmpty()) || overridesPrevious);
             else if(isArray())
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()*" + array, false, !variableArray.isEmpty(), !dependsOn.isEmpty(), (!defaultString.isEmpty()) || overridesPrevious);
             else
-                encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), !defaultString.isEmpty());
+                encodedLength.addToLength("getMinLengthOf" + typeName + "()"         , false, false,                    !dependsOn.isEmpty(), (!defaultString.isEmpty()) || overridesPrevious);
         }
     }
     else
@@ -1307,7 +1395,7 @@ void ProtocolField::computeEncodedLength(void)
         if(is2dArray())
             lengthString += "*" + array2d;
 
-        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), !defaultString.isEmpty());
+        encodedLength.addToLength(lengthString, false, !variableArray.isEmpty() || !variable2dArray.isEmpty(), !dependsOn.isEmpty(), (!defaultString.isEmpty()) || overridesPrevious);
 
     }
 
@@ -1656,6 +1744,9 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
 
         if(!defaultString.isEmpty())
             description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultStringForDisplay + ".";
+
+        if(overridesPrevious)
+            description += "<br>This field overrides the previous field of the same name, if the packet is long enough.";
 
         for (int i=0;i<extraInfoNames.count();i++)
         {
@@ -2832,8 +2923,8 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         spacing += "    ";
     }
 
-    // If this field has a default value
-    if(defaultEnabled && !defaultString.isEmpty())
+    // If this field has a default value, or overrides a previous value
+    if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
     {
         output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
         output += spacing + "    return 1;\n";
@@ -3082,7 +3173,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     }
 
     // Close the default block
-    if(defaultEnabled && !defaultString.isEmpty())
+    if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
     {
         // Remove the last four spaces
         spacing.remove(spacing.size()-4, 4);

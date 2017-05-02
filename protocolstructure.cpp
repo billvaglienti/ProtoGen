@@ -1,5 +1,6 @@
 #include "protocolstructure.h"
 #include "protocolparser.h"
+#include "protocolfield.h"
 #include <QDomNodeList>
 #include <QStringList>
 #include <iostream>
@@ -175,6 +176,28 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
             {
                 if(encodable->isPrimitive())
                 {
+                    if(encodable->overridesPreviousEncodable())
+                    {
+                        ProtocolField* current = dynamic_cast<ProtocolField*>(encodable);
+                        if(current != NULL)
+                        {
+                            int prev;
+                            for(prev = 0; prev < encodables.size(); prev++)
+                            {
+                                if(current->getOverriddenTypeData(dynamic_cast<ProtocolField*>(encodables.at(prev))))
+                                    break;
+                            }
+
+                            if(prev >= encodables.size())
+                            {
+                                encodable->emitWarning("override failed, could not find previous field");
+                                delete encodable;
+                                continue;
+                            }
+                        }
+
+                    }// if encodable does override operation
+
                     // Track our metadata
                     if(encodable->usesBitfields())
                     {

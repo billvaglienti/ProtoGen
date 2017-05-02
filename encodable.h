@@ -11,7 +11,7 @@ class Encodable : public ProtocolDocumentation
 {
 public:
 
-    //! Constructor for basic encodable that sets protocl name and prefix
+    //! Constructor for basic encodable that sets protocol options
     Encodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
@@ -129,6 +129,12 @@ public:
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const = 0;
+
+    //! True if this encodable overrides a previous encodable
+    virtual bool overridesPreviousEncodable(void) const {return false;}
+
+    //! Clear the override flag, its not allowed
+    virtual void clearOverridesPrevious(void) {}
 
     //! True if this encodable invalidates an earlier default
     virtual bool invalidatesPreviousDefault(void) const {return !usesDefaults();}

@@ -88,6 +88,9 @@ public:
     //! Provide the pointer to a previous encodable in the list
     virtual void setPreviousEncodable(Encodable* prev);
 
+    //! Get overriden type information
+    bool getOverriddenTypeData(const ProtocolField* prev);
+
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
 
@@ -115,8 +118,8 @@ public:
     //! True if this encodable is NOT encoded
     virtual bool isNotEncoded(void) const {return (encodedType.isNull);}
 
-    //! True if this encodable is NOT in memory
-    virtual bool isNotInMemory(void) const {return inMemoryType.isNull;}
+    //! True if this encodable is NOT in memory. Note how overriding a previous field means we are not in memory (because the previous one is)
+    virtual bool isNotInMemory(void) const {return (inMemoryType.isNull || overridesPrevious);}
 
     //! True if this encodable is a constant
     virtual bool isConstant(void) const {return !constantString.isEmpty();}
@@ -154,6 +157,15 @@ public:
     //! Make this primitive not a default
     virtual void clearDefaults(void) {defaultString.clear();}
 
+    //! True if this encodable overrides a previous encodable
+    virtual bool overridesPreviousEncodable(void) const {return overridesPrevious;}
+
+    //! Clear the override flag, its not allowed
+    virtual void clearOverridesPrevious(void) {overridesPrevious = false;}
+
+    //! True if this encodable invalidates an earlier default
+    virtual bool invalidatesPreviousDefault(void) const {return !usesDefaults() && !overridesPrevious;}
+
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const {return (encodedType.isBitfield && !isNotEncoded());}
 
@@ -185,6 +197,7 @@ protected:
     QString constantString;
     QString constantStringForDisplay;
     bool checkConstant;
+    bool overridesPrevious;
     TypeData inMemoryType;
     TypeData encodedType;
     BitfieldData bitfieldData;

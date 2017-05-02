@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.9.5. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.9.6. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -364,6 +364,7 @@ Data subtag attributes:
     - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates empty (i.e. reserved for future expansion) space in the packet.
+    - `override` : indicates that this field is overriding a previous defined field in the structure or packet. In that instance the in-memory type information is taken from a previous field's (of the same name) definition. The point of overriding a field is to overcome a previous encoding that was inadequate.  
 
 - `struct` : This attribute replaces the inMemoryType attribute and references a previously defined structure.
 
