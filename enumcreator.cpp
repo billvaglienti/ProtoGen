@@ -528,7 +528,10 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         }
 
         // Table caption, with an anchor for the enumeration name
-        output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
+        if(title.isEmpty())
+            output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
+        else
+            output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
 
         // Table header
         output += "| ";
