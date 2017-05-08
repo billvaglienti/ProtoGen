@@ -27,12 +27,16 @@ void ProtocolDocumentation::parse(void)
     QDomNamedNodeMap map = e.attributes();
 
     name = ProtocolParser::getAttribute("name", map);
+    title = ProtocolParser::getAttribute("title", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     docfile = ProtocolParser::getAttribute("file", map);
     QString outline = ProtocolParser::getAttribute("paragraph", map);
 
+    if(title.isEmpty())
+        title = name;
+
     // Inform the user if there are any problems with the attributes
-    testAndWarnAttributes(map, QStringList() << "name" << "comment" << "file" << "paragraph");
+    testAndWarnAttributes(map, QStringList() << "name" << "title" << "comment" << "file" << "paragraph");
 
     // The outline level is a number
     if(!outline.isEmpty())
@@ -60,12 +64,12 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
             level = 3;
     }
 
-    if(!name.isEmpty())
+    if(!title.isEmpty())
     {
         for(int i = 0; i < level; i++)
             markdown += "#";
 
-        markdown += " " + name +"\n\n";
+        markdown += " " + title +"\n\n";
     }
 
     if(!comment.isEmpty())

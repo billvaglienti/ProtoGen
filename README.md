@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.9.6. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.9.7. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -51,7 +51,6 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 - `Style.css` will replace the default inline css in the markdown documentation with the contents of the Style.css file.
 
 - `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect Protogen to ignore. 
-
 
 Dependencies
 ------------
@@ -83,6 +82,8 @@ The root element of the XML is "Protocol". It must be present for ProtoGen to ge
 The Protocol tag supports the following attributes:
 
 - `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink". This attribute is mandatory, all other Protcol attributes are optional.
+
+- `title` : The title of the protocol. This is used as the title for the first paragraph in the documentation output. If title is not given then the title of the first paragraph will be `name` + "Protocol".
 
 - `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any objects which have their own `file` attribute.
 
@@ -194,6 +195,8 @@ Enum tag attributes:
   
 - `name` : gives the typedef name of the enumeration
 
+- `title` : The name of the enumeration used in the documentation output. If title is not given then `name` is used.
+
 - `file` : Optional attribute that gives the header file name that will be used for this enumeration. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. Protogen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
@@ -211,6 +214,8 @@ Enum tag attributes:
 The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. Attributes of the Value subtag are:
 
 - `name` : gives the name of the enumeration element. This is the name that will be referenced in code.
+
+- `title` : The name of the enumeration element in the documentation output. If title is not given then `name` is used.
 
 - `value` : is an optional attribute that sets the value of this enumeration element. If value is left out the element will get its value in the normal C language way (by incrementing from the previous element, or starting at 0). Note that non numeric values may be used, as long as those strings are resolved by an include directive or previous enumeration.
 
@@ -249,6 +254,8 @@ which produces this output:
 Structure tag Attributes:
 
 - `name` : Gives the name of the structure. The structure typename is `prefix + name + _t`. In this case the structure typename is `Date_t`.
+
+- `title` : The name of the structure in the documentation output. If title is not given then `prefix + name + _t` is used.
 
 - `file` : Gives the name of the source and header file name. If this is ommitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) then the relevant data are appended to that file.
 
@@ -289,6 +296,8 @@ The Packet tag is used to define all the code to encode and decode one packet of
 Packet tag attributes:
   
 - `name` : The same as the name attribute of a structure.
+
+- `title` : The same as the title attribute of a structure.
 
 - `ID` : gives the identifying value of the packet. This can be any resolvable string, though typically it will be an element of an enumeration. If the ID attribute is missing the all-caps name of the packet is used as the ID. In some cases multiple packets may be identical except for the identifier. It is possible to simply define multiple packets in the XML, however a better solution is to specify multiple identifiers by using spaces or commas to delimit the identifers in the ID attribute. If multiple identifiers are given the encode function is changed so the caller provides the desired id. In addition the decode function is changed so that any of the given identifiers can be used for a successful packet decode.
 
@@ -354,6 +363,8 @@ Data subtag attributes:
 
 - `name` : The name of the data, not optional (unless `inMemoryType="null"`). This is the name that will be referenced in code.
 
+- `title` : The name of the data in the documentation output. If title is not given then `name` is used.
+
 - `inMemoryType` : The type information for the data in memory, not optional (unless `struct` or `enum` attribute is present). Options for the in-memory type are:
     - `unsignedX` or `uintX_t`: is a unsigned integer with X bits, where X can be 8, 16, 32, or 64.
     - `signedX` or `intX_t` : is a signed integer with X bits, where X can be 8, 16, 32, or 64.
@@ -405,6 +416,8 @@ Data subtag attributes:
 - `constant` : is used to specify that this Data in a packet is always encoded with the same value. This is useful for encodings such as key-length-value which require specific a-priori known values to appear before the data. It can also be useful for transmitting constants such as the API of the protocol. If the encoded type is string then the constant value is interpreted as a string literal (i.e. quotes are placed around it), unless the constant value contains "(" and ")", in which case it is interpreted as a function or macro and no quotes are placed around it. If the inMemoryType is null, the constant value will not be decoded, instead the bytes containing the constant value will simply be skipped over in the decode function. In addition the special strings "pi" and "e" are allowed, and will be replaced with their correct values; but only if the entire string can be evaluated numerically. Hence "180/pi" will be evaluated as 57.295779513082321 but "piedpiper" will not be altered.
 
 - `checkConstant` : If set to "true" this attribute affects the interpretation of `constant` in the decode function. When checkConstant is set the decode function evaluates the decoded data and returns a fail state if the value is not equal to the supplied constant.
+
+- `hidden` : is used to specify that this particular data field will *not* appear in the generated documentation markdown.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 

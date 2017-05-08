@@ -24,7 +24,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     attriblist()
 {
     // List of attributes understood by ProtocolStructure
-    attriblist << "name" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden";
+    attriblist << "name" << "title" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden";
 
 }
 
@@ -84,6 +84,7 @@ void ProtocolStructure::parse(void)
 
     // All the attribute we care about
     name = ProtocolParser::getAttribute("name", map);
+    title = ProtocolParser::getAttribute("title", map);
     array = ProtocolParser::getAttribute("array", map);
     variableArray = ProtocolParser::getAttribute("variableArray", map);
     dependsOn = ProtocolParser::getAttribute("dependsOn", map);
@@ -92,6 +93,9 @@ void ProtocolStructure::parse(void)
 
     if(name.isEmpty())
         name = "_unknown";
+
+    if(title.isEmpty())
+        title = name;
 
     testAndWarnAttributes(map, attriblist);
 
@@ -1119,7 +1123,7 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
     outlineString.setNum(outline.at(0));
     for(int i = 1; i < outline.size(); i++)
         outlineString += "." + QString().setNum(outline.at(i));
-    outlineString += ")" + name;
+    outlineString += ")" + title;
     names.append(outlineString);
 
     // Encoding is blank for structures

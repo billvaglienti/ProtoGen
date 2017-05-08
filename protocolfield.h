@@ -145,6 +145,9 @@ public:
     //! Get details needed to produce documentation for this encodable.
     virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
+    //! Return true if this field is hidden from documentation
+    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
 
@@ -206,6 +209,8 @@ protected:
     QStringList extraInfoValues;
 
     ProtocolField* prevField;   //!< Pointer to the previous protocol field, or NULL if none
+
+    bool hidden;                //!< Indicates if this field is hidden from documentation
 
     //! Extract the type information from the type string
     void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);

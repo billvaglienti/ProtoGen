@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" prefix="" file="linkcode" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
+<Protocol name="Demolink" title="Demonstration of protogen" prefix="" file="linkcode" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
 "This is an demonstration protocol definition. This file demonstrates most things
 that the ProtoGen application can do regarding automatic protocol packing/upacking
 code generation.
@@ -22,7 +22,7 @@ interpretation
 
     <Documentation name="Enumerations" paragraph="1"/>
 
-    <Enum name="packetIds" comment="The list of packet identifiers" description="even more stuff!">
+    <Enum name="packetIds" title="Packet identifiers" comment="The list of packet identifiers" description="even more stuff!">
         <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
@@ -43,8 +43,8 @@ interpretation
     </Enum>
 
     <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">
-        <Value name="X"/>
-        <Value name="Y"/>
+        <Value name="X" title="X-RAY"/>
+        <Value name="Y" title="Y-RAY"/>
         <Value name="Z"/>
         <Value name="N3D"/>
     </Enum>
@@ -79,7 +79,7 @@ interpretation
         <Data name="length" inMemoryType="unsigned8" comment="Number of data bytes in the packet"/>
         <Data name="pkttype" inMemoryType="unsigned8" comment="Packet type identifier"/>
         <Data name="data" inMemoryType="unsigned8" array="TEST_PKT_MAX_DATA+2" comment="Packet data space, plus 2 bytes checksum"/>
-        <Data name="rxstate" inMemoryType="unsigned16" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
+        <Data name="rxstate" inMemoryType="unsigned16" hidden="true" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
     </Structure>
 
     <Packet name="KlvUserData" structureInterface="true" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags"
@@ -111,7 +111,7 @@ interpretation
             <Data name="down" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the Down direction"/>
         </Structure>
 
-        <Data name="ITOW" inMemoryType="unsigned32" comment="GPS time of week in milliseconds"/>
+        <Data name="ITOW" title="Time of week" inMemoryType="unsigned32" comment="GPS time of week in milliseconds"/>
         <Data name="Week" inMemoryType="unsigned16" comment="GPS week number"/>
         <Data name="PDOP" inMemoryType="float32" encodedType="unsigned 8" min = "0" max="25.5" comment="Position dilution of precision"/>
         <Data name="numSvInfo" inMemoryType="unsigned8" comment="The number of space vehicles for which there is data in this structure"/>

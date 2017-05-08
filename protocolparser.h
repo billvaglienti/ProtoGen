@@ -143,6 +143,7 @@ protected:
 
     ProtocolHeaderFile header;   //!< The header file (*.h)
     QString name;   //!< Base name of the protocol
+    QString title;  //!< Title name of the protocol used in documentation
     QString comment;//!< Comment description of the protocol
     QString version;//!< The version string
     QString api;    //!< The protocol API enumeration

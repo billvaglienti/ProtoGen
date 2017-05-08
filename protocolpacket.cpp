@@ -927,8 +927,10 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
         QString idvalue = id;
 
         // Put an anchor in the identifier line which is the same as the ID. We'll link to it if we can
-        output += "## <a name=\"" + id + "\"></a>" + name + " packet\n";
-        output += "\n";
+        if(title == name)
+            output += "## <a name=\"" + id + "\"></a>" + name + " packet\n\n";
+        else
+            output += "## <a name=\"" + id + "\"></a>" + title + "\n\n";
 
         if(!comment.isEmpty())
         {
@@ -951,8 +953,10 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
     else
     {
         // Packet name heading
-        output += "## " + name + " packet\n";
-        output += "\n";
+        if(title == name)
+            output += "## " + name + " packet\n\n";
+        else
+            output += "## " + title + "\n\n";
 
         if(!comment.isEmpty())
         {
@@ -960,7 +964,7 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
             output += "\n";
         }
 
-        output += "This packet supports multiple identifiers\n";
+        output += "This packet supports multiple identifiers.\n";
         output += "\n";
         for(int i= 0; i < ids.count(); i++)
         {
@@ -1094,7 +1098,7 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
         output += "\n";
 
         // Table caption
-        output += "[" + name + " packet bytes]\n";
+        output += "[" + title + " packet bytes]\n";
 
         // Table header, notice the column markers lead and follow. We have to do this for merged cells
         output +=  "| ";

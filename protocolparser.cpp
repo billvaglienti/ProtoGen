@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.9.6.a";
+const QString ProtocolParser::genVersion = "1.9.7.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -136,6 +136,9 @@ bool ProtocolParser::parse(QString filename, QString path)
         return false;
     }
 
+    // This is just used for documentation
+    title = docElem.attribute("title").trimmed();
+
     // Protocol support options specified in the xml
     QDomNamedNodeMap map = docElem.attributes();
     support.parse(map);
@@ -144,7 +147,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     QStringList attriblist = support.getAttriblist();
 
     // and the ones we understand
-    attriblist << "name" << "api" << "version" << "comment";
+    attriblist << "name" << "title" << "api" << "version" << "comment";
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -1033,7 +1036,10 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     file.write("</style>\n");
 
     file.write("\n");
-    file.write("# " + name + " Protocol\n");
+    if(title.isEmpty())
+        file.write("# " + name + " Protocol\n");
+    else
+        file.write("# " + title + "\n");
     file.write("\n");
 
     if(!comment.isEmpty())
@@ -1044,13 +1050,13 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     if(!version.isEmpty())
     {
-        file.write(name + " Protocol version is " + version + ".\n");
+        file.write(title + " Protocol version is " + version + ".\n");
         file.write("\n");
     }
 
     if(!api.isEmpty())
     {
-        file.write(name + " Protocol API is " + api + ".\n");
+        file.write(title + " Protocol API is " + api + ".\n");
         file.write("\n");
     }
 

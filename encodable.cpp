@@ -70,6 +70,7 @@ void Encodable::clear(void)
 {
     typeName.clear();
     name.clear();
+    title.clear();
     comment.clear();
     array.clear();
     variableArray.clear();

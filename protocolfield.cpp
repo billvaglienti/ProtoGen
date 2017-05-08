@@ -184,7 +184,8 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupp
     overridesPrevious(false),
     inMemoryType(supported),
     encodedType(supported),
-    prevField(0)
+    prevField(0),
+    hidden(false)
 {
 }
 
@@ -213,6 +214,7 @@ void ProtocolField::clear(void)
     prevField = 0;
     extraInfoNames.clear();
     extraInfoValues.clear();
+    hidden = false;
 
 }// ProtocolField::clear
 
@@ -231,8 +233,6 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
 
     if(prevField == NULL)
         return;
-
-
 
     // Are we the start of part of a new bitfield group (or are we not a bitfield at all)?
     // Which means the previous field terminates that group (if any)
@@ -631,6 +631,7 @@ void ProtocolField::parse(void)
 
     // Tell the user of attribute problems
     testAndWarnAttributes(map, QStringList() << "name"
+                                             << "title"
                                              << "inMemoryType"
                                              << "encodedType"
                                              << "struct"
@@ -650,7 +651,8 @@ void ProtocolField::parse(void)
                                              << "Units"
                                              << "Range"
                                              << "Notes"
-                                             << "bitfieldGroup");
+                                             << "bitfieldGroup"
+                                             << "hidden");
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -660,6 +662,8 @@ void ProtocolField::parse(void)
 
         QString attrname = attr.name();
 
+        if(attrname.compare("title", Qt::CaseInsensitive) == 0)
+            title = attr.value().trimmed();
         if(attrname.compare("inMemoryType", Qt::CaseInsensitive) == 0)
             memoryTypeString = attr.value().trimmed();
         else if(attrname.compare("encodedType", Qt::CaseInsensitive) == 0)
@@ -709,14 +713,18 @@ void ProtocolField::parse(void)
         }
         else if(attrname.compare("bitfieldGroup", Qt::CaseInsensitive) == 0)
             bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
+        else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
+            hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
 
     }// for all attributes
-
 
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
         emitWarning("Data tag without a name: " + e.text());
     }
+
+    if(title.isEmpty())
+        title = name;
 
     // maybe its an enum or a external struct?
     if(memoryTypeString.isEmpty())
@@ -1581,7 +1589,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
     QString description;
     QString maxEncodedLength = encodedLength.maxEncodedLength;
 
-    if(encodedType.isNull)
+    if(encodedType.isNull || hidden)
         return;
 
     // See if we can replace any enumeration names with values
@@ -1639,10 +1647,10 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
     if(inMemoryType.isEnum)
     {
         // Link to the enumeration
-        outlineString += ")[" + name +"](#" + enumName + ")";
+        outlineString += ")[" + title +"](#" + enumName + ")";
     }
     else
-        outlineString += ")" + name;
+        outlineString += ")" + title;
 
     names.append(outlineString);
 

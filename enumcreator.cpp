@@ -48,6 +48,7 @@ void EnumElement::parse()
 
     testAndWarnAttributes(map, QStringList()
                           << "name"
+                          << "title"
                           << "lookupName"
                           << "value"
                           << "comment"
@@ -56,6 +57,7 @@ void EnumElement::parse()
                           << "ignoreLookup");
 
     name = ProtocolParser::getAttribute("name", map);
+    title = ProtocolParser::getAttribute("title", map);
     lookupName = ProtocolParser::getAttribute("lookupName", map);
     value = ProtocolParser::getAttribute("value", map);
     comment = ProtocolParser::getAttribute("comment", map);
@@ -177,6 +179,7 @@ void EnumCreator::parse(void)
     // Tell the user of any problems in the attributes
     testAndWarnAttributes(map, QStringList()
                           << "name"
+                          << "title"
                           << "comment"
                           << "description"
                           << "hidden"
@@ -185,6 +188,7 @@ void EnumCreator::parse(void)
                           << "file");
 
     // Go get the rest of the attributes
+    title = ProtocolParser::getAttribute("title", map);
     description = ProtocolParser::getAttribute("description", map);
     prefix = ProtocolParser::getAttribute("prefix", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
@@ -469,13 +473,27 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             QString linkText;
 
             // Mark name as code, with or without a link to an anchor elsewhere
-            if(link)
+            if(element.title.isEmpty())
             {
-                linkText = "[`" + element.getName() + "`](#" + element.getName() + ")";
+                if(link)
+                {
+                    linkText = "[`" + element.getName() + "`](#" + element.getName() + ")";
+                }
+                else
+                {
+                    linkText = "`" + element.getName() + "`";
+                }
             }
             else
             {
-                linkText = "`" + element.getName() + "`";
+                if(link)
+                {
+                    linkText = "[" + element.title + "](#" + element.getName() + ")";
+                }
+                else
+                {
+                    linkText = element.title;
+                }
             }
 
             codeNameList.append(linkText);
@@ -487,7 +505,12 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
 
         // The outline paragraph
         if(global)
-            output += "## " + name + " enumeration\n\n";
+        {
+            if(title.isEmpty())
+                output += "## " + name + " enumeration\n\n";
+            else
+                output += "## " + title + "\n\n";
+        }
 
         // commenting for this field
         if(!comment.isEmpty())
@@ -505,7 +528,7 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         }
 
         // Table caption, with an anchor for the enumeration name
-        output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
+        output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
 
         // Table header
         output += "| ";
@@ -538,7 +561,7 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
                 continue;
 
             output += "| ";
-            output += spacedString(element.getName(), firstColumnSpacing);
+            output += spacedString(codeNameList.at(i), firstColumnSpacing);
             output += " | ";
             output += spacedString(element.number, secondColumnSpacing);
             output += " | ";

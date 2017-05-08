@@ -54,6 +54,7 @@ public:
     static const QString TAB_IN;
 
     QString name;           //!< The name of this encodable
+    QString title;          //!< The title of this encodable (used for documentation)
     QString comment;        //!< The comment that goes with this encodable
 
 protected:
