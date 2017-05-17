@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.9.7.b";
+const QString ProtocolParser::genVersion = "1.9.8.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -370,18 +370,26 @@ bool ProtocolParser::parse(QString filename, QString path)
         fileNameList.append("fielddecode.c");
         filePathList.append(support.outputpath);
 
+        // Copy the resource files
+        // This is where the files are stored in the resources
+        QString sourcePath = ":/files/prebuiltSources/";
+
         if(support.bitfield)
         {
             fileNameList.append("bitfieldspecial.h");
             filePathList.append(support.outputpath);
             fileNameList.append("bitfieldspecial.c");
             filePathList.append(support.outputpath);
-            ProtocolBitfield(support).generate();
-        }
 
-        // Copy the resource files
-        // This is where the files are stored in the resources
-        QString sourcePath = ":/files/prebuiltSources/";
+            //#define HAND_CODED_BITFIELD
+
+            #ifdef HAND_CODED_BITFIELD
+            QFile::copy(sourcePath + "bitfieldspecial.c", support.outputpath + ProtocolFile::tempprefix + "bitfieldspecial.c");
+            QFile::copy(sourcePath + "bitfieldspecial.h", support.outputpath + ProtocolFile::tempprefix + "bitfieldspecial.h");
+            #else
+            ProtocolBitfield(support).generate();
+            #endif
+        }
 
         if(support.specialFloat)
         {
