@@ -16,7 +16,7 @@
  *        will be incremented as needed.
  * \param numbits is the number of bits in value to encode
  */
-void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits)
+void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     // The maximum value that can be stored in a unsigned int
     unsigned int max = UINT_MAX;
@@ -44,14 +44,14 @@ void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcoun
  *        will be incremented as needed.
  * \param numbits is the number of bits in value to encode
  */
-void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits)
+void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     // Bits are encoded left-to-right from most-significant to least-significant.
     // The least significant bits are moved first, as that allows us to keep the
     // shifts to 8 bits or less, which some compilers need.
 
     // The value of the bit count after moving all the bits
-    int bitoffset = (*bitcount) + numbits;
+    int bitoffset = bitcount + numbits;
 
     // The byte offset of the least significant block of 8 bits to move
     int byteoffset = (bitoffset-1) >> 3;
@@ -60,7 +60,7 @@ void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int
     int remainder = bitoffset & 0x07;
 
     // If these are the first bits going in this byte, make sure the byte is zero
-    if((*bitcount) == 0)
+    if(bitcount == 0)
         bytes[(*index)] = 0;
 
     // Zero the last byte, as we may not be writing a full 8 bits there
@@ -83,14 +83,9 @@ void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int
         // Discard these bits, we have encoded them
         numbits -= remainder;
         value = value >> remainder;
-
-        // The new value of bitcount to return to the caller
-        // for subsequent bitfield encodings
-        (*bitcount) = remainder;
     }
     else
     {
-        (*bitcount) = 0; // no remainder bits, aligned on byte boundary
         (*index)++;      // This byte will be completed
     }
 
@@ -151,35 +146,31 @@ unsigned int float64ScaledToBitfield(double value, double min, double scaler)
  * \param numbits is the number of bits to pull from the byte stream
  * \return the decoded unsigned bitfield integer
  */
-unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits)
+unsigned int decodeBitfield(const uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     unsigned int value = 0;
     int bitstomove;
-    int count = (*bitcount);
     uint8_t byte;
 
     // Handle any leading bits
-    if(count > 0)
+    if(bitcount > 0)
     {
         // The current byte we are operating on
         byte = bytes[*index];
 
         // Remove any left most bits that we have already decoded
-        byte = byte << count;
+        byte = byte << bitcount;
 
         // Put the remaining bits back in least significant position
-        byte = byte >> count;
+        byte = byte >> bitcount;
 
         // Number of bits in the current byte that we could move
-        bitstomove = 8 - count;
+        bitstomove = 8 - bitcount;
 
         if(bitstomove > numbits)
         {
             // Using only some of the remaining bits
             value = byte >> (bitstomove - numbits);
-
-            // Keep track of bit location for caller
-            (*bitcount) = count + numbits;
 
             // Nothing more to do, (*index) not incremented
             return value;
@@ -191,9 +182,6 @@ unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int
 
             // Keep track of bytes
             (*index)++;
-
-            // bitcount has reached byte boundary
-            (*bitcount) = 0;
 
             // Keep track of the bits we have decoded
             numbits -= bitstomove;
@@ -226,9 +214,6 @@ unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int
 
         // We keep the most significant bits
         value |= (byte >> (8 - numbits));
-
-        // Keep track of bit location for caller
-        (*bitcount) += numbits;
     }
 
     return value;
@@ -275,7 +260,7 @@ double float64ScaledFromBitfield(unsigned int value, double min, double invscale
  *        will be incremented as needed.
  * \param numbits is the number of bits in value to encode
  */
-void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int* bitcount, int numbits)
+void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     // The maximum value that can be stored in a uint64_t
     uint64_t max = UINT64_MAX;
@@ -303,14 +288,14 @@ void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int* bitcoun
  *        will be incremented as needed.
  * \param numbits is the number of bits in value to encode
  */
-void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int* bitcount, int numbits)
+void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     // Bits are encoded left-to-right from most-significant to least-significant.
     // The least signficiant bits are moved first, as that allows us to keep the
     // shifts to 8 bits or less, which some compilers need.
 
     // The value of the bit count after moving all the bits
-    int bitoffset = (*bitcount) + numbits;
+    int bitoffset = bitcount + numbits;
 
     // The byte offset of the least significant block of 8 bits to move
     int byteoffset = (bitoffset-1) >> 3;
@@ -319,7 +304,7 @@ void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int
     int remainder = bitoffset & 0x07;
 
     // If these are the first bits going in this byte, make sure the byte is zero
-    if((*bitcount) == 0)
+    if(bitcount == 0)
         bytes[(*index)] = 0;
 
     // Zero the last byte, as we may not be writing a full 8 bits there
@@ -342,14 +327,9 @@ void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int
         // Discard these bits, we have encoded them
         numbits -= remainder;
         value = value >> remainder;
-
-        // The new value of bitcount to return to the caller
-        // for subsequent bitfield encodings
-        (*bitcount) = remainder;
     }
     else
     {
-        (*bitcount) = 0; // no remainder bits, aligned on byte boundary
         (*index)++;      // This byte will be completed
     }
 
@@ -410,35 +390,31 @@ uint64_t float64ScaledToLongBitfield(double value, double min, double scaler)
  * \param numbits is the number of bits to pull from the byte stream
  * \return the decoded unsigned bitfield integer
  */
-uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits)
+uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int bitcount, int numbits)
 {
     uint64_t value = 0;
     int bitstomove;
-    int count = (*bitcount);
     uint8_t byte;
 
     // Handle any leading bits
-    if(count > 0)
+    if(bitcount > 0)
     {
         // The current byte we are operating on
         byte = bytes[*index];
 
         // Remove any left most bits that we have already decoded
-        byte = byte << count;
+        byte = byte << bitcount;
 
         // Put the remaining bytes back in least significant position
-        byte = byte >> count;
+        byte = byte >> bitcount;
 
         // Number of bits in the current byte that we could move
-        bitstomove = 8 - count;
+        bitstomove = 8 - bitcount;
 
         if(bitstomove > numbits)
         {
             // Using only some of the remaining bits
             value = byte >> (bitstomove - numbits);
-
-            // Keep track of bit location for caller
-            (*bitcount) = count + numbits;
 
             // Nothing more to do, (*index) not incremented
             return value;
@@ -450,9 +426,6 @@ uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int* bitcount, int
 
             // Keep track of bytes
             (*index)++;
-
-            // bitcount has reached byte boundary
-            (*bitcount) = 0;
 
             // Keep track of the bits we have decoded
             numbits -= bitstomove;
@@ -485,9 +458,6 @@ uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int* bitcount, int
 
         // We keep the most significant bits
         value |= (byte >> (8 - numbits));
-
-        // Keep track of bit location for caller
-        (*bitcount) += numbits;
     }
 
     return value;
@@ -544,28 +514,28 @@ int testBitfield(void)
     int index = 0;
     int bitcount = 0;
 
-    encodeBitfield(test_t.test1, data, &index, &bitcount, 1);
-    encodeBitfield(test_t.test2, data, &index, &bitcount, 2);
-    encodeBitfield(test_t.test3, data, &index, &bitcount, 3);
-    encodeBitfield(test_t.test12, data, &index, &bitcount, 12);
-    encodeBitfield(test_t.testa, data, &index, &bitcount, 1);
-    encodeBitfield(test_t.testb, data, &index, &bitcount, 2);
-    encodeBitfield(test_t.testc, data, &index, &bitcount, 4);
-    encodeLongBitfield(test_t.testd, data, &index, &bitcount, 36);
+    encodeBitfield(test_t.test1, data, &index, bitcount & 0x7, 1); bitcount += 1;
+    encodeBitfield(test_t.test2, data, &index, bitcount & 0x7, 2); bitcount += 2;
+    encodeBitfield(test_t.test3, data, &index, bitcount & 0x7, 3); bitcount += 3;
+    encodeBitfield(test_t.test12, data, &index, bitcount & 0x7, 12); bitcount += 12;
+    encodeBitfield(test_t.testa, data, &index, bitcount & 0x7, 1); bitcount += 1;
+    encodeBitfield(test_t.testb, data, &index, bitcount & 0x7, 2); bitcount += 2;
+    encodeBitfield(test_t.testc, data, &index, bitcount & 0x7, 4); bitcount += 4;
+    encodeLongBitfield(test_t.testd, data, &index, bitcount & 0x7, 36); bitcount += 36;
 
 
     index = bitcount = 0;
 
     memset(&test_t, 0, sizeof(test_t));
 
-    test_t.test1 = decodeBitfield(data, &index, &bitcount, 1);
-    test_t.test2 = decodeBitfield(data, &index, &bitcount, 2);
-    test_t.test3 = decodeBitfield(data, &index, &bitcount, 3);
-    test_t.test12 = decodeBitfield(data, &index, &bitcount, 12);
-    test_t.testa = decodeBitfield(data, &index, &bitcount, 1);
-    test_t.testb = decodeBitfield(data, &index, &bitcount, 2);
-    test_t.testc = decodeBitfield(data, &index, &bitcount, 4);
-    test_t.testd = decodeLongBitfield(data, &index, &bitcount, 36);
+    test_t.test1 = decodeBitfield(data, &index, bitcount & 0x7, 1); bitcount += 1;
+    test_t.test2 = decodeBitfield(data, &index, bitcount & 0x7, 2); bitcount += 2;
+    test_t.test3 = decodeBitfield(data, &index, bitcount & 0x7, 3); bitcount += 3;
+    test_t.test12 = decodeBitfield(data, &index, bitcount & 0x7, 12); bitcount += 12;
+    test_t.testa = decodeBitfield(data, &index, bitcount & 0x7, 1); bitcount += 1;
+    test_t.testb = decodeBitfield(data, &index, bitcount & 0x7, 2); bitcount += 2;
+    test_t.testc = decodeBitfield(data, &index, bitcount & 0x7, 4); bitcount += 4;
+    test_t.testd = decodeLongBitfield(data, &index, bitcount & 0x7, 36); bitcount += 36;
 
     if(test_t.test1 != 1)
         return 0;

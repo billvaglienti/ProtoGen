@@ -1974,9 +1974,9 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
 
     // We either encode directly to the packet data or to the temporary bytes used for bitfield groups
     if(bitfieldData.groupMember)
-        output += "Bitfield(" + argument + ", bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+        output += "Bitfield(" + argument + ", bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ");\n";
     else
-        output += "Bitfield(" + argument + ", data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ");\n";
+        output += "Bitfield(" + argument + ", data, &byteindex, "  + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ");\n";
 
     // Keep track of the total bits
     *bitcount += encodedType.bits;
@@ -1997,7 +1997,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
             else
                 output += "    bytesToLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
 
-            output += "    bitcount = bitfieldindex = 0;\n\n";
+            output += "    bitfieldindex = 0;\n\n";
 
         }// if terminating a group
         else if((*bitcount) != 0)
@@ -2005,9 +2005,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
             // If bitcount is not modulo 8, then the last byte was still in
             // progress, so increment past that
             if((*bitcount) % 8)
-                output += "    bitcount = 0; byteindex++; // close bit field, go to next byte\n";
-            else
-               output += "    bitcount = 0; // close bit field, byte index already advanced\n";
+                output += "    byteindex++; // close bit field, go to next byte\n";
 
             output += "\n";
 
@@ -2077,16 +2075,16 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     if(bitfieldData.groupMember)
     {
         if((encodedType.bits > 32) && (support.longbitfield))
-            decodestring = "decodeLongBitfield(bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+            decodestring = "decodeLongBitfield(bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
         else
-            decodestring = "decodeBitfield(bitfieldbytes, &bitfieldindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+            decodestring = "decodeBitfield(bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
     }
     else
     {
         if((encodedType.bits > 32) && (support.longbitfield))
-            decodestring = "decodeLongBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+            decodestring = "decodeLongBitfield(data, &byteindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
         else
-            decodestring = "decodeBitfield(data, &byteindex, &bitcount, " + QString().setNum(encodedType.bits) + ")";
+            decodestring = "decodeBitfield(data, &byteindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
     }
 
     // Check for scaled bitfield, which adds to the decode string
@@ -2168,7 +2166,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     {
         if((bitfieldData.groupMember) && (bitfieldData.groupBits > 0))
         {
-            output += "    bitcount = bitfieldindex = 0;\n";
+            output += "    bitfieldindex = 0;\n";
 
         }// if terminating a group
         else if((*bitcount) != 0)
@@ -2176,9 +2174,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
             // If bitcount is not modulo 8, then the last byte was still in
             // progress, so increment past that
             if((*bitcount) % 8)
-                output += "    bitcount = 0; byteindex++; // close bit field, go to next byte\n";
-            else
-               output += "    bitcount = 0; // close bit field, byte index already advanced\n";
+                output += "    byteindex++; // close bit field, go to next byte\n";
 
         }// else if terminating a non-group
 

@@ -735,9 +735,6 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
 
     output += "    int byteindex = *bytecount;\n";
 
-    if(bitfields)
-        output += "    int bitcount = 0;\n";
-
     if(numbitfieldgroupbytes > 0)
     {
         output += "    int bitfieldindex = 0;\n";
@@ -855,9 +852,6 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     output += "{\n";
 
     output += "    int byteindex = *bytecount;\n";
-
-    if(bitfields)
-        output += "    int bitcount = 0;\n";
 
     if(numbitfieldgroupbytes > 0)
     {

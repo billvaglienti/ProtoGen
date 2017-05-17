@@ -422,9 +422,6 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         source.write(TAB_IN + "uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
         source.write(TAB_IN + "int byteindex = 0;\n");
 
-        if(bitfields)
-            source.write(TAB_IN + "int bitcount = 0;\n");
-
         if(numbitfieldgroupbytes > 0)
         {
             source.write(TAB_IN + "int bitfieldindex = 0;\n");
@@ -479,8 +476,6 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(TAB_IN + "int numBytes;\n");
             source.write(TAB_IN + "int byteindex = 0;\n");
             source.write(TAB_IN + "const uint8_t* data;\n");
-            if(bitfields)
-                source.write(TAB_IN + "int bitcount = 0;\n");
 
             if(numbitfieldgroupbytes > 0)
             {
@@ -652,9 +647,6 @@ void ProtocolPacket::createPacketFunctions(void)
             source.write(TAB_IN + "uint8_t* data = get"+ support.protoName + "PacketData(pkt);\n");
             source.write(TAB_IN + "int byteindex = 0;\n");
 
-            if(bitfields)
-                source.write(TAB_IN + "int bitcount = 0;\n");
-
             if(numbitfieldgroupbytes > 0)
             {
                 source.write(TAB_IN + "int bitfieldindex = 0;\n");
@@ -711,9 +703,6 @@ void ProtocolPacket::createPacketFunctions(void)
 
         if(!encodedLength.isZeroLength())
         {
-            if(bitfields)
-                source.write(TAB_IN + "int bitcount = 0;\n");
-
             if(numbitfieldgroupbytes > 0)
             {
                 source.write(TAB_IN + "int bitfieldindex = 0;\n");

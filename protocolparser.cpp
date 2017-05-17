@@ -381,7 +381,7 @@ bool ProtocolParser::parse(QString filename, QString path)
             fileNameList.append("bitfieldspecial.c");
             filePathList.append(support.outputpath);
 
-            //#define HAND_CODED_BITFIELD
+            #define HAND_CODED_BITFIELD
 
             #ifdef HAND_CODED_BITFIELD
             QFile::copy(sourcePath + "bitfieldspecial.c", support.outputpath + ProtocolFile::tempprefix + "bitfieldspecial.c");

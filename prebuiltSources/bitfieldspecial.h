@@ -17,13 +17,13 @@ extern "C" {
 #include <stdint.h>
 
 //! Add a bit field to a byte stream, making sure value bits in numbits
-void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits);
+void encodeBitfield(unsigned int value, uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Add a bit field to a byte stream, value must fit in numbits
-void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int* bitcount, int numbits);
+void encodeBitfieldUnchecked(unsigned int value, uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Decode a bit field from a byte stream.
-unsigned int decodeBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits);
+unsigned int decodeBitfield(const uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Scale a float64 to the base integer type used for bitfield
 unsigned int float64ScaledToBitfield(double value, double min, double scaler);
@@ -40,13 +40,13 @@ float float32ScaledFromBitfield(unsigned int value, float min, float invscaler);
 #ifdef UINT64_MAX
 
 //! Add a bit field to a byte stream, making sure value fits in numbits
-void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int* bitcount, int numbits);
+void encodeLongBitfield(uint64_t value, uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Add a bit field to a byte stream, value must fit in numbits
-void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int* bitcount, int numbits);
+void encodeLongBitfieldUnchecked(uint64_t value, uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Decode a bit field from a byte stream.
-uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int* bitcount, int numbits);
+uint64_t decodeLongBitfield(const uint8_t* bytes, int* index, int bitcount, int numbits);
 
 //! Scale a float64 to a 64 bit integer type used for bitfield
 uint64_t float64ScaledToLongBitfield(double value, double min, double scaler);
