@@ -40,6 +40,18 @@ protected:
     //! Generate the decode source file
     bool generateDecodeSource(void);
 
+    //! Strings for the functions that scale floats to bitfields
+    QString generateScaledToBitfield(void);
+
+    //! Strings for the functions that scale floats to bitfields
+    QString generateScaledToLongBitfield(void);
+
+    //! Strings for the functions that scale floats from bitfields
+    QString generateScaledFromBitfield(void);
+
+    //! Strings for the functions that scale floats from bitfields
+    QString generateScaledFromLongBitfield(void);
+
     //! Generate the one line brief comment for the encode function
     QString briefEncodeComment(int type, int length, bool bigendian, bool Unsigned);
 

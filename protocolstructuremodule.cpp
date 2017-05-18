@@ -192,9 +192,6 @@ void ProtocolStructureModule::parse(void)
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
 
-    if(support.bitfield)
-        source.writeIncludeDirective("bitfieldspecial.h");
-
     source.writeIncludeDirective("fielddecode.h");
     source.writeIncludeDirective("fieldencode.h");
     source.writeIncludeDirective("scaleddecode.h");

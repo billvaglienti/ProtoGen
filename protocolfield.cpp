@@ -3,6 +3,7 @@
 #include "shuntingyard.h"
 #include "enumcreator.h"
 #include "protocolstructure.h"
+#include "protocolbitfield.h"
 #include <QString>
 #include <QDomElement>
 #include <math.h>
@@ -769,6 +770,7 @@ void ProtocolField::parse(void)
     if(inMemoryType.isNull)
     {
         // Null types are not in memory, therefore cannot have defaults or variable arrays
+        // ??? come back here
         variableArray.clear();
         variable2dArray.clear();
         defaultString.clear();
@@ -1897,6 +1899,159 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 }// ProtocolField::getSetToDefaultsString
 
 
+//! True if this encodable has a direct child that uses bitfields
+bool ProtocolField::usesBitfields(void) const
+{
+    return (encodedType.isBitfield && !isNotEncoded());
+}
+
+
+//! True if this field has a smaller encoded size than in memory size, which requires a size check
+bool ProtocolField::requiresSizeCheck(void) const
+{
+    // No size check needed if nothing is in memory or if not encoded
+    if(inMemoryType.isNull || encodedType.isNull)
+        return false;
+
+    // If we are encoding a constant, then it's up to the user to make sure it fits
+    if(!constantString.isEmpty())
+        return false;
+
+    // Different in-memory versus encoded bit size, requires size check
+    if(inMemoryType.bits > encodedType.bits)
+        return true;
+
+    // If the in memory type is a float, and the encoded type is not then it
+    // needs a size check even if the in memory bits are less than the encoded bits
+    if(inMemoryType.isFloat && !encodedType.isFloat)
+        return true;
+
+    return false;
+
+}
+
+//! True if this bitfield crosses a byte boundary
+bool ProtocolField::bitfieldCrossesByteBoundary(void) const
+{
+    if(!usesBitfields())
+        return false;
+
+    // No byte boundary crossing if only one bit
+    if(encodedType.bits <= 1)
+        return false;
+
+    // Greater than 8 bits crosses byte boundary for sure
+    if(encodedType.bits > 8)
+        return true;
+
+    // To check the in-between cases, we have to check the starting bit count
+    if(((bitfieldData.startingBitCount % 8) + encodedType.bits) > 8)
+        return true;
+
+    return false;
+}
+
+
+//! True if this encodable needs a temporary buffer for its bitfield
+bool ProtocolField::usesEncodeTempBitfield(void) const
+{
+    // We need a temporary bitfield for encode under the following circumstances:
+    // 0) Bitfield length is less than 32 bits AND
+    // 1) The in-memory type uses more bits than the encoded type, requiring a size check OR
+    // 2) The encoded bitfield crosses a byte boundary
+    if(usesBitfields() && (encodedType.bits <= 32))
+    {
+        // Different in-memory versus encoded bit size, requires size check
+        if(requiresSizeCheck())
+            return true;
+
+        // If we are encoding as a constant, we'll need a temporary
+        if(!constantString.isEmpty())
+            return true;
+
+        return bitfieldCrossesByteBoundary();
+    }
+
+    // If we get here we do not need a temporary variable for the bitfield
+    return false;
+}
+
+
+//! True if this encodable needs a temporary long buffer for its bitfield
+bool ProtocolField::usesEncodeTempLongBitfield(void) const
+{
+    // We need a temporary long bitfield under the following circumstances:
+    // 0) Bitfield length is more than 32 bits AND
+    // 1) The in-memory type uses more bits than the encoded type, requiring a size check OR
+    // 2) The encoded bitfield crosses a byte boundary
+    if(usesBitfields() && (encodedType.bits > 32))
+    {
+        // Different in-memory versus encoded bit size, requires size check
+        if(requiresSizeCheck())
+            return true;
+
+        // If we are encoding as a constant, we'll need a temporary
+        if(!constantString.isEmpty())
+            return true;
+
+        return bitfieldCrossesByteBoundary();
+    }
+
+    // If we get here we do not need a temporary variable for the bitfield
+    return false;
+}
+
+
+//! True if this encodable needs a temporary buffer for its bitfield
+bool ProtocolField::usesDecodeTempBitfield(void) const
+{
+    // We need a temporary bitfield for decode under the following circumstances:
+    // 0) Bitfield length is less than 32 bits AND
+    // 1) The in-memory type is null, and we need to do a constant check
+    // 2) The encoded bitfield crosses a byte boundary
+    if(usesBitfields() && (encodedType.bits <= 32))
+    {
+        // If we checking the constant value, but don't have an in memory type, we'll need a temporary
+        if(inMemoryType.isNull && checkConstant)
+            return true;
+
+        // If we are scaling we need a temporary
+        if(encodedMax != encodedMin)
+            return true;
+
+        return bitfieldCrossesByteBoundary();
+    }
+
+    // If we get here we do not need a temporary variable for the bitfield
+    return false;
+}
+
+
+//! True if this encodable needs a temporary long buffer for its bitfield
+bool ProtocolField::usesDecodeTempLongBitfield(void) const
+{
+    // We need a temporary long bitfield under the following circumstances:
+    // 0) Bitfield length is more than 32 bits AND
+    // 1) The in-memory type is null, and we need to do a constant check
+    // 2) The encoded bitfield crosses a byte boundary
+    if(usesBitfields() && (encodedType.bits > 32))
+    {
+        // If we checking the constant value, but don't have an in memory type, we'll need a temporary
+        if(inMemoryType.isNull && checkConstant)
+            return true;
+
+        // If we are scaling we need a temporary
+        if(encodedMax != encodedMin)
+            return true;
+
+        return bitfieldCrossesByteBoundary();
+    }
+
+    // If we get here we do not need a temporary variable for the bitfield
+    return false;
+}
+
+
 /*!
  * Get the next lines(s) of source coded needed to encode this bitfield field
  * \param bitcount points to the running count of bits in this string of
@@ -1932,7 +2087,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     if(encodedMax > encodedMin)
     {
         // Additional commenting to describe the scaling
-        output += "    // Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+        output += TAB_IN + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
 
         if(encodedType.bits > 32)
         {
@@ -1959,24 +2114,44 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
         argument += ", " + getNumberString(scaler, encodedType.bits);
         argument += ")";
     }
-    else
+
+    // The size check inserts a line, replacing the original argument with a temporary field
+    if(requiresSizeCheck())
     {
+        QString maxvalue = QString().setNum(ProtocolBitfield::maxvalueoffield(encodedType.bits));
+        QString tempname;
+
         if((encodedType.bits > 32) && (support.longbitfield))
-            argument = "(uint64_t)" + argument;
+        {
+            maxvalue += "ULL";
+            tempname = "templongbitfield";
+        }
         else
-            argument = "(unsigned int)" + argument;
+        {
+            tempname = "tempbitfield";
+        }
+
+        // This block makes sure the size does not overflow the bitfield
+        output += TAB_IN + tempname + " = " + argument + ";\n";
+        output += TAB_IN + "if(" + tempname + " > " + maxvalue + ")\n";
+        output += TAB_IN + TAB_IN + tempname + " = " + maxvalue + ";\n\n";
+        argument = tempname;
+    }
+    else if(usesEncodeTempBitfield())
+    {
+        output += TAB_IN + "tempbitfield = (unsigned int)" + argument + ";\n";
+        argument = "tempbitfield";
+    }
+    else if(usesEncodeTempLongBitfield())
+    {
+        output += TAB_IN + "templongbitfield = (uint64_t)" + argument + ";\n";
+        argument = "templongbitfield";
     }
 
-    output += "    encode";
-
-    if((encodedType.bits > 32) && (support.longbitfield))
-        output += "Long";
-
-    // We either encode directly to the packet data or to the temporary bytes used for bitfield groups
     if(bitfieldData.groupMember)
-        output += "Bitfield(" + argument + ", bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ");\n";
+        output += ProtocolBitfield::getEncodeString(TAB_IN, argument, "bitfieldbytes", "bitfieldindex", bitfieldData.startingBitCount, encodedType.bits);
     else
-        output += "Bitfield(" + argument + ", data, &byteindex, "  + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ");\n";
+        output += ProtocolBitfield::getEncodeString(TAB_IN, argument, "data", "byteindex", bitfieldData.startingBitCount, encodedType.bits);
 
     // Keep track of the total bits
     *bitcount += encodedType.bits;
@@ -1990,24 +2165,22 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
 
             output += "\n";
 
-            output += "    // Encode the entire group of bits in one shot\n";
+            output += TAB_IN + "// Encode the entire group of bits in one shot\n";
 
             if(support.bigendian)
-                output += "    bytesToBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+                output += TAB_IN + "bytesToBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
             else
-                output += "    bytesToLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+                output += TAB_IN + "bytesToLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
 
-            output += "    bitfieldindex = 0;\n\n";
+            output += TAB_IN + "bitfieldindex = 0;\n\n";
 
         }// if terminating a group
         else if((*bitcount) != 0)
         {
-            // If bitcount is not modulo 8, then the last byte was still in
-            // progress, so increment past that
-            if((*bitcount) % 8)
-                output += "    byteindex++; // close bit field, go to next byte\n";
+            // Increment our byte counter, 1 to 8 bits should result in 1 byte, 9 to 16 bits in 2 bytes, etc.
+            int bytes = ((*bitcount)+7)/8;
 
-            output += "\n";
+            output += TAB_IN + "byteindex += " + QString().setNum(bytes) + "; // close bit field\n\n";
 
         }// else if terminating a non-group
 
@@ -2034,147 +2207,139 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
 QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
     QString output;
-    QString spacing = "    ";
 
     if(encodedType.isNull)
         return output;
 
-    // If this field has a default value
-    if(defaultEnabled && !defaultString.isEmpty())
-    {
-        // Number of bytes. From 1 to 8 bits is one byte, from 9 to 16 bits is two bytes
-        QString lengthString = QString::number((encodedType.bits + 7)/8);
-
-        output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
-        output += spacing + "    return 1;\n";
-        output += spacing + "else\n";
-        output += spacing + "{\n";
-        spacing += "    ";
-    }
-
     if(bitfieldData.groupStart)
     {
         int num = (bitfieldData.groupBits+7)/8;
-        output += spacing + "// Decode the entire group of bits in one shot\n";
+        output += TAB_IN + "// Decode the entire group of bits in one shot\n";
         if(support.bigendian)
-            output += spacing + "bytesFromBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+            output += TAB_IN + "bytesFromBeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
         else
-            output += spacing + "bytesFromLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
+            output += TAB_IN + "bytesFromLeBytes(bitfieldbytes, data, &byteindex, " + QString::number(num) + ");\n";
 
         output += "\n";
     }
 
     if(!comment.isEmpty())
-        output += spacing + "// " + comment + "\n";
+        output += TAB_IN + "// " + comment + "\n";
 
-    QString constantstring = getConstantString();
-
-    // The actual decode code is the same no matter the trimmings around it
-    QString decodestring;
-
-    if(bitfieldData.groupMember)
+    // Handle the case where we just want to skip some bits
+    if(inMemoryType.isNull && !checkConstant)
     {
-        if((encodedType.bits > 32) && (support.longbitfield))
-            decodestring = "decodeLongBitfield(bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
-        else
-            decodestring = "decodeBitfield(bitfieldbytes, &bitfieldindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
+        // Nothing to do in this case, it all gets handled when the bitfield terminates
     }
     else
     {
-        if((encodedType.bits > 32) && (support.longbitfield))
-            decodestring = "decodeLongBitfield(data, &byteindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
+        QString argument;
+
+        // How we are going to access the field
+        if(usesDecodeTempBitfield())
+            argument = "tempbitfield";
+        else if(usesDecodeTempLongBitfield())
+            argument = "templongbitfield";
+        else if(isStructureMember)
+            argument = "user->" + name;     // Access via structure pointer
         else
-            decodestring = "decodeBitfield(data, &byteindex, " + QString().setNum((*bitcount)%8) + ", " + QString().setNum(encodedType.bits) + ")";
-    }
+            argument = "(*" + name + ")";   // Access via direct pointer
 
-    // Check for scaled bitfield, which adds to the decode string
-    if(encodedMax > encodedMin)
-    {
-        // Additional commenting to describe the scaling
-        output += spacing + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+        if(bitfieldData.groupMember)
+            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, "bitfieldbytes", "bitfieldindex", *bitcount, encodedType.bits);
+        else
+            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, "data", "byteindex", *bitcount, encodedType.bits);
 
-        if(encodedType.bits > 32)
+        // Handle scaled bitfield
+        if((encodedMax > encodedMin) && !inMemoryType.isNull)
         {
-            if(support.longbitfield)
+            // Additional commenting to describe the scaling
+            output += TAB_IN + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+
+            if(isStructureMember)
+                output += TAB_IN + "user->" + name + " = ";    // Access via structure pointer
+            else
+                output += TAB_IN + "(*" + name + ")" + " = ";  // Access via direct pointer
+
+            if(encodedType.bits > 32)
             {
-                if(support.float64)
-                    decodestring = "float64ScaledFromLongBitfield(" + decodestring;
+                if(support.longbitfield)
+                {
+                    if(support.float64)
+                        output += "float64ScaledFromLongBitfield(" + argument;
+                    else
+                        output += "float32ScaledFromLongBitfield(" + argument;
+                }
                 else
-                    decodestring = "float32ScaledFromLongBitfield(" + decodestring;
+                {
+                    if(support.float64)
+                        output += "float64ScaledFromBitfield(" + argument;
+                    else
+                        output += "float32ScaledFromBitfield(" + argument;
+                }
             }
             else
+                output += "float32ScaledFromBitfield(" + argument;
+
+            output += ", " + getNumberString(encodedMin, encodedType.bits);
+            output += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
+            output += ");\n";
+
+            if(isStructureMember)
+                argument = "user->" + name;    // Access via structure pointer
+            else
+                argument = "(*" + name + ")";  // Access via direct pointer
+
+        }// if scaled bitfield
+        else if(!inMemoryType.isNull)
+        {
+            // Do the assignment from the temporary field
+            if(usesDecodeTempBitfield() || usesDecodeTempLongBitfield())
             {
-                if(support.float64)
-                    decodestring = "float64ScaledFromBitfield(" + decodestring;
+                if(isStructureMember)
+                {
+                    // Access via structure pointer
+                    output += TAB_IN + "user->" + name +   " = " + argument + ";\n";
+                    argument = "user->" + name;
+                }
                 else
-                    decodestring = "float32ScaledFromBitfield(" + decodestring;
+                {
+                    // Access via direct pointer
+                    output += TAB_IN + "(*" + name + ")" + " = " + argument + ";\n";
+                    argument = "(*" + name + ")";
+                }
             }
-        }
-        else
-            decodestring = "float32ScaledFromBitfield(" + decodestring;
 
-        decodestring += ", " + getNumberString(encodedMin, encodedType.bits);
-        decodestring += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
-        decodestring += ")";
-    }
-
-    if(inMemoryType.isNull)
-    {
-        if(comment.isEmpty())
-            output += spacing + "// reserved bits\n";
+        }// else if not scaled, but goes in memory
 
         if(checkConstant)
         {
-            output += spacing + "// Decoded value must be " + constantstring + "\n";
-            output += spacing + "if (" + decodestring + " != " + constantstring + ")\n";
-            output += spacing + "    return 0;\n";
+            QString constantstring = getConstantString();
+
+            // Verify the constant value
+            output += TAB_IN + "// Decoded value must be " + constantstring + "\n";
+            output += TAB_IN + "if (" + argument + " != " + constantstring + ")\n";
+            output += TAB_IN + "    return 0;\n";
         }
-        else
-            output += spacing + decodestring + ";\n";
-    }
-    else
-    {
-        QString lhs;
-        if(isStructureMember)
-            lhs = "user->"; // Access via structure pointer
-        else
-            lhs = "*";      // Access via direct pointer
 
-        // we cast here, because the inMemoryType might not be a unsigned int
-        output += spacing + lhs + name + " = (" + typeName + ")" + decodestring + ";\n";
+    }// else if we do something with the decoded value
 
-        if(checkConstant)
-        {
-            output += "\n";
-            output += spacing + "// Decoded value must be " + constantstring + "\n";
-            output += spacing + "if (" + lhs + name + " != " + constantstring + ")\n";
-            output += spacing + "    return 0;\n";
-        }
-    }
-
-    // Close the default block
-    if(defaultEnabled && !defaultString.isEmpty())
-    {
-        // Remove the last four spaces
-        spacing.remove(spacing.size()-4, 4);
-        output += spacing + "}\n";
-    }
-
+    // Keep track of the number of bitfield bits that go by
     *bitcount += encodedType.bits;
 
     if(bitfieldData.lastBitfield)
     {
         if((bitfieldData.groupMember) && (bitfieldData.groupBits > 0))
         {
-            output += "    bitfieldindex = 0;\n";
+            output += TAB_IN + "bitfieldindex = 0;\n";
 
         }// if terminating a group
         else if((*bitcount) != 0)
         {
-            // If bitcount is not modulo 8, then the last byte was still in
-            // progress, so increment past that
-            if((*bitcount) % 8)
-                output += "    byteindex++; // close bit field, go to next byte\n";
+            // Increment our byte counter, 1 to 8 bits should result in 1 byte, 9 to 16 bits in 2 bytes, etc.
+            int bytes = ((*bitcount)+7)/8;
+
+            output += TAB_IN + "byteindex += " + QString().setNum(bytes) + "; // close bit field\n\n";
 
         }// else if terminating a non-group
 
@@ -2977,6 +3142,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 
             // Note how it's not possible to skip a variable amount of space
             output += spacing + "byteindex += " + EncodedLength::collapseLengthString(maxlengthString, true) + ";\n";
+
+            // ?? Handle depends on variable array, and variable2darray
+
         }
 
     }

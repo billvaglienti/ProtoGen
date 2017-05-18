@@ -1,8 +1,8 @@
 #include <QDateTime>
 #include <iostream>
 #include <math.h>
+#include "bitfieldtest.h"
 #include "floatspecial.h"
-#include "bitfieldspecial.h"
 #include "GPS.h"
 #include "Engine.h"
 #include "TelemetryPacket.h"

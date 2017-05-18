@@ -39,7 +39,7 @@ interpretation
         <Value name="ORION_PKT_KLV_USER_DATA3"/>
         <Value name="ORION_PKT_KLV_USER_DATA4" value="0x01 + ORION_PKT_KLV_USER_DATA3"/>
         <Value name="ORION_PKT_KLV_USER_DATA5"/>
-        <Value name="ORION_PKT_KLV_USER_DATA6" value="0b101 + ORION_PKT_KLV_USER_DATA1" comment="Demonstrating that protogen can resolve simple math here"/>
+        <Value name="ORION_PKT_KLV_USER_DATA6" value="5 + ORION_PKT_KLV_USER_DATA1" comment="Demonstrating that protogen can resolve simple math here"/>
     </Enum>
 
     <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">

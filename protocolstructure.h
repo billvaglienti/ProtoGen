@@ -23,34 +23,46 @@ public:
     virtual void parse(void);
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Parse the DOM data for this structures children
     void parseChildren(const QDomElement& field);
 
     //! Determine if this encodable is a primitive, rather than a structure
-    virtual bool isPrimitive(void) const {return false;}
+    virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return false;}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    virtual void getBitfieldGroupNumBytes(int* num) const;
+    virtual void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
 
     //! True if this encodable has a direct child that uses bitfields
-    virtual bool usesBitfields(void ) const {return bitfields;}
+    virtual bool usesBitfields(void ) const Q_DECL_OVERRIDE {return bitfields;}
+
+    //! True if this encodable needs a temporary buffer for its bitfield during encode
+    virtual bool usesEncodeTempBitfield(void) const Q_DECL_OVERRIDE {return usestempencodebitfields;}
+
+    //! True if this encodable needs a temporary buffer for its long bitfield during encode
+    virtual bool usesEncodeTempLongBitfield(void) const Q_DECL_OVERRIDE {return usestempencodelongbitfields;}
+
+    //! True if this encodable needs a temporary buffer for its bitfield during decode
+    virtual bool usesDecodeTempBitfield(void) const Q_DECL_OVERRIDE {return usestempdecodebitfields;}
+
+    //! True if this encodable needs a temporary buffer for its long bitfield during decode
+    virtual bool usesDecodeTempLongBitfield(void) const Q_DECL_OVERRIDE {return usestempdecodelongbitfields;}
 
     //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesEncodeIterator(void) const {return needsEncodeIterator;}
+    virtual bool usesEncodeIterator(void) const Q_DECL_OVERRIDE {return needsEncodeIterator;}
 
     //! True if this encodable has a direct child that needs an iterator
-    virtual bool usesDecodeIterator(void) const {return needsDecodeIterator;}
+    virtual bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return needsDecodeIterator;}
 
     //! True if this encodable has a direct child that needs a 2nd iterator
-    virtual bool uses2ndEncodeIterator(void) const {return needs2ndEncodeIterator;}
+    virtual bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return needs2ndEncodeIterator;}
 
     //! True if this encodable has a direct child that needs a 2nd iterator
-    virtual bool uses2ndDecodeIterator(void) const {return needs2ndDecodeIterator;}
+    virtual bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return needs2ndDecodeIterator;}
 
     //! True if this encodable has a direct child that uses defaults
-    virtual bool usesDefaults(void) const {return defaults;}
+    virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return defaults;}
 
     //! Get the number of fields that are encoded
     int getNumberOfEncodes(void) const;
@@ -122,6 +134,10 @@ protected:
 
     int  numbitfieldgroupbytes; //!< Number of temporary bytes needed by children with bitfield groups
     bool bitfields;             //!< True if this structure uses bitfields
+    bool usestempencodebitfields;     //!< True if this structure uses a temporary bitfield for encoding
+    bool usestempencodelongbitfields; //!< True if this structure uses a temporary long bitfield for encoding
+    bool usestempdecodebitfields;     //!< True if this structure uses a temporary bitfield for decoding
+    bool usestempdecodelongbitfields; //!< True if this structure uses a temporary long bitfield for decoding
     bool needsEncodeIterator;   //!< True if this structure uses arrays iterators on encode
     bool needsDecodeIterator;   //!< True if this structure uses arrays iterators on decode
     bool needs2ndEncodeIterator;//!< True if this structure uses 2nd arrays iterators on encode

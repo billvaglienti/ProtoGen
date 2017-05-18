@@ -228,9 +228,6 @@ void ProtocolPacket::parse(void)
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
 
-    if(support.bitfield)
-        source.writeIncludeDirective("bitfieldspecial.h");
-
     source.writeIncludeDirective("fielddecode.h");
     source.writeIncludeDirective("fieldencode.h");
     source.writeIncludeDirective("scaleddecode.h");
@@ -422,6 +419,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         source.write(TAB_IN + "uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
         source.write(TAB_IN + "int byteindex = 0;\n");
 
+        if(usestempencodebitfields)
+            source.write(TAB_IN + "unsigned int tempbitfield = 0;\n");
+
+        if(usestempencodelongbitfields)
+            source.write(TAB_IN + "uint64_t templongbitfield = 0;\n");
+
         if(numbitfieldgroupbytes > 0)
         {
             source.write(TAB_IN + "int bitfieldindex = 0;\n");
@@ -477,6 +480,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(TAB_IN + "int byteindex = 0;\n");
             source.write(TAB_IN + "const uint8_t* data;\n");
 
+            if(usestempdecodebitfields)
+                source.write(TAB_IN + "unsigned int tempbitfield = 0;\n");
+
+            if(usestempdecodelongbitfields)
+                source.write(TAB_IN + "uint64_t templongbitfield = 0;\n");
+
             if(numbitfieldgroupbytes > 0)
             {
                 source.write(TAB_IN + "int bitfieldindex = 0;\n");
@@ -509,7 +518,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(TAB_IN + "// Verify the packet size\n");
             source.write(TAB_IN + "numBytes = get" + support.protoName + "PacketSize(pkt);\n");
             source.write(TAB_IN + "if(numBytes < get" + support.prefix + name + "MinDataLength())\n");
-            source.write(TAB_IN + "    return 0;\n");
+            source.write(TAB_IN + TAB_IN + "return 0;\n");
             source.write("\n");
             source.write(TAB_IN + "// The raw data from the packet\n");
             source.write(TAB_IN + "data = get" + support.protoName + "PacketDataConst(pkt);\n");
@@ -547,7 +556,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
                 source.makeLineSeparator();
                 source.write(TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n");
                 source.write(TAB_IN + "if(numBytes < byteindex)\n");
-                source.write(TAB_IN + "    return 0;\n");
+                source.write(TAB_IN + TAB_IN + "return 0;\n");
             }
 
             // Now finish the fields (if any defaults)
@@ -590,7 +599,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             }
             source.write(TAB_IN + TAB_IN + "return 0;\n");
             source.write(TAB_IN + "else\n");
-            source.write(TAB_IN + "    return 1;\n");
+            source.write(TAB_IN + TAB_IN + "return 1;\n");
             source.write("}\n");
 
         }// else if no fields to decode
@@ -646,6 +655,12 @@ void ProtocolPacket::createPacketFunctions(void)
         {
             source.write(TAB_IN + "uint8_t* data = get"+ support.protoName + "PacketData(pkt);\n");
             source.write(TAB_IN + "int byteindex = 0;\n");
+
+            if(usestempencodebitfields)
+                source.write(TAB_IN + "unsigned int tempbitfield = 0;\n");
+
+            if(usestempencodelongbitfields)
+                source.write(TAB_IN + "uint64_t templongbitfield = 0;\n");
 
             if(numbitfieldgroupbytes > 0)
             {
@@ -703,6 +718,12 @@ void ProtocolPacket::createPacketFunctions(void)
 
         if(!encodedLength.isZeroLength())
         {
+            if(usestempdecodebitfields)
+                source.write(TAB_IN + "unsigned int tempbitfield = 0;\n");
+
+            if(usestempdecodelongbitfields)
+                source.write(TAB_IN + "uint64_t templongbitfield = 0;\n");
+
             if(numbitfieldgroupbytes > 0)
             {
                 source.write(TAB_IN + "int bitfieldindex = 0;\n");
@@ -1139,7 +1160,7 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
             if(encodings.at(i).isEmpty() && repeats.at(i).isEmpty())
             {
                 output += spacedString("", encodingColumn + repeatColumn);
-                output += "     ||| ";
+                output += TAB_IN + " ||| ";
             }
             else if(encodings.at(i).isEmpty())
             {

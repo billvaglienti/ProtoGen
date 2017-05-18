@@ -15,6 +15,10 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     Encodable(parse, Parent, supported),
     numbitfieldgroupbytes(0),
     bitfields(false),
+    usestempencodebitfields(false),
+    usestempencodelongbitfields(false),
+    usestempdecodebitfields(false),
+    usestempdecodelongbitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
     needs2ndEncodeIterator(false),
@@ -65,6 +69,10 @@ void ProtocolStructure::clear(void)
     // The rest of the metadata
     numbitfieldgroupbytes = 0;
     bitfields = false;
+    usestempencodebitfields = false;
+    usestempencodelongbitfields = false;
+    usestempdecodebitfields = false;
+    usestempdecodelongbitfields = false;
     needsEncodeIterator = false;
     needsDecodeIterator = false;
     needs2ndEncodeIterator = false;
@@ -178,6 +186,9 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
             // matters, its not going to end up in the output
             if(!encodable->isNotEncoded())
             {
+                // Let the new encodable know about the preceding one
+                encodable->setPreviousEncodable(prevEncodable);
+
                 if(encodable->isPrimitive())
                 {
                     if(encodable->overridesPreviousEncodable())
@@ -207,6 +218,18 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     {
                         encodable->getBitfieldGroupNumBytes(&numbitfieldgroupbytes);
                         bitfields = true;
+
+                        if(encodable->usesEncodeTempBitfield())
+                            usestempencodebitfields = true;
+
+                        if(encodable->usesEncodeTempLongBitfield())
+                            usestempencodelongbitfields = true;
+
+                        if(encodable->usesDecodeTempBitfield())
+                            usestempdecodebitfields = true;
+
+                        if(encodable->usesDecodeTempLongBitfield())
+                            usestempdecodelongbitfields = true;
                     }
 
                     if(encodable->usesEncodeIterator())
@@ -349,9 +372,6 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     }
 
                 }// if this field depends on another
-
-                // Let the new encodable know about the preceding one
-                encodable->setPreviousEncodable(prevEncodable);
 
                 // We can only determine bitfield group numBytes after
                 // we have given the encodable a look at its preceding members
@@ -503,7 +523,7 @@ void ProtocolStructure::getIncludeDirectives(QStringList& list) const
  */
 QString ProtocolStructure::getDeclaration(void) const
 {
-    QString output = "    " + typeName + " " + name;
+    QString output = TAB_IN + "" + typeName + " " + name;
 
     if(array.isEmpty())
         output += ";";
@@ -733,19 +753,25 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
 
     output += "{\n";
 
-    output += "    int byteindex = *bytecount;\n";
+    output += TAB_IN + "int byteindex = *bytecount;\n";
+
+    if(usestempencodebitfields)
+        output += TAB_IN + "unsigned int tempbitfield = 0;\n";
+
+    if(usestempencodelongbitfields)
+        output += TAB_IN + "uint64_t templongbitfield = 0;\n";
 
     if(numbitfieldgroupbytes > 0)
     {
-        output += "    int bitfieldindex = 0;\n";
-        output += "    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "int bitfieldindex = 0;\n";
+        output += TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsEncodeIterator)
-        output += "    int i = 0;\n";
+        output += TAB_IN + "int i = 0;\n";
 
     if(needs2ndEncodeIterator)
-        output += "    int j = 0;\n";
+        output += TAB_IN + "int j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -755,7 +781,7 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += "    *bytecount = byteindex;\n";
+    output += TAB_IN + "*bytecount = byteindex;\n";
     output += "\n";
     output += "}// encode" + typeName + "\n";
 
@@ -851,19 +877,25 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
 
     output += "{\n";
 
-    output += "    int byteindex = *bytecount;\n";
+    output += TAB_IN + "int byteindex = *bytecount;\n";
+
+    if(usestempdecodebitfields)
+        output += TAB_IN + "unsigned int tempbitfield = 0;\n";
+
+    if(usestempdecodelongbitfields)
+        output += TAB_IN + "uint64_t templongbitfield = 0;\n";
 
     if(numbitfieldgroupbytes > 0)
     {
-        output += "    int bitfieldindex = 0;\n";
-        output += "    uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "int bitfieldindex = 0;\n";
+        output += TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsDecodeIterator)
-        output += "    int i = 0;\n";
+        output += TAB_IN + "int i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += "    int j = 0;\n";
+        output += TAB_IN + "int j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -873,8 +905,8 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += "    *bytecount = byteindex;\n\n";
-    output += "    return 1;\n";
+    output += TAB_IN + "*bytecount = byteindex;\n\n";
+    output += TAB_IN + "return 1;\n";
     output += "\n";
     output += "}// decode" + typeName + "\n";
 
@@ -895,7 +927,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
 {
     QString output;
     QString access;
-    QString spacing = "    ";
+    QString spacing = TAB_IN + "";
 
     if(!comment.isEmpty())
         output += spacing + "// " + comment + "\n";
@@ -912,7 +944,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
         else
             output += spacing + "if(" + dependsOn + ")\n";
         output += spacing + "{\n";
-        spacing += "    ";
+        spacing += TAB_IN + "";
     }
 
     if(isArray())
@@ -933,7 +965,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
 
         if(is2dArray())
         {
-            spacing += "    ";
+            spacing += TAB_IN + "";
 
             if(variable2dArray.isEmpty())
                 output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
@@ -960,7 +992,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
                 access = "&" + name + "[i]";
         }
 
-        output += spacing + "    encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        output += spacing + TAB_IN + "encode" + typeName + "(data, &byteindex, " + access + ");\n";
     }
     else
     {
@@ -973,7 +1005,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     }
 
     if(!dependsOn.isEmpty())
-        output += "    }\n";
+        output += TAB_IN + "}\n";
 
     return output;
 }
@@ -990,7 +1022,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 {
     QString output;
     QString access;
-    QString spacing = "    ";
+    QString spacing = TAB_IN + "";
 
     // A line between fields
     ProtocolFile::makeLineSeparator(output);
@@ -1005,7 +1037,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         else
             output += spacing + "if(" + dependsOn + ")\n";
         output += spacing + "{\n";
-        spacing += "    ";
+        spacing += TAB_IN + "";
     }
 
     if(isArray())
@@ -1026,26 +1058,26 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         if(is2dArray())
         {
             if(variable2dArray.isEmpty())
-                output += spacing + "    for(j = 0; j < " + array2d + "; j++)\n";
+                output += spacing + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
             else
             {
                 // Variable length array
                 if(isStructureMember)
-                    output += spacing + "    for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                    output += spacing + TAB_IN + "for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
                 else
-                    output += spacing + "    for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+                    output += spacing + TAB_IN + "for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
             }
 
-            output += spacing + "    {\n";
+            output += spacing + TAB_IN + "{\n";
 
             if(isStructureMember)
                 access = "&user->" + name + "[i][j]";
             else
                 access = "&" + name + "[i][j]";
 
-            output += spacing + "        if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
-            output += spacing + "            return 0;\n";
-            output += spacing + "    }\n";
+            output += spacing + TAB_IN + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + TAB_IN + "        return 0;\n";
+            output += spacing + TAB_IN + "}\n";
             output += spacing + "}\n";
         }
         else
@@ -1055,8 +1087,8 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
             else
                 access = "&" + name + "[i]";
 
-            output += spacing + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
-            output += spacing + "        return 0;\n";
+            output += spacing + TAB_IN + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + TAB_IN + "    return 0;\n";
             output += spacing + "}\n";
         }
     }
@@ -1068,11 +1100,11 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
         output += spacing + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
-        output += spacing + "    return 0;\n";
+        output += spacing + TAB_IN + "return 0;\n";
     }
 
     if(!dependsOn.isEmpty())
-        output += "    }\n";
+        output += TAB_IN + "}\n";
 
     return output;
 }

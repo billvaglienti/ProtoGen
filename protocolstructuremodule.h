@@ -4,11 +4,15 @@
 #include "protocolstructure.h"
 #include "protocolfile.h"
 #include "enumcreator.h"
+#include "protocolbitfield.h"
 #include <QString>
 #include <QDomElement>
 
 class ProtocolStructureModule : public ProtocolStructure
 {
+    // We allow ProtocolBitfield to access our protected members
+    friend class ProtocolBitfield;
+
 public:
     //! Construct the structure parsing object, with details about the overall protocol
     ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);

@@ -1,0 +1,14 @@
+<Protocol name="bitfieldtest" comment="Test structure for bitfields">
+
+    <Structure name="bitfieldtest" file="bitfieldtest" comment="A bitfield structure used for testing bitfields in Protogen">
+        <Data name="test1" inMemoryType="bitfield1" comment="A bitfield of length 1"/>
+        <Data name="test2" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
+        <Data name="test3" inMemoryType="unsigned8" encodedType="bitfield3" comment="A bitfield of length 3, whose size must be checked"/>
+        <Data name="test12" inMemoryType="bitfield12" comment="A bitfield of length 12 which crosses a byte boundary"/>
+        <Data name="testa" inMemoryType="bitfield1" comment="A bitfield of length 1"/>
+        <Data name="testb" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
+        <Data name="testc" inMemoryType="bitfield4" comment="A bitfield of length 4"/>
+        <Data name="testd" inMemoryType="bitfield36" comment="A long bitfield that crosses byte boundaries"/>
+    </Structure>
+
+</Protocol>

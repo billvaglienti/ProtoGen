@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.9.7. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 1.9.8. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -105,7 +105,7 @@ The Protocol tag supports the following attributes:
 
 - `supportLongBitfield` : if this attribute is set to `true` then a second set of bitfield support functions will be defined. The Long bitfield functions use the integer type `uint64_t` instead of `unsigned int`. This attribute will be ignored if `supportInt64` or `supportBitfield` are `false`.
 
-- `bitfieldTest` : if this attribute is set to `true` then the bitfield support module will include a test function that can be used to determine if bitfield support is working on your compiler.
+- `bitfieldTest` : if this attribute is set to `true` then Protogen will output a module called "bitfieldtest", which contains a test function that can be used to determine if bitfield support is working on your compiler.
 
 - `supportSpecialFloat` : if this attribute is set to `false` then floating point types less than 32 bits will not be allowed for encoded types.
 
@@ -568,7 +568,7 @@ However the order of the global tags (in the xml) is preserved when the markdown
 Other generated code
 ====================
 
-ProtoGen also creates other files that are not specified by the xml, but are used as helper functions for the generated packet code. These are the modules: bitfieldspecial, floatspecial, fieldencode, fielddecode, scaledencode, scaleddecode. Although these modules are not specified by the xml they are still generated. Much of the code in these modules is tedious and repetitive, so it was ultimatley simpler and less error prone to auto generate it. More importantly automatically generating this code makes it easier for future versions of ProtoGen to take advantage of changes or advances in the routines these modules provide.
+ProtoGen also creates other files that are not specified by the xml, but are used as helper functions for the generated packet code. These are the modules: bitfieldtest, floatspecial, fieldencode, fielddecode, scaledencode, scaleddecode. Although these modules are not specified by the xml they are still generated. Much of the code in these modules is tedious and repetitive, so it was ultimatley simpler and less error prone to auto generate it. More importantly automatically generating this code makes it easier for future versions of ProtoGen to take advantage of changes or advances in the routines these modules provide.
 
 fieldencode and fielddecode
 ---------------------------
@@ -599,14 +599,14 @@ floatspecial also provides routines to determine if a pattern of 32 or 64 bits i
 
 ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to IEEE-754. ProtoGen's assumption of the layout of the `float` and `double` types is only a factor in two cases: 1) if the protocol you specify uses 16 or 24 bit floating point types (i.e. if a conversion between the types is needed) and 2) if a native 32 or 64 bit float type is encoded without scaling by integer, which will trigger the check to determine if the float is valid when it is decoded. If any of your processors do not adhere to the IEEE-754 spec for floating point, do not use 16 or 24 bit floats in your protocol ICD. If you set the protocol attribute `supportSpecialFloat="false"` then the floatspecial module will not be emitted and any reference to float16 or float24 in the protocol will generate a warning and the type will be changed to float32. In addition setting `supportSpecialFloat="false"` will cause ProtoGen to skip the valid float check on decode.
 
-bitfieldspecial
+bitfields
 ---------------
 
-bitfieldspecial provides routines for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` this file will not be output. In addition any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and the long bitfield functions will be used for that bitfield. The normal bitfield support routines use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` a test function will be written into bitfieldspecial which can be used to test the bitfield routines on your compiler.
+Protogen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
 
 Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last. This can be changed by putting the bitfields into a "bitfield group", see the section on bitfield groups for more details.
 
-Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield. The only drawback to this usage case is that ProtoGen will not enforce the minimum or maximum value that can be encoded. The normal scaling routines in scaleencode will check for and handle an overflow or underflow, because those routines know at compile time how many bits are available. Since the bitfield scaling routines do not know at compile time how many bits are being used, adding checks for overflow or underflow would be too burdensome. User beware; if you choose to scale a value to a bitfield you must ensure that the scaled value does not overflow the encoded bits.
+Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield.
 
 Generation of documentation
 ===========================

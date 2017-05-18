@@ -115,6 +115,17 @@ bool ProtocolScaling::generateEncodeHeader(void)
     header.write("#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
 
+    if(support.float64)
+    {
+        header.write("\n");
+        header.write("//! Scale a float64 to the base integer type used for bitfield\n");
+        header.write("unsigned int float64ScaledToBitfield(double value, double min, double scaler);\n");
+    }
+
+    header.write("\n");
+    header.write("//! Scale a float32 to the base integer type used for bitfield\n");
+    header.write("unsigned int float32ScaledToBitfield(float value, float min, float scaler);\n");
+
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
         bool ifdefopened = false;
@@ -130,6 +141,21 @@ bool ProtocolScaling::generateEncodeHeader(void)
                 {
                     ifdefopened = true;
                     header.write("\n#ifdef UINT64_MAX\n");
+
+                    if(support.longbitfield)
+                    {
+                        if(support.float64)
+                        {
+                            header.write("\n");
+                            header.write("//! Scale a float64 to a 64 bit integer type used for bitfield\n");
+                            header.write("uint64_t float64ScaledToLongBitfield(double value, double min, double scaler);\n");
+                        }
+
+                        header.write("\n");
+                        header.write("//! Scale a float32 to a 64 bit integer type used for bitfield\n");
+                        header.write("uint64_t float32ScaledToLongBitfield(float value, float min, float scaler);\n");
+                    }
+
                 }
                 else if((ifdefopened == true) && (length <= 4))
                 {
@@ -188,6 +214,8 @@ bool ProtocolScaling::generateEncodeSource(void)
     source.writeIncludeDirective("fieldencode.h");
     source.write("\n");
 
+    source.write(generateScaledToBitfield());
+
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
         bool ifdefopened = false;
@@ -203,6 +231,8 @@ bool ProtocolScaling::generateEncodeSource(void)
                 {
                     ifdefopened = true;
                     source.write("#ifdef UINT64_MAX\n");
+
+                    source.write(generateScaledToLongBitfield());
                 }
                 else if((ifdefopened == true) && (length <= 4))
                 {
@@ -537,6 +567,200 @@ QString ProtocolScaling::fullEncodeFunction(int type, int length, bool bigendian
 
 
 /*!
+ * Generate the the functions that scale floats to bitfields
+ * \return the function as a string
+ */
+QString ProtocolScaling::generateScaledToBitfield(void)
+{
+    QString function;
+
+    function += "\n";
+    function += "/*!\n";
+    function += " * Scale a float32 to the base integer type used for bitfield\n";
+    function += " * \\param value is the number to scale.\n";
+    function += " * \\param min is the minimum value that can be encoded.\n";
+    function += " * \\param scaler is multiplied by value to create the integer.\n";
+    function += " * \\return (value-min)*scaler.\n";
+    function += " */\n";
+    function += "unsigned int float32ScaledToBitfield(float value, float min, float scaler)\n";
+    function += "{\n";
+    function += "    // scale the number\n";
+    function += "    value = (value - min)*scaler;\n";
+    function += "\n";
+    function += "    // account for fractional truncation\n";
+    function += "    return (unsigned int)(value + 0.5f);\n";
+    function += "}\n";
+    function += "\n";
+
+    if(support.float64)
+    {
+        function += "\n";
+        function += "/*!\n";
+        function += " * Scale a float64 to the base integer type used for bitfield\n";
+        function += " * \\param value is the number to scale.\n";
+        function += " * \\param min is the minimum value that can be encoded.\n";
+        function += " * \\param scaler is multiplied by value to create the integer.\n";
+        function += " * \\return (value-min)*scaler.\n";
+        function += " */\n";
+        function += "unsigned int float64caledToBitfield(double value, double min, double scaler)\n";
+        function += "{\n";
+        function += "    // scale the number\n";
+        function += "    value = (value - min)*scaler;\n";
+        function += "\n";
+        function += "    // account for fractional truncation\n";
+        function += "    return (unsigned int)(value + 0.5);\n";
+        function += "}\n";
+        function += "\n";
+    }
+
+    return function;
+}
+
+
+/*!
+ * Generate the the functions that scale floats to bitfields
+ * \return the function as a string
+ */
+QString ProtocolScaling::generateScaledToLongBitfield(void)
+{
+    QString function;
+
+    function += "\n";
+    function += "/*!\n";
+    function += " * Scale a float32 to the base integer type used for long bitfields\n";
+    function += " * \\param value is the number to scale.\n";
+    function += " * \\param min is the minimum value that can be encoded.\n";
+    function += " * \\param scaler is multiplied by value to create the integer.\n";
+    function += " * \\return (value-min)*scaler.\n";
+    function += " */\n";
+    function += "uint64_t float32ScaledToLongBitfield(float value, float min, float scaler)\n";
+    function += "{\n";
+    function += "    // scale the number\n";
+    function += "    value = (value - min)*scaler;\n";
+    function += "\n";
+    function += "    // account for fractional truncation\n";
+    function += "    return (uint64_t)(value + 0.5f);\n";
+    function += "}\n";
+    function += "\n";
+
+    if(support.float64)
+    {
+        function += "\n";
+        function += "/*!\n";
+        function += " * Scale a float64 to the base integer type used for long bitfields\n";
+        function += " * \\param value is the number to scale.\n";
+        function += " * \\param min is the minimum value that can be encoded.\n";
+        function += " * \\param scaler is multiplied by value to create the integer.\n";
+        function += " * \\return (value-min)*scaler.\n";
+        function += " */\n";
+        function += "uint64_t float64caledToLongBitfield(double value, double min, double scaler)\n";
+        function += "{\n";
+        function += "    // scale the number\n";
+        function += "    value = (value - min)*scaler;\n";
+        function += "\n";
+        function += "    // account for fractional truncation\n";
+        function += "    return (uint64_t)(value + 0.5);\n";
+        function += "}\n";
+        function += "\n";
+    }
+
+    return function;
+
+}// generateScaledToLongBitfield
+
+
+/*!
+ * Generate the the functions that scale floats from bitfields
+ * \return the function as a string
+ */
+QString ProtocolScaling::generateScaledFromBitfield(void)
+{
+    QString function;
+
+    function += "\n";
+    function += "/*!\n";
+    function += " * Inverse scale the bitfield base integer type to a float32\n";
+    function += " * \\param value is the integer number to inverse scale\n";
+    function += " * \\param min is the minimum value that can be represented.\n";
+    function += " * \\param invscaler is multiplied by the integer to create the return value.\n";
+    function += " *        invscaler should be the inverse of the scaler given to the scaling function.\n";
+    function += " * \\return the correctly scaled decoded value. return = min + value*invscaler.\n";
+    function += " */\n";
+    function += "float float32ScaledFromBitfield(unsigned int value, float min, float invscaler)\n";
+    function += "{\n";
+    function += "    return (float)(min + invscaler*value);\n";
+    function += "}\n";
+    function += "\n";
+
+    if(support.float64)
+    {
+        function += "\n";
+        function += "/*!\n";
+        function += " * Inverse scale the bitfield base integer type to a float64\n";
+        function += " * \\param value is the integer number to inverse scale\n";
+        function += " * \\param min is the minimum value that can be represented.\n";
+        function += " * \\param invscaler is multiplied by the integer to create the return value.\n";
+        function += " *        invscaler should be the inverse of the scaler given to the scaling function.\n";
+        function += " * \\return the correctly scaled decoded value. return = min + value*invscaler.\n";
+        function += " */\n";
+        function += "double float64ScaledFromBitfield(unsigned int value, double min, double invscaler)\n";
+        function += "{\n";
+        function += "    return (double)(min + invscaler*value);\n";
+        function += "}\n";
+        function += "\n";
+    }
+
+    return function;
+}
+
+
+/*!
+ * Generate the the functions that scale floats from long bitfields
+ * \return the function as a string
+ */
+QString ProtocolScaling::generateScaledFromLongBitfield(void)
+{
+    QString function;
+
+    function += "\n";
+    function += "/*!\n";
+    function += " * Inverse scale the long bitfield base integer type to a float32\n";
+    function += " * \\param value is the integer number to inverse scale\n";
+    function += " * \\param min is the minimum value that can be represented.\n";
+    function += " * \\param invscaler is multiplied by the integer to create the return value.\n";
+    function += " *        invscaler should be the inverse of the scaler given to the scaling function.\n";
+    function += " * \\return the correctly scaled decoded value. return = min + value*invscaler.\n";
+    function += " */\n";
+    function += "float float32ScaledFromLongBitfield(uint64_t value, float min, float invscaler)\n";
+    function += "{\n";
+    function += "    return (float)(min + invscaler*value);\n";
+    function += "}\n";
+    function += "\n";
+
+    if(support.float64)
+    {
+        function += "\n";
+        function += "/*!\n";
+        function += " * Inverse scale the long bitfield base integer type to a float64\n";
+        function += " * \\param value is the integer number to inverse scale\n";
+        function += " * \\param min is the minimum value that can be represented.\n";
+        function += " * \\param invscaler is multiplied by the integer to create the return value.\n";
+        function += " *        invscaler should be the inverse of the scaler given to the scaling function.\n";
+        function += " * \\return the correctly scaled decoded value. return = min + value*invscaler.\n";
+        function += " */\n";
+        function += "double float64ScaledFromLongBitfield(uint64_t value, double min, double invscaler)\n";
+        function += "{\n";
+        function += "    return (double)(min + invscaler*value);\n";
+        function += "}\n";
+        function += "\n";
+    }
+
+    return function;
+
+}// ProtocolScaling::generateScaledFromLongBitfield
+
+
+/*!
  * Generate the header file for protocols caling
  * \return true if the file is generated.
  */
@@ -558,6 +782,17 @@ bool ProtocolScaling::generateDecodeHeader(void)
     header.write("#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
 
+    if(support.float64)
+    {
+        header.write("\n");
+        header.write("//! Inverse scale the bitfield base integer type to a float64\n");
+        header.write("double float64ScaledFromBitfield(unsigned int value, double min, double invscaler);\n");
+    }
+
+    header.write("\n");
+    header.write("//! Inverse scale the bitfield base integer type to a float32\n");
+    header.write("float float32ScaledFromBitfield(unsigned int value, float min, float invscaler);\n");
+
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
         bool ifdefopened = false;
@@ -573,6 +808,17 @@ bool ProtocolScaling::generateDecodeHeader(void)
                 {
                     ifdefopened = true;
                     header.write("\n#ifdef UINT64_MAX\n");
+
+                    if(support.float64)
+                    {
+                        header.write("\n");
+                        header.write("//! Inverse scale the long bitfield base integer type to a float64\n");
+                        header.write("double float64ScaledFromLongBitfield(uint64_t value, double min, double invscaler);\n");
+                    }
+
+                    header.write("\n");
+                    header.write("//! Inverse scale the long bitfield base integer type to a float32\n");
+                    header.write("float float32ScaledFromLongBitfield(uint64_t value, float min, float invscaler);\n");
                 }
                 else if((ifdefopened == true) && (length <= 4))
                 {
@@ -633,6 +879,8 @@ bool ProtocolScaling::generateDecodeSource(void)
     source.writeIncludeDirective("fielddecode.h");
     source.write("\n");
 
+    source.write(generateScaledFromBitfield());
+
     for(int typeindex = 0; typeindex < fromIndices.size(); typeindex++)
     {
         bool ifdefopened = false;
@@ -648,6 +896,8 @@ bool ProtocolScaling::generateDecodeSource(void)
                 {
                     ifdefopened = true;
                     source.write("#ifdef UINT64_MAX\n");
+
+                    source.write(generateScaledFromLongBitfield());
                 }
                 else if((ifdefopened == true) && (length <= 4))
                 {

@@ -170,22 +170,40 @@ public:
     virtual bool invalidatesPreviousDefault(void) const {return !usesDefaults() && !overridesPrevious;}
 
     //! True if this encodable has a direct child that uses bitfields
-    virtual bool usesBitfields(void) const {return (encodedType.isBitfield && !isNotEncoded());}
+    virtual bool usesBitfields(void) const Q_DECL_OVERRIDE;
+
+    //! True if this field has a smaller encoded size than in memory size, which requires a size check
+    bool requiresSizeCheck(void) const;
+
+    //! True if this bitfield crosses a byte boundary
+    bool bitfieldCrossesByteBoundary(void) const;
+
+    //! True if this encodable needs a temporary buffer for its bitfield during encode
+    virtual bool usesEncodeTempBitfield(void) const Q_DECL_OVERRIDE;
+
+    //! True if this encodable needs a temporary buffer for its long bitfield during encode
+    virtual bool usesEncodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
+
+    //! True if this encodable needs a temporary buffer for its bitfield during decode
+    virtual bool usesDecodeTempBitfield(void) const Q_DECL_OVERRIDE;
+
+    //! True if this encodable needs a temporary buffer for its long bitfield during decode
+    virtual bool usesDecodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    virtual bool usesEncodeIterator(void) const {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
+    virtual bool usesEncodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    virtual bool usesDecodeIterator(void) const {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    virtual bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    virtual bool uses2ndEncodeIterator(void) const {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
+    virtual bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    virtual bool uses2ndDecodeIterator(void) const {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    virtual bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that uses defaults
-    virtual bool usesDefaults(void) const {return (isDefault() && !isNotEncoded());}
+    virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}
 
 protected:
     QString enumName;

@@ -2,9 +2,8 @@
     <qresource prefix="/files">
         <file>prebuiltSources/floatspecial.c</file>
         <file>prebuiltSources/floatspecial.h</file>
-        <file>prebuiltSources/bitfieldspecial.c</file>
-        <file>prebuiltSources/bitfieldspecial.h</file>
         <file>prebuiltSources/Doxyfile</file>
         <file>prebuiltSources/markdown.css</file>
+        <file>prebuiltSources/bitfieldtest.xml</file>
     </qresource>
 </RCC>

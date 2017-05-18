@@ -374,23 +374,6 @@ bool ProtocolParser::parse(QString filename, QString path)
         // This is where the files are stored in the resources
         QString sourcePath = ":/files/prebuiltSources/";
 
-        if(support.bitfield)
-        {
-            fileNameList.append("bitfieldspecial.h");
-            filePathList.append(support.outputpath);
-            fileNameList.append("bitfieldspecial.c");
-            filePathList.append(support.outputpath);
-
-            #define HAND_CODED_BITFIELD
-
-            #ifdef HAND_CODED_BITFIELD
-            QFile::copy(sourcePath + "bitfieldspecial.c", support.outputpath + ProtocolFile::tempprefix + "bitfieldspecial.c");
-            QFile::copy(sourcePath + "bitfieldspecial.h", support.outputpath + ProtocolFile::tempprefix + "bitfieldspecial.h");
-            #else
-            ProtocolBitfield(support).generate();
-            #endif
-        }
-
         if(support.specialFloat)
         {
             fileNameList.append("floatspecial.h");
@@ -402,6 +385,17 @@ bool ProtocolParser::parse(QString filename, QString path)
             QFile::copy(sourcePath + "floatspecial.h", support.outputpath + ProtocolFile::tempprefix + "floatspecial.h");
         }
 
+    }
+
+    // Code for testing bitfields
+    if(support.bitfieldtest && support.bitfield)
+    {
+        ProtocolBitfield::generatetest(this, support);
+
+        fileNameList.append("bitfieldtest.h");
+        filePathList.append(support.outputpath);
+        fileNameList.append("bitfieldtest.c");
+        filePathList.append(support.outputpath);
     }
 
     if(!nomarkdown)

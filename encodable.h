@@ -112,8 +112,20 @@ public:
     //! Get the maximum number of temporary bytes needed for a bitfield group
     virtual void getBitfieldGroupNumBytes(int* num) const {}
 
-    //! True if this encodable has a direct child that uses bitfields
+    //! True if this encodable uses bitfields or has a child that does
     virtual bool usesBitfields(void ) const = 0;
+
+    //! True if this encodable needs a temporary buffer for its bitfield during encode
+    virtual bool usesEncodeTempBitfield(void) const {return false;}
+
+    //! True if this encodable needs a temporary buffer for its bitfield during encode
+    virtual bool usesEncodeTempLongBitfield(void) const {return false;}
+
+    //! True if this encodable needs a temporary buffer for its bitfield during decode
+    virtual bool usesDecodeTempBitfield(void) const {return false;}
+
+    //! True if this encodable needs a temporary buffer for its bitfield during decode
+    virtual bool usesDecodeTempLongBitfield(void) const {return false;}
 
     //! True if this encodable has a direct child that needs an iterator for encoding
     virtual bool usesEncodeIterator(void) const = 0;

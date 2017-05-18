@@ -22,7 +22,6 @@ QMAKE_CFLAGS += -Wall
 
 
 SOURCES += main.cpp \
-    bitfieldspecial.c \
     Engine.c \
     fielddecode.c \
     fieldencode.c \
@@ -32,11 +31,11 @@ SOURCES += main.cpp \
     scaledencode.c \
     TelemetryPacket.c \
     linkcode.c \
-    packetinterface.c
+    packetinterface.c \
+    bitfieldtest.c
 
 HEADERS += \
     indices.h \
-    bitfieldspecial.h \
     DemolinkProtocol.h \
     Engine.h \
     fielddecode.h \
@@ -48,7 +47,8 @@ HEADERS += \
     TelemetryPacket.h \
     linkcode.h \
     packetinterface.h \
-    definitions/EngineDefinitions.hpp
+    definitions/EngineDefinitions.hpp \
+    bitfieldtest.h
 
 OTHER_FILES += \
     Doxyfile
