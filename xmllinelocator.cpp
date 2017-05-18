@@ -1,5 +1,6 @@
 #include "xmllinelocator.h"
 #include <QStringList>
+#include <iostream>
 
 
 /*!
@@ -182,14 +183,23 @@ int XMLContent::getMatchingLineNumber(const QStringList& names, int level) const
  * locator to parse the xml, building a tree of xml contents with corresponding
  * line numbers
  * \param text is the raw xml text
+ * \param path is the path to the file that supplied the text
+ * \param file is the name of the file that supplied the text
+ * \param topname can be used to override the top level name of the hierarchy
  */
-void XMLLineLocator::setXMLContents(QString text)
+void XMLLineLocator::setXMLContents(QString text, QString path, QString file, QString topname)
 {
     // The first character in a string is index 0
     int startindex = 0;
 
     // The first line of a file is line "1"
     int linenumber = 1;
+
+    // Remember the path
+    inputpath = path;
+
+    // And the file
+    inputfile = file;
 
     // Convert the line endings
     text.replace("\r\n", "\n");
@@ -208,7 +218,7 @@ void XMLLineLocator::setXMLContents(QString text)
                 if(startindex > 0)
                     startindex+=2;
                 else
-                    return;
+                    break;
             }
             else
             {
@@ -216,7 +226,7 @@ void XMLLineLocator::setXMLContents(QString text)
                 contents.setXMLContents(text, startindex, linenumber);
 
                 // We're done, we just needed to find the opener
-                return;
+                break;
             }
         }
         else if(character == '\n')
@@ -225,6 +235,10 @@ void XMLLineLocator::setXMLContents(QString text)
         }
 
     }// while looking for the opening tag
+
+    // Override the top level name
+    if(!topname.isEmpty())
+        contents.overrideName(topname);
 
 }// XMLLineLocator::setXMLContents
 
@@ -240,5 +254,28 @@ int XMLLineLocator::getLineNumber(QString hierarchicalName) const
     return contents.getMatchingLineNumber(hierarchicalName.split(":"), 0);
 
 }// XMLLineLocator::getLineNumber
+
+
+/*!
+ * Output a warning including file path, name, and line number information
+ * \param hierarchicalName is the name of the object which needs a warning output
+ * \param warning is the text of the warning
+ * \return true if hierarchicalName was found, and a warning was output, else false
+ */
+bool XMLLineLocator::emitWarning(QString hierarchicalName, QString warning) const
+{
+    int line = getLineNumber(hierarchicalName);
+
+    if(line >= 0)
+    {
+        QString output = inputpath + inputfile + ":" + QString::number(line) + ":0: warning: " + hierarchicalName + ": " + warning;
+        std::cerr << output.toStdString() << std::endl;
+        return true;
+    }
+    else
+        return false;
+
+}// XMLLineLocator::emitWarning
+
 
 

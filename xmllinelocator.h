@@ -22,6 +22,9 @@ protected:
         outline(level)
     {}
 
+    //! Override name for the contens
+    void overrideName(QString newname) {name = newname;}
+
     //! Set the contents of this XMLContent, including subs
     void setXMLContents(const QString& text, int& startindex, int& linenumber);
 
@@ -57,12 +60,23 @@ public:
     XMLLineLocator(){}
 
     //! Input the contents of the XML file, this will trigger a parse operation
-    void setXMLContents(QString text);
+    void setXMLContents(QString text, QString path, QString file, QString topname = QString());
 
     //! Find the line number given a hierarchical name
     int getLineNumber(QString hierarchicalName) const;
 
+    //! Output a warning
+    bool emitWarning(QString hierarchicalName, QString warning) const;
+
 protected:
+
+    //! The path to the file this locator represents
+    QString inputpath;
+
+    //! The name of the file this locator represents
+    QString inputfile;
+
+    //! The contents of the file used for line number lookups
     XMLContent contents;
 };
 

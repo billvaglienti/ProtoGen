@@ -49,6 +49,9 @@ interpretation
         <Value name="N3D"/>
     </Enum>
 
+    <Require file="dependson.xml"/>
+
+    <!-- This is now part of the dependon.xml file
     <Enum name="GPSConstants" file="globalenum" comment="Constants used with GPS systems">
         <Value name="GPS_BAND_L1" value="0"/>
         <Value name="GPS_BAND_L2" value="1"/>
@@ -57,13 +60,10 @@ interpretation
         <Value name="NUM_GPS_SATS" value="36"/>
     </Enum>
 
-    <Documentation comment="------------"/>
-
     <Documentation name="Added documentation" paragraph="1" comment="You can add more documentation in between packets. Each Documentation tag is includes an optional paragraph label, with controllable outline level
 
     You can have multiple paragraphs in a documentation tag by placing two line feeds in the xml"/>
 
-    <Documentation comment="------------"/>
     <Documentation name="Packets" paragraph="1"/>
 
     <Structure name="testPacket" encode="false" decode="false" file="DemolinkProtocol.h" comment="A simple packet structure demonstrating that you can output basic structures without encodings">
@@ -88,6 +88,7 @@ interpretation
         <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
         <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>
     </Packet>
+    -->
 
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>

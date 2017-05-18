@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "1.9.8.a";
+const QString ProtocolParser::genVersion = "2.0.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -50,17 +50,22 @@ ProtocolParser::~ProtocolParser()
 
     qDeleteAll(globalEnums.begin(), globalEnums.end());
     globalEnums.clear();
+
+    qDeleteAll(lines.begin(), lines.end());
+    lines.clear();
 }
 
 
 /*!
  * Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
- * \param file is the already opened xml file to read the xml contents from
+ * \param filenames is the list of files to read the xml contents from. The
+ *        first file is the master file that sets the protocol options
  * \param path is the output path for generated files
  * \return true if something was written to a file
  */
-bool ProtocolParser::parse(QString filename, QString path)
+bool ProtocolParser::parse(QString filename, QString path, QStringList otherfiles)
 {
+    QDomDocument doc;
     QFile file(filename);
     QFileInfo fileinfo(filename);
 
@@ -76,28 +81,21 @@ bool ProtocolParser::parse(QString filename, QString path)
         return false;
     }
 
-    // The entire contents of the file, which we use twice
-    QString contents(file.readAll());
-
-    // Done with the file
-    file.close();
-
     // Qt's XML parsing
     QString errorMsg;
     int errorLine;
     int errorCol;
 
-    if(!doc.setContent(contents, false, &errorMsg, &errorLine, &errorCol))
+    if(!doc.setContent(file.readAll(), false, &errorMsg, &errorLine, &errorCol))
     {
-        emitWarning(QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + errorMsg);
+        file.close();
+        QString warning = filename + ":" + QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + errorMsg;
+        std::cerr << warning.toStdString() << std::endl;
         return false;
     }
 
-    // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
-    line.setXMLContents(contents);
-
-    // The outer most element
-    QDomElement docElem = doc.documentElement();
+    // Done with the file
+    file.close();
 
     // Set our output directory
     // Make the path as short as possible
@@ -122,120 +120,52 @@ bool ProtocolParser::parse(QString filename, QString path)
         return false;
     }
 
+    // The outer most element
+    QDomElement docElem = doc.documentElement();
+
     // This element must have the "Protocol" tag
-    if(docElem.tagName() != "Protocol")
+    if(docElem.tagName().toLower() != "protocol")
     {
         emitWarning(" error: Protocol tag not found in XML");
         return false;
     }
 
-    support.protoName = name = docElem.attribute("name").trimmed();
+    // Protocol options options specified in the xml
+    QDomNamedNodeMap map = docElem.attributes();
+
+    support.protoName = name = getAttribute("name", map);
     if(support.protoName.isEmpty())
     {
         emitWarning(" error: Protocol name not found in Protocol tag");
         return false;
     }
 
-    // This is just used for documentation
-    title = docElem.attribute("title").trimmed();
-
-    // Protocol support options specified in the xml
-    QDomNamedNodeMap map = docElem.attributes();
+    title = getAttribute("title", map);
+    api = getAttribute("api", map);
+    version = getAttribute("version", map);
+    comment = getAttribute("comment", map);
     support.parse(map);
 
-    // All the attributes understood by the protocol support
-    QStringList attriblist = support.getAttriblist();
-
-    // and the ones we understand
-    attriblist << "name" << "title" << "api" << "version" << "comment";
-
-    for(int i = 0; i < map.count(); i++)
+    if(support.disableunrecognized == false)
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
+        // All the attributes understood by the protocol support
+        QStringList attriblist = support.getAttriblist();
 
-        if(support.disableunrecognized == false)
+        // and the ones we understand
+        attriblist << "name" << "title" << "api" << "version" << "comment";
+
+        for(int i = 0; i < map.count(); i++)
         {
+            QDomAttr attr = map.item(i).toAttr();
+            if(attr.isNull())
+                continue;
+
             if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-                emitWarning(QString::number(getLineNumber(support.protoName)) + ":0: warning: " + support.protoName + ": Unrecognized attribute \"" + attr.name() + "\"");
-        }
+                emitWarning(support.protoName, support.protoName + ": Unrecognized attribute \"" + attr.name() + "\"");
 
-    }
+        }// for all the attributes
 
-    // All of the top level Structures, which stand alone in their own modules
-    QList<QDomNode> structlist = childElementsByTagName(docElem, "Structure");
-
-    // All of the top level packets and top level documentation. Packets can only be at the top level
-    QList<QDomNode> doclist = childElementsByTagName(docElem, "Packet", "Enum", "Documentation");
-
-    // We want to create the objects first, then parse them later. That way we
-    // can retain the order of their definition, but get enumerations and
-    // structures to parse first
-    for(int i = 0; i < structlist.size(); i++)
-    {
-        // Create the module object
-        ProtocolStructureModule* module = new ProtocolStructureModule(this, support, api, version);
-
-        // Remember its xml
-        module->setElement(structlist.at(i).toElement());
-
-        // Keep track of the structure
-        structures.append(module);
-    }
-    structlist.clear();
-
-    // Create the packets, enums, and documents
-    for(int i = 0; i < doclist.size(); i++)
-    {
-        if(doclist.at(i).nodeName().contains("Packet", Qt::CaseInsensitive))
-        {
-            // Create the module object
-            ProtocolPacket* packet = new ProtocolPacket(this, support, api, version);
-
-            // Remember its xml
-            packet->setElement(doclist.at(i).toElement());
-
-            // Keep it around
-            packets.append(packet);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(packet);
-        }
-        else if(doclist.at(i).nodeName().contains("Enum", Qt::CaseInsensitive))
-        {
-            EnumCreator* Enum = new EnumCreator(this, name, support);
-
-            // Enums can be parsed now
-            Enum->setElement(doclist.at(i).toElement());
-
-            // A global parse
-            Enum->parseGlobal(name + "Protocol");
-
-            // Keep it around in the global list
-            globalEnums.append(Enum);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(Enum);
-        }
-        else
-        {
-            // Create the module object
-            ProtocolDocumentation* document = new ProtocolDocumentation(this, name, support);
-
-            // Documents can be parsed now
-            document->setElement(doclist.at(i).toElement());
-            document->parse();
-
-            // Keep it around
-            documents.append(document);
-
-            // Keep it in the master document list as well
-            alldocumentsinorder.append(document);
-        }
-
-    }// for all packets, enums, and documents
-    doclist.clear();
+    }// if we need to warn for unrecognized attributes
 
     // The list of our output files
     QStringList fileNameList;
@@ -248,7 +178,15 @@ bool ProtocolParser::parse(QString filename, QString path)
     fileNameList.append(header.fileName());
     filePathList.append(header.filePath());
 
-    // Now output the global enumerations, they will go in the main
+    // Now parse the contents of all the files. We do other files first since
+    // we expect them to be helpers that the main file may depend on.
+    for(int i = 0; i < otherfiles.count(); i++)
+        parseFile(otherfiles.at(i));
+
+    // Finally the main file
+    parseFile(filename);
+
+    // Output the global enumerations first, they will go in the main
     // header file by default, unless the enum specifies otherwise
     ProtocolHeaderFile enumfile;
     ProtocolSourceFile enumSourceFile;
@@ -257,6 +195,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     {
         EnumCreator* module = globalEnums.at(i);
 
+        module->parseGlobal(name + "Protocol");
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
@@ -265,7 +204,7 @@ bool ProtocolParser::parse(QString filename, QString path)
         // If there is source-code available
         QString source = module->getSourceOutput();
 
-        if (!source.isEmpty())
+        if(!source.isEmpty())
         {
             enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
 
@@ -305,7 +244,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     // This way we can parse the first batch ahead of the second
     for(int i = 0; i < packets.size(); i++)
     {
-        ProtocolPacket* packet = packets[i];
+        ProtocolPacket* packet = packets.at(i);
 
         if(!isFieldSet(packet->getElement(), "useInOtherPackets"))
             continue;
@@ -330,7 +269,7 @@ bool ProtocolParser::parse(QString filename, QString path)
     // And the packets which are not available for other packets
     for(int i = 0; i < packets.size(); i++)
     {
-        ProtocolPacket* packet = packets[i];
+        ProtocolPacket* packet = packets.at(i);
 
         if(isFieldSet(packet->getElement(), "useInOtherPackets"))
             continue;
@@ -424,10 +363,176 @@ bool ProtocolParser::parse(QString filename, QString path)
 }// ProtocolParser::parse
 
 
+/*!
+ * Parses a single XML file handling any require tags to flatten a file
+ * heirarchy into a single flat structure
+ * \param xmlFilename is the file to parse
+ */
+bool ProtocolParser::parseFile(QString xmlFilename)
+{
+    QFile xmlFile( xmlFilename );
+    QFileInfo fileinfo(xmlFilename);
+
+    // Don't parse the same file twice
+    if(filesparsed.contains(fileinfo.absoluteFilePath()))
+        return false;
+
+    // Keep a record of what we have already parsed, so we don't parse the same file twice
+    filesparsed.append(fileinfo.absoluteFilePath());
+
+    std::cout << "Parsing file " << ProtocolFile::sanitizePath(fileinfo.absolutePath()).toStdString() << fileinfo.fileName().toStdString() << std::endl;
+
+    if( !xmlFile.open( QIODevice::ReadOnly ) )
+    {
+        QString warning = "error: Failed to open xml protocol file " + xmlFilename;
+        std::cerr << warning.toStdString() << std::endl;
+        return false;
+    }
+
+    QString contents = xmlFile.readAll();
+
+    xmlFile.close();
+
+    // Error parsing
+    QString error;
+    int errorLine, errorCol;
+
+    QDomDocument xmlDoc;
+
+    // Extract XML data
+    if( !xmlDoc.setContent( contents, false, &error, &errorLine, &errorCol ) )
+    {
+        QString warning = xmlFilename + ":" + QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + error;
+        std::cerr << warning.toStdString() << std::endl;
+        return false;
+    }
+
+    // Extract the outer-most tag from the document
+    QDomElement top = xmlDoc.documentElement();
+
+    // Ensure that outer tag is correct
+    if( top.tagName().toLower() != "protocol" )
+    {
+        QString warning = xmlFilename + ":0:0: error: 'Protocol' tag not found in file";
+        std::cerr << warning.toStdString() << std::endl;
+        return false;
+    }
+
+    // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
+    lines.append(new XMLLineLocator());
+    lines.last()->setXMLContents(contents, ProtocolFile::sanitizePath(fileinfo.absolutePath()), fileinfo.fileName(), name);
+
+    // Iterate over each top level node in the file
+    QDomNodeList nodes = top.childNodes();
+
+    for(int i = 0; i < nodes.size(); i++)
+    {
+        QDomNode node = nodes.item(i);
+
+        QString nodename = node.nodeName().toLower();
+
+        // Import another file recursively
+        // File recursion is handled first so that ordering is preserved
+        // This effectively creates a single flattened XML structure
+        if( nodename == "require" )
+        {
+            QString subfile = getAttribute( "file", node.attributes() );
+
+            if( subfile.isEmpty() )
+            {
+                QString warning = xmlFilename + ": warning: file attribute missing from \"Require\" tag";
+                std::cerr << warning.toStdString() << std::endl;
+            }
+            else
+            {
+                if(!subfile.endsWith(".xml", Qt::CaseInsensitive))
+                    subfile += ".xml";
+
+                // The new file is relative to this file
+                QString newFile  = fileinfo.absoluteDir().absolutePath() + "/" + subfile;
+
+                parseFile(newFile);
+            }
+
+        }
+        else if( nodename == "struct" || nodename == "structure" )
+        {
+            ProtocolStructureModule* module = new ProtocolStructureModule( this, support, api, version );
+
+            // Remember the XML
+            module->setElement( node.toElement() );
+
+            structures.append( module );
+        }
+        else if( nodename == "enum" || nodename == "enumeration" )
+        {
+            EnumCreator* Enum = new EnumCreator( this, nodename, support );
+
+            Enum->setElement( node.toElement() );
+
+            globalEnums.append( Enum );
+            alldocumentsinorder.append( Enum );
+        }
+        // Define a packet
+        else if( nodename == "packet" || nodename == "pkt" )
+        {
+            ProtocolPacket* packet = new ProtocolPacket( this, support, api, version );
+
+            packet->setElement( node.toElement() );
+
+            packets.append( packet );
+            alldocumentsinorder.append( packet );
+        }
+        else if ( nodename == "doc" || nodename == "documentation" )
+        {
+            ProtocolDocumentation* document = new ProtocolDocumentation( this, nodename, support );
+
+            document->setElement( node.toElement() );
+
+            documents.append( document );
+            alldocumentsinorder.append( document );
+        }
+        else
+        {
+            //TODO
+        }
+
+    }
+
+    return true;
+
+}// ProtocolParser::parseFile
+
+
+
+/*!
+ * Send a warning string out standard error, referencing the main input file
+ * \param warning is the string to warn with
+ */
 void ProtocolParser::emitWarning(QString warning) const
 {
     QString output = inputpath + inputfile + ":" + warning;
     std::cerr << output.toStdString() << std::endl;
+}
+
+
+/*!
+ * Send a warning string out standard error, referencing a file by object name
+ * \param hierarchicalName is the object name to reference
+ * \param warning is the string to warn with
+ */
+void ProtocolParser::emitWarning(QString hierarchicalName, QString warning) const
+{
+    for(int i = 0; i < lines.count(); i++)
+    {
+        if(lines.at(i)->emitWarning(hierarchicalName, warning))
+            return;
+    }
+
+    // If we get here then we should emit some warning
+    QString output = "unknown file:" + hierarchicalName + ":" + warning;
+    std::cerr << output.toStdString() << std::endl;
+
 }
 
 
@@ -443,8 +548,6 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     // The file names
     header.setModuleNameAndPath(nameex, support.outputpath);
 
-    comment = docElem.attribute("comment");
-
     // Comment block at the top of the header file
     header.write("/*!\n");
     header.write(" * \\file\n");
@@ -455,7 +558,6 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     outputLongComment(header, " *", comment);
 
     // The protocol enumeration API, which can be empty
-    api = docElem.attribute("api");
     if(!api.isEmpty())
     {
         // Make sure this is only a number
@@ -475,7 +577,6 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     }// if we have API enumeration
 
     // The protocol version string, which can be empty
-    version = docElem.attribute("version");
     if(!version.isEmpty())
     {
         header.write("\n *\n");

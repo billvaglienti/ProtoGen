@@ -130,4 +130,5 @@ OTHER_FILES += \
     LICENSE.txt
 
 DISTFILES += \
-    moredocsfile.txt
+    moredocsfile.txt \
+    dependson.xml

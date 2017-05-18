@@ -104,9 +104,7 @@ void ProtocolDocumentation::emitWarning(QString warning, const QString& subname)
     if(!subname.isEmpty())
         name += ":" + subname;
 
-    int line = parser->getLineNumber(name);
-
-    parser->emitWarning(QString::number(line) + ":0: warning: " + name + ": " + warning);
+    parser->emitWarning(name, warning);
 }
 
 

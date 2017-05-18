@@ -49,14 +49,14 @@ public:
     //! Set the inlinee css
     void setInlineCSS(QString css) {inlinecss = css;}
 
-    //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
-    bool parse(QString filename, QString path);
+    //! Parse the DOM from the xml file(s). This kicks off the auto code generation for the protocol
+    bool parse(QString filename, QString path, QStringList otherfiles);
 
-    //! Get the line number from a hierarchical name
-    int getLineNumber(const QString& hierarchicalName) {return line.getLineNumber(hierarchicalName);}
-
-    //! Output a warning
+    //! Output a warning referencing the main input path and file
     void emitWarning(QString warning) const;
+
+    //! Output a warning referencing an object by name
+    void emitWarning(QString hierarchicalName, QString warning) const;
 
     //! Return a list of QDomNodes that are direct children and have a specific tag
     static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
@@ -129,6 +129,9 @@ public:
 
 protected:
 
+    //! Parses a single XML file handling any require tags to flatten a file
+    bool parseFile(QString xmlFilename);
+
     //! Create markdown documentation
     void outputMarkdown(bool isBigEndian, QString inlinecss);
 
@@ -137,9 +140,6 @@ protected:
 
     //! Protocol support information
     ProtocolSupport support;
-
-    QDomDocument doc;
-    XMLLineLocator line;
 
     ProtocolHeaderFile header;   //!< The header file (*.h)
     QString name;   //!< Base name of the protocol
@@ -158,6 +158,8 @@ protected:
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
 
+    QStringList filesparsed;
+    QList<XMLLineLocator*>lines;
     QList<ProtocolDocumentation*> alldocumentsinorder;
     QList<ProtocolDocumentation*> documents;
     QList<ProtocolStructureModule*> structures;

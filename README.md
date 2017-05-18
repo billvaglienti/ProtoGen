@@ -21,18 +21,20 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 1.9.8. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS protogen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [SupportFile.xml] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS protogen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
 
-- `Protocol.xml` is the file that defines the protocol details.
+- `Protocol.xml` is the main file that defines the protocol details, setting the protocol name and various options. The main protocol file is always the first xml file on the command line.
 
 - `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run.
+
+- `SupportFile.xml` is another file that defines protocol details. The contents of this file are used to augment the contents of the main protocol file, as such its protocol name and options are ignored in favor of the name and options from the main file. You can have as many support files as you like. Protogen will parse the support files before the main file, so the main file can have dependencies on the protocol elements from the support files.
 
 - `-docs dir` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same same directory as `Outputpath`.
 
@@ -69,7 +71,7 @@ ProtoGen applies many checks to the protocol xml. In most cases if a problem is 
 Protocol ICD
 ================
 
-The protocol is defined in an [xml](http://www.w3.org/XML/) document. ProtoGen comes with an example document (exampleprotocol.xml) which can be used as a reference. This example defines a protocol called "Demolink" which is frequently referenced in this document. Tags and attributes in the xml document are not case sensitive. 
+The protocol is defined in one or more [xml](http://www.w3.org/XML/) documents. ProtoGen comes with an example document (exampleprotocol.xml) which can be used as a reference. This example defines a protocol called "Demolink" which is frequently referenced in this document. Tags and attributes in the xml document are not case sensitive. 
 
 Protocol tag
 ============
@@ -115,7 +117,7 @@ The Protocol tag supports the following attributes:
 
 - `comment` : The comment for the Protocol tag will be placed at the top of the main header file as a multi-line doxygen comment with a \mainpage tag.
 
-- `pointer` : By default, the generated code does not know about the structure of the packet datatype, and uses generic pointers (void*) to reference packet data. This behaviour can be overridden by specifying the datatype of the packet. If this parameter is specified, the protocol file must include the header file where the packet is defined.
+- `pointer` : By default, the generated code does not know about the structure of the packet datatype, and uses generic pointers (`void*`) to reference packet data. This behaviour can be overridden by specifying the datatype of the packet. If this parameter is specified, the protocol file must include the header file where the packet is defined (or alternatively must define the packet structure itself).
 
 Comments
 --------
@@ -144,6 +146,19 @@ Files
 By default protogen will output a protocol header file; and a header and source file for every Packet and Structure tag, with the file name matching the tag name. However every global object (Enum, Structure, Packet) supports an optional `file` attribute. In addition there is an optional global `file` attribute which applies if an object does not specify a `file` attribute. Typically an extension is not given, in which case ".h" will be added for header files, and ".c" for source files. If an extension is given then Protogen will discard it unless it starts with ".h" (for headers) or ".c" (for sources). So for example if the `file` attribute of a packet has the extension ".cpp", the source file output by protogen will use that extension, and the header file will use ".h".
 
 The `file` attribute can include path information (for example "src/protogen/filename"). If path information is provided it is assumed to be relative to the global output path, unless the path information is absolute. Path information is only used in the creation of the file; any include directive which references a file will not include the path information.
+
+Require tag
+-----------
+
+The Require tag is used to insert XML from an external protocol file at the specified location. The generated code will be structued as if the linked xml was written *at the location it is referenced* - this tag provides the ability to separate the protocol definition into multiple files; which is most commonly used to put common features for multiple protocols into a single file.
+
+    <Require file="../version.xml"/>
+    
+The Require tag supports the following attributes:
+
+- `file` : gives the name of the file to insert, relative to the path of the file which requires it. You can include the .xml file extension, or leave it off.
+
+The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only different is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that Protogen will prevent a protocol file from being referenced more than once, so circular references are avoided.
 
 Include tag
 -----------

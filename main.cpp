@@ -41,16 +41,27 @@ int main(int argc, char *argv[])
 
     // Process the positional arguments
     QStringList args = argParser.positionalArguments();
-
+    QStringList otherfiles;
     QString filename, path;
 
-    if (args.count() > 0 )
-        filename = args.at(0);
+    for(int i = 0; i < args.count(); i++)
+    {
+        QString argument = args.at(i);
 
-    if (args.count() > 1)
-        path = args.at(1);
+        // The first ".xml" argument is the main file, but you can
+        // have more xml files after that if you want.
+        if(argument.endsWith(".xml", Qt::CaseInsensitive))
+        {
+            if(filename.isEmpty())
+                filename = argument;
+            else
+                otherfiles.append(argument);
+        }
+        else if(!argument.isEmpty())
+            path = argument;
+    }
 
-    if (filename.isEmpty() || !filename.endsWith(".xml", Qt::CaseInsensitive))
+    if(filename.isEmpty())
     {
         std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
         return 2;   // no input file
@@ -112,7 +123,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (parser.parse(filename, path))
+    if (parser.parse(filename, path, otherfiles))
     {
         // Normal exit
         return 0;
