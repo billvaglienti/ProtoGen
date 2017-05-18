@@ -145,10 +145,25 @@ By default protogen will output a protocol header file; and a header and source 
 
 The `file` attribute can include path information (for example "src/protogen/filename"). If path information is provided it is assumed to be relative to the global output path, unless the path information is absolute. Path information is only used in the creation of the file; any include directive which references a file will not include the path information.
 
+Require tag
+-----------
+
+The Require tag is used to insert XML from an external protocol file at the specified location. The generated code will be structued as if the linked xml was written *at the location it is called* - this tag provides a convenience function for separating the procotol definition into multiple files.
+
+In addition to allowing the protocol to be defined in multiple files, this functionality allows for common features to be inserted into multiple protocol files.
+
+    <Require file="../version.xml"/>
+    
+The Require tag supports the following attributes:
+
+- `file` : gives the name of the file to insert, relative to the path of the file which requires it. 
+
+The included file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the included file (i.e. in the `Protocol` tag) will be ignored.
+
 Include tag
 -----------
 
-The Include tag is used to include other files in the generated code by emmitting a C preprocessor `#include` directive. If the Include tag is a direct child of the Protocol tag then it is emitted in the main header file. If it is a direct child of a Packet or Structure tag then it is emitted in the packet or structures header file. An example Include tag is:
+The Include tag is used to include external C header files in the generated code using a C preprocessor `#include` directive. If the Include tag is a direct child of the Protocol tag then it is emitted in the main header file. If it is a direct child of a Packet or Structure tag then it is emitted in the packet or structures header file. An example Include tag is:
 
     <Include name="indices.h" comment="indices.h is included for array length enumerations"/>
 

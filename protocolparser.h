@@ -52,6 +52,9 @@ public:
     //! Parse the DOM from the xml file. This kicks off the auto code generation for the protocol
     bool parse(QString filename, QString path);
 
+    //! Parse a single XML file within the file heirarchy
+    bool parseFile(QString xmlFilename, bool onlyParseStructs = false);
+
     //! Get the line number from a hierarchical name
     int getLineNumber(const QString& hierarchicalName) {return line.getLineNumber(hierarchicalName);}
 
