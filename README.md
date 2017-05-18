@@ -158,7 +158,7 @@ The Require tag supports the following attributes:
 
 - `file` : gives the name of the file to insert, relative to the path of the file which requires it. You can include the .xml file extension, or leave it off.
 
-The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only different is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that Protogen will prevent a protocol file from being referenced more than once, so circular references are avoided.
+The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only difference is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that Protogen will prevent a protocol file from being referenced more than once, so circular references are avoided.
 
 Include tag
 -----------
