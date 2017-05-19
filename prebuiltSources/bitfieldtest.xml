@@ -28,7 +28,8 @@
         <Data name="test12" inMemoryType="float64" encodedType="bitfield36" scaler="1024"/>
         <Data name="testa" inMemoryType="bitfield1" constant="1" checkConstant="true"/>
         <Data name="testb" inMemoryType="null" encodedType="bitfield2" constant="2" checkConstant="true"/>
-        <Data name="testc" inMemoryType="float32" encodedType="bitfield11" constant="pi" scaler="200"/>
+        <Data name="testc" inMemoryType="float32" encodedType="bitfield12" constant="pi" scaler="200"/>
+        <Data name="testd" inMemoryType="bitfield11" constant="0"/>
     </Structure>
 
 </Protocol>

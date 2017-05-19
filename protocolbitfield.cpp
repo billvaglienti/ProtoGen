@@ -36,7 +36,7 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     source.write("    bitfieldtest_t test   = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
     source.write("    bitfieldtest2_t test2 = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
     source.write("\n");
-    source.write("    bitfieldtest3_t test3 = {12.5f, 12.5f, 3.14159, 0, 0};\n");
+    source.write("    bitfieldtest3_t test3 = {12.5f, 12.5f, 3.14159, 0, 0, 50};\n");
     source.write("\n");
     source.write("    uint8_t data[20];\n");
     source.write("    int index = 0;\n");
@@ -122,6 +122,8 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     source.write("    else if(test3.testa != 1)\n");
     source.write("        return 0;\n");
     source.write("    else if(fabs(test3.testc - 3.1415926535898) > 1.0/200.0)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test3.testd != 0)\n");
     source.write("        return 0;\n");
     source.write("    else\n");
     source.write("        return 1;\n");
@@ -321,9 +323,21 @@ QString ProtocolBitfield::getEncodeString(QString spacing, QString argument, QSt
 
         // If this is the first bit of this byte then we assign rather than or-equal
         if((bitcount%8) == 0)
-            return spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)" + argument + leftshift + ";\n";
+        {
+            // If the argument is the string "0" then we don't need to be shifting
+            if(argument == "0")
+                return spacing + dataname + "[" + dataindex + offset + "] = 0;\n";
+            else
+                return spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)" + argument + leftshift + ";\n";
+        }
         else
-            return spacing + dataname + "[" + dataindex + offset + "] |= (uint8_t)" + argument + leftshift + ";\n";
+        {
+            // If the thing we are or-equaling is the string "0" then we can just skip the entire line
+            if(argument == "0")
+                return QString();
+            else
+                return spacing + dataname + "[" + dataindex + offset + "] |= (uint8_t)" + argument + leftshift + ";\n";
+        }
 
     }
 
@@ -364,15 +378,23 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
         if(byteoffset > 0)
             offset = " + " + QString().setNum(byteoffset);
 
-        // The least significant bits of value, encoded in the most
-        // significant bits of the last byte we are going to use.
-        output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)("+argument+" << "+QString().setNum(8-remainder)+");\n\n";
+        if(argument == "0")
+        {
+            // If the argument is the constant string "0" then shifting is not needed
+            output += spacing + dataname + "[" + dataindex + offset + "] = 0;\n\n";
+        }
+        else
+        {
+            // The least significant bits of value, encoded in the most
+            // significant bits of the last byte we are going to use.
+            output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)("+argument+" << "+QString().setNum(8-remainder)+");\n\n";
+        }
 
         // Discard these bits, we have encoded them
         numbits -= remainder;
 
         // Shift the field down for the next byte of bits
-        if(numbits > 0)
+        if((numbits > 0) && (argument != "0"))
             output += spacing + argument + " >>= " + QString().setNum(remainder) + ";\n";
 
         remainder = 0;
@@ -407,7 +429,9 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
         if(byteoffset > 0)
             offset = " + " + QString().setNum(byteoffset);
 
-        output += spacing + dataname + "[" + dataindex + offset + "] |= (uint8_t)" + argument + ";\n";
+        // If the thing we are or-equaling is the string "0" then we can just skip the entire line
+        if(argument != "0")
+            output += spacing + dataname + "[" + dataindex + offset + "] |= (uint8_t)" + argument + ";\n";
     }
 
     return output;

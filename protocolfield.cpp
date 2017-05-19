@@ -1961,12 +1961,12 @@ bool ProtocolField::usesEncodeTempBitfield(void) const
     // 2) The encoded bitfield crosses a byte boundary
     if(usesBitfields() && (encodedType.bits <= 32))
     {
+        // If we are encoding a constant zero we don't need temporary variables, no matter how big the field is
+        if(getConstantString() == "0")
+            return false;
+
         // Different in-memory versus encoded bit size, requires size check
         if(requiresSizeCheck())
-            return true;
-
-        // If we are encoding as a constant, we'll need a temporary
-        if(!constantString.isEmpty())
             return true;
 
         return bitfieldCrossesByteBoundary();
@@ -1986,12 +1986,12 @@ bool ProtocolField::usesEncodeTempLongBitfield(void) const
     // 2) The encoded bitfield crosses a byte boundary
     if(usesBitfields() && (encodedType.bits > 32))
     {
+        // If we are encoding a constant zero we don't need temporary variables, no matter how big the field is
+        if(getConstantString() == "0")
+            return false;
+
         // Different in-memory versus encoded bit size, requires size check
         if(requiresSizeCheck())
-            return true;
-
-        // If we are encoding as a constant, we'll need a temporary
-        if(!constantString.isEmpty())
             return true;
 
         return bitfieldCrossesByteBoundary();
@@ -2011,9 +2011,15 @@ bool ProtocolField::usesDecodeTempBitfield(void) const
     // 2) The encoded bitfield crosses a byte boundary
     if(usesBitfields() && (encodedType.bits <= 32))
     {
-        // If we checking the constant value, but don't have an in memory type, we'll need a temporary
-        if(inMemoryType.isNull && checkConstant)
-            return true;
+        // If we have no in-memory type there is no decoding to do
+        if(inMemoryType.isNull)
+        {
+            // Unless we are checking a constant
+            if(checkConstant)
+                return true;
+            else
+                return false;
+        }
 
         // If we are scaling we need a temporary
         if(encodedMax != encodedMin)
@@ -2036,9 +2042,15 @@ bool ProtocolField::usesDecodeTempLongBitfield(void) const
     // 2) The encoded bitfield crosses a byte boundary
     if(usesBitfields() && (encodedType.bits > 32))
     {
-        // If we checking the constant value, but don't have an in memory type, we'll need a temporary
-        if(inMemoryType.isNull && checkConstant)
-            return true;
+        // If we have no in-memory type there is no decoding to do
+        if(inMemoryType.isNull)
+        {
+            // Unless we are checking a constant
+            if(checkConstant)
+                return true;
+            else
+                return false;
+        }
 
         // If we are scaling we need a temporary
         if(encodedMax != encodedMin)
