@@ -19,7 +19,7 @@ class ProtocolBitfield
 public:
 
     //! Perform the test generation, writing out the files
-    static void generatetest(ProtocolParser* parse, ProtocolSupport support);
+    static void generatetest(ProtocolSupport support);
 
     //! Compute the maximum value of a field
     static uint64_t maxvalueoffield(int numbits);

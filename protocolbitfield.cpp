@@ -2,103 +2,132 @@
 #include "protocolstructuremodule.h"
 #include <QFile>
 
-void ProtocolBitfield::generatetest(ProtocolParser* parse, ProtocolSupport support)
+void ProtocolBitfield::generatetest(ProtocolSupport support)
 {
     if(!support.bitfieldtest)
         return;
 
-    QDomDocument doc;
-    QString errorMsg;
-    int errorLine;
-    int errorCol;
-    QFile file(":/files/prebuiltSources/bitfieldtest.xml");
+    ProtocolHeaderFile header;
+    ProtocolSourceFile source;
 
-    if(!file.open(QFile::ReadOnly))
-        return;
-
-    if(!doc.setContent(file.readAll(), false, &errorMsg, &errorLine, &errorCol))
-    {
-        file.close();
-        QString warning = ":/files/prebuiltSources/bitfieldtest.xml:" + QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + errorMsg;
-        std::cerr << warning.toStdString() << std::endl;
-        return;
-    }
-
-    file.close();
-
-    // The outer most element
-    QDomElement docElem = doc.documentElement();
-
-    // All of the top level Structures, which stand alone in their own modules
-    QList<QDomNode> structlist = parse->childElementsByTagName(docElem, "Structure");
-
-    // We only care about the first one
-    if(structlist.count() < 1)
-        return;
-
-    // We force the filename
-    support.globalFileName = "bitfieldtest";
-
-    // Create the module object
-    ProtocolStructureModule* module = new ProtocolStructureModule(parse, support, QString(), QString());
-
-    // Remember its xml
-    module->setElement(structlist.at(0).toElement());
-
-    // Parse its xml data
-    module->parse();
+    // We assume that the ProtocolParser has already generated the encode/decode
+    // functions in the bitfieldtest module, we just need to exercise them.
 
     // Prototype for testing bitfields, note the files have already been flushed, so we are appending
-    module->header.setModuleNameAndPath("bitfieldtest", support.outputpath);
-    module->header.makeLineSeparator();
-    module->header.write("//! Test the bit fields\n");
-    module->header.write("int testBitfield(void);\n");
-    module->header.write("\n");
-    module->header.flush();
+    header.setModuleNameAndPath("bitfieldtest", support.outputpath);
+    header.makeLineSeparator();
+    header.write("//! Test the bit fields\n");
+    header.write("int testBitfield(void);\n");
+    header.write("\n");
+    header.flush();
 
     // Now the source code
-    module->source.setModuleNameAndPath("bitfieldtest", support.outputpath);
-    module->source.makeLineSeparator();
-    module->source.writeIncludeDirective("string.h", QString(), true);
-    module->source.write("/*!\n");
-    module->source.write(" * Test the bit field encode and decode logic\n");
-    module->source.write(" * \\return 1 if the test passes, else 0\n");
-    module->source.write(" */\n");
-    module->source.write("int testBitfield(void)\n");
-    module->source.write("{\n");
-    module->source.write("    bitfieldtest_t test = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321};\n");
-    module->source.write("    uint8_t data[20];\n");
-    module->source.write("    int index = 0;\n");
-    module->source.write("\n");
-    module->source.write("    encodebitfieldtest_t(data, &index, &test);\n");
-    module->source.write("\n");
-    module->source.write("    memset(&test, 0, sizeof(test));\n");
-    module->source.write("\n");
-    module->source.write("    index = 0;\n");
-    module->source.write("    if(!decodebitfieldtest_t(data, &index, &test))\n");
-    module->source.write("        return 0;\n");
-    module->source.write("\n");
-    module->source.write("    if(test.test1 != 1)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.test2 != 2)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.test3 != 7)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.test12 != 0xABC)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.testa != 0)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.testb != 3)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.testc != 4)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else if(test.testd != 0xC87654321)\n");
-    module->source.write("        return 0;\n");
-    module->source.write("    else\n");
-    module->source.write("        return 1;\n");
-    module->source.write("\n");
-    module->source.write("}// testBitfield\n");
-    module->source.flush();
+    source.setModuleNameAndPath("bitfieldtest", support.outputpath);
+    source.makeLineSeparator();
+    source.writeIncludeDirective("string.h", QString(), true);
+    source.writeIncludeDirective("limits.h", QString(), true);
+    source.writeIncludeDirective("math.h", QString(), true);
+    source.write("/*!\n");
+    source.write(" * Test the bit field encode and decode logic\n");
+    source.write(" * \\return 1 if the test passes, else 0\n");
+    source.write(" */\n");
+    source.write("int testBitfield(void)\n");
+    source.write("{\n");
+    source.write("    bitfieldtest_t test   = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
+    source.write("    bitfieldtest2_t test2 = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
+    source.write("\n");
+    source.write("    bitfieldtest3_t test3 = {12.5f, 12.5f, 3.14159, 0, 0};\n");
+    source.write("\n");
+    source.write("    uint8_t data[20];\n");
+    source.write("    int index = 0;\n");
+    source.write("\n");
+    source.write("    // Fill the data with 1s so we can be sure the encoder sets all bits correctly\n");
+    source.write("    memset(data, UCHAR_MAX, sizeof(data));\n");
+    source.write("\n");
+    source.write("    encodebitfieldtest_t(data, &index, &test);\n");
+    source.write("\n");
+    source.write("    // Clear the in-memory data so we can be sure the decoder sets all bits correctly\n");
+    source.write("    memset(&test, 0, sizeof(test));\n");
+    source.write("\n");
+    source.write("    index = 0;\n");
+    source.write("    if(!decodebitfieldtest_t(data, &index, &test))\n");
+    source.write("        return 0;\n");
+    source.write("\n");
+    source.write("    if(test.test1 != 1)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.test2 != 2)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.test3 != 7)  // This value was overflow, 7 is the max\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.test12 != 0xABC)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.testa != 0)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.testb != 3)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.testc != 4)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test.testd != 0xC87654321ULL)\n");
+    source.write("        return 0;\n");
+    source.write("\n");
+    source.write("    // Fill the data with 1s so we can be sure the encoder sets all bits correctly\n");
+    source.write("    memset(data, UCHAR_MAX, sizeof(data));\n");
+    source.write("\n");
+    source.write("    index = 0;\n");
+    source.write("    encodebitfieldtest2_t(data, &index, &test2);\n");
+    source.write("\n");
+    source.write("    // Clear the in-memory data so we can be sure the decoder sets all bits correctly\n");
+    source.write("    memset(&test2, 0, sizeof(test2));\n");
+    source.write("\n");
+    source.write("    index = 0;\n");
+    source.write("    if(!decodebitfieldtest2_t(data, &index, &test2))\n");
+    source.write("        return 0;\n");
+    source.write("\n");
+    source.write("    if(test2.test1 != 1)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.test2 != 2)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.test3 != 7)  // This value was overflow, 7 is the max\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.test12 != 0xABC)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.testa != 0)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.testb != 3)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.testc != 4)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test2.testd != 0xC87654321ULL)\n");
+    source.write("        return 0;\n");
+    source.write("\n");
+    source.write("    // Fill the data with 1s so we can be sure the encoder sets all bits correctly\n");
+    source.write("    memset(data, UCHAR_MAX, sizeof(data));\n");
+    source.write("\n");
+    source.write("    index = 0;\n");
+    source.write("    encodebitfieldtest3_t(data, &index, &test3);\n");
+    source.write("\n");
+    source.write("    // Clear the in-memory data so we can be sure the decoder sets all bits correctly\n");
+    source.write("    memset(&test3, 0, sizeof(test3));\n");
+    source.write("\n");
+    source.write("    index = 0;\n");
+    source.write("    if(!decodebitfieldtest3_t(data, &index, &test3))\n");
+    source.write("        return 0;\n");
+    source.write("\n");
+    source.write("    if(fabs(test3.test1 - 25.0f) > 1.0/200.0) // underflow, min is 25\n");
+    source.write("        return 0;\n");
+    source.write("    else if(fabs(test3.test2 - 12.5f) > 1.0/100.0)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(fabs(test3.test12 - 3.14159) > 1.0/1024.0)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(test3.testa != 1)\n");
+    source.write("        return 0;\n");
+    source.write("    else if(fabs(test3.testc - 3.1415926535898) > 1.0/200.0)\n");
+    source.write("        return 0;\n");
+    source.write("    else\n");
+    source.write("        return 1;\n");
+    source.write("\n");
+    source.write("}// testBitfield\n");
+    source.flush();
 
 }
 

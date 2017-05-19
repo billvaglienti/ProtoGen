@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.0.a";
+const QString ProtocolParser::genVersion = "2.0.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -186,6 +186,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     // Finally the main file
     parseFile(filename);
 
+    // This is a resource file for bitfield testing
+    if(support.bitfieldtest && support.bitfield)
+        parseFile(":/files/prebuiltSources/bitfieldtest.xml");
+
     // Output the global enumerations first, they will go in the main
     // header file by default, unless the enum specifies otherwise
     ProtocolHeaderFile enumfile;
@@ -328,14 +332,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
     // Code for testing bitfields
     if(support.bitfieldtest && support.bitfield)
-    {
-        ProtocolBitfield::generatetest(this, support);
-
-        fileNameList.append("bitfieldtest.h");
-        filePathList.append(support.outputpath);
-        fileNameList.append("bitfieldtest.c");
-        filePathList.append(support.outputpath);
-    }
+        ProtocolBitfield::generatetest(support);
 
     if(!nomarkdown)
         outputMarkdown(support.bigendian, inlinecss);
