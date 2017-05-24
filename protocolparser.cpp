@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.0.c";
+const QString ProtocolParser::genVersion = "2.1.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -240,6 +240,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(module->getHeaderFilePath());
         fileNameList.append(module->getSourceFileName());
         filePathList.append(module->getSourceFilePath());
+        fileNameList.append(module->getVerifySourceFileName());
+        filePathList.append(module->getVerifySourceFilePath());
+        fileNameList.append(module->getVerifyHeaderFileName());
+        filePathList.append(module->getVerifyHeaderFilePath());
 
     }// for all top level structures
 
@@ -267,6 +271,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getHeaderFilePath());
         fileNameList.append(packet->getSourceFileName());
         filePathList.append(packet->getSourceFilePath());
+        fileNameList.append(packet->getVerifySourceFileName());
+        filePathList.append(packet->getVerifySourceFilePath());
+        fileNameList.append(packet->getVerifyHeaderFileName());
+        filePathList.append(packet->getVerifyHeaderFilePath());
 
     }
 
@@ -288,6 +296,11 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getHeaderFilePath());
         fileNameList.append(packet->getSourceFileName());
         filePathList.append(packet->getSourceFilePath());
+        fileNameList.append(packet->getVerifySourceFileName());
+        filePathList.append(packet->getVerifySourceFilePath());
+        fileNameList.append(packet->getVerifyHeaderFileName());
+        filePathList.append(packet->getVerifyHeaderFilePath());
+
     }
 
     if(!nohelperfiles)

@@ -32,7 +32,8 @@ SOURCES += main.cpp \
     TelemetryPacket.c \
     linkcode.c \
     packetinterface.c \
-    bitfieldtest.c
+    bitfieldtest.c \
+    definitions/verify.c
 
 HEADERS += \
     indices.h \
@@ -48,7 +49,8 @@ HEADERS += \
     linkcode.h \
     packetinterface.h \
     definitions/EngineDefinitions.hpp \
-    bitfieldtest.h
+    bitfieldtest.h \
+    definitions/verify.h
 
 OTHER_FILES += \
     Doxyfile

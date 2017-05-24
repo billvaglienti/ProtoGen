@@ -11,39 +11,24 @@
  */
 ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
     ProtocolStructure(parse, supported.protoName, supported),
+    structfile(&header),
+    verifyheaderfile(&header),
+    verifysourcefile(&source),
     api(protocolApi),
     version(protocolVersion),
     encode(true),
-    decode(true)
+    decode(true),
+    initialize(false),
+    verify(false)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "initialize" << "verify" << "verifyfile";
 }
 
 
 ProtocolStructureModule::~ProtocolStructureModule(void)
 {
     clear();
-}
-
-//! Get the name of the header file that encompasses this structure definition
-QString ProtocolStructureModule::getDefinitionFileName(void) const
-{
-    if(defheader.moduleName().isEmpty())
-        return header.fileName();
-    else
-        return defheader.fileName();
-}
-
-
-
-//! Get the path of the header file that encompasses this structure definition
-QString ProtocolStructureModule::getDefinitionFilePath(void) const
-{
-    if(defheader.moduleName().isEmpty())
-        return header.filePath();
-    else
-        return defheader.filePath();
 }
 
 
@@ -57,6 +42,10 @@ void ProtocolStructureModule::clear(void)
     header.clear();
     defheader.clear();
     encode = decode = true;
+    verify = initialize = false;
+    structfile = &header;
+    verifyheaderfile = &header;
+    verifysourcefile = &source;
 
     // Note that data set during constructor are not changed
 
@@ -102,12 +91,49 @@ void ProtocolStructureModule::parse(void)
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
+    QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+    verify = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("verify", map));
+    initialize = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("initialize", map));
 
     // Warnings for users
     issueWarnings(map);
 
+    // Do the bulk of the file creation and setup
+    setupFiles(moduleName, defheadermodulename, verifymodulename);
+
+    // The functions to encoding and ecoding
+    createStructureFunctions();
+
+    // Write to disk, note that duplicate flush() calls are OK
+    header.flush();    
+    structfile->flush();
+
+    // We don't write the source to disk if we are not encoding or decoding anything
+    if(encode || decode)
+        source.flush();
+    else
+        source.clear();
+
+    // We don't write the verify files to disk if we are not initializing or verifying anything
+    if(initialize || verify)
+    {
+        verifyheaderfile->flush();
+        verifysourcefile->flush();
+    }
+
+}// ProtocolStructureModule::parse
+
+
+/*!
+ * Setup the files, which accounts for all the ways the fils can be organized for this structure.
+ * \param moduleName is the module name from the attributes
+ * \param defheadermodulename is the structure header file name from the attributes
+ * \param verifymodulename is the verify module name from the attibutes
+ */
+void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename)
+{
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
@@ -124,6 +150,17 @@ void ProtocolStructureModule::parse(void)
         source.setModuleNameAndPath(moduleName, support.outputpath);
     }
 
+    if(verifymodulename.isEmpty())
+        verifymodulename = support.globalVerifyName;
+
+    if(!verifymodulename.isEmpty() && (verify || initialize))
+    {
+        verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
+        verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
+        verifyheaderfile = &verifyHeader;
+        verifysourcefile = &verifySource;
+    }
+
     // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
     if(header.isAppending())
     {
@@ -134,7 +171,6 @@ void ProtocolStructureModule::parse(void)
         // Comment block at the top of the header file
         header.write("/*!\n");
         header.write(" * \\file\n");
-        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + typeName + " structure of the " + support.protoName + " protocol stack\n");
 
         // A potentially long comment that should be wrapped at 80 characters
         if(!comment.isEmpty())
@@ -153,7 +189,6 @@ void ProtocolStructureModule::parse(void)
     header.writeIncludeDirective(support.protoName + "Protocol.h");
 
     // Handle the idea that the structure might be defined in a different file
-    ProtocolHeaderFile* structfile = &header;
     if(!defheadermodulename.isEmpty())
     {
         defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
@@ -162,9 +197,16 @@ void ProtocolStructureModule::parse(void)
 
         structfile = &defheader;
 
+        // The structfile might need stdint.h. It's an open question if this is
+        // the best answer, or if we should just include the main protocol file
+        structfile->writeIncludeDirective("stdint.h", QString(), true);
+
         // In this instance we know that the normal header file needs to include
         // the file with the structure definition
         header.writeIncludeDirective(structfile->fileName());
+
+        // The verify file needs it too, if it is different from the main file
+        verifyheaderfile->writeIncludeDirective(structfile->fileName());
     }
 
     // Add other includes specific to this structure
@@ -189,6 +231,13 @@ void ProtocolStructureModule::parse(void)
     // White space is good
     source.makeLineSeparator();
 
+    if(verify || initialize)
+    {
+        verifyheaderfile->makeLineSeparator();
+        verifyheaderfile->write(getInitialAndVerifyDefines());
+        verifyheaderfile->makeLineSeparator();
+    }
+
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
 
@@ -208,9 +257,6 @@ void ProtocolStructureModule::parse(void)
         }
     }
 
-    // The functions to encoding and ecoding
-    createStructureFunctions();
-
     // White space is good
     header.makeLineSeparator();
 
@@ -227,18 +273,7 @@ void ProtocolStructureModule::parse(void)
         header.makeLineSeparator();
     }
 
-    // Write to disk
-    header.flush();
-
-    if(encode || decode)
-        source.flush();
-    else
-        source.clear();
-
-    // This may be one of the files above, in which case this will do nothing
-    structfile->flush();
-
-}// ProtocolStructureModule::parse
+}// ProtocolStructureModule::setupFiles
 
 
 /*!
@@ -266,23 +301,43 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
     // The embedded structures functions
     for(int i = 0; i < encodables.size(); i++)
     {
-        if(encodables[i]->isPrimitive())
+        ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+        if(!structure)
             continue;
 
         if(encode)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeEncodeString(support.bigendian));
+            source.write(structure->getPrototypeEncodeString(support.bigendian));
             source.makeLineSeparator();
-            source.write(encodables[i]->getFunctionEncodeString(support.bigendian));
+            source.write(structure->getFunctionEncodeString(support.bigendian));
         }
 
         if(decode)
         {
             source.makeLineSeparator();
-            source.write(encodables[i]->getPrototypeDecodeString(support.bigendian));
+            source.write(structure->getPrototypeDecodeString(support.bigendian));
             source.makeLineSeparator();
-            source.write(encodables[i]->getFunctionDecodeString(support.bigendian));
+            source.write(structure->getFunctionDecodeString(support.bigendian));
+        }
+
+        if(initialize)
+        {
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(structure->getSetToInitialValueFunctionPrototype());
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(structure->getSetToInitialValueFunctionString());
+            verifysourcefile->makeLineSeparator();
+        }
+
+        if(verify)
+        {
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(structure->getVerifyFunctionPrototype());
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(structure->getVerifyFunctionString());
+            verifysourcefile->makeLineSeparator();
         }
     }
 
@@ -311,6 +366,28 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
         header.write(getPrototypeDecodeString(support.bigendian, false));
         source.makeLineSeparator();
         source.write(getFunctionDecodeString(support.bigendian, false));
+    }
+
+    if(initialize)
+    {
+        verifyheaderfile->makeLineSeparator();
+        verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
+        verifyheaderfile->makeLineSeparator();
+
+        verifysourcefile->makeLineSeparator();
+        verifysourcefile->write(getSetToInitialValueFunctionString(false));
+        verifysourcefile->makeLineSeparator();
+    }
+
+    if(verify)
+    {
+        verifyheaderfile->makeLineSeparator();
+        verifyheaderfile->write(getVerifyFunctionPrototype(false));
+        verifyheaderfile->makeLineSeparator();
+
+        verifysourcefile->makeLineSeparator();
+        verifysourcefile->write(getVerifyFunctionString(false));
+        verifysourcefile->makeLineSeparator();
     }
 
     header.makeLineSeparator();

@@ -73,6 +73,15 @@ public:
     //! Return the string that sets this encodable to its default value in code
     virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
 
+    //! Get the string used for verifying this field.
+    virtual QString getVerifyString(bool isStructureMember) const {return QString();}
+
+    //! Return the string that sets this encodable to its initial value in code
+    virtual QString getSetInitialValueString(bool isStructureMember) const {return QString();}
+
+    //! Return the strings that #define initial and variable values
+    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {return QString();}
+
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
 

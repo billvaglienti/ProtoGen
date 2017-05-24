@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<Protocol name="Demolink" title="Demonstration of protogen" prefix="" file="linkcode" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
+<Protocol name="Demolink" title="Demonstration of protogen" prefix="" file="linkcode" verifyfile="definitions/verify" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
 "This is an demonstration protocol definition. This file demonstrates most things
 that the ProtoGen application can do regarding automatic protocol packing/upacking
 code generation.
@@ -168,27 +168,27 @@ interpretation
 
     </Packet>
 
-    <Packet name="ThrottleSettings" file="Engine" deffile="definitions/EngineDefinitions.hpp" ID="THROTTLESETTINGS"
+    <Packet name="ThrottleSettings" file="Engine" verify="true" initialize="true" deffile="definitions/EngineDefinitions.hpp" ID="THROTTLESETTINGS"
             comment="Change the throttle control settings. The engine control
             laws output a throttle command signal from 0 to 1. The data in this
             packet are used to determine what pulse width to send to the servo 
             for that throttle. The throttle to pulse width mapping can be a 
             straight line, or a linearly interpolated table with up to 10 points.">
         
-        <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
+        <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" comment="Number of points in the throttle curve"/>
         <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield3"/>
-        <Data name="enableCurve" inMemoryType="bitfield1" comment="Set to enable the throttle curve"/>
+        <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>
         
         <Structure name="curvePoint" array="10" variableArray="numCurvePoints" comment="table for throttle calibration">
-            <Data name="throttle" inMemoryType="float32" encodedType="unsigned8" min="0.0" max="1.0"
+            <Data name="throttle" inMemoryType="float32" encodedType="unsigned8" initialValue="0" verifyMinValue="auto" verifyMaxValue="auto" min="0.0" max="1.0"
                   comment="Throttle for this curve point, from 0.0 to 1.0"/>
-            <Data name="PWM" inMemoryType="unsigned16"
+            <Data name="PWM" inMemoryType="unsigned16" initialValue="1500" verifyMinValue="900" verifyMaxValue="2100"
                   comment="PWM in microseconds for this curve point"/>
         </Structure>
 
-        <Data name="lowPWM" inMemoryType="unsigned16" default="1100"
+        <Data name="lowPWM" inMemoryType="unsigned16" default="1100" initialValue="1100" verifyMinValue="900" verifyMaxValue="2100"
               comment="PWM in microseconds for 0% throttle"/>
-        <Data name="highPWM" inMemoryType="unsigned16" default="1900"
+        <Data name="highPWM" inMemoryType="unsigned16" default="1900" initialValue="1900" verifyMinValue="900" verifyMaxValue="2100"
               comment="PWM in microseconds for 100% throttle"/>
         
     </Packet>

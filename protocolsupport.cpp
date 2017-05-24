@@ -32,6 +32,7 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "supportLongBitfield"
             << "bitfieldTest"
             << "file"
+            << "verifyfile"
             << "prefix"
             << "packetStructureSuffix"
             << "packetParameterSuffix"
@@ -74,6 +75,8 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     // Global file names can be specified, but cannot have a "." in it
     globalFileName = ProtocolParser::getAttribute("file", map);
     globalFileName = globalFileName.left(globalFileName.indexOf("."));
+    globalVerifyName = ProtocolParser::getAttribute("verifyfile", map);
+    globalVerifyName = globalVerifyName.left(globalVerifyName.indexOf("."));
 
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);

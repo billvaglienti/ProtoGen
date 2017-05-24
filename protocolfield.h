@@ -89,7 +89,7 @@ public:
     virtual void setPreviousEncodable(Encodable* prev);
 
     //! Get overriden type information
-    bool getOverriddenTypeData(const ProtocolField* prev);
+    bool getOverriddenTypeData(ProtocolField* prev);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
     static QString getDisplayNumberString(double number);
@@ -155,7 +155,19 @@ public:
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
 
     //! Return the string that sets this encodable to its default value in code
-    virtual QString getSetToDefaultsString(bool isStructureMember) const;
+    virtual QString getSetToDefaultsString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Get the string used for verifying this field.
+    virtual QString getVerifyString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the string that sets this encodable to its initial value in code
+    virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the string that sets this encodable to specific value in code
+    QString getSetToValueString(bool isStructureMember, QString value) const;
+
+    //! Return the strings that #define initial and variable values
+    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
 
     //! Make this primitive not a default
     virtual void clearDefaults(void) {defaultString.clear();}
@@ -206,35 +218,94 @@ public:
     virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}
 
 protected:
+
+    //! Name of the enumerated type for this field, empty if not enumerated type
     QString enumName;
+
+    //! Minimum encoded value (as a number), used by scaling routines for unsigned encodings
     double encodedMin;
+
+    //! Maximum encoded value (as a number), used by scaling routines
     double encodedMax;
+
+    //! Multiplier (as a number) to convert in-Memory to scaled encoded value
     double scaler;
+
+    //! String providing the maximum encoded value
     QString maxString;
+
+    //! String providing the minimum encoded value
     QString minString;
+
+    //! String providing the scaler from in-Memory to encoded
     QString scalerString;
+
+    //! String giving the default value to use if the packet is too short
     QString defaultString;
+
+    //! String giving the default value for documentation purposes only
     QString defaultStringForDisplay;
+
+    //! String giving the constant value to use on encoding
     QString constantString;
+
+    //! String giving the constant value for documentation purposes only
     QString constantStringForDisplay;
+
+    //! The string used in the set to defaults function
+    QString initialValueString;
+
+    //! The string used in the set to defaults function, for documentation purposes only
+    QString initialValueStringForDisplay;
+
+    //! The string used to verify the value on the low side
+    QString verifyMinString;
+
+    //! The string used to verify the value on the low side, for documentation purposes only
+    QString verifyMinStringForDisplay;
+
+    //! The string used to verify the value on the high side
+    QString verifyMaxString;
+
+    //! The string used to verify the value on the high side, for documentation purposes only
+    QString verifyMaxStringForDisplay;
+
+    //! Flag to force this the decode function to verify the result against the constant value
     bool checkConstant;
+
+    //! Flag indicating this field overrides a previous field
     bool overridesPrevious;
+
+    //! Flag indicating this field is being overriden by a later one
+    bool isOverriden;
+
+    //! In-memory type information
     TypeData inMemoryType;
+
+    //! Encoded type information
     TypeData encodedType;
+
+    //! Details about the bitfield (if any) and its relationship to adjacent bitfields
     BitfieldData bitfieldData;
 
-    QStringList extraInfoNames; //!< List of extra fields that can be appended to a <Data> tag within a packet description
+    //! List of extra fields that can be appended to a <Data> tag within a packet description
+    QStringList extraInfoNames;
     QStringList extraInfoValues;
 
-    ProtocolField* prevField;   //!< Pointer to the previous protocol field, or NULL if none
+    //! Pointer to the previous protocol field, or NULL if none
+    ProtocolField* prevField;
 
-    bool hidden;                //!< Indicates if this field is hidden from documentation
+    //! Indicates if this field is hidden from documentation
+    bool hidden;
 
     //! Extract the type information from the type string
     void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);
 
     //! Return the constant value string, sourced from either constantValue, encodeConstantValue, decodeConstantValue
     QString getConstantString() const;
+
+    //! Adjust input string for presence of numeric constants "pi" and "e"
+    QString handleNumericConstants(QString& input) const;
 
     //! Compute the encoded length string
     void computeEncodedLength(void);

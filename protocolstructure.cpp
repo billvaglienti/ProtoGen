@@ -662,6 +662,13 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
 
 }// ProtocolStructure::alignStructureData
 
+
+/*!
+ * Get the prototype of the function that encodes this structure. The prototype
+ * is different depending on the number of encodable parameters. The prototype
+ * does not include the semicolon or line terminator
+ * \return the prototype of the encode function.
+ */
 QString ProtocolStructure::getFunctionEncodePrototype() const
 {
     QString output;
@@ -678,9 +685,10 @@ QString ProtocolStructure::getFunctionEncodePrototype() const
     return output;
 }
 
+
 /*!
  * Return the string that gives the prototype of the functions used to encode
- * the structure. The encoding is to a simple byte array.
+ * the structure, and all child structures. The encoding is to a simple byte array.
  * \param isBigEndian should be true for big endian encoding.
  * \param includeChildren should be true to output the children's prototypes.
  * \return The string including the comments and prototypes with linefeeds and semicolons
@@ -1022,7 +1030,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 {
     QString output;
     QString access;
-    QString spacing = TAB_IN + "";
+    QString spacing = TAB_IN;
 
     // A line between fields
     ProtocolFile::makeLineSeparator(output);
@@ -1108,6 +1116,323 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
 
     return output;
 }
+
+
+/*!
+ * Return the string that gives the prototypes of the functions used to set
+ * this structure to initial values.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getSetToInitialValueFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    // Go get any children structures set to initial functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getVerifyFunctionPrototype(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My set to initial values function
+    output += "//! Set a " + typeName + " structure to initial values\n";
+    output += "void init" + typeName + "(" + typeName + "* user);\n";
+
+    return output;
+
+}// ProtocolStructure::getSetToInitialValueFunctionPrototype
+
+
+/*!
+ * Return the string that gives the function used to this structure to initial
+ * values. This is NOT the call that sets this structure to initial values, this
+ * is the actual code that is in that call.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    // Go get any children structures set to initial functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getSetToInitialValueFunctionString(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    if(getNumberOfEncodeParameters() <= 0)
+        return output;
+
+    // My set to initial values function
+    output += "/*!\n";
+    output += " * \\brief Set a " + typeName + " structure to initial values.\n";
+    output += " *\n";
+    output += " * Set a " + typeName + " structure to initial values. Not all fields are set,\n";
+    output += " * only those which the protocol specifies.\n";
+    output += " * \\param user is the structure whose data are set to initial values\n";
+    output += " */\n";
+    output += "void init" + typeName + "(" + typeName + "* user)\n";
+    output += "{\n";
+
+    if(needsEncodeIterator)
+        output += TAB_IN + "int i = 0;\n";
+
+    if(needs2ndEncodeIterator)
+        output += TAB_IN + "int j = 0;\n";
+
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getSetInitialValueString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += "}// init" + typeName + "\n";
+
+    return output;
+
+}// ProtocolStructure::getFunctionSetToInitialValueString
+
+
+/*!
+ * Get the code which sets this structure member to initial values
+ * \return the code to put in the source file
+ */
+QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    if(isArray())
+    {
+        QString spacing;
+        output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+
+        if(isStructureMember)
+            access = "&user->" + name + "[i]";
+        else
+            access = "&" + name + "[i]";
+
+        if(is2dArray())
+        {
+            access += "[j]";
+            spacing += TAB_IN;
+            output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+
+        }// if 2D array of structures
+
+        output += TAB_IN + TAB_IN + spacing + "init" + typeName + "(" + access + ");\n";
+
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+            access = "&user->" + name;
+        else
+            access = name;  // in this case, name is already pointer, so we don't need "&"
+
+        output += TAB_IN + "init" + typeName + "(" + access + ");\n";
+
+    }// else if simple structure, no array
+
+    return output;
+
+}// ProtocolStructure::getSetInitialValueString
+
+
+/*!
+ * Return the string that gives the prototypes of the functions used to verify
+ * the data in this.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getVerifyFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    // Go get any children structures set to initial functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getVerifyFunctionPrototype(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My set to initial values function
+    output += "//! Verify a " + typeName + " structure has acceptable values\n";
+    output += "int verify" + typeName + "(" + typeName + "* user);\n";
+
+    return output;
+
+}// ProtocolStructure::getVerifyFunctionPrototype
+
+
+/*!
+ * Return the string that gives the function used to verify the data in this
+ * structure. This is NOT the call that verifies this structure, this
+ * is the actual code that is in that call.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    // Go get any children structures set to initial functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getVerifyFunctionString(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My set to initial values function
+    output += "/*!\n";
+    output += " * \\brief Verify a " + typeName + " structure has acceptable values.\n";
+    output += " *\n";
+    output += " * Verify a " + typeName + " structure has acceptable values. Not all fields are\n";
+    output += " * verified, only those which the protocol specifies. Fields which are outside\n";
+    output += " * the allowable range are changed to the maximum or minimum allowable value. \n";
+    output += " * \\param user is the structure whose data are verified\n";
+    output += " * \\return 1 if all verifiable data where valid, else 0 if data had to be corrected\n";
+    output += " */\n";
+    output += "int verify" + typeName + "(" + typeName + "* user)\n";
+    output += "{\n";
+    output += TAB_IN + "int good = 1;\n";
+
+    if(needsEncodeIterator)
+        output += TAB_IN + "int i = 0;\n";
+
+    if(needs2ndEncodeIterator)
+        output += TAB_IN + "int j = 0;\n";
+
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getVerifyString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += TAB_IN + "return good;\n";
+    output += "\n";
+    output += "}// verify" + typeName + "\n";
+
+    return output;
+
+}// ProtocolStructure::getVerifyFunctionString
+
+
+/*!
+ * Get the code which sets this structure member to initial values
+ * \return the code to put in the source file
+ */
+QString ProtocolStructure::getVerifyString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    if(isArray())
+    {
+        QString spacing;
+        output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+
+        if(isStructureMember)
+            access = "&user->" + name + "[i]";
+        else
+            access = "&" + name + "[i]";
+
+        if(is2dArray())
+        {
+            access += "[j]";
+            spacing += TAB_IN;
+            output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+
+        }// if 2D array of structures
+
+        output += TAB_IN + TAB_IN + spacing + "if(!verify" + typeName + "(" + access + "))\n";
+        output += TAB_IN + TAB_IN + spacing + TAB_IN + "good = 0;\n";
+
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+            access = "&user->" + name;
+        else
+            access = name;  // in this case, name is already pointer, so we don't need "&"
+
+        output += TAB_IN + "if(!verify" + typeName + "(" + access + "))\n";
+        output += TAB_IN + TAB_IN + "good = 0;\n";
+
+    }// else if simple structure, no array
+
+    return output;
+
+}// ProtocolStructure::getVerifyString
+
+
+//! Return the strings that #define initial and variable values
+QString ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
+{
+    QString output;
+
+    for(int i = 0; i < encodables.count(); i++)
+    {
+        // Children's outputs do not have comments, just the top level stuff
+        output += encodables.at(i)->getInitialAndVerifyDefines(false);
+    }
+
+    // I don't want to output this comment if there are no values being commented,
+    // that's why I insert the comment after the #defines are output
+    if(!output.isEmpty() && includeComment)
+    {
+        output.insert(0, "// Initial and verify values for " + name + "\n");
+    }
+
+    return output;
+
+}// ProtocolStructure::getInitialAndVerifyDefines
 
 
 /*!

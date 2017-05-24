@@ -76,8 +76,11 @@ void ProtocolPacket::parse(void)
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
+    QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+    verify = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("verify", map));
+    initialize = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("initialize", map));
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
 
     // Typically "parameterInterface" and "structureInterface" are only ever set to "true".
@@ -130,78 +133,8 @@ void ProtocolPacket::parse(void)
         }
     }
 
-    // The file directive allows us to override the file name
-    if(moduleName.isEmpty())
-        moduleName = support.globalFileName;
-
-    if(moduleName.isEmpty())
-    {
-        // The file names
-        header.setModuleNameAndPath(support.prefix, name + support.packetParameterSuffix, support.outputpath);
-        source.setModuleNameAndPath(support.prefix, name + support.packetParameterSuffix, support.outputpath);
-    }
-    else
-    {
-        // The file names
-        header.setModuleNameAndPath(moduleName, support.outputpath);
-        source.setModuleNameAndPath(moduleName, support.outputpath);
-    }
-
-
-    if(header.isAppending())
-    {
-        header.makeLineSeparator();
-    }
-    else
-    {
-        // Comment block at the top of the header file
-        header.write("/*!\n");
-        header.write(" * \\file\n");
-        header.write(" * \\brief " + header.fileName() + " defines the interface for the " + name + " packet of the " + support.protoName + " protocol stack\n");
-
-        // A potentially long comment that should be wrapped at 80 characters
-        if(!comment.isEmpty())
-        {
-            header.write(" *\n");
-            header.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-        }
-
-        // Finish the top comment block
-        header.write(" */\n");
-
-        // White space is good
-        header.makeLineSeparator();
-    }
-
-    // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
-    header.writeIncludeDirective(support.protoName + "Protocol.h");
-
-    // Handle the idea that the structure might be defined in a different file
-    ProtocolHeaderFile* structfile = &header;
-    if(!defheadermodulename.isEmpty())
-    {
-        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
-        if(defheader.isAppending())
-            defheader.makeLineSeparator();
-
-        structfile = &defheader;
-
-        // In this instance we know that the normal header file needs to include
-        // the file with the structure definition
-        header.writeIncludeDirective(structfile->fileName());
-    }
-
-    // Add other includes specific to this packet
-    parser->outputIncludes(getHierarchicalName(), *structfile, e);
-
-    // Include directives that may be needed for our children
-    QStringList list;
-    for(int i = 0; i < encodables.length(); i++)
-        encodables[i]->getIncludeDirectives(list);
-    structfile->writeIncludeDirectives(list);
-
-    // White space is good
-    structfile->makeLineSeparator();
+    // Most of the file setup work
+    setupFiles(moduleName, defheadermodulename, verifymodulename);
 
     if((structureFunctions == false) && (parameterFunctions == false))
     {
@@ -215,42 +148,44 @@ void ProtocolPacket::parse(void)
             parameterFunctions = true;
     }
 
-    // Create the structure definition in the header.
-    // This includes any sub-structures as well
-    structfile->write(getStructureDeclaration(structureFunctions));
-
-    // White space is good
-    structfile->makeLineSeparator();
-
-    // White space is good
-    source.makeLineSeparator();
-
-    if(support.specialFloat)
-        source.writeIncludeDirective("floatspecial.h");
-
-    source.writeIncludeDirective("fielddecode.h");
-    source.writeIncludeDirective("fieldencode.h");
-    source.writeIncludeDirective("scaleddecode.h");
-    source.writeIncludeDirective("scaledencode.h");
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
     createSubStructureFunctions();
 
-    // Outputs for the enumerations in source file, if any
-    for(int i = 0; i < enumList.count(); i++)
-    {
-        QString enumoutput = enumList.at(i)->getSourceOutput();
-        if(!enumoutput.isEmpty())
-        {
-            source.makeLineSeparator();
-            source.write(enumoutput);
-        }
-    }
-
     // For referencing this packet as a structure
     if(outputTopLevelStructureCode)
+    {
+        // Note that this call will also handle the output of top level
+        // initialize and verify functions
         createTopLevelStructureFunctions();
+    }
+    else
+    {
+        // If we are not outputting the top level structure, we need to
+        // explicitly output the initialize and verify functions
+        if(initialize)
+        {
+            verifyheaderfile->makeLineSeparator();
+            verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
+            verifyheaderfile->makeLineSeparator();
+
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(getSetToInitialValueFunctionString(false));
+            verifysourcefile->makeLineSeparator();
+        }
+
+        if(verify)
+        {
+            verifyheaderfile->makeLineSeparator();
+            verifyheaderfile->write(getVerifyFunctionPrototype(false));
+            verifyheaderfile->makeLineSeparator();
+
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(getVerifyFunctionString(false));
+            verifysourcefile->makeLineSeparator();
+        }
+    }
 
     // The functions that encode and decode the packet from a structure.
     if(structureFunctions)
@@ -266,16 +201,22 @@ void ProtocolPacket::parse(void)
     // White space is good
     header.makeLineSeparator();
 
-    // Write to disk
+    // Write to disk, note that duplicate flush() calls are OK
     header.flush();
+    structfile->flush();
 
+    // We don't write the source to disk if we are not encoding or decoding anything
     if(encode || decode)
         source.flush();
     else
         source.clear();
 
-    // This may be one of the files above, in which case this will do nothing
-    structfile->flush();
+    // We don't write the verify files to disk if we are not initializing or verifying anything
+    if(initialize || verify)
+    {
+        verifyheaderfile->flush();
+        verifysourcefile->flush();
+    }
 
 }// ProtocolPacket::parse
 

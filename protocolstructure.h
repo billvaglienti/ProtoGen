@@ -64,6 +64,27 @@ public:
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return defaults;}
 
+    //! Return the string that gives the prototype of the function used to initialize this structure
+    QString getVerifyFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to initialize this structure
+    QString getVerifyFunctionString(bool includeChildren = true) const;
+
+    //! Get the string used for verifying this field.
+    virtual QString getVerifyString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the string that gives the prototype of the function used to initialize this structure
+    QString getSetToInitialValueFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to initialize this structure
+    QString getSetToInitialValueFunctionString(bool includeChildren = true) const;
+
+    //! Return the string that sets this encodable to its initial value in code
+    virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the strings that #define initial and variable values
+    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
+
     //! Get the number of fields that are encoded
     int getNumberOfEncodes(void) const;
 

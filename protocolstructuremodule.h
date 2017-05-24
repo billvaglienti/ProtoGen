@@ -14,6 +14,7 @@ class ProtocolStructureModule : public ProtocolStructure
     friend class ProtocolBitfield;
 
 public:
+
     //! Construct the structure parsing object, with details about the overall protocol
     ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
@@ -27,7 +28,7 @@ public:
     ~ProtocolStructureModule(void);
 
     //! Get the name of the header file that encompasses this structure definition
-    QString getDefinitionFileName(void) const;
+    QString getDefinitionFileName(void) const {return structfile->fileName();}
 
     //! Get the name of the header file that encompasses this structure interface functions
     QString getHeaderFileName(void) const {return header.fileName();}
@@ -36,7 +37,7 @@ public:
     QString getSourceFileName(void) const {return source.fileName();}
 
     //! Get the path of the header file that encompasses this structure definition
-    QString getDefinitionFilePath(void) const;
+    QString getDefinitionFilePath(void) const {return structfile->filePath();}
 
     //! Get the path of the header file that encompasses this structure interface functions
     QString getHeaderFilePath(void) const {return header.filePath();}
@@ -44,7 +45,22 @@ public:
     //! Get the path of the source file for this structure
     QString getSourceFilePath(void) const {return source.filePath();}
 
+    //! Get the name of the header file that encompasses this structure verify functions
+    QString getVerifyHeaderFileName(void) const {return verifyheaderfile->fileName();}
+
+    //! Get the name of the source file that encompasses this structure verify functions
+    QString getVerifySourceFileName(void) const {return verifysourcefile->fileName();}
+
+    //! Get the path of the header file that encompasses this structure verify functions
+    QString getVerifyHeaderFilePath(void) const {return verifyheaderfile->filePath();}
+
+    //! Get the path of the source file that encompasses this structure verify functions
+    QString getVerifySourceFilePath(void) const {return verifysourcefile->filePath();}
+
 protected:
+
+    //! Setup the files, which accounts for all the ways the fils can be organized for this structure.
+    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
@@ -61,10 +77,17 @@ protected:
     ProtocolSourceFile source;      //!< The source file (*.c)
     ProtocolHeaderFile header;      //!< The header file (*.h)
     ProtocolHeaderFile defheader;   //!< The header file name for the structure definition
+    ProtocolSourceFile verifySource;//!< The source file for verify code (*.c)
+    ProtocolHeaderFile verifyHeader;//!< The header file for verify code (*.h)
+    ProtocolHeaderFile* structfile;         //!< Reference to the file that holds the structure definition
+    ProtocolHeaderFile* verifyheaderfile;   //!< Reference to the file that holds the verify prototypes
+    ProtocolSourceFile* verifysourcefile;   //!< Reference to the file that holds the verify source code
     QString api;                    //!< The protocol API enumeration
     QString version;                //!< The version string
     bool encode;                    //!< True if the encode function is output
     bool decode;                    //!< True if the decode function is output
+    bool initialize;                //!< True if the setToInitialValue function is output
+    bool verify;                    //!< True if the verify function is output
 
 };
 

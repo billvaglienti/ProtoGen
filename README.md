@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.0. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.1. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -87,7 +87,9 @@ The Protocol tag supports the following attributes:
 
 - `title` : The title of the protocol. This is used as the title for the first paragraph in the documentation output. If title is not given then the title of the first paragraph will be `name` + "Protocol".
 
-- `file` : Optional attribute that gives the name of the source and header file name (.c and .h) that will be used for all code output except the primary header file, and any objects which have their own `file` attribute.
+- `file` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the encoding and decoding code output; except for the primary header file, and any objects which have their own `file` attribute.
+
+- `verifyfile` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the initilization and verification code output (if any); except for any objects which have their own `verifyfile` attribute.
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
@@ -276,9 +278,15 @@ Structure tag Attributes:
 
 - `deffile` : Optional attribute used to specify a definition file which receives the structure definition (and any enumeration which is a child of the structure), in place of the normal file location for the structure definition. As with other file attributes the definition file will be correctly appended if it is used multiple times. Any extension to the `deffile` attribute will be ignored.
 
-- `encode` : By default encode functions will be output. This can be suppressed by setting `encode`="false".
+- `encode` : By default encode functions will be output. This can be suppressed by setting `encode="false"`.
 
-- `decode` : By default decode functions will be output. This can be suppressed by setting `decode`="false".
+- `decode` : By default decode functions will be output. This can be suppressed by setting `decode="false"`.
+
+- `initialize` : Setting `initialize="true"` will cause ProtoGen to output a function called `initName_t`, which is used to give specific members of the structure initial values that are defined in the protocol xml (see the `initialValue` data attribute).
+
+- `verify` : Setting `verify="true"` will cause ProtoGen to output a function called `verifyName_t`, which is used to test specific members of the structure to verify that the values are within a range defined in the protocol xml (see the `minVerify` and `maxVerify` data attributes).
+
+- `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if `initialize="true"` or `verify="true"`). If verifyfile is omitted then the init and verify functions (if any) are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
 
 - `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once).
 
@@ -308,21 +316,13 @@ The Packet tag is used to define all the code to encode and decode one packet of
                      width mapping can be a straight line, or a linearly interpolated
                      table with up to 10 points.">
   
-Packet tag attributes:
+Packet tag attributes beyond Structure tag attributes:
   
-- `name` : The same as the name attribute of a structure.
-
-- `title` : The same as the title attribute of a structure.
-
 - `ID` : gives the identifying value of the packet. This can be any resolvable string, though typically it will be an element of an enumeration. If the ID attribute is missing the all-caps name of the packet is used as the ID. In some cases multiple packets may be identical except for the identifier. It is possible to simply define multiple packets in the XML, however a better solution is to specify multiple identifiers by using spaces or commas to delimit the identifers in the ID attribute. If multiple identifiers are given the encode function is changed so the caller provides the desired id. In addition the decode function is changed so that any of the given identifiers can be used for a successful packet decode.
-
-- `file` : The same as the file attribute of a structure.
 
 - `structureInterface` : If this attribute is set to `true` the structure based interfaces to the packet functions will be created.
 
 - `parameterInterface` : If this attribute is set to `true` then a parameter based interface to the packet functions will be created. This is useful for simpler packets that do not have too many parameters and using a structure as the interface method is unwieldy. If neither `structureInterface` or `parameterInterface` are specified as `true` ProtoGen will output parameter based interfaces if the number of fields in the packet is 1 or less, otherwise it will output structure based interfaces.
-
-- `comment` : The comment for the Packet tag will be placed at the top of the packets header file (or the top of the appended text if the file is used more than once) as a multi-line doxygen comment. The comment will be wrapped at 80 characters using spaces as the separator.
 
 - `hidden` : If set to `true` this attribute specifies that this packet will NOT appear in the documentation markdown.
 
@@ -433,6 +433,12 @@ Data subtag attributes:
 - `checkConstant` : If set to "true" this attribute affects the interpretation of `constant` in the decode function. When checkConstant is set the decode function evaluates the decoded data and returns a fail state if the value is not equal to the supplied constant.
 
 - `hidden` : is used to specify that this particular data field will *not* appear in the generated documentation markdown.
+
+- `initialValue` : is used to specify an initial value that is assigned to this field in the init function (if one is output, see the `initialize` flag of the Structure tag). If the `initialValue` is not given then this field will not receive an initial value in the init function. As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e".
+
+- `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function (if one is output, see the `verify` flag of the Structure tag). If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the minimum value based on this fields encoding rules.
+
+- `verifyMaxValue` : is used to specify the highest value that this in-memory field should hold. This is used in the verify function (if one is output, see the `verify` flag of the Structure tag). If the value of this field is more than `verifyMaxValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the maximum value based on this fields encoding rules.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
@@ -614,14 +620,21 @@ floatspecial also provides routines to determine if a pattern of 32 or 64 bits i
 
 ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to IEEE-754. ProtoGen's assumption of the layout of the `float` and `double` types is only a factor in two cases: 1) if the protocol you specify uses 16 or 24 bit floating point types (i.e. if a conversion between the types is needed) and 2) if a native 32 or 64 bit float type is encoded without scaling by integer, which will trigger the check to determine if the float is valid when it is decoded. If any of your processors do not adhere to the IEEE-754 spec for floating point, do not use 16 or 24 bit floats in your protocol ICD. If you set the protocol attribute `supportSpecialFloat="false"` then the floatspecial module will not be emitted and any reference to float16 or float24 in the protocol will generate a warning and the type will be changed to float32. In addition setting `supportSpecialFloat="false"` will cause ProtoGen to skip the valid float check on decode.
 
-bitfields
----------------
+Bitfields
+---------
 
 Protogen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
 
 Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last. This can be changed by putting the bitfields into a "bitfield group", see the section on bitfield groups for more details.
 
 Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield.
+
+Initialization and Verification
+-------------------------------
+
+It is common for projects to read and write structures directly to storage or memory, and to need some means to correctly initialize and verify a structure. Accordingly Protogen can output functions for initializing structures and for verifying the values in a structure. These functions will only be output if the Structure or Packet tag contains the `initialize="true"` and/or `verify="true"` attributes. Whenever these functions are output Protogen will also output a series of #defined constants that give the initial, min, and max values used in these functions. These can be helpful, for example, when creating user interfaces that represent the data in these structures.
+
+Since the intialization and verification of structures are not related to the encoding and decoding of data for communications it is recommended that the files used for these functions be different then those used for packet encoding and deocoding. The attribute `verifyfile` can be used to change the file that the these functions are written to.
 
 Generation of documentation
 ===========================
@@ -651,4 +664,4 @@ Five by Five Development, LLC
 
 [www.fivebyfivedevelopment.com](http://www.fivebyfivedevelopment.com)
  
-Before founding Five by Five Development in 2013 I was co-founder of [Cloud Cap Technology](http://www.cloudcaptech.com), which developed the Piccolo flight management system. Although Piccolo was at heart a flight controller, I spent more time coding communications protocols than anything else. Hopefully ProtoGen will allow myself and others to spend less time doing that.
+Before starting Five by Five Development in 2013 I was co-founder of [Cloud Cap Technology](http://www.cloudcaptech.com), which developed the Piccolo flight management system. Although Piccolo was at heart a flight controller, I spent more time coding communications protocols than anything else. Hopefully ProtoGen will allow myself and others to spend less time doing that.

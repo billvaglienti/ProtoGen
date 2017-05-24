@@ -183,6 +183,7 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupp
     scaler(1),
     checkConstant(false),
     overridesPrevious(false),
+    isOverriden(false),
     inMemoryType(supported),
     encodedType(supported),
     prevField(0),
@@ -207,6 +208,7 @@ void ProtocolField::clear(void)
     constantStringForDisplay.clear();
     checkConstant = false;
     overridesPrevious = false;
+    isOverriden = false;
     encodedType = inMemoryType = TypeData(support);
     bitfieldData.clear();
     scalerString.clear();
@@ -216,6 +218,12 @@ void ProtocolField::clear(void)
     extraInfoNames.clear();
     extraInfoValues.clear();
     hidden = false;
+    initialValueString.clear();
+    verifyMinString.clear();
+    verifyMaxString.clear();
+    initialValueStringForDisplay.clear();
+    verifyMinStringForDisplay.clear();
+    verifyMaxStringForDisplay.clear();
 
 }// ProtocolField::clear
 
@@ -267,7 +275,7 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
  * \param prev is the previous encodable to test if its the source of the data being overriden by this encodable. Can be null
  * \return true if prev is the source of data being overriden
  */
-bool ProtocolField::getOverriddenTypeData(const ProtocolField* prev)
+bool ProtocolField::getOverriddenTypeData(ProtocolField* prev)
 {
     // If we are overriding then this function is not interesting
     if(!overridesPrevious)
@@ -284,6 +292,9 @@ bool ProtocolField::getOverriddenTypeData(const ProtocolField* prev)
     // Must exist in memory, or we can't be overriding it
     if(prev->isNotInMemory())
         return false;
+
+    // Let the previous one know that we are overriding it
+    prev->isOverriden = true;
 
     // If we get here, then this is our baby. Update the data being overriden.
     inMemoryType = prev->inMemoryType;
@@ -653,7 +664,10 @@ void ProtocolField::parse(void)
                                              << "Range"
                                              << "Notes"
                                              << "bitfieldGroup"
-                                             << "hidden");
+                                             << "hidden"
+                                             << "initialValue"
+                                             << "verifyMinValue"
+                                             << "verifyMaxValue");
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -716,6 +730,12 @@ void ProtocolField::parse(void)
             bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
             hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
+        else if(attrname.compare("initialValue", Qt::CaseInsensitive) == 0)
+            initialValueString = attr.value().trimmed();
+        else if(attrname.compare("verifyMinValue", Qt::CaseInsensitive) == 0)
+            verifyMinString = attr.value().trimmed();
+        else if(attrname.compare("verifyMaxValue", Qt::CaseInsensitive) == 0)
+            verifyMaxString = attr.value().trimmed();
 
     }// for all attributes
 
@@ -770,7 +790,7 @@ void ProtocolField::parse(void)
     if(inMemoryType.isNull)
     {
         // Null types are not in memory, therefore cannot have defaults or variable arrays
-        // ??? come back here
+        /// TODO: is this strictly true? It seems we could relax this requirement somewhat
         variableArray.clear();
         variable2dArray.clear();
         defaultString.clear();
@@ -1189,22 +1209,13 @@ void ProtocolField::parse(void)
 
     }// if scaler string
 
-    // Change so html will render the pi symbol
-    maxString.replace("pi", "&pi;");
-    minString.replace("pi", "&pi;");
-    scalerString.replace("pi", "&pi;");
-
-    // Change to get rid of * multiply symbol, which plays havoc with markdown
-    maxString.replace("*", "&times;");
-    minString.replace("*", "&times;");
-    scalerString.replace("*", "&times;");
-
     // Max must be larger than minimum
     if(encodedMin > encodedMax)
     {
         encodedMin = encodedMax = 0.0;
         minString.clear();
         maxString.clear();
+        scalerString.clear();
         scaler = 1.0;
         emitWarning("max is not more than min, encoding not scaled");
     }
@@ -1241,52 +1252,95 @@ void ProtocolField::parse(void)
     // Make sure no keyword conflicts
     checkAgainstKeywords();
 
-    // Support the case where the default string uses "pi" or "e".
-    if(!defaultString.isEmpty())
+    // Check if the verify max string is "auto" and handle it
+    if(verifyMaxString.compare("auto", Qt::CaseInsensitive) == 0)
     {
-        bool ok;
-        ShuntingYard::computeInfix(defaultString, &ok);
-
-        // Save the original user input string
-        defaultStringForDisplay = defaultString;
-
-        // We only do the replacement if the pi or e is part of a number
-        if(ok)
+        // Automatically figure out the value of the max
+        if(maxString.isEmpty())
         {
-            // Perform the replacement for code
-            ShuntingYard::replacePie(defaultString);
-
-            // And for HTML outputs
-            defaultStringForDisplay.replace("pi", "&pi", Qt::CaseInsensitive);
+            // In this case we don't already have scaling information, so we need to work out the value ourselves
+            if(encodedType.isSigned)
+                verifyMaxString = QString().setNum(pow2(encodedType.bits-1)-1);
+            else
+                verifyMaxString = QString().setNum(pow2(encodedType.bits)-1);
         }
+        else
+            verifyMaxString = getNumberString(encodedMax, encodedType.bits);
 
-    }// if we have a default string
+    }// if we need to automagically determine the max verify string
 
-    // Support the case where the constant string uses "pi" or "e".
-    if(!constantString.isEmpty())
+    // Check if the verify min string is "auto" and handle it
+    if(verifyMinString.compare("auto", Qt::CaseInsensitive) == 0)
     {
-        bool ok;
-        ShuntingYard::computeInfix(constantString, &ok);
-
-        // Save the original user input string
-        constantStringForDisplay = constantString;
-
-        // We only do the replacement if the pi or e is part of a number
-        if(ok)
+        // Automatically figure out the value of the min
+        if(minString.isEmpty())
         {
-            // Perform the replacement for code
-            ShuntingYard::replacePie(constantString);
-
-            // And for HTML outputs
-            constantStringForDisplay.replace("pi", "&pi", Qt::CaseInsensitive);
+            // In this case we don't already have scaling information, so we need to work out the value ourselves
+            if(encodedType.isSigned)
+                verifyMinString = QString().setNum(-pow2(encodedType.bits-1));
+            else
+                verifyMinString = "0";
         }
+        else
+            verifyMinString = getNumberString(encodedMin, encodedType.bits);
 
-    }// if we have a constant string
+    }// if we need to automagically determine the min verify string
+
+    // Support the case where a numeric string uses "pi" or "e".
+    defaultStringForDisplay = handleNumericConstants(defaultString);
+    constantStringForDisplay = handleNumericConstants(constantString);
+    verifyMaxStringForDisplay = handleNumericConstants(verifyMaxString);
+    verifyMinStringForDisplay = handleNumericConstants(verifyMinString);
+    initialValueStringForDisplay = handleNumericConstants(initialValueString);
+
+    // Update these strings for display purposes
+    maxString = handleNumericConstants(maxString);
+    minString = handleNumericConstants(minString);
+    scalerString = handleNumericConstants(scalerString);
 
     // Compute the data length
     computeEncodedLength();
 
 }// ProtocolField::parse
+
+
+/*!
+ * Take an input string, which may be a number, and handle instances of "pi" or
+ * "e", modifying the input string, and generating an output string which is
+ * suitable for documentation purposes.
+ * \param input is the input string, which may be modified
+ * \return a documentation version of input
+ */
+QString ProtocolField::handleNumericConstants(QString& input) const
+{
+    if(input.isEmpty())
+        return input;
+
+    bool ok;
+    QString display = input;
+
+    // Determine if the input string is a number, which might have numeric constants (pi or e)
+    ShuntingYard::computeInfix(input, &ok);
+
+    if(ok)
+    {
+        // For the input string, we replace the symbols "pi" and "e" with their
+        // numeric values so the code which uses this string will compile. We
+        // cannot do this replacement without first knowing input is a number,
+        // otherwise we'll just be screwing up the name of something
+        ShuntingYard::replacePie(input);
+
+        // For the display string we replace the symbol "pi" with the
+        // appropriate value for html outputs
+        display.replace("pi", "&pi", Qt::CaseInsensitive);
+
+        // Change to get rid of * multiply symbol, which plays havoc with markdown
+        display.replace("*", "&times;");
+    }
+
+    return display;
+
+}// ProtocolField::handleNumericConstants
 
 
 /*!
@@ -1843,17 +1897,251 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
 
 
 /*!
+ * Get the string used for verifying this field. If there is no verification data the string will be empty
+ * \param isStructureMember should be true if this member is referenced by structure
+ * \return the string used for verifying this field, which may be blank
+ */
+QString ProtocolField::getVerifyString(bool isStructureMember) const
+{
+    // No verify for null or string
+    if(inMemoryType.isNull || inMemoryType.isString)
+        return QString();
+
+    if(inMemoryType.isStruct)
+    {
+        QString output;
+        QString access;
+
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
+
+        if(isArray())
+        {
+            QString spacing;
+            output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+
+            if(isStructureMember)
+                access = "&user->" + name + "[i]";
+            else
+                access = "&" + name + "[i]";
+
+            // Handle 2D array
+            if(is2dArray())
+            {
+                access += "[j]";
+                spacing += TAB_IN;
+                output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+            }
+
+            output += TAB_IN + TAB_IN + spacing + "if(!verify" + typeName + "(" + access + "))\n";
+            output += TAB_IN + TAB_IN + spacing + TAB_IN + "good = 0;\n";
+        }
+        else
+        {
+            if(isStructureMember)
+                access = "&user->" + name;
+            else
+                access = name;  // in this case, name is already pointer, so we don't need "&"
+
+            output += TAB_IN + "if(!verify" + typeName + "(" + access + "))\n";
+            output += TAB_IN + TAB_IN + "good = 0;\n";
+        }
+
+        return output;
+
+    }
+    else
+    {
+        if(verifyMaxString.isEmpty() && verifyMinString.isEmpty())
+            return QString();
+
+        QString output;
+        QString access;
+
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
+
+        if(isArray())
+        {
+            QString spacing;
+            output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+
+            if(isStructureMember)
+                access = "user->" + name + "[i]";
+            else
+                access = name + "[i]";
+
+            // Handle 2D array
+            if(is2dArray())
+            {
+                access += "[j]";
+                spacing += TAB_IN;
+                output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+            }
+
+            output += TAB_IN + spacing + "{\n";
+            if(!verifyMinString.isEmpty())
+            {
+                output += TAB_IN + TAB_IN + spacing + "if(" + access + " < " + verifyMinString + ")\n";
+                output += TAB_IN + TAB_IN + spacing + "{\n";
+                output += TAB_IN + TAB_IN + spacing + TAB_IN + access + " = " + verifyMinString + ";\n";
+                output += TAB_IN + TAB_IN + spacing + TAB_IN + "good = 0;\n";
+                output += TAB_IN + TAB_IN + spacing + "}\n";
+            }
+
+            if(!verifyMaxString.isEmpty())
+            {
+                QString choice = "else if(";
+                if(verifyMinString.isEmpty())
+                    choice = "if(";
+
+                output += TAB_IN + TAB_IN + spacing + choice + access + " > " + verifyMaxString + ")\n";
+                output += TAB_IN + TAB_IN + spacing + "{\n";
+                output += TAB_IN + TAB_IN + spacing + TAB_IN + access + " = " + verifyMaxString + ";\n";
+                output += TAB_IN + TAB_IN + spacing + TAB_IN + "good = 0;\n";
+                output += TAB_IN + TAB_IN + spacing + "}\n";
+            }
+
+            output += TAB_IN + spacing + "}\n";
+
+        }// if field is array
+        else
+        {
+            if(isStructureMember)
+                access = "user->" + name;
+            else
+                access = "*" + name;
+
+            if(!verifyMinString.isEmpty())
+            {
+                output += TAB_IN + "if(" + access + " < " + verifyMinString + ")\n";
+                output += TAB_IN + "{\n";
+                output += TAB_IN + TAB_IN + access + " = " + verifyMinString + ";\n";
+                output += TAB_IN + TAB_IN + "good = 0;\n";
+                output += TAB_IN + "}\n";
+            }
+
+            if(!verifyMaxString.isEmpty())
+            {
+                QString choice = "else if(";
+                if(verifyMinString.isEmpty())
+                    choice = "if(";
+
+                output += TAB_IN + choice + access + " > " + verifyMaxString + ")\n";
+                output += TAB_IN + "{\n";
+                output += TAB_IN + TAB_IN + access + " = " + verifyMaxString + ";\n";
+                output += TAB_IN + TAB_IN + "good = 0;\n";
+                output += TAB_IN + "}\n";
+            }
+
+        }// else if not array
+
+        return output;
+
+    }// else if not struct
+
+}// ProtocolField::getVerifyString
+
+
+/*!
  * Return the string that sets this encodable to its default value in code
  * \param isStructureMember should be true if this field is accessed through a "user" structure pointer
  * \return the string to add to the source file, including line feed
  */
 QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 {
+    return getSetToValueString(isStructureMember, defaultString);
+}
+
+
+/*!
+ * Return the string that sets this encodable to its initial value in code
+ * \param isStructureMember should be true if this field is accessed through a "user" structure pointer
+ * \return the string to add to the source file, including line feed
+ */
+QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
+{
+    QString output;
+
+    if(inMemoryType.isNull)
+        return output;
+
+    if(inMemoryType.isStruct)
+    {
+        QString access;
+
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
+
+        if(isArray())
+        {
+            output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+
+            if(is2dArray())
+            {
+                output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+
+                if(isStructureMember)
+                    access = "&user->" + name + "[i][j]";
+                else
+                    access = "&" + name + "[i][j]";
+
+                output += TAB_IN + TAB_IN + TAB_IN + "init" + typeName + "(" + access + ");\n";
+
+            }// if 2D array of structures
+            else
+            {
+                if(isStructureMember)
+                    access = "&user->" + name + "[i]";
+                else
+                    access = "&" + name + "[i]";
+
+                output += TAB_IN + TAB_IN + "init" + typeName + "(" + access + ");\n";
+
+            }// else if only 1-D array
+
+        }// if array of structures
+        else
+        {
+            if(isStructureMember)
+                access = "&user->" + name;
+            else
+                access = name;  // in this case, name is already pointer, so we don't need "&"
+
+            output += TAB_IN + "init" + typeName + "(" + access + ");\n";
+
+        }// else if simple structure, no array
+
+    }// if struct
+    else if(!initialValueString.isEmpty())
+    {
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
+
+        output += getSetToValueString(isStructureMember, initialValueString);
+    }
+
+    return output;
+
+}// ProtocolField::getSetInitialValueString
+
+
+/*!
+ * Return the string that sets this encodable to specific value in code, this cannot be used with a struct
+ * \param isStructureMember should be true if this field is accessed through a "user" structure pointer
+ * \param value is the string of the specific value.
+ * \return the string to add to the source file, including line feed
+ */
+QString ProtocolField::getSetToValueString(bool isStructureMember, QString value) const
+{
     QString output;
     QString access;
 
-    if(defaultString.isEmpty())
+    if(inMemoryType.isStruct)
         return output;
+
+    if(value.isEmpty())
+        return QString();
 
     // Write out the defaults code
     if(inMemoryType.isString)
@@ -1861,42 +2149,73 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
         if(isStructureMember)
             access = "user->";
 
-        if(defaultString.compare("null", Qt::CaseInsensitive) == 0)
-            output += "    " + access + name + "[0] = 0;\n";
+        if(value.isEmpty() || value.compare("null", Qt::CaseInsensitive) == 0)
+            output += TAB_IN + access + name + "[0] = 0;\n";
         else
-            output += "    strncpy((char*)" + access + name + ", \"" + defaultString + "\", " + array + ");\n";
-    }
-    else if(isArray())
-    {
-        if(isStructureMember)
-            access = "user->";
-
-        if(is2dArray())
-        {
-            output += "    for(i = 0; i < " + array + "; i++)\n";
-            output += "        for(j = 0; j < " + array2d + "; j++)\n";
-            output += "            " + access + name + "[i][j] = " + defaultString + ";\n";
-        }
-        else
-        {
-            output += "    for(i = 0; i < " + array + "; i++)\n";
-            output += "        " + access + name + "[i] = " + defaultString + ";\n";
-        }
+            output += TAB_IN + "strncpy((char*)" + access + name + ", \"" + value + "\", " + array + ");\n";
     }
     else
     {
-        if(isStructureMember)
-            access = "user->";
-        else
-            access = "*";
+        if(isArray())
+        {
+            if(isStructureMember)
+                access = "user->";
 
-        // Direct pointer access
-        output += "    " + access + name + " = " + defaultString + ";\n";
-    }
+            if(is2dArray())
+            {
+                output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+                output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+                output += TAB_IN + TAB_IN + TAB_IN + access + name + "[i][j] = " + value + ";\n";
+            }
+            else
+            {
+                output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+                output += TAB_IN + TAB_IN + access + name + "[i] = " + value + ";\n";
+            }
+        }
+        else
+        {
+            if(isStructureMember)
+                access = "user->";
+            else
+                access = "*";
+
+            // Direct pointer access
+            output += TAB_IN + access + name + " = " + value + ";\n";
+        }
+
+    }// else if not a struct
 
     return output;
 
-}// ProtocolField::getSetToDefaultsString
+}// ProtocolField::getSetToValueString
+
+
+//! Return the strings that #define initial and variable values
+QString ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
+{
+    QString output;
+
+    if(inMemoryType.isNull || inMemoryType.isStruct)
+        return output;
+
+    QString start = getHierarchicalName();
+
+    start.remove(support.protoName + ":");
+    start.replace(":", "_");
+
+    if(!initialValueString.isEmpty())
+        output += "#define " + start + "_InitValue " + initialValueString + "\n";
+
+    if(!verifyMinString.isEmpty())
+        output += "#define " + start + "_VerifyMin " + verifyMinString + "\n";
+
+    if(!verifyMaxString.isEmpty())
+        output += "#define " + start + "_VerifyMax " + verifyMaxString + "\n";
+
+    return output;
+
+}// ProtocolField::getInitialAndVerifyDefines
 
 
 //! True if this encodable has a direct child that uses bitfields
