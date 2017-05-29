@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.1.a";
+const QString ProtocolParser::genVersion = "2.2.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -988,7 +988,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
  * \param typeName is the type to lookup
  * \return a pointer to the structure encodable, or NULL if it does not exist
  */
-const ProtocolStructure* ProtocolParser::lookUpStructure(const QString& typeName) const
+const ProtocolStructureModule* ProtocolParser::lookUpStructure(const QString& typeName) const
 {
     for(int i = 0; i < structures.size(); i++)
     {

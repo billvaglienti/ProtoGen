@@ -79,8 +79,6 @@ void ProtocolPacket::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
-    verify = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("verify", map));
-    initialize = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("initialize", map));
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
 
     // Typically "parameterInterface" and "structureInterface" are only ever set to "true".
@@ -164,7 +162,7 @@ void ProtocolPacket::parse(void)
     {
         // If we are not outputting the top level structure, we need to
         // explicitly output the initialize and verify functions
-        if(initialize)
+        if(hasInit())
         {
             verifyheaderfile->makeLineSeparator();
             verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
@@ -175,7 +173,7 @@ void ProtocolPacket::parse(void)
             verifysourcefile->makeLineSeparator();
         }
 
-        if(verify)
+        if(hasVerify())
         {
             verifyheaderfile->makeLineSeparator();
             verifyheaderfile->write(getVerifyFunctionPrototype(false));
@@ -212,7 +210,7 @@ void ProtocolPacket::parse(void)
         source.clear();
 
     // We don't write the verify files to disk if we are not initializing or verifying anything
-    if(initialize || verify)
+    if(hasInit() || hasVerify())
     {
         verifyheaderfile->flush();
         verifysourcefile->flush();

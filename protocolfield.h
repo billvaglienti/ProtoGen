@@ -137,7 +137,10 @@ public:
     virtual QString getDeclaration(void) const;
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const;
+    virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's init and verify functions
+    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const;
@@ -147,6 +150,12 @@ public:
 
     //! Return true if this field is hidden from documentation
     virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+
+    //! True if this encodable has verification data
+    virtual bool hasVerify(void) const Q_DECL_OVERRIDE;
+
+    //! True if this encodable has initialization data
+    virtual bool hasInit(void) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;

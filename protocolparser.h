@@ -98,7 +98,7 @@ public:
     QString getEnumerationNameForEnumValue(const QString& text) const;
 
     //! Find the global structure point for a specific type
-    const ProtocolStructure* lookUpStructure(const QString& typeName) const;
+    const ProtocolStructureModule* lookUpStructure(const QString& typeName) const;
 
     //! Get the documentation details for a specific global structure type
     void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;

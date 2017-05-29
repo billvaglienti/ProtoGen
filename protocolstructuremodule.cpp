@@ -17,12 +17,10 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     api(protocolApi),
     version(protocolVersion),
     encode(true),
-    decode(true),
-    initialize(false),
-    verify(false)
+    decode(true)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "initialize" << "verify" << "verifyfile";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile";
 }
 
 
@@ -42,7 +40,6 @@ void ProtocolStructureModule::clear(void)
     header.clear();
     defheader.clear();
     encode = decode = true;
-    verify = initialize = false;
     structfile = &header;
     verifyheaderfile = &header;
     verifysourcefile = &source;
@@ -94,8 +91,6 @@ void ProtocolStructureModule::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
-    verify = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("verify", map));
-    initialize = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("initialize", map));
 
     // Warnings for users
     issueWarnings(map);
@@ -117,7 +112,7 @@ void ProtocolStructureModule::parse(void)
         source.clear();
 
     // We don't write the verify files to disk if we are not initializing or verifying anything
-    if(initialize || verify)
+    if(hasInit() || hasVerify())
     {
         verifyheaderfile->flush();
         verifysourcefile->flush();
@@ -153,7 +148,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     if(verifymodulename.isEmpty())
         verifymodulename = support.globalVerifyName;
 
-    if(!verifymodulename.isEmpty() && (verify || initialize))
+    if(!verifymodulename.isEmpty() && (hasInit() || hasVerify()))
     {
         verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
         verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
@@ -204,16 +199,22 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         // In this instance we know that the normal header file needs to include
         // the file with the structure definition
         header.writeIncludeDirective(structfile->fileName());
-
-        // The verify file needs it too, if it is different from the main file
-        verifyheaderfile->writeIncludeDirective(structfile->fileName());
     }
+
+    // The verify file needs access to the struct file
+    verifyheaderfile->writeIncludeDirective(structfile->fileName());
+
+    // The verification details may be spread across multiple files
+    QStringList list;
+    for(int i = 0; i < encodables.length(); i++)
+        encodables[i]->getInitAndVerifyIncludeDirectives(list);
+    verifyheaderfile->writeIncludeDirectives(list);
 
     // Add other includes specific to this structure
     parser->outputIncludes(getHierarchicalName(), *structfile, e);
 
     // Include directives that may be needed for our children
-    QStringList list;
+    list.clear();
     for(int i = 0; i < encodables.length(); i++)
         encodables[i]->getIncludeDirectives(list);
     structfile->writeIncludeDirectives(list);
@@ -231,7 +232,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     // White space is good
     source.makeLineSeparator();
 
-    if(verify || initialize)
+    if(hasVerify() || hasInit())
     {
         verifyheaderfile->makeLineSeparator();
         verifyheaderfile->write(getInitialAndVerifyDefines());
@@ -274,6 +275,36 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     }
 
 }// ProtocolStructureModule::setupFiles
+
+
+/*!
+ * Return the include directives needed for this encodable
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructureModule::getIncludeDirectives(QStringList& list) const
+{
+    list.append(structfile->fileName());
+    list.append(header.fileName());
+
+    ProtocolStructure::getIncludeDirectives(list);
+
+}
+
+
+/*!
+ * Return the include directives needed for this encodable's init and verify functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructureModule::getInitAndVerifyIncludeDirectives(QStringList& list) const
+{
+    // Our verify header
+    list.append(verifyheaderfile->fileName());
+
+    // And any of our children's headers
+    ProtocolStructure::getInitAndVerifyIncludeDirectives(list);
+
+    list.removeDuplicates();
+}
 
 
 /*!
@@ -322,7 +353,7 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
             source.write(structure->getFunctionDecodeString(support.bigendian));
         }
 
-        if(initialize)
+        if(hasInit())
         {
             verifysourcefile->makeLineSeparator();
             verifysourcefile->write(structure->getSetToInitialValueFunctionPrototype());
@@ -331,7 +362,7 @@ void ProtocolStructureModule::createSubStructureFunctions(void)
             verifysourcefile->makeLineSeparator();
         }
 
-        if(verify)
+        if(hasVerify())
         {
             verifysourcefile->makeLineSeparator();
             verifysourcefile->write(structure->getVerifyFunctionPrototype());
@@ -368,7 +399,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
         source.write(getFunctionDecodeString(support.bigendian, false));
     }
 
-    if(initialize)
+    if(hasInit())
     {
         verifyheaderfile->makeLineSeparator();
         verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
@@ -379,7 +410,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(void)
         verifysourcefile->makeLineSeparator();
     }
 
-    if(verify)
+    if(hasVerify())
     {
         verifyheaderfile->makeLineSeparator();
         verifyheaderfile->write(getVerifyFunctionPrototype(false));

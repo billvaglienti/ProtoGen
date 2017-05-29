@@ -33,7 +33,8 @@ SOURCES += main.cpp \
     linkcode.c \
     packetinterface.c \
     bitfieldtest.c \
-    definitions/verify.c
+    definitions/verify.c \
+    verify/dateverify.c
 
 HEADERS += \
     indices.h \
@@ -50,13 +51,16 @@ HEADERS += \
     packetinterface.h \
     definitions/EngineDefinitions.hpp \
     bitfieldtest.h \
-    definitions/verify.h
+    definitions/verify.h \
+    OtherDefinitions.h \
+    verify/dateverify.h
 
 OTHER_FILES += \
     Doxyfile
 
 INCLUDEPATH += ./ \
-               ./definitions
+               ./definitions \
+               ./verify
 
 #protogen.target = $$PWD/Demolink.markdown
 #protogen.commands = $$PWD/../ProtoGenInstall/ProtoGen.exe $$PWD/../exampleprotocol.xml $$PWD -no-doxygen

@@ -98,7 +98,10 @@ public:
     int getNumberInMemory(void) const;
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const;
+    virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's init and verify functions
+    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Get the declaration for this structure as a member of another
     virtual QString getDeclaration(void) const;
@@ -139,6 +142,12 @@ public:
     //! Return true if this structure should be hidden from the documentation
     virtual bool isHidden(void) const {return hidden;}
 
+    //! True if this encodable has verification data
+    virtual bool hasVerify(void) const Q_DECL_OVERRIDE {return hasverify;}
+
+    //! True if this encodable has initialization data
+    virtual bool hasInit(void) const Q_DECL_OVERRIDE {return hasinit;}
+
 protected:
 
     //! Make a structure output be prettily aligned
@@ -166,6 +175,8 @@ protected:
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
     bool hidden;                //!< True if this structure is to be hidden from the documentation
+    bool hasinit;               //!< True if any children of this structure have initialization data
+    bool hasverify;             //!< True if any children of this structure have verify data
     QStringList attriblist;     //!< List of all attributes that we understand
 
 };

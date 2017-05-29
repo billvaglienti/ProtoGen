@@ -2,7 +2,7 @@
 #include "protocolparser.h"
 #include "shuntingyard.h"
 #include "enumcreator.h"
-#include "protocolstructure.h"
+#include "protocolstructuremodule.h"
 #include "protocolbitfield.h"
 #include <QString>
 #include <QDomElement>
@@ -1612,6 +1612,25 @@ void ProtocolField::getIncludeDirectives(QStringList& list) const
 
 
 /*!
+ * Append the include directives needed for this encodable. Mostly this is empty,
+ * but for external structures or enumerations we need to bring in the include file
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolField::getInitAndVerifyIncludeDirectives(QStringList& list) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructureModule* struc = parser->lookUpStructure(typeName);
+
+        if(struc != NULL)
+            struc->getInitAndVerifyIncludeDirectives(list);
+
+    }// else if struct
+
+}// ProtocolField::getInitAndVerifyIncludeDirectives
+
+
+/*!
  * Return the signature of this field in an encode function signature
  * \return The encode signature of this field
  */
@@ -1894,6 +1913,50 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
 
     return output;
 }
+
+
+//! True if this encodable has verification data
+bool ProtocolField::hasVerify(void) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructure* struc = parser->lookUpStructure(typeName);
+        if(struc)
+            return struc->hasVerify();
+        else
+            return false;
+    }
+    else
+    {
+        if(verifyMaxString.isEmpty() && verifyMinString.isEmpty())
+            return false;
+        else
+            return true;
+    }
+
+}// ProtocolField::hasVerify
+
+
+//! True if this encodable has initialization data
+bool ProtocolField::hasInit(void) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructure* struc = parser->lookUpStructure(typeName);
+        if(struc)
+            return struc->hasInit();
+        else
+            return false;
+    }
+    else
+    {
+        if(initialValueString.isEmpty())
+            return false;
+        else
+            return true;
+    }
+
+}// ProtocolField::hasInit
 
 
 /*!
@@ -2201,7 +2264,6 @@ QString ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
 
     QString start = getHierarchicalName();
 
-    start.remove(support.protoName + ":");
     start.replace(":", "_");
 
     if(!initialValueString.isEmpty())

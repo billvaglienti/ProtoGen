@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.1. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.2. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -282,11 +282,7 @@ Structure tag Attributes:
 
 - `decode` : By default decode functions will be output. This can be suppressed by setting `decode="false"`.
 
-- `initialize` : Setting `initialize="true"` will cause ProtoGen to output a function called `initName_t`, which is used to give specific members of the structure initial values that are defined in the protocol xml (see the `initialValue` data attribute).
-
-- `verify` : Setting `verify="true"` will cause ProtoGen to output a function called `verifyName_t`, which is used to test specific members of the structure to verify that the values are within a range defined in the protocol xml (see the `minVerify` and `maxVerify` data attributes).
-
-- `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if `initialize="true"` or `verify="true"`). If verifyfile is omitted then the init and verify functions (if any) are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
+- `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if verification or initialization values exist for a member field). If verifyfile is omitted then the init and verify functions are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
 
 - `comment` : The comment for the structure will be placed at the top of the header file (or the top of the appended text if the file is used more than once).
 
@@ -434,11 +430,11 @@ Data subtag attributes:
 
 - `hidden` : is used to specify that this particular data field will *not* appear in the generated documentation markdown.
 
-- `initialValue` : is used to specify an initial value that is assigned to this field in the init function (if one is output, see the `initialize` flag of the Structure tag). If the `initialValue` is not given then this field will not receive an initial value in the init function. As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e".
+- `initialValue` : is used to specify an initial value that is assigned to this field in the init function. If the `initialValue` is not given then this field will not receive an initial value in the init function. As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e".
 
-- `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function (if one is output, see the `verify` flag of the Structure tag). If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the minimum value based on this fields encoding rules.
+- `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function. If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the minimum value based on this fields encoding rules.
 
-- `verifyMaxValue` : is used to specify the highest value that this in-memory field should hold. This is used in the verify function (if one is output, see the `verify` flag of the Structure tag). If the value of this field is more than `verifyMaxValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the maximum value based on this fields encoding rules.
+- `verifyMaxValue` : is used to specify the highest value that this in-memory field should hold. This is used in the verify function. If the value of this field is more than `verifyMaxValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the maximum value based on this fields encoding rules.
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
@@ -632,7 +628,7 @@ Although bitfields are typically used to convey integer or enumeration informati
 Initialization and Verification
 -------------------------------
 
-It is common for projects to read and write structures directly to storage or memory, and to need some means to correctly initialize and verify a structure. Accordingly Protogen can output functions for initializing structures and for verifying the values in a structure. These functions will only be output if the Structure or Packet tag contains the `initialize="true"` and/or `verify="true"` attributes. Whenever these functions are output Protogen will also output a series of #defined constants that give the initial, min, and max values used in these functions. These can be helpful, for example, when creating user interfaces that represent the data in these structures.
+It is common for projects to read and write structures directly to storage or memory, and to need some means to correctly initialize and verify a structure. Accordingly Protogen can output functions for initializing structures and for verifying the values in a structure. These functions will only be output if the Structure or Packet contains any fields that have the attributes `initialValue` and/or `verifyMinValue` or `verifyMaxValue`. Whenever these functions are output Protogen will also output a series of #defined constants that give the initial, min, and max values used in these functions. These can be helpful, for example, when creating user interfaces that represent the data in these structures.
 
 Since the intialization and verification of structures are not related to the encoding and decoding of data for communications it is recommended that the files used for these functions be different then those used for packet encoding and deocoding. The attribute `verifyfile` can be used to change the file that the these functions are written to.
 

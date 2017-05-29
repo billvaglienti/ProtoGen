@@ -25,6 +25,8 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     needs2ndDecodeIterator(false),
     defaults(false),
     hidden(false),
+    hasinit(false),
+    hasverify(false),
     attriblist()
 {
     // List of attributes understood by ProtocolStructure
@@ -79,6 +81,8 @@ void ProtocolStructure::clear(void)
     needs2ndDecodeIterator = false;
     defaults = false;
     hidden = false;
+    hasinit = false;
+    hasverify = false;
 
 }// ProtocolStructure::clear
 
@@ -186,67 +190,65 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
             // matters, its not going to end up in the output
             if(!encodable->isNotEncoded())
             {
-                // Let the new encodable know about the preceding one
-                encodable->setPreviousEncodable(prevEncodable);
+                ProtocolField* field = dynamic_cast<ProtocolField*>(encodable);
 
-                if(encodable->isPrimitive())
+                if(field != NULL)
                 {
-                    if(encodable->overridesPreviousEncodable())
-                    {
-                        ProtocolField* current = dynamic_cast<ProtocolField*>(encodable);
-                        if(current != NULL)
-                        {
-                            int prev;
-                            for(prev = 0; prev < encodables.size(); prev++)
-                            {
-                                if(current->getOverriddenTypeData(dynamic_cast<ProtocolField*>(encodables.at(prev))))
-                                    break;
-                            }
+                    // Let the new encodable know about the preceding one
+                    field->setPreviousEncodable(prevEncodable);
 
-                            if(prev >= encodables.size())
-                            {
-                                encodable->emitWarning("override failed, could not find previous field");
-                                delete encodable;
-                                continue;
-                            }
+                    if(field->overridesPreviousEncodable())
+                    {
+                        int prev;
+                        for(prev = 0; prev < encodables.size(); prev++)
+                        {
+                            if(field->getOverriddenTypeData(dynamic_cast<ProtocolField*>(encodables.at(prev))))
+                                break;
+                        }
+
+                        if(prev >= encodables.size())
+                        {
+                            field->emitWarning("override failed, could not find previous field");
+                            delete encodable;
+                            continue;
                         }
 
                     }// if encodable does override operation
 
                     // Track our metadata
-                    if(encodable->usesBitfields())
+                    if(field->usesBitfields())
                     {
-                        encodable->getBitfieldGroupNumBytes(&numbitfieldgroupbytes);
+                        field->getBitfieldGroupNumBytes(&numbitfieldgroupbytes);
                         bitfields = true;
 
-                        if(encodable->usesEncodeTempBitfield())
+                        if(field->usesEncodeTempBitfield())
                             usestempencodebitfields = true;
 
-                        if(encodable->usesEncodeTempLongBitfield())
+                        if(field->usesEncodeTempLongBitfield())
                             usestempencodelongbitfields = true;
 
-                        if(encodable->usesDecodeTempBitfield())
+                        if(field->usesDecodeTempBitfield())
                             usestempdecodebitfields = true;
 
-                        if(encodable->usesDecodeTempLongBitfield())
+                        if(field->usesDecodeTempLongBitfield())
                             usestempdecodelongbitfields = true;
                     }
 
-                    if(encodable->usesEncodeIterator())
+                    if(field->usesEncodeIterator())
                         needsEncodeIterator = true;
 
-                    if(encodable->usesDecodeIterator())
+                    if(field->usesDecodeIterator())
                         needsDecodeIterator = true;
 
-                    if(encodable->uses2ndEncodeIterator())
+                    if(field->uses2ndEncodeIterator())
                         needs2ndEncodeIterator = true;
 
-                    if(encodable->uses2ndDecodeIterator())
+                    if(field->uses2ndDecodeIterator())
                         needs2ndDecodeIterator = true;
 
-                    if(encodable->usesDefaults())
+                    if(field->usesDefaults())
                         defaults = true;
-                    else if(defaults && encodable->invalidatesPreviousDefault())
+                    else if(defaults && field->invalidatesPreviousDefault())
                     {
                         // Check defaults. If a previous field was defaulted but this
                         // field is not, then we have to terminate the previous default,
@@ -260,7 +262,7 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                         defaults = false;
                     }
 
-                }// if this encodable is a primitive
+                }// if this encodable is a field
                 else
                 {
                     // Structures can be arrays as well.
@@ -269,7 +271,8 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
 
                     if(encodable->is2dArray())
                         needs2ndDecodeIterator = needs2ndEncodeIterator = true;
-                }
+
+                }// else if this encodable is not a field
 
 
                 // Handle the variable array case. We have to make sure that the referenced variable exists
@@ -372,6 +375,14 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     }
 
                 }// if this field depends on another
+
+                // If our child has init or verify capabilities
+                // we have to inherit those as well
+                if(encodable->hasInit())
+                    hasinit = true;
+
+                if(encodable->hasVerify())
+                    hasverify = true;
 
                 // We can only determine bitfield group numBytes after
                 // we have given the encodable a look at its preceding members
@@ -492,7 +503,7 @@ int ProtocolStructure::getNumberInMemory(void) const
  */
 void ProtocolStructure::getIncludeDirectives(QStringList& list) const
 {
-    // Includes that our enocable members may need
+    // Includes that our encodable members may need
     for(int i = 0; i < encodables.length(); i++)
         encodables.at(i)->getIncludeDirectives(list);
 
@@ -511,6 +522,20 @@ void ProtocolStructure::getIncludeDirectives(QStringList& list) const
         if(!include.isEmpty())
             list.append(include);
     }
+
+    list.removeDuplicates();
+}
+
+
+/*!
+ * Return the include directives needed for this encodable's init and verify functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getInitAndVerifyIncludeDirectives(QStringList& list) const
+{
+    // Includes that our encodable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getInitAndVerifyIncludeDirectives(list);
 
     list.removeDuplicates();
 }
@@ -1128,6 +1153,9 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(bool includeChi
 {
     QString output;
 
+    if(!hasinit)
+        return output;
+
     // Go get any children structures set to initial functions
     if(includeChildren)
     {
@@ -1164,6 +1192,9 @@ QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildr
 {
     QString output;
 
+    if(!hasinit)
+        return output;
+
     // Go get any children structures set to initial functions
     if(includeChildren)
     {
@@ -1179,9 +1210,6 @@ QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildr
         }
         ProtocolFile::makeLineSeparator(output);
     }
-
-    if(getNumberOfEncodeParameters() <= 0)
-        return output;
 
     // My set to initial values function
     output += "/*!\n";
@@ -1222,6 +1250,9 @@ QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) cons
 {
     QString output;
     QString access;
+
+    if(!hasinit)
+        return output;
 
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
@@ -1273,6 +1304,9 @@ QString ProtocolStructure::getVerifyFunctionPrototype(bool includeChildren) cons
 {
     QString output;
 
+    if(!hasverify)
+        return output;
+
     // Go get any children structures set to initial functions
     if(includeChildren)
     {
@@ -1309,7 +1343,10 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
 {
     QString output;
 
-    // Go get any children structures set to initial functions
+    if(!hasverify)
+        return output;
+
+    // Go get any children structures verify functions
     if(includeChildren)
     {
         for(int i = 0; i < encodables.length(); i++)
@@ -1369,6 +1406,9 @@ QString ProtocolStructure::getVerifyString(bool isStructureMember) const
 {
     QString output;
     QString access;
+
+    if(!hasverify)
+        return output;
 
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";

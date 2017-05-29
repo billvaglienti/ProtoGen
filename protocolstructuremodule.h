@@ -27,6 +27,12 @@ public:
     //! Destroy the protocol packet
     ~ProtocolStructureModule(void);
 
+    //! Return the include directives needed for this encodable
+    virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's init and verify functions
+    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
     //! Get the name of the header file that encompasses this structure definition
     QString getDefinitionFileName(void) const {return structfile->fileName();}
 
@@ -86,8 +92,6 @@ protected:
     QString version;                //!< The version string
     bool encode;                    //!< True if the encode function is output
     bool decode;                    //!< True if the decode function is output
-    bool initialize;                //!< True if the setToInitialValue function is output
-    bool verify;                    //!< True if the verify function is output
 
 };
 

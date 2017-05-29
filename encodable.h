@@ -55,6 +55,9 @@ public:
     //! Return the include directives needed for this encodable
     virtual void getIncludeDirectives(QStringList& list) const {}
 
+    //! Return the include directives needed for this encodable's init and verify functions
+    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const {}
+
     //! Return the string that declares the whole structure
     virtual QString getStructureDeclaration(bool alwaysCreate) const {return QString();}
 
@@ -102,6 +105,12 @@ public:
 
     //! Determine if this encodable is a 2d array
     bool is2dArray(void) const {return (isArray() && !array2d.isEmpty());}
+
+    //! True if this encodable has verification data
+    virtual bool hasVerify(void) const {return false;}
+
+    //! True if this encodable has initialization data
+    virtual bool hasInit(void) const {return false;}
 
     //! True if this encodable is NOT encoded
     virtual bool isNotEncoded(void) const {return false;}
