@@ -131,9 +131,6 @@ void ProtocolPacket::parse(void)
         }
     }
 
-    // Most of the file setup work
-    setupFiles(moduleName, defheadermodulename, verifymodulename);
-
     if((structureFunctions == false) && (parameterFunctions == false))
     {
         // If the user gave us no guidance (or turned both off, which is the
@@ -146,6 +143,10 @@ void ProtocolPacket::parse(void)
             parameterFunctions = true;
     }
 
+    // Most of the file setup work, note that we do not declare a structure in
+    // the event that it has only one member and we are not doing structure
+    // interfaces to the encode/decode routines
+    setupFiles(moduleName, defheadermodulename, verifymodulename, structureFunctions);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions

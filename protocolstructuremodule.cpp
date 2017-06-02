@@ -126,8 +126,9 @@ void ProtocolStructureModule::parse(void)
  * \param moduleName is the module name from the attributes
  * \param defheadermodulename is the structure header file name from the attributes
  * \param verifymodulename is the verify module name from the attibutes
+ * \param forceStructureDeclaration should be true to force the declaration of the structure, even if it only has one member
  */
-void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename)
+void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration)
 {
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())
@@ -224,7 +225,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
 
     // Create the structure definition in the header.
     // This includes any sub-structures as well
-    structfile->write(getStructureDeclaration(true));
+    structfile->write(getStructureDeclaration(forceStructureDeclaration));
 
     // White space is good
     structfile->makeLineSeparator();
