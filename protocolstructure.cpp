@@ -112,7 +112,7 @@ void ProtocolStructure::parse(void)
     testAndWarnAttributes(map, attriblist);
 
     // for now the typename is derived from the name
-    typeName = support.prefix + name + "_t";
+    typeName = support.prefix + name + structureSuffix + "_t";
 
     // We can't have a variable array length without an array
     if(array.isEmpty() && !variableArray.isEmpty())
