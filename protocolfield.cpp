@@ -1599,7 +1599,7 @@ void ProtocolField::getIncludeDirectives(QStringList& list) const
                 if (include.endsWith("_t"))
                 {
                     // Remove the last two characters
-                    include.chop(include.size()-2);
+                    include.chop(2);
                 }
 
                 include += ".h";
