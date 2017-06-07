@@ -130,9 +130,11 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
     {
         typeName = structName;
 
-        // Make user it ends with "_t";
-        if(!typeName.contains("_t"))
+        // Make sure it ends with "_t";
+        if(!typeName.endsWith("_t"))
+        {
             typeName += "_t";
+        }
     }
     else
     {
@@ -1593,10 +1595,16 @@ void ProtocolField::getIncludeDirectives(QStringList& list) const
             {
                 // In this case, we guess at the include name
                 include = typeName;
-                include.remove("_t");
+
+                if (include.endsWith("_t"))
+                {
+                    // Remove the last two characters
+                    include.chop(include.size()-2);
+                }
+
                 include += ".h";
                 list.append(include);
-                emitWarning("unknown include for " + typeName + "; guess supplied");
+                emitWarning("unknown include for '" + typeName + "'; guess supplied - '" + include + "'");
             }
 
         }
