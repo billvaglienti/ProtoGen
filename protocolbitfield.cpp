@@ -155,13 +155,14 @@ uint64_t ProtocolBitfield::maxvalueoffield(int numbits)
  * Get the decode string for a bitfield, which may or may not cross byte boundaries
  * \param spacing is the spacing at the start of each line
  * \param argument is the string describing the field of bits
+ * \param cast is the string used to cast to the arguments type. This can be empty
  * \param dataname is the string describing the array of bytes
  * \param dataindex is the string describing the index into the array of bytes
  * \param bitcount is the current bitcount of this field
  * \param numbits is the number of bits in this field
  * \return the string that is the encoding code
  */
-QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits)
+QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QString cast, QString dataname, QString dataindex, int bitcount, int numbits)
 {
     if((numbits > 1) && (((bitcount % 8) + numbits) > 8))
         return getComplexDecodeString(spacing, argument, dataname, dataindex, bitcount, numbits);
@@ -192,11 +193,11 @@ QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QSt
             offset = " + " + QString().setNum(byteoffset);
 
         if(mask.isEmpty() && rightshift.isEmpty())
-            return spacing + argument + " = " + dataname + "[" + dataindex + offset + "];\n";
+            return spacing + argument + " = " + cast + dataname + "[" + dataindex + offset + "];\n";
         else if(mask.isEmpty())
-            return spacing + argument + " = (" + dataname + "[" + dataindex + offset + "]" + rightshift + ");\n";
+            return spacing + argument + " = " + cast + "(" + dataname + "[" + dataindex + offset + "]" + rightshift + ");\n";
         else
-            return spacing + argument + " = ((" + dataname + "[" + dataindex + offset + "]" + rightshift + ")" + mask + ");\n";
+            return spacing + argument + " = " + cast + "((" + dataname + "[" + dataindex + offset + "]" + rightshift + ")" + mask + ");\n";
     }
 
 }// ProtocolBitfield::getDecodeString

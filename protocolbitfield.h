@@ -28,7 +28,7 @@ public:
     static QString getEncodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits);
 
     //! Get the encode string for a bitfield
-    static QString getDecodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits);
+    static QString getDecodeString(QString spacing, QString argument, QString cast, QString dataname, QString dataindex, int bitcount, int numbits);
 
 private:
 

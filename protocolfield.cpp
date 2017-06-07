@@ -2635,21 +2635,30 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     else
     {
         QString argument;
+        QString cast;
 
         // How we are going to access the field
         if(usesDecodeTempBitfield())
             argument = "tempbitfield";
         else if(usesDecodeTempLongBitfield())
             argument = "templongbitfield";
-        else if(isStructureMember)
-            argument = "user->" + name;     // Access via structure pointer
         else
-            argument = "(*" + name + ")";   // Access via direct pointer
+        {
+            // If we are going to assign this bitfield directly to an enumeration,
+            // and we do not have an intermediate temporary field, then we need a cast
+            if(inMemoryType.isEnum)
+                cast = "(" + typeName + ")";
+
+            if(isStructureMember)
+                argument = "user->" + name;     // Access via structure pointer
+            else
+                argument = "(*" + name + ")";   // Access via direct pointer
+        }
 
         if(bitfieldData.groupMember)
-            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, "bitfieldbytes", "bitfieldindex", *bitcount, encodedType.bits);
+            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, cast, "bitfieldbytes", "bitfieldindex", *bitcount, encodedType.bits);
         else
-            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, "data", "byteindex", *bitcount, encodedType.bits);
+            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, cast, "data", "byteindex", *bitcount, encodedType.bits);
 
         // Handle scaled bitfield
         if((encodedMax > encodedMin) && !inMemoryType.isNull)
@@ -2697,16 +2706,22 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
             // Do the assignment from the temporary field
             if(usesDecodeTempBitfield() || usesDecodeTempLongBitfield())
             {
+                // If we are going to assign directly to an enumeration we need a cast
+                if(inMemoryType.isEnum)
+                    cast = "(" + typeName + ")";
+                else
+                    cast.clear();
+
                 if(isStructureMember)
                 {
                     // Access via structure pointer
-                    output += TAB_IN + "user->" + name +   " = " + argument + ";\n";
+                    output += TAB_IN + "user->" + name +   " = " + cast + argument + ";\n";
                     argument = "user->" + name;
                 }
                 else
                 {
                     // Access via direct pointer
-                    output += TAB_IN + "(*" + name + ")" + " = " + argument + ";\n";
+                    output += TAB_IN + "(*" + name + ")" + " = " + cast + argument + ";\n";
                     argument = "(*" + name + ")";
                 }
             }
