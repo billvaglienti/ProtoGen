@@ -25,6 +25,8 @@ ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported,
 {
     // These are attributes on top of the normal structureModule that we support
     attriblist << "structureInterface" << "parameterInterface" << "ID" << "useInOtherPackets";
+
+    structureSuffix = "_packet";
 }
 
 
