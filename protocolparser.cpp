@@ -303,6 +303,14 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
     }
 
+    // Parse all of the documentation
+    for(int i=0; i<documents.size(); i++)
+    {
+        ProtocolDocumentation* doc = documents.at(i);
+
+        doc->parse();
+    }
+
     if(!nohelperfiles)
     {
         // Auto-generated files for coding
