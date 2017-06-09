@@ -54,6 +54,8 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `Style.css` will replace the default inline css in the markdown documentation with the contents of the Style.css file.
 
+- `-no-css` will cause ProtoGen to skip output of CSS data in generated documentation files.
+
 - `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect Protogen to ignore. 
 
 Dependencies
