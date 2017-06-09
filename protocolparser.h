@@ -43,6 +43,9 @@ public:
     //! Option to disable 'about this ICD' section
     void disableAboutSection(bool disable) { noAboutSection = disable; }
 
+    //! Return status of 'About this ICD' section
+    bool hasAboutSection() const { return !noAboutSection; }
+
     //! Option to force documentation for hidden items
     void showHiddenItems(bool show) {showAllItems = show;}
 

@@ -1170,7 +1170,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     }
 
     /* Write protocol introductory information */
-    if (!noAboutSection)
+    if (hasAboutSection())
     {
         if(title.isEmpty())
             file.write("# " + name + " Protocol\n");
