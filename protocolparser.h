@@ -52,6 +52,9 @@ public:
     //! Set the inlinee css
     void setInlineCSS(QString css) {inlinecss = css;}
 
+    //! Disable CSS entirely
+    void disableCSS(bool disable) { nocss = disable; }
+
     //! Parse the DOM from the xml file(s). This kicks off the auto code generation for the protocol
     bool parse(QString filename, QString path, QStringList otherfiles);
 
@@ -161,6 +164,7 @@ protected:
     bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
+    bool nocss;         //!< Disable all CSS output
 
     QStringList filesparsed;
     QList<XMLLineLocator*>lines;

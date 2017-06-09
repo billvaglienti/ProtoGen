@@ -29,7 +29,8 @@ ProtocolParser::ProtocolParser() :
     nohelperfiles(false),
     nodoxygen(false),
     noAboutSection(false),
-    showAllItems(false)
+    showAllItems(false),
+    nocss(false)
 {
 }
 
@@ -1149,27 +1150,34 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
-    // Open the style tag
-    file.write("<style>\n");
+    /* Add stylesheet information
+     * (unless it is disabled entirely)
+     */
+    if (!nocss)
+    {
+        // Open the style tag
+        file.write("<style>\n");
 
-    if(inlinecss.isEmpty())
-        file.write(getDefaultInlinCSS());
-    else
-        file.write(inlinecss);
+        if(inlinecss.isEmpty())
+            file.write(getDefaultInlinCSS());
+        else
+            file.write(inlinecss);
 
-    // Close the style tag
-    file.write("</style>\n");
+        // Close the style tag
+        file.write("</style>\n");
 
-    file.write("\n");
-    if(title.isEmpty())
-        file.write("# " + name + " Protocol\n");
-    else
-        file.write("# " + title + "\n");
-    file.write("\n");
+        file.write("\n");
+    }
 
     /* Write protocol introductory information */
     if (!noAboutSection)
     {
+        if(title.isEmpty())
+            file.write("# " + name + " Protocol\n");
+        else
+            file.write("# " + title + "\n");
+        file.write("\n");
+
 
         if(!comment.isEmpty())
         {
