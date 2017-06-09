@@ -28,6 +28,7 @@ ProtocolParser::ProtocolParser() :
     nomarkdown(false),
     nohelperfiles(false),
     nodoxygen(false),
+    noAboutSection(false),
     showAllItems(false)
 {
 }
@@ -1140,10 +1141,13 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     ProtocolFile file(filename, false);
 
-    file.write("Base Header Level: 1 \n");  // Base header level refers to the HTML output format
-    file.write("LaTeX Header Level: " + QString::number(latexHeader) + " \n"); // LaTeX header level can be set by user
-
-    file.write("\n");
+    // Specific header-level definitions are required for LaTeX compatibility
+    if (latexEnabled)
+    {
+        file.write("Base Header Level: 1 \n");  // Base header level refers to the HTML output format
+        file.write("LaTeX Header Level: " + QString::number(latexHeader) + " \n"); // LaTeX header level can be set by user
+        file.write("\n");
+    }
 
     // Open the style tag
     file.write("<style>\n");
@@ -1163,25 +1167,30 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("# " + title + "\n");
     file.write("\n");
 
-    if(!comment.isEmpty())
+    /* Write protocol introductory information */
+    if (!noAboutSection)
     {
-        file.write(outputLongComment("", comment) + "\n");
-        file.write("\n");
-    }
 
-    if(!version.isEmpty())
-    {
-        file.write(title + " Protocol version is " + version + ".\n");
-        file.write("\n");
-    }
+        if(!comment.isEmpty())
+        {
+            file.write(outputLongComment("", comment) + "\n");
+            file.write("\n");
+        }
 
-    if(!api.isEmpty())
-    {
-        file.write(title + " Protocol API is " + api + ".\n");
-        file.write("\n");
-    }
+        if(!version.isEmpty())
+        {
+            file.write(title + " Protocol version is " + version + ".\n");
+            file.write("\n");
+        }
 
-    file.write("----------------------------\n\n");
+        if(!api.isEmpty())
+        {
+            file.write(title + " Protocol API is " + api + ".\n");
+            file.write("\n");
+        }
+
+        file.write("----------------------------\n\n");
+    }
 
     QStringList packetids;
     for(int i = 0; i < packets.size(); i++)
@@ -1201,6 +1210,58 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
+    if (!noAboutSection)
+    {
+        WriteAboutSection(file, isBigEndian);
+    }
+
+    file.flush();
+
+    QProcess process;
+    QStringList arguments;
+
+    // Write html documentation
+    QString htmlfile = basepath + name + ".html";
+
+    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
+    process.setStandardOutputFile(QString(htmlfile));
+
+    std::cout << "Writing HTML documentation to " << QDir::toNativeSeparators(htmlfile).toStdString() << std::endl;
+
+    arguments << filename;   // The name of the source file
+    #if defined(__APPLE__) && defined(__MACH__)
+    process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+    #else
+    process.start(QString("multimarkdown"), arguments);
+    #endif
+    process.waitForFinished();
+
+    if (latexEnabled)
+    {
+        // Write LaTeX documentation
+        QString latexFile = basepath + name + ".tex";
+
+        std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
+
+        QProcess latexProcess;
+
+        latexProcess.setStandardOutputFile(latexFile);
+
+        arguments.clear();
+        arguments << filename;
+        arguments << "--to=latex";
+
+        #if defined(__APPLE__) && defined(__MACH__)
+        latexProcess.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+        #else
+        latexProcess.start(QString("multimarkdown"), arguments);
+        #endif
+        latexProcess.waitForFinished();
+    }
+}
+
+void ProtocolParser::WriteAboutSection(ProtocolFile &file, bool isBigEndian)
+{
     file.write("----------------------------\n\n");
     file.write("# About this ICD\n");
     file.write("\n");
@@ -1256,50 +1317,6 @@ this will be indicated in the repeat column of the encoding table. If the field 
 depends on the non-zero value of another field this will be indicated in the \
 description column of the table.\n");
     file.write("\n");
-
-    file.flush();
-
-    QProcess process;
-    QStringList arguments;
-
-    // Write html documentation
-    QString htmlfile = basepath + name + ".html";
-
-    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
-    process.setStandardOutputFile(QString(htmlfile));
-
-    std::cout << "Writing HTML documentation to " << QDir::toNativeSeparators(htmlfile).toStdString() << std::endl;
-
-    arguments << filename;   // The name of the source file
-    #if defined(__APPLE__) && defined(__MACH__)
-    process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
-    #else
-    process.start(QString("multimarkdown"), arguments);
-    #endif
-    process.waitForFinished();
-
-    if (latexEnabled)
-    {
-        // Write LaTeX documentation
-        QString latexFile = basepath + name + ".tex";
-
-        std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
-
-        QProcess latexProcess;
-
-        latexProcess.setStandardOutputFile(latexFile);
-
-        arguments.clear();
-        arguments << filename;
-        arguments << "--to=latex";
-
-        #if defined(__APPLE__) && defined(__MACH__)
-        latexProcess.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
-        #else
-        latexProcess.start(QString("multimarkdown"), arguments);
-        #endif
-        latexProcess.waitForFinished();
-    }
 }
 
 

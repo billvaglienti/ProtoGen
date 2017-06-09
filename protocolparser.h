@@ -40,6 +40,9 @@ public:
     //! Option to disable doxygen output
     void disableDoxygen(bool disable) {nodoxygen = disable;}
 
+    //! Option to disable 'about this ICD' section
+    void disableAboutSection(bool disable) { noAboutSection = disable; }
+
     //! Option to force documentation for hidden items
     void showHiddenItems(bool show) {showAllItems = show;}
 
@@ -155,6 +158,7 @@ protected:
     bool nomarkdown;    //!< Disable markdown output
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
+    bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
 
@@ -168,6 +172,9 @@ protected:
     QList<EnumCreator*> globalEnums;
     QString inputpath;
     QString inputfile;
+
+    //! Write "About this ICD" section to file
+    void WriteAboutSection(ProtocolFile& file, bool isBigEndian);
 
 private:
 
