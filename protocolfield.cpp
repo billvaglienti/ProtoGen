@@ -983,18 +983,6 @@ void ProtocolField::parse(void)
         variable2dArray.clear();
     }
 
-    if(!dependsOn.isEmpty() && !variableArray.isEmpty())
-    {
-        emitWarning("variable length arrays cannot also use dependsOn");
-        dependsOn.clear();
-    }
-
-    if(!dependsOn.isEmpty() && !variable2dArray.isEmpty())
-    {
-        emitWarning("variable length 2d arrays cannot also use dependsOn");
-        dependsOn.clear();
-    }
-
     if(!scalerString.isEmpty() && !maxString.isEmpty())
     {
         emitWarning("scaler ignored because max is provided");
@@ -1402,7 +1390,7 @@ void ProtocolField::computeEncodedLength(void)
 
                 // groupBits is visible to all fields in the group, but we only
                 // want to count it once, so we only count for the lastBitfield
-                encodedLength.addToLength(QString().setNum((bitfieldData.groupBits+7)/8));
+                encodedLength.addToLength(QString().setNum((bitfieldData.groupBits+7)/8), false, false, false, !defaultString.isEmpty());
 
             }// if we are the last member of the group
 
@@ -1424,7 +1412,7 @@ void ProtocolField::computeEncodedLength(void)
             if(bitfieldData.lastBitfield && ((bitcount % 8) != 0))
                 length++;
 
-            encodedLength.addToLength(QString().setNum(length));
+            encodedLength.addToLength(QString().setNum(length), false, false, false, !defaultString.isEmpty());
         }
     }
     else if(inMemoryType.isString)
@@ -1906,18 +1894,13 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
     QString output;
 
     if(encodedType.isBitfield)
-    {
         output += getDecodeStringForBitfield(bitcount, isStructureMember, defaultEnabled);
-    }
+    else if(inMemoryType.isString)
+        output += getDecodeStringForString(isStructureMember);
+    else if(inMemoryType.isStruct)
+        output += getDecodeStringForStructure(isStructureMember);
     else
-    {
-        if(inMemoryType.isString)
-            output += getDecodeStringForString(isStructureMember);
-        else if(inMemoryType.isStruct)
-            output += getDecodeStringForStructure(isStructureMember);
-        else
-            output += getDecodeStringForField(isBigEndian, isStructureMember, defaultEnabled);
-    }
+        output += getDecodeStringForField(isBigEndian, isStructureMember, defaultEnabled);
 
     return output;
 }
@@ -2612,6 +2595,27 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     if(encodedType.isNull)
         return output;
 
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    // If this field has a default value, or overrides a previous value
+    if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
+    {
+        QString lengthString;
+
+        // How many bytes do we need? From 1 to 8 bits we need 1 byte, from
+        // 9 to 15 we need 2 bytes, etc. However, some bits may already have
+        // gone by
+        if(bitfieldData.groupStart)
+            lengthString = QString::number((bitfieldData.groupBits+7)/8);
+        else
+            lengthString = QString::number(((*bitcount) + encodedType.bits + 7) / 8);
+
+        output += TAB_IN + "if(byteindex + " + lengthString + " > numBytes)\n";
+        output += TAB_IN + "    return 1;\n";
+        output += "\n";
+    }
+
     if(bitfieldData.groupStart)
     {
         int num = (bitfieldData.groupBits+7)/8;
@@ -2623,9 +2627,6 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
 
         output += "\n";
     }
-
-    if(!comment.isEmpty())
-        output += TAB_IN + "// " + comment + "\n";
 
     // Handle the case where we just want to skip some bits
     if(inMemoryType.isNull && !checkConstant)
@@ -3429,7 +3430,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
 {
     QString output;
     QString endian;
-    QString spacing = "    ";
+    QString spacing = TAB_IN;
     QString lhs;
 
     QString constantstring = getConstantString();
@@ -3505,17 +3506,15 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         else
             output += spacing + "if(*" + dependsOn + ")\n";
         output += spacing + "{\n";
-        spacing += "    ";
+        spacing += TAB_IN;
     }
 
     // If this field has a default value, or overrides a previous value
     if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
     {
         output += spacing + "if(byteindex + " + lengthString + " > numBytes)\n";
-        output += spacing + "    return 1;\n";
-        output += spacing + "else\n";
-        output += spacing + "{\n";
-        spacing += "    ";
+        output += spacing + TAB_IN + "return 1;\n";
+        output += "\n";
     }
 
     if(inMemoryType.isNull)
@@ -3548,7 +3547,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             }
 
             output += " != (" + encodedType.toTypeString() + ") " + constantstring + ")\n";
-            output += spacing + "    return 0;\n";
+            output += spacing + TAB_IN + "return 0;\n";
         }
         else
         {
@@ -3758,14 +3757,6 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         output += spacing + "// Decoded value must be " + constantstring + "\n";
         output += spacing + "if (" + lhs + name + " != " + constantstring + ")\n";
         output += spacing + spacing + "return 0;\n";
-    }
-
-    // Close the default block
-    if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
-    {
-        // Remove the last four spaces
-        spacing.remove(spacing.size()-4, 4);
-        output += spacing + "}\n";
     }
 
     // Close the depends on block

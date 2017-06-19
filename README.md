@@ -623,11 +623,13 @@ ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to
 Bitfields
 ---------
 
-Protogen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code use `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
+Protogen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code uses `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
 
 Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last. This can be changed by putting the bitfields into a "bitfield group", see the section on bitfield groups for more details.
 
 Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield.
+
+Protogen counts the bits of adjacent bitfields at code generation time (as opposed to run-time), which allows the generated bitfield code to be reasonably efficient. However this requires that the bitcount be fixed at code generation time; for this reason the presence of a bitfield cannot be dependent on other packet fields (see the `dependsOn` attribute). However bitfields can be given default values, since in that case the bitcount is not relevant once it has been determined that the packet size is not large enough to contain the defaulted fields. 
 
 Initialization and Verification
 -------------------------------
@@ -664,4 +666,4 @@ Five by Five Development, LLC
 
 [www.fivebyfivedevelopment.com](http://www.fivebyfivedevelopment.com)
  
-Before starting Five by Five Development in 2013 I was co-founder of [Cloud Cap Technology](http://www.cloudcaptech.com), which developed the Piccolo flight management system. Although Piccolo was at heart a flight controller, I spent more time coding communications protocols than anything else. Hopefully ProtoGen will allow myself and others to spend less time doing that.
+Before starting Five by Five Development in 2013 I was co-founder of [Cloud Cap Technology](http://www.cloudcaptech.com), which developed the Piccolo flight management system. Although Piccolo was at heart a flight controller, I spent more time coding communications protocols than anything else. I now use ProtoGen in virtually all my communications work, and it has become an indispensable tool. Some places where ProtoGen is being used on a daily basis include: [Power4Flight](http://www.power4flight.com), [Trillium Engineering](http://w3.trilliumeng.com/), [Currawong Engineering](https://www.currawongeng.com/)

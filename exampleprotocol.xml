@@ -190,6 +190,7 @@ interpretation
               comment="PWM in microseconds for 0% throttle"/>
         <Data name="highPWM" inMemoryType="unsigned16" default="1900" initialValue="1900" verifyMinValue="900" verifyMaxValue="2100"
               comment="PWM in microseconds for 100% throttle"/>
+        <Data name="defaultBitfield" inMemoryType="bitfield5" default="0" comment="A demonstration of a default bitfield"/>
         
     </Packet>
             

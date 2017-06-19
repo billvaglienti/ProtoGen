@@ -146,7 +146,7 @@ void ProtocolPacket::parse(void)
     // Most of the file setup work, note that we do not declare a structure in
     // the event that it has only one member and we are not doing structure
     // interfaces to the encode/decode routines
-    setupFiles(moduleName, defheadermodulename, verifymodulename, structureFunctions);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, structureFunctions, false);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
@@ -250,7 +250,7 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
 
     // The macro for the minimum packet length
     header.makeLineSeparator();
-    header.write("//! return the minimum data length for the " + support.prefix + name + " packet\n");
+    header.write("//! return the minimum encoded length for the " + support.prefix + name + " packet\n");
     header.write("#define get" + support.prefix + name + "MinDataLength() ");
     if(encodedLength.minEncodedLength.isEmpty())
         header.write("0\n");
@@ -259,7 +259,7 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
 
     // The macro for the maximum packet length
     header.makeLineSeparator();
-    header.write("//! return the maximum data length for the " + support.prefix + name + " packet\n");
+    header.write("//! return the maximum encoded length for the " + support.prefix + name + " packet\n");
     header.write("#define get" + support.prefix + name + "MaxDataLength() ");
     if(encodedLength.maxEncodedLength.isEmpty())
         header.write("0\n");

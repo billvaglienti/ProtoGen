@@ -65,8 +65,8 @@ public:
 
 protected:
 
-    //! Setup the files, which accounts for all the ways the fils can be organized for this structure.
-    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration = true);
+    //! Setup the files, which accounts for all the ways the files can be organized for this structure.
+    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration = true, bool outputUtilities = true);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);

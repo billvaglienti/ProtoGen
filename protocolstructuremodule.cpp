@@ -127,8 +127,9 @@ void ProtocolStructureModule::parse(void)
  * \param defheadermodulename is the structure header file name from the attributes
  * \param verifymodulename is the verify module name from the attibutes
  * \param forceStructureDeclaration should be true to force the declaration of the structure, even if it only has one member
+ * \param outputUtilties should be true to output the helper macros
  */
-void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration)
+void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration, bool outputUtilities)
 {
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())
@@ -263,8 +264,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     header.makeLineSeparator();
 
     // The encoded size of this structure as a macro that others can access
-    if((encode != false) || (decode != false))
+    if(((encode != false) || (decode != false)) && outputUtilities)
     {
+        header.write("//! return the minimum encoded length for the " + typeName + " structure\n");
         header.write("#define getMinLengthOf" + typeName + "() ");
         if(encodedLength.minEncodedLength.isEmpty())
             header.write("(0)\n");

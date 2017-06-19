@@ -329,6 +329,7 @@ int testThrottleSettingsPacket(void)
     settings.enableCurve = 1;
     settings.highPWM = 2000;
     settings.lowPWM = 1000;
+    settings.defaultBitfield = 6;
     for(int i = 0; i < settings.numCurvePoints; i++)
     {
         settings.curvePoint[i].PWM = settings.lowPWM + i*100;
@@ -337,7 +338,7 @@ int testThrottleSettingsPacket(void)
 
     encodeThrottleSettingsPacketStructure(&pkt, &settings);
 
-    if(pkt.length != (1+3*5+4) )
+    if(pkt.length != (1+3*5+5) )
     {
         std::cout << "Throttle settings packet has the wrong length" << std::endl;
         return 0;
@@ -352,10 +353,11 @@ int testThrottleSettingsPacket(void)
     memset(&settings, 0, sizeof(settings));
     if(decodeThrottleSettingsPacketStructure(&pkt, &settings))
     {
-        if( (settings.numCurvePoints != 5)                 ||
-            (settings.enableCurve != 1)                    ||
-            (settings.lowPWM != 1000)                      ||
-            (settings.highPWM != 2000)  )
+        if( (settings.numCurvePoints != 5) ||
+            (settings.enableCurve != 1)    ||
+            (settings.lowPWM != 1000)      ||
+            (settings.highPWM != 2000)     ||
+            (settings.defaultBitfield != 6))
         {
             std::cout << "decodeThrottleSettingsPacketStructure() yielded incorrect data" << std::endl;
             return 0;
@@ -381,7 +383,7 @@ int testThrottleSettingsPacket(void)
     // simpler case using defaults
     memset(&settings, 0, sizeof(settings));
     encodeThrottleSettingsPacketStructure(&pkt, &settings);
-    if(pkt.length != (1+4) )
+    if(pkt.length != (1+5) )
     {
         std::cout << "Throttle settings packet (#2) has the wrong length" << std::endl;
         return 0;
@@ -391,10 +393,11 @@ int testThrottleSettingsPacket(void)
     pkt.length = 1;
     if(decodeThrottleSettingsPacketStructure(&pkt, &settings))
     {
-        if( (settings.numCurvePoints != 0)                 ||
-            (settings.enableCurve != 0)                    ||
-            (settings.lowPWM != 1100)                      ||
-            (settings.highPWM != 1900)  )
+        if( (settings.numCurvePoints != 0) ||
+            (settings.enableCurve != 0)    ||
+            (settings.lowPWM != 1100)      ||
+            (settings.highPWM != 1900)     ||
+            (settings.defaultBitfield != 0))
         {
             std::cout << "decodeThrottleSettingsPacketStructure() with defaults yielded incorrect data" << std::endl;
             return 0;
