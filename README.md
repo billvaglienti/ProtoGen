@@ -48,9 +48,13 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. 
 
+- `-no-about-section` will cause ProtoGen to skip the output of extra preface and postface information in the generated documentation.
+
 - `-no-helper-files` will cause ProtoGen to skip the output of files not directly specified by the protocol.xml. 
 
 - `Style.css` will replace the default inline css in the markdown documentation with the contents of the Style.css file.
+
+- `-no-css` will cause ProtoGen to skip output of CSS data in generated documentation files.
 
 - `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect Protogen to ignore. 
 

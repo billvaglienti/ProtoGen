@@ -40,6 +40,12 @@ public:
     //! Option to disable doxygen output
     void disableDoxygen(bool disable) {nodoxygen = disable;}
 
+    //! Option to disable 'about this ICD' section
+    void disableAboutSection(bool disable) { noAboutSection = disable; }
+
+    //! Return status of 'About this ICD' section
+    bool hasAboutSection() const { return !noAboutSection; }
+
     //! Option to force documentation for hidden items
     void showHiddenItems(bool show) {showAllItems = show;}
 
@@ -48,6 +54,9 @@ public:
 
     //! Set the inlinee css
     void setInlineCSS(QString css) {inlinecss = css;}
+
+    //! Disable CSS entirely
+    void disableCSS(bool disable) { nocss = disable; }
 
     //! Parse the DOM from the xml file(s). This kicks off the auto code generation for the protocol
     bool parse(QString filename, QString path, QStringList otherfiles);
@@ -155,8 +164,10 @@ protected:
     bool nomarkdown;    //!< Disable markdown output
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
+    bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
+    bool nocss;         //!< Disable all CSS output
 
     QStringList filesparsed;
     QList<XMLLineLocator*>lines;
@@ -168,6 +179,9 @@ protected:
     QList<EnumCreator*> globalEnums;
     QString inputpath;
     QString inputfile;
+
+    //! Write "About this ICD" section to file
+    void WriteAboutSection(ProtocolFile& file, bool isBigEndian);
 
 private:
 

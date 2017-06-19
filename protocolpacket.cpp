@@ -993,7 +993,17 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
         // The column headings
         bytes.append("Bytes");
         names.append("Name");
-        encodings.append("[Enc](#Enc)");
+
+        if (parser->hasAboutSection())
+        {
+            encodings.append("[Enc](#Enc)");
+        }
+        else
+        {
+            // Disable linking if there's nothing to link to
+            encodings.append("Enc");
+        }
+
         repeats.append("Repeat");
         comments.append("Description");
 

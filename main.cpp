@@ -31,8 +31,10 @@ int main(int argc, char *argv[])
     argParser.addOption({{"l", "latex-header-level"}, "LaTeX header level", "latexlevel"});
     argParser.addOption({"no-doxygen", "Skip generation of developer-level documentation"});
     argParser.addOption({"no-markdown", "Skip generation of user-level documentation"});
+    argParser.addOption({"no-about-section", "Skip generation of \"About this ICD\" section in documentation output"});
     argParser.addOption({"no-helper-files", "Skip creation of helper files not directly specifed by protocol .xml file"});
     argParser.addOption({{"s", "style"}, "Specify a css file to override the default style for HTML documentation", "cssfile"});
+    argParser.addOption({"no-css", "Skip generation of any css data in documentation files"});
     argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
 
     argParser.process(a);
@@ -84,9 +86,11 @@ int main(int argc, char *argv[])
     parser.disableDoxygen(argParser.isSet("no-doxygen"));
     parser.disableMarkdown(argParser.isSet("no-markdown"));
     parser.disableHelperFiles(argParser.isSet("no-helper-files"));
+    parser.disableAboutSection(argParser.isSet("no-about-section"));
     parser.showHiddenItems(argParser.isSet("show-hidden-items"));
     parser.disableUnrecognizedWarnings(argParser.isSet("no-unrecognized-warnings"));
     parser.setLaTeXSupport(argParser.isSet("latex"));
+    parser.disableCSS(argParser.isSet("no-css"));
 
     QString latexLevel = argParser.value("latex-header-level");
 
