@@ -19,10 +19,10 @@ public:
     ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
     //! Parse a packet from the DOM
-    virtual void parse(void);
+    virtual void parse(void) Q_DECL_OVERRIDE;
 
     //! Reset our data contents
-    virtual void clear(void);
+    virtual void clear(void) Q_DECL_OVERRIDE;
 
     //! Destroy the protocol packet
     ~ProtocolStructureModule(void);

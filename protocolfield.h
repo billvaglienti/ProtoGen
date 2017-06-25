@@ -86,7 +86,7 @@ public:
     ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported);
 
     //! Provide the pointer to a previous encodable in the list
-    virtual void setPreviousEncodable(Encodable* prev);
+    virtual void setPreviousEncodable(Encodable* prev) Q_DECL_OVERRIDE;
 
     //! Get overriden type information
     bool getOverriddenTypeData(ProtocolField* prev);
@@ -101,40 +101,40 @@ public:
     virtual ~ProtocolField(){}
 
     //! Reset all data to defaults
-    virtual void clear(void);
+    virtual void clear(void) Q_DECL_OVERRIDE;
 
     //! Parse the DOM element
-    virtual void parse(void);
+    virtual void parse(void) Q_DECL_OVERRIDE;
 
     //! Check names against the list of C keywords
-    virtual void checkAgainstKeywords(void);
+    virtual void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Returns true since protocol field is a primitive type
-    virtual bool isPrimitive(void) const {return true;}
+    virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return true;}
 
     //! True if this encodable is NOT encoded
-    virtual bool isNotEncoded(void) const {return (encodedType.isNull);}
+    virtual bool isNotEncoded(void) const Q_DECL_OVERRIDE {return (encodedType.isNull);}
 
     //! True if this encodable is NOT in memory. Note how overriding a previous field means we are not in memory (because the previous one is)
-    virtual bool isNotInMemory(void) const {return (inMemoryType.isNull || overridesPrevious);}
+    virtual bool isNotInMemory(void) const Q_DECL_OVERRIDE {return (inMemoryType.isNull || overridesPrevious);}
 
     //! True if this encodable is a constant
-    virtual bool isConstant(void) const {return !constantString.isEmpty();}
+    virtual bool isConstant(void) const Q_DECL_OVERRIDE {return !constantString.isEmpty();}
 
     //! True if this encoable is a primitive bitfield
-    virtual bool isBitfield(void) const {return (encodedType.isBitfield && !isNotEncoded());}
+    virtual bool isBitfield(void) const Q_DECL_OVERRIDE {return (encodedType.isBitfield && !isNotEncoded());}
 
     //! True if this encodable has a default value
-    virtual bool isDefault(void) const {return !defaultString.isEmpty();}
+    virtual bool isDefault(void) const Q_DECL_OVERRIDE {return !defaultString.isEmpty();}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    virtual void getBitfieldGroupNumBytes(int* num) const;
+    virtual void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
 
     //! Get the declaration for this field
-    virtual QString getDeclaration(void) const;
+    virtual QString getDeclaration(void) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable
     virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
@@ -143,10 +143,10 @@ public:
     virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the signature of this field in an encode function signature
-    virtual QString getEncodeSignature(void) const;
+    virtual QString getEncodeSignature(void) const Q_DECL_OVERRIDE;
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const Q_DECL_OVERRIDE;
 
     //! Return true if this field is hidden from documentation
     virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
@@ -158,10 +158,10 @@ public:
     virtual bool hasInit(void) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to decode this encoable
-    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
+    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
 
     //! Return the string that sets this encodable to its default value in code
     virtual QString getSetToDefaultsString(bool isStructureMember) const Q_DECL_OVERRIDE;
@@ -179,16 +179,16 @@ public:
     virtual QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
 
     //! Make this primitive not a default
-    virtual void clearDefaults(void) {defaultString.clear();}
+    virtual void clearDefaults(void) Q_DECL_OVERRIDE {defaultString.clear();}
 
     //! True if this encodable overrides a previous encodable
-    virtual bool overridesPreviousEncodable(void) const {return overridesPrevious;}
+    virtual bool overridesPreviousEncodable(void) const Q_DECL_OVERRIDE {return overridesPrevious;}
 
     //! Clear the override flag, its not allowed
-    virtual void clearOverridesPrevious(void) {overridesPrevious = false;}
+    virtual void clearOverridesPrevious(void) Q_DECL_OVERRIDE {overridesPrevious = false;}
 
     //! True if this encodable invalidates an earlier default
-    virtual bool invalidatesPreviousDefault(void) const {return !usesDefaults() && !overridesPrevious;}
+    virtual bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !usesDefaults() && !overridesPrevious;}
 
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const Q_DECL_OVERRIDE;

@@ -17,10 +17,10 @@ public:
     virtual ~ProtocolStructure();
 
     //! Reset all data to defaults
-    virtual void clear(void);
+    virtual void clear(void) Q_DECL_OVERRIDE;
 
     //! Parse the DOM data for this structure
-    virtual void parse(void);
+    virtual void parse(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
@@ -104,22 +104,22 @@ public:
     virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Get the declaration for this structure as a member of another
-    virtual QString getDeclaration(void) const;
+    virtual QString getDeclaration(void) const Q_DECL_OVERRIDE;
 
     //! Get the declaration that goes in the header which declares this structure and all its children
-    virtual QString getStructureDeclaration(bool alwaysCreate) const;
+    virtual QString getStructureDeclaration(bool alwaysCreate) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const;
+    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
-    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const;
+    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the function used to encode this encodable, may be empty
-    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const;
+    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the function used to decode this encodable, may be empty
-    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const;
+    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to prototype the encode routine for this encodable
     virtual QString getFunctionEncodePrototype() const;
@@ -128,19 +128,19 @@ public:
     virtual QString getFunctionDecodePrototype() const;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to decode this encoable
-    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
+    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const Q_DECL_OVERRIDE;
 
     //! Get details needed to produce documentation for this encodables sub-encodables.
     void getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! Return true if this structure should be hidden from the documentation
-    virtual bool isHidden(void) const {return hidden;}
+    virtual bool isHidden(void) const Q_DECL_OVERRIDE {return hidden;}
 
     //! True if this encodable has verification data
     virtual bool hasVerify(void) const Q_DECL_OVERRIDE {return hasverify;}
