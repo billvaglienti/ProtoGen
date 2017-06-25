@@ -73,7 +73,7 @@ void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString fi
         if(namepath.contains(":") || namepath.startsWith('\\') || namepath.startsWith('/'))
             filepath = namepath;
         else
-            filepath += "\\" + namepath;
+            filepath += "/" + namepath;
 
         // The name without the path data
         name = name.right(name.size() - index - 1);
