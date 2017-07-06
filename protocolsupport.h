@@ -32,6 +32,7 @@ public:
     QString protoName;              //!< Name of the protocol
     QString prefix;                 //!< Prefix name
     QString pointerType;            //!< Packet pointer type - default is "void*"
+    QString licenseText;            //!< License text to be added to each generated file
 };
 
 #endif // PROTOCOLSUPPORT_H

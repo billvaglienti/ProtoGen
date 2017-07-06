@@ -135,6 +135,12 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
+    header.setLicenseText(support.licenseText);
+    source.setLicenseText(support.licenseText);
+
+    verifyHeader.setLicenseText(support.licenseText);
+    verifySource.setLicenseText(support.licenseText);
+
     // The file names
     if(moduleName.isEmpty())
     {
@@ -154,6 +160,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     {
         verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
         verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
+
         verifyheaderfile = &verifyHeader;
         verifysourcefile = &verifySource;
     }
