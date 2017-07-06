@@ -84,6 +84,9 @@ int main(int argc, char *argv[])
             if (licenseFile.open(QIODevice::ReadOnly) && licenseFile.isOpen() && licenseFile.isReadable())
             {
                 QString licenseText = licenseFile.readAll();
+
+                licenseText = licenseText.replace("\r\n", "\n");
+
                 parser.setLicenseText(licenseText);
             }
             else
