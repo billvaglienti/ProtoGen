@@ -202,6 +202,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         EnumCreator* module = globalEnums.at(i);
 
         module->parseGlobal(name + "Protocol");
+        enumfile.setLicenseText(support.licenseText);
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
@@ -212,6 +213,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
         if(!source.isEmpty())
         {
+            enumSourceFile.setLicenseText(support.licenseText);
             enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
 
             enumSourceFile.write(source);
@@ -566,6 +568,7 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     QString nameex = name + "Protocol";
 
     // The file names
+    header.setLicenseText(support.licenseText);
     header.setModuleNameAndPath(nameex, support.outputpath);
 
     // Comment block at the top of the header file
@@ -640,6 +643,7 @@ void ProtocolParser::finishProtocolHeader(void)
     QString nameex = name + "Protocol";
 
     // The file name, this will result in an append to the previously created file
+    header.setLicenseText(support.licenseText);
     header.setModuleNameAndPath(nameex, support.outputpath);
 
     header.makeLineSeparator();

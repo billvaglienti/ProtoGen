@@ -31,6 +31,9 @@ public:
     //! Output an include directive
     void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool Global = false);
 
+    //! Set the license text for the file
+    void setLicenseText(const QString text) { license = text; }
+
     //! Set the name of the module
     void setModuleNameAndPath(QString name, QString filepath);
 
@@ -91,6 +94,8 @@ protected:
     QString path;       //!< Output path for the file
     QString module;     //!< The module name, not including the file extension
     QString contents;   //!< The contents, not including the prologue or epilogue
+
+    QString license;    //!< License text
 
     bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
     bool appending;     //!< Flag set if an append operation is in progress

@@ -136,6 +136,11 @@ public:
     //! Return true if the value is set to {'false','no','0'}
     static bool isFieldClear(QString value);
 
+    //! Set the license text
+    void setLicenseText(const QString text) { support.licenseText = text; }
+
+    QString getLicenseText() const { return support.licenseText; }
+
 protected:
 
     //! Parses a single XML file handling any require tags to flatten a file

@@ -36,7 +36,9 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `SupportFile.xml` is another file that defines protocol details. The contents of this file are used to augment the contents of the main protocol file, as such its protocol name and options are ignored in favor of the name and options from the main file. You can have as many support files as you like. Protogen will parse the support files before the main file, so the main file can have dependencies on the protocol elements from the support files.
 
-- `-docs dir` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same same directory as `Outputpath`.
+- `license <file>` is a template file contains license information that will be added to the top of each generated file.
+
+- `-docs <dir>` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same same directory as `Outputpath`.
 
 - `-show-hidden-items` will cause documentation to be generated for **all** elements, even if the element has the *hidden="true"* flag
 

@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
     argParser.addPositionalArgument("outputpath", "Path for generated protocol files (default = current working directory)");
 
     argParser.addOption({{"d", "docs"}, "Path for generated documentation files (default = outputpath)", "docpath"});
+    argParser.addOption({"license", "Path to license template file which will be prepended to each generated file", "license"});
     argParser.addOption({"show-hidden-items", "Show all items in documentation even if they are marked as 'hidden'"});
     argParser.addOption({"latex", "Enable extra documentation output required for LaTeX integration"});
     argParser.addOption({{"l", "latex-header-level"}, "LaTeX header level", "latexlevel"});
@@ -67,6 +68,36 @@ int main(int argc, char *argv[])
     {
         std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
         return 2;   // no input file
+    }
+
+    // License template file
+    QString licenseTemplate = argParser.value("license");
+
+    if (!licenseTemplate.isEmpty())
+    {
+        licenseTemplate = QDir().absoluteFilePath(licenseTemplate);
+
+        QFile licenseFile(licenseTemplate);
+
+        if (licenseFile.exists())
+        {
+            if (licenseFile.open(QIODevice::ReadOnly) && licenseFile.isOpen() && licenseFile.isReadable())
+            {
+                QString licenseText = licenseFile.readAll();
+
+                licenseText = licenseText.replace("\r\n", "\n");
+
+                parser.setLicenseText(licenseText);
+            }
+            else
+            {
+                std::cerr << "error: could not open license file '" << licenseTemplate.toStdString() << "'" << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "error: license file '" << licenseTemplate.toStdString() << "' does not exist" << std::endl;
+        }
     }
 
     // Documentation directory
