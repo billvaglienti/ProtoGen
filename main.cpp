@@ -75,28 +75,25 @@ int main(int argc, char *argv[])
 
     if (!licenseTemplate.isEmpty())
     {
-        licenseTemplate = QDir().absoluteFilePath(licenseTemplate);
-
         QFile licenseFile(licenseTemplate);
 
         if (licenseFile.exists())
         {
-            if (licenseFile.open(QIODevice::ReadOnly) && licenseFile.isOpen() && licenseFile.isReadable())
+            if (licenseFile.open(QIODevice::ReadOnly))
             {
-                QString licenseText = licenseFile.readAll();
+                // Pull all the data from the file, and convert to Qt standard line endings
+                parser.setLicenseText(licenseFile.readAll().replace("\r\n", "\n"));
 
-                licenseText = licenseText.replace("\r\n", "\n");
-
-                parser.setLicenseText(licenseText);
+                licenseFile.close();
             }
             else
             {
-                std::cerr << "error: could not open license file '" << licenseTemplate.toStdString() << "'" << std::endl;
+                std::cerr << "warning: could not open license file '" << QDir::toNativeSeparators(licenseTemplate).toStdString() << "'" << std::endl;
             }
         }
         else
         {
-            std::cerr << "error: license file '" << licenseTemplate.toStdString() << "' does not exist" << std::endl;
+            std::cerr << "warning: license file '" << QDir::toNativeSeparators(licenseTemplate).toStdString() << "' does not exist" << std::endl;
         }
     }
 
@@ -154,7 +151,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            std::cerr << "warning: Failed to open " << QDir::toNativeSeparators(css).toStdString() << ", using default css" << std::endl;
+            std::cerr << "warning: Failed to open '" << QDir::toNativeSeparators(css).toStdString() << "', using default css" << std::endl;
         }
     }
 

@@ -195,7 +195,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     // Handle the idea that the structure might be defined in a different file
     if(!defheadermodulename.isEmpty())
     {
+        defheader.setLicenseText(support.licenseText);
         defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+
         if(defheader.isAppending())
             defheader.makeLineSeparator();
 

@@ -131,4 +131,5 @@ OTHER_FILES += \
 
 DISTFILES += \
     moredocsfile.txt \
-    dependson.xml
+    dependson.xml \
+    licensetest.txt
