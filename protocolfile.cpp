@@ -591,7 +591,7 @@ void ProtocolHeaderFile::prepareToAppend(void)
         if (!license.isEmpty())
         {
             write(license);
-            write(QString("\n"));
+            makeLineSeparator();
         }
 
         // The opening #ifdef
@@ -723,7 +723,7 @@ void ProtocolSourceFile::prepareToAppend(void)
         if (!license.isEmpty())
         {
             write(license);
-            write(QString("\n"));
+            makeLineSeparator();
         }
 
         // The source file includes the header
