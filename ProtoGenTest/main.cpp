@@ -319,7 +319,7 @@ int testThrottleSettingsPacket(void)
     testPacket_t pkt;
     ThrottleSettings_t settings;
 
-    if(getThrottleSettingsMinDataLength() != 1)
+    if(getThrottleSettingsMinDataLength() != 4)
     {
         std::cout << "Throttle Settings minimum data length is wrong" << std::endl;
         return 0;
@@ -338,7 +338,7 @@ int testThrottleSettingsPacket(void)
 
     encodeThrottleSettingsPacketStructure(&pkt, &settings);
 
-    if(pkt.length != (1+3*5+5) )
+    if(pkt.length != (4+3*5+5) )
     {
         std::cout << "Throttle settings packet has the wrong length" << std::endl;
         return 0;
@@ -383,14 +383,14 @@ int testThrottleSettingsPacket(void)
     // simpler case using defaults
     memset(&settings, 0, sizeof(settings));
     encodeThrottleSettingsPacketStructure(&pkt, &settings);
-    if(pkt.length != (1+5) )
+    if(pkt.length != (4+5) )
     {
         std::cout << "Throttle settings packet (#2) has the wrong length" << std::endl;
         return 0;
     }
 
     // now test the default case
-    pkt.length = 1;
+    pkt.length = 4;
     if(decodeThrottleSettingsPacketStructure(&pkt, &settings))
     {
         if( (settings.numCurvePoints != 0) ||

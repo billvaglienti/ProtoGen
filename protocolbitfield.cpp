@@ -411,13 +411,23 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
         if(byteoffset > 0)
             offset = " + " + QString().setNum(byteoffset);
 
-        output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)"+argument+";\n\n";
-        byteoffset--;
-        numbits -= 8;
+        if(argument == "0")
+        {
+            // If the argument is the constant string "0" then shifting is not needed
+            output += spacing + dataname + "[" + dataindex + offset + "] = 0;\n\n";
+            byteoffset--;
+            numbits -= 8;
+        }
+        else
+        {
+            output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)"+argument+";\n\n";
+            byteoffset--;
+            numbits -= 8;
 
-        // Shift the field down for the next byte of bits
-        if(numbits > 0)
-            output += spacing + argument + " >>= 8;\n";
+            // Shift the field down for the next byte of bits
+            if(numbits > 0)
+                output += spacing + argument + " >>= 8;\n";
+        }
 
     }// while still bits to encode
 

@@ -176,7 +176,7 @@ interpretation
             straight line, or a linearly interpolated table with up to 10 points.">
         
         <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" comment="Number of points in the throttle curve"/>
-        <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield3"/>
+        <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield27"/>
         <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>
         
         <Structure name="curvePoint" array="10" variableArray="numCurvePoints" comment="table for throttle calibration">
