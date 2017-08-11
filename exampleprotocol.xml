@@ -22,14 +22,14 @@ interpretation
 
     <Documentation name="Enumerations" paragraph="1"/>
 
-    <Enum name="packetIds" title="Packet identifiers" comment="The list of packet identifiers" description="even more stuff!">
-        <Value name="KEEPALIVE" comment="Zero length packet used to refresh communications timeouts."/>
-        <Value name="ENGINECOMMAND" value="10" comment="Engine command packet"/>
-        <Value name="ENGINESETTINGS" comment="Engine settings packet"/>
-        <Value name="THROTTLESETTINGS" comment="Throttle settings packet"/>
-        <Value name="VERSION" value="20" comment="Version reporting packet"/>
-        <Value name="TELEMETRY" comment="Regular elemetry packet"/>
-        <Value name="GPS" comment="Data for a single GPS"/>
+    <Enum name="packetIds" title="Packet identifiers" lookup="true" lookupTitle="true" comment="The list of packet identifiers" description="even more stuff!">
+        <Value name="KEEPALIVE" title="Keep alive" comment="Zero length packet used to refresh communications timeouts."/>
+        <Value name="ENGINECOMMAND" title="Engine command" value="10" comment="Engine command packet"/>
+        <Value name="ENGINESETTINGS" title="Engine settings" comment="Engine settings packet"/>
+        <Value name="THROTTLESETTINGS" title="Throttle settings" comment="Throttle settings packet"/>
+        <Value name="VERSION" value="20" title="Version information" comment="Version reporting packet"/>
+        <Value name="TELEMETRY" title="Telemetry" comment="Regular elemetry packet"/>
+        <Value name="GPS" title="GPS telemetry" comment="Data for a single GPS"/>
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
         <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>

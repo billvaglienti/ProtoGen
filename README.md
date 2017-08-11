@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.4. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.5. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases/download). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -232,13 +232,16 @@ Enum tag attributes:
 
 - `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.
 
+- `lookupTitle` : is used to specify that this enumeration allows lookup of enum title based on enum values. If enabled, the title for a particular enum value can be returned as a string. If the enumertaion does not have a title then the label text is returned.
+
+
 ### Enum : Value subtag attributes:
 
 The Enum tag supports Value subtags; which are used to name individual elements of the enumeration. Attributes of the Value subtag are:
 
-- `name` : gives the name of the enumeration element. This is the name that will be referenced in code.
+- `name` : gives the name of the enumeration element. This is the name that will be referenced in code, and will be returned by the label text lookup if the enumeration has the `lookup` attribute turned on.
 
-- `title` : The name of the enumeration element in the documentation output. If title is not given then `name` is used.
+- `title` : The name of the enumeration element in the documentation output. If title is not given then `name` is used. This is the text that will be returned by the title lookup if the enumeration has the `lookupTitle` attribute turned on.
 
 - `value` : is an optional attribute that sets the value of this enumeration element. If value is left out the element will get its value in the normal C language way (by incrementing from the previous element, or starting at 0). Note that non numeric values may be used, as long as those strings are resolved by an include directive or previous enumeration.
 

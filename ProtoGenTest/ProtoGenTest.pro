@@ -34,7 +34,8 @@ SOURCES += main.cpp \
     packetinterface.c \
     bitfieldtest.c \
     definitions/verify.c \
-    verify/dateverify.c
+    verify/dateverify.c \
+    DemolinkProtocol.c
 
 HEADERS += \
     indices.h \

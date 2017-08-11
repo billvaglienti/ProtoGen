@@ -156,6 +156,9 @@ protected:
     //! Determines if this enumeration will support revese-lookup of label (based on value)
     bool lookup;
 
+    //! Determines if this enumeration will support revese-lookup of title (based on value)
+    bool lookupTitle;
+
     //! Flag set true if parseGlobal() is called
     bool isglobal;
 

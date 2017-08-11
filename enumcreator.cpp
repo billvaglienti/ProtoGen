@@ -17,16 +17,6 @@ EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, QString Pa
 {
 }
 
-//! Create an empty enumeration list
-EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
-    ProtocolDocumentation(parse, Parent, supported),
-    minbitwidth(0),
-    hidden(false),
-    lookup(false),
-    isglobal(false)
-{
-}
-
 void EnumElement::checkAgainstKeywords()
 {
     if (keywords.contains(getName()))
@@ -100,6 +90,17 @@ QString EnumElement::getDeclaration() const
     return decl;
 }
 
+//! Create an empty enumeration list
+EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, Parent, supported),
+    minbitwidth(0),
+    hidden(false),
+    lookup(false),
+    lookupTitle(false),
+    isglobal(false)
+{
+}
+
 EnumCreator::~EnumCreator(void)
 {
     // Delete all the objects in the list
@@ -120,6 +121,8 @@ void EnumCreator::clear(void)
     sourceOutput.clear();
     minbitwidth = 0;
     hidden = false;
+    lookup = false;
+    lookupTitle = false;
     name.clear();
     comment.clear();
     description.clear();
@@ -184,6 +187,7 @@ void EnumCreator::parse(void)
                           << "description"
                           << "hidden"
                           << "lookup"
+                          << "lookupTitle"
                           << "prefix"
                           << "file");
 
@@ -194,6 +198,7 @@ void EnumCreator::parse(void)
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
     lookup = ProtocolParser::isFieldSet("lookup", map);
+    lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
 
     if(isglobal)
     {
@@ -298,7 +303,7 @@ void EnumCreator::parse(void)
         sourceOutput += " * \\brief Lookup label for '" + name + "' enum entry\n";
         sourceOutput += " * \n";
         sourceOutput += " * \\param value is the integer value of the enum entry\n";
-        sourceOutput += " * \\return string label of the given entry (emptry string if not found)\n";
+        sourceOutput += " * \\return string label of the given entry\n";
         sourceOutput += " */\n";
 
         sourceOutput += func + "\n";
@@ -319,6 +324,50 @@ void EnumCreator::parse(void)
 
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
             sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getLookupName() + "\";\n";
+        }
+
+        sourceOutput += TAB_IN + "}\n";
+        sourceOutput += "}\n";
+    }
+
+    if (lookupTitle)
+    {
+        output += "\n";
+        output += "//! \\return the title of a '" + name + "' enum entry, based on its value\n";
+
+        QString func = "const char* " + name + "_EnumTitle(int value)";
+
+        output += func + ";\n";
+
+        // Add reverse-lookup code to the source file
+        sourceOutput += "\n/*!\n";
+        sourceOutput += " * \\brief Lookup title for '" + name + "' enum entry\n";
+        sourceOutput += " * \n";
+        sourceOutput += " * \\param value is the integer value of the enum entry\n";
+        sourceOutput += " * \\return string title of the given entry (label name if no title given)\n";
+        sourceOutput += " */\n";
+
+        sourceOutput += func + "\n";
+        sourceOutput += "{\n";
+
+        sourceOutput += TAB_IN + "switch (value)\n";
+        sourceOutput += TAB_IN + "{\n";
+        sourceOutput += TAB_IN + "default:\n";
+        sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
+
+        // Add the reverse-lookup text for each entry in the enumeration
+        for (int i=0; i<elements.size(); i++)
+        {
+            auto element = elements.at(i);
+
+            if (element.ignoresLookup)
+                continue;
+
+            sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
+            if(element.title.isEmpty())
+                sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getLookupName() + "\";\n";
+            else
+                sourceOutput += TAB_IN + TAB_IN + "return \"" + element.title + "\";\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
