@@ -43,6 +43,9 @@ public:
     //! Option to disable 'about this ICD' section
     void disableAboutSection(bool disable) { noAboutSection = disable; }
 
+    //! Option to enable table of contents section
+    void enableTableOfContents(bool enable) {tableOfContents = enable;}
+
     //! Return status of 'About this ICD' section
     bool hasAboutSection() const { return !noAboutSection; }
 
@@ -149,6 +152,12 @@ protected:
     //! Create markdown documentation
     void outputMarkdown(bool isBigEndian, QString inlinecss);
 
+    //! Get the table of contents, based on the file contents
+    QString getTableOfContents(const QString& filecontents);
+
+    //! Get the "About this ICD" section to file
+    QString getAboutSection(bool isBigEndian);
+
     //! Output the doxygen HTML documentation
     void outputDoxygen(void);
 
@@ -173,6 +182,7 @@ protected:
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
     bool nocss;         //!< Disable all CSS output
+    bool tableOfContents;   //!< Enable table of contents
 
     QStringList filesparsed;
     QList<XMLLineLocator*>lines;
@@ -184,9 +194,6 @@ protected:
     QList<EnumCreator*> globalEnums;
     QString inputpath;
     QString inputfile;
-
-    //! Write "About this ICD" section to file
-    void WriteAboutSection(ProtocolFile& file, bool isBigEndian);
 
 private:
 

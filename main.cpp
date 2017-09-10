@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
     argParser.addOption({{"s", "style"}, "Specify a css file to override the default style for HTML documentation", "cssfile"});
     argParser.addOption({"no-css", "Skip generation of any css data in documentation files"});
     argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
+    argParser.addOption({"table-of-contents", "Generate a table of contents"});
 
     argParser.process(a);
 
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
     parser.disableUnrecognizedWarnings(argParser.isSet("no-unrecognized-warnings"));
     parser.setLaTeXSupport(argParser.isSet("latex"));
     parser.disableCSS(argParser.isSet("no-css"));
+    parser.enableTableOfContents(argParser.isSet("table-of-contents"));
 
     QString latexLevel = argParser.value("latex-header-level");
 

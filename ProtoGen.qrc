@@ -5,5 +5,6 @@
         <file>prebuiltSources/Doxyfile</file>
         <file>prebuiltSources/markdown.css</file>
         <file>prebuiltSources/bitfieldtest.xml</file>
+        <file>defaultcss.txt</file>
     </qresource>
 </RCC>

@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.5.a";
+const QString ProtocolParser::genVersion = "2.6.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -30,7 +30,8 @@ ProtocolParser::ProtocolParser() :
     nodoxygen(false),
     noAboutSection(false),
     showAllItems(false),
-    nocss(false)
+    nocss(false),
+    tableOfContents(false)
 {
 }
 
@@ -1130,6 +1131,7 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
 
 }
 
+
 /*!
  * Ouptut documentation for the protocol as a markdown file
  * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
@@ -1143,8 +1145,48 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         basepath = docsDir;
 
     QString filename = basepath + name + ".markdown";
-
+    QString filecontents = "\n\n";
     ProtocolFile file(filename, false);
+
+    QStringList packetids;
+    for(int i = 0; i < packets.size(); i++)
+        packets.at(i)->appendIds(packetids);
+    packetids.removeDuplicates();
+
+    /* Write protocol introductory information */
+    if (hasAboutSection())
+    {
+        if(title.isEmpty())
+            filecontents += "# " + name + " Protocol\n\n";
+        else
+            filecontents += "# " + title + "\n\n";
+
+        if(!comment.isEmpty())
+            filecontents += outputLongComment("", comment) + "\n\n";
+
+        if(!version.isEmpty())
+            filecontents += title + " Protocol version is " + version + ".\n\n";
+
+        if(!api.isEmpty())
+            filecontents += title + " Protocol API is " + api + ".\n\n";
+
+    }
+
+    for(int i = 0; i < alldocumentsinorder.size(); i++)
+    {
+        if(alldocumentsinorder.at(i) == NULL)
+            continue;
+
+        // If the particular documention is to be hidden
+        if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
+            continue;
+
+        filecontents += alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids);
+        filecontents += "\n";
+    }
+
+    if (hasAboutSection())
+        filecontents += getAboutSection(isBigEndian);
 
     // Specific header-level definitions are required for LaTeX compatibility
     if (latexEnabled)
@@ -1173,59 +1215,19 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
-    /* Write protocol introductory information */
-    if (hasAboutSection())
+    if(tableOfContents)
     {
-        if(title.isEmpty())
-            file.write("# " + name + " Protocol\n");
-        else
-            file.write("# " + title + "\n");
-        file.write("\n");
-
-
-        if(!comment.isEmpty())
-        {
-            file.write(outputLongComment("", comment) + "\n");
-            file.write("\n");
-        }
-
-        if(!version.isEmpty())
-        {
-            file.write(title + " Protocol version is " + version + ".\n");
-            file.write("\n");
-        }
-
-        if(!api.isEmpty())
-        {
-            file.write(title + " Protocol API is " + api + ".\n");
-            file.write("\n");
-        }
-
-        file.write("----------------------------\n\n");
+        QString temp = getTableOfContents(filecontents);
+        temp += "----------------------------\n\n";
+        temp += filecontents;
+        filecontents = temp;
     }
 
-    QStringList packetids;
-    for(int i = 0; i < packets.size(); i++)
-        packets.at(i)->appendIds(packetids);
-    packetids.removeDuplicates();
+    // Add html page breaks at each ---
+    filecontents.replace("\n---", "<div class=\"page-break\"></div>\n\n\n---");
 
-    for(int i = 0; i < alldocumentsinorder.size(); i++)
-    {
-        if(alldocumentsinorder.at(i) == NULL)
-            continue;
-
-        // If the particular documention is to be hidden
-        if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
-            continue;
-
-        file.write(alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids));
-        file.write("\n");
-    }
-
-    if (!noAboutSection)
-    {
-        WriteAboutSection(file, isBigEndian);
-    }
+    file.write(filecontents);
+    file.write(filecontents);
 
     file.flush();
 
@@ -1272,30 +1274,126 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     }
 }
 
-void ProtocolParser::WriteAboutSection(ProtocolFile &file, bool isBigEndian)
-{
-    file.write("----------------------------\n\n");
-    file.write("# About this ICD\n");
-    file.write("\n");
 
-    file.write("This is the interface control document for data *on the wire*, \
+/*!
+ * Get the table of contents, based on the file contents
+ * \param filecontents are the file contents (without a TOC)
+ * \return the table of contents data
+ */
+QString ProtocolParser::getTableOfContents(const QString& filecontents)
+{
+    QString output;
+
+    // The table of contents identifies all the heding references, which start
+    // with #. Each heading reference is also prefaced by two line feeds. The
+    // level of the heading (and toc line) is defined by the number of #s.
+    QStringList headings = filecontents.split("\n\n#", QString::SkipEmptyParts);
+
+    if(headings.count() > 0)
+        output = "<toctitle id=\"tableofcontents\">Table of contents</toctitle>\n";
+
+    for(int i = 0; i < headings.count(); i++)
+    {
+        QString refname;
+        QString text;
+        int level = 1;
+
+        // Pull the first line out of the heading group
+        QString line = headings.at(i);
+        line = line.left(line.indexOf("\n"));
+
+        int prolog;
+        for(prolog = 0; prolog < line.count(); prolog++)
+        {
+            QChar symbol = line.at(prolog);
+
+            if(symbol == '#')       // Count the level
+                level++;
+            else if(symbol == ' ')  // Remove leading spaces
+                continue;
+            else
+            {
+                // Remove the prolog and get out
+                line = line.mid(prolog);
+                break;
+            }
+
+        }// for all characters
+
+        // Special check in case we got a weird one
+        if(line.isEmpty())
+            continue;
+
+        // Now figure out the reference. It is either going to be given by some
+        // embedded html, or by the id that markdown will put into the output html
+        if(line.contains("<a name=") && line.contains("\""))
+        {
+            // The text is after the reference closure
+            text = line.mid(line.indexOf("</a>")+4);
+
+            // In this case the reference name is contained within quotes
+            refname = line.mid(line.indexOf("\"")+1);
+            refname = refname.left(refname.indexOf("\""));
+        }
+        else
+        {
+            // The text for the line is the line
+            text = line;
+
+            // In this case the reference name is the whole line, lower case, no spaces and other special characters
+            refname = line.toLower();
+            refname.remove(" ");
+            refname.remove("(");
+            refname.remove(")");
+            refname.remove("{");
+            refname.remove("}");
+            refname.remove("[");
+            refname.remove("]");
+            refname.remove("`");
+            refname.remove("\"");
+        }
+
+        // Finally the actual line
+        output += "<toc"+QString::number(level)+"><a href=\"#" + refname + "\">" + text + "</a></toc"+QString::number(level)+">\n";
+
+    }// for all headings
+
+    return output + "\n";
+
+}// ProtocolParser::getTableOfContents
+
+
+/*!
+ * Return the string that describes the about section
+ * \param isBigEndian should be true to describe a big endian protocol
+ * \return the about section contents
+ */
+QString ProtocolParser::getAboutSection(bool isBigEndian)
+{
+    QString output;
+
+    output += "----------------------------\n\n";
+    output += "# About this ICD\n";
+    output += "\n";
+
+    output += "This is the interface control document for data *on the wire*, \
 not data in memory. This document was automatically generated by the [ProtoGen software](https://github.com/billvaglienti/ProtoGen), \
 version " + ProtocolParser::genVersion + ". ProtoGen also generates C source code for doing \
-most of the work of encoding data from memory to the wire, and vice versa.\n");
-    file.write("\n");
+most of the work of encoding data from memory to the wire, and vice versa.\n";
+    output += "\n";
 
-    file.write("## Encodings\n");
-    file.write("\n");
+    output += "## Encodings\n";
+    output += "\n";
 
     if(isBigEndian)
-        file.write("Data for this protocol are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last.\n\n");
+        output += "Data for this protocol are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last.\n\n";
     else
-        file.write("Data for this protocol are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last. However bitfields are always sent most significant bits first.\n\n");
+        output += "Data for this protocol are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last. However bitfields are always sent most significant bits first.\n\n";
 
-    file.write("Data can be encoded as unsigned integers, signed integers (two's complement), bitfields, and floating point.\n");
-    file.write("\n");
+    output += "Data can be encoded as unsigned integers, signed integers (two's complement), bitfields, and floating point.\n";
+    output += "\n";
 
-    file.write("\
+    output += "\
 | <a name=\"Enc\"></a>Encoding | Interpretation                        | Notes                                                                       |\n\
 | :--------------------------: | ------------------------------------- | --------------------------------------------------------------------------- |\n\
 | UX                           | Unsigned integer X bits long          | X must be: 8, 16, 24, 32, 40, 48, 56, or 64                                 |\n\
@@ -1304,31 +1402,33 @@ most of the work of encoding data from memory to the wire, and vice versa.\n");
 | F16:X                        | 16 bit float with X significand bits  | 1 sign bit : 15-X exponent bits : X significant bits with implied leading 1 |\n\
 | F24:X                        | 24 bit float with X significand bits  | 1 sign bit : 23-X exponent bits : X significant bits with implied leading 1 |\n\
 | F32                          | 32 bit float (IEEE-754)               | 1 sign bit : 8 exponent bits : 23 significant bits with implied leading 1   |\n\
-| F64                          | 64 bit float (IEEE-754)               | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n");
-    file.write("\n");
+| F64                          | 64 bit float (IEEE-754)               | 1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1  |\n";
+    output += "\n";
 
-    file.write("## Size of fields");
-    file.write("\n");
+    output += "## Size of fields";
+    output += "\n";
 
-    file.write("The encoding tables give the bytes for each field as X...Y; \
+    output += "The encoding tables give the bytes for each field as X...Y; \
 where X is the first byte (counting from 0) and Y is the last byte. For example \
 a 4 byte field at the beginning of a packet will give 0...3. If the field is 1 \
 byte long then only the starting byte is given. Bitfields are more complex, they \
 are displayed as Byte:Bit. A 3-bit bitfield at the beginning of a packet \
 will give 0:7...0:5, indicating that the bitfield uses bits 7, 6, and 5 of byte \
 0. Note that the most signficant bit of a byte is 7, and the least signficant \
-bit is 0. If the bitfield is 1 bit long then only the starting bit is given.\n");
-    file.write("\n");
+bit is 0. If the bitfield is 1 bit long then only the starting bit is given.\n";
+    output += "\n";
 
-    file.write("The byte count in the encoding tables are based on the maximum \
+    output += "The byte count in the encoding tables are based on the maximum \
 length of the field(s). If a field is variable length then the actual byte \
 location of the data may be different depending on the value of the variable \
 field. If the field is a variable length character string this will be indicated \
 in the encoding column of the table. If the field is a variable length array \
 this will be indicated in the repeat column of the encoding table. If the field \
 depends on the non-zero value of another field this will be indicated in the \
-description column of the table.\n");
-    file.write("\n");
+description column of the table.\n";
+    output += "\n";
+
+    return output;
 }
 
 
@@ -1415,68 +1515,14 @@ bool ProtocolParser::isFieldClear(QString value)
  */
 QString ProtocolParser::getDefaultInlinCSS(void)
 {
-    QString inlinecss("\
-    body {\n\
-        text-align:justify;\n\
-        width: 1000px;\n\
-        background-color:#eee;\n\
-        margin-left: auto;\n\
-        margin-right: auto;\n\
-        font-family:Verdana;\n\
-        counter-reset: h1counter;\
-    }\n\
-\n\
-    table {\n\
-       border: 2px solid darkred;\n\
-       border-collapse: collapse;\n\
-       margin-bottom: 25px;\n\
-    }\n\
-\n\
-    th, td {\n\
-       border: 1px solid green;\n\
-       font-family: Courier New, monospace;\n\
-    }\n\
-\n\
-    td{ padding: 2px; }\n\
-    h1, h2, h3, h4, h5 { font-family: Arial; }\n\
-    h1 { font-size:120%; margin-bottom: 25px;}\n\
-    h2 { font-size:110%; margin-bottom: 15px; }\n\
-    h3 { font-size:100%; margin-bottom: 10px;}\n\
-    h4, li { font-size:100%; }\n\
-    caption{ font-family:Verdana; }\n\
-\n\
-    hr{\n\
-        color: black;\n\
-        background-color: dimgray;\n\
-        height: 1px;\n\
-        margin-bottom:25px;\n\
-        margin-top:25px;\n\
-    }\n\
-\n\
-    code, pre, .codelike {\n\
-        font-family: Courier New, monospace;\n\
-        font-size: 100%;\n\
-        color: darkblue;\n\
-    }\n\
-    h1:before {\n\
-      content: counter(h1counter) \"\\00a0 \";\n\
-      counter-increment: h1counter;\n\
-      counter-reset: h2counter;\n\
-    }\n\
-    h1 {\n\
-      counter-reset: h2counter;\n\
-    }\n\
-    h2:before {\n\
-      content: counter(h1counter) \".\" counter(h2counter) \"\\00a0 \";\n\
-      counter-increment: h2counter;\n\
-      counter-reset: h3counter;\n\
-    }\n\
-    h3:before {\n\
-      content: counter(h1counter) \".\" counter(h2counter) \".\" counter(h3counter) \"\\00a0 \";\n\
-      counter-increment: h3counter;\n\
-    }");
+    QFile inlinecss(":/files/defaultcss.txt");
 
-    return inlinecss;
+    inlinecss.open(QIODevice::ReadOnly | QIODevice::Text);
+    QString css(inlinecss.readAll());
+
+    inlinecss.close();
+
+    return css;
 }
 
 

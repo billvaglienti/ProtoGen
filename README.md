@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.5. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.6. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -59,6 +59,8 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 - `-no-css` will cause ProtoGen to skip output of CSS data in generated documentation files.
 
 - `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect Protogen to ignore. 
+
+- `-table-of-contents` specifies that a table of contents section should be added to the markdown output. This will be output using inline html with intra document links to the headings.
 
 Dependencies
 ------------
@@ -468,7 +470,7 @@ Documentation examples:
 
     <Documentation comment="---"/>
 
-Inserts "---" into the markdown output. This will produce a horizontal rule in the generated html.
+Inserts "---" into the markdown output. This will produce a horizontal rule in the generated html. ProtoGen will also insert inline html to replace the horizontal rule with a page break when the html is printed (this behavior depends on the stylesheet - see the default style sheet that protogen outputs inline with the markdown).
 
     <Documentation name="Enumerations" paragraph="1" comment="Packets in the protocol refer to these global enumerations."/>
 

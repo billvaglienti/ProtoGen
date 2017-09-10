@@ -1,0 +1,128 @@
+    body {
+        text-align:justify;
+        max-width: 25cm;
+        margin-left: auto;
+        margin-right: auto;
+        font-family: Georgia;
+        counter-reset: h1counter h2counter  h3counter toc1counter toc2counter toc3counter;
+     }
+
+    table {
+       border: 1px solid #e0e0e0;
+       border-collapse: collapse;
+       margin-bottom: 25px;
+    }
+
+    th, td {
+        border: 1px solid #e0e0e0;
+        font-family: Courier, monospace;
+        font-size: 90%;
+        padding: 2px;
+    }
+
+    /*
+     * Alternate colors for the table, including the heading row
+     */
+    th {
+    background-color: #e0e0e0   
+    }
+    tr:nth-child(even){background-color: #e0e0e0}
+
+    h1, h2, h3, h4, h5 { font-family: Arial; }
+    h1 { font-size:120%; margin-bottom: 25px; }
+    h2 { font-size:110%; margin-bottom: 15px; }
+    h3 { font-size:100%; margin-bottom: 10px;}
+    h4, li { font-size:100%; }
+
+    caption{ font-family:Arial; font-size:85%;}
+
+    code, pre, .codelike {
+        font-family: Courier, monospace;
+        font-size: 100%;
+        color: darkblue;
+    }
+
+    /*
+     * Counters for the main headings
+     */
+
+    h1:before {
+        counter-increment: h1counter;
+        content: counter(h1counter) "\00a0 ";
+    }
+    h1 {
+        counter-reset: h2counter;
+    }
+    
+    h2:before {
+        counter-increment: h2counter;
+        content: counter(h1counter) "." counter(h2counter) "\00a0 ";
+    }
+    h2 {
+        counter-reset: h3counter;
+    }
+    
+    h3:before {
+      counter-increment: h3counter;
+      content: counter(h1counter) "." counter(h2counter) "." counter(h3counter) "\00a0 ";
+    }
+
+    toctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:25px; display:block;}
+    toc1, toc2, toc3 {font-family: Arial; font-size:100%; margin-bottom:2px; display:block;}
+    toc1 {text-indent: 0px;}
+    toc2 {text-indent: 15px;}
+    toc3 {text-indent: 30px;}
+    
+    toc1:before {
+        content: counter(toc1counter) "\00a0 ";
+        counter-increment: toc1counter;
+    }
+    toc1 {
+        counter-reset: toc2counter;
+    }
+    
+    toc2:before {
+        content: counter(toc1counter) "." counter(toc2counter) "\00a0 ";
+        counter-increment: toc2counter;
+    }
+    toc2 {
+        counter-reset: toc3counter;
+    }
+
+    toc3:before {
+      content: counter(toc1counter) "." counter(toc2counter) "." counter(toc3counter) "\00a0 ";
+      counter-increment: toc3counter;
+    }
+
+    /* How it looks on a screen, notice the fancy hr blocks and lack of page breaks */
+    @media screen {
+      body {
+        background-color: #f0f0f0;
+      }
+      .page-break { display: none; }
+      hr { 
+        height: 25px; 
+        border-style: solid; 
+        border-color: gray; 
+        border-width: 1px 0 0 0; 
+        border-radius: 10px; 
+      } 
+      hr:before { 
+        display: block; 
+        content: ""; 
+        height: 25px; 
+        margin-top: -26px; 
+        border-style: solid; 
+        border-color: gray; 
+        border-width: 0 0 1px 0; 
+        border-radius: 10px; 
+      }
+    }
+
+    /* How it looks when printed, hr turned off, in favor of page breaks*/
+    @media print {
+      hr {display: none;}
+      body {background-color: white;}
+      .page-break{page-break-before: always;}
+    }
+}
