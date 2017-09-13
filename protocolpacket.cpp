@@ -80,6 +80,7 @@ void ProtocolPacket::parse(void)
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
+    QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
     // Typically "parameterInterface" and "structureInterface" are only ever set to "true".
     // However we do handle the case where someone uses "false"
@@ -143,14 +144,30 @@ void ProtocolPacket::parse(void)
             parameterFunctions = true;
     }
 
+    const ProtocolStructureModule* redefines = NULL;
+    if(!redefinename.isEmpty())
+    {
+        if(redefinename == name)
+            emitWarning("Redefine must be different from name");
+        else
+        {
+            redefines = parser->lookUpStructure(support.prefix + redefinename + "_t");
+            if(redefines == NULL)
+                emitWarning("Could not find structure to redefine");
+        }
+
+        if(redefines != NULL)
+            structName = support.prefix + redefinename + "_t";
+    }
+
     // Most of the file setup work, note that we do not declare a structure in
     // the event that it has only one member and we are not doing structure
     // interfaces to the encode/decode routines
-    setupFiles(moduleName, defheadermodulename, verifymodulename, structureFunctions, false);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, structureFunctions, false, redefines);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
-    createSubStructureFunctions();
+    createSubStructureFunctions(redefines);
 
     // For referencing this packet as a structure
     if(outputTopLevelStructureCode)
@@ -289,9 +306,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(numEncodes > 0)
         {
             if(ids.count() <= 1)
-                header.write(PKT_ENCODE + ", const " + typeName + "* user);\n");
+                header.write(PKT_ENCODE + ", const " + structName + "* user);\n");
             else
-                header.write(PKT_ENCODE + ", const " + typeName + "* user, uint32_t id);\n");
+                header.write(PKT_ENCODE + ", const " + structName + "* user, uint32_t id);\n");
         }
         else
         {
@@ -309,7 +326,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write(PKT_DECODE + ", " + typeName + "* user);\n");
+            header.write(PKT_DECODE + ", " + structName + "* user);\n");
         else
             header.write(PKT_DECODE + ");\n");
     }
@@ -330,13 +347,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(ids.count() <= 1)
             {
                 source.write(" */\n");
-                source.write(PKT_ENCODE + ", const " + typeName + "* user)\n");
+                source.write(PKT_ENCODE + ", const " + structName + "* user)\n");
             }
             else
             {
                 source.write(" * \\param id is the packet identifier for pkt\n");
                 source.write(" */\n");
-                source.write(PKT_ENCODE + ", const " + typeName + "* user, uint32_t id)\n");
+                source.write(PKT_ENCODE + ", const " + structName + "* user, uint32_t id)\n");
             }
             source.write("{\n");
         }
@@ -412,7 +429,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
             source.write(" */\n");
             if(numDecodes > 0)
-                source.write(PKT_DECODE + ", " + typeName + "* user)\n");
+                source.write(PKT_DECODE + ", " + structName + "* user)\n");
             else
                 source.write(PKT_DECODE + ")\n");
             source.write("{\n");

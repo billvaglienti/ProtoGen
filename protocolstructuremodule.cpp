@@ -20,7 +20,7 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     decode(true)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "redefine";
 }
 
 
@@ -91,12 +91,29 @@ void ProtocolStructureModule::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+    QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
     // Warnings for users
     issueWarnings(map);
 
+    const ProtocolStructureModule* redefines = NULL;
+    if(!redefinename.isEmpty())
+    {
+        if(redefinename == name)
+            emitWarning("Redefine must be different from name");
+        else
+        {
+            redefines = parser->lookUpStructure(support.prefix + redefinename + "_t");
+            if(redefines == NULL)
+                emitWarning("Could not find structure to redefine");
+        }
+
+        if(redefines != NULL)
+            structName = support.prefix + redefinename + "_t";
+    }
+
     // Do the bulk of the file creation and setup
-    setupFiles(moduleName, defheadermodulename, verifymodulename);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, true, true, redefines);
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -129,7 +146,7 @@ void ProtocolStructureModule::parse(void)
  * \param forceStructureDeclaration should be true to force the declaration of the structure, even if it only has one member
  * \param outputUtilties should be true to output the helper macros
  */
-void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration, bool outputUtilities)
+void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
 {
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())
@@ -192,9 +209,17 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
     header.writeIncludeDirective(support.protoName + "Protocol.h");
 
-    // Handle the idea that the structure might be defined in a different file
-    if(!defheadermodulename.isEmpty())
+    // If we are using someone elses definition then we can't have a separate definition file
+    if(redefines != NULL)
     {
+        QStringList list;
+        redefines->getIncludeDirectives(list);
+        header.writeIncludeDirectives(list);
+    }
+    else if(!defheadermodulename.isEmpty())
+    {
+        // Handle the idea that the structure might be defined in a different file
+
         defheader.setLicenseText(support.licenseText);
         defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
 
@@ -224,21 +249,25 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     // Add other includes specific to this structure
     parser->outputIncludes(getHierarchicalName(), *structfile, e);
 
-    // Include directives that may be needed for our children
-    list.clear();
-    for(int i = 0; i < encodables.length(); i++)
-        encodables[i]->getIncludeDirectives(list);
-    structfile->writeIncludeDirectives(list);
+    // If we are using someones elses definition we don't need to output our structure or add any of its includes
+    if(redefines == NULL)
+    {
+        // Include directives that may be needed for our children
+        list.clear();
+        for(int i = 0; i < encodables.length(); i++)
+            encodables[i]->getIncludeDirectives(list);
+        structfile->writeIncludeDirectives(list);
 
-    // White space is good
-    structfile->makeLineSeparator();
+        // White space is good
+        structfile->makeLineSeparator();
 
-    // Create the structure definition in the header.
-    // This includes any sub-structures as well
-    structfile->write(getStructureDeclaration(forceStructureDeclaration));
+        // Create the structure definition in the header.
+        // This includes any sub-structures as well
+        structfile->write(getStructureDeclaration(forceStructureDeclaration));
 
-    // White space is good
-    structfile->makeLineSeparator();
+        // White space is good
+        structfile->makeLineSeparator();
+    }
 
     // White space is good
     source.makeLineSeparator();
@@ -323,11 +352,11 @@ void ProtocolStructureModule::getInitAndVerifyIncludeDirectives(QStringList& lis
  * Write data to the source and header files to encode and decode this structure
  * and all its children. This will reset the length strings.
  */
-void ProtocolStructureModule::createStructureFunctions(void)
+void ProtocolStructureModule::createStructureFunctions(const ProtocolStructureModule* redefines)
 {
     // The encoding and decoding prototypes of my children, if any.
     // I want these to appear before me, because I'm going to call them
-    createSubStructureFunctions();
+    createSubStructureFunctions(redefines);
 
     // Now build the top level function
     createTopLevelStructureFunctions();
@@ -339,8 +368,11 @@ void ProtocolStructureModule::createStructureFunctions(void)
  * Create the functions that encode/decode sub stuctures.
  * These functions are local to the source module
  */
-void ProtocolStructureModule::createSubStructureFunctions(void)
+void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructureModule* redefines)
 {
+    if(redefines != NULL)
+        return;
+
     // The embedded structures functions
     for(int i = 0; i < encodables.size(); i++)
     {

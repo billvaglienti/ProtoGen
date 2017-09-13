@@ -66,16 +66,16 @@ public:
 protected:
 
     //! Setup the files, which accounts for all the ways the files can be organized for this structure.
-    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration = true, bool outputUtilities = true);
+    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
 
     //! Write data to the source and header files to encode and decode this structure and all its children
-    void createStructureFunctions(void);
+    void createStructureFunctions(const ProtocolStructureModule* redefines = NULL);
 
     //! Create the functions that encode/decode sub stuctures.
-    void createSubStructureFunctions(void);
+    void createSubStructureFunctions(const ProtocolStructureModule* redefines = NULL);
 
     //! Write data to the source and header files to encode and decode this structure but not its children
     void createTopLevelStructureFunctions(void);

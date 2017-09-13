@@ -33,6 +33,7 @@ interpretation
         <Value name="CONSTANT" comment="This packet just tests constant values"/>
         <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
         <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
+        <Value name="LOWPREC_MULTIDIMENSIONTABLE" comment="This packet tests low precision variable length multi-dimensional arrays"/>
         <Value name="BITFIELDTEST" comment="This packet tests bitfield groups"/>
         <Value name="ORION_PKT_KLV_USER_DATA1"/>
         <Value name="ORION_PKT_KLV_USER_DATA2"/>
@@ -149,6 +150,15 @@ interpretation
         <Data name="dates" struct="Date" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
     </Packet>
 
+    <Packet name="lowPrecisionMultiTable" redefine="MultiDimensionTable" ID="LOWPREC_MULTIDIMENSIONTABLE">
+        <Data name="numRows" inMemoryType="unsigned8"/>
+        <Data name="numCols" inMemoryType="unsigned8"/>
+        <Data name="floatData" inMemoryType="float32" encodedType="float16" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
+        <Data name="scaledData" inMemoryType="float32" encodedType="signed8" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed8" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="dates" struct="smallDate" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
+    </Packet>
+
     <Packet name="EngineSettings" file="Engine" ID="ENGINESETTINGS"
             comment="Change the engine control settings, including the operating
             mode and feedback gains. Engine settings are stored non-volatilely each
@@ -200,6 +210,12 @@ interpretation
         <Data name="day" inMemoryType="unsigned8" verifyMaxValue="31" comment="day of the month, from 1 to 31"/>
     </Structure>
     
+    <Structure name="smallDate" redefine="Date" deffile="../ProtoGenTest/OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
+        <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" max="2127" comment="year of the date"/>
+        <Data name="month" inMemoryType="unsigned8" encodedType="bitfield4" comment="month of the year, from 1 to 12"/>
+        <Data name="day" inMemoryType="unsigned8" encodedType="bitfield5" comment="day of the month, from 1 to 31"/>
+    </Structure>
+
     <Structure name="Board" comment="Manufacturing and calibration details about the board hardware">
         <Data name="manufactureDate" struct="Date" comment="The date this board was manufactured"/>
         <Data name="calibratedDate" struct="Date" comment="The date this board was calibrated and tested"/>

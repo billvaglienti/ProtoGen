@@ -178,6 +178,7 @@ protected:
     bool hasinit;               //!< True if any children of this structure have initialization data
     bool hasverify;             //!< True if any children of this structure have verify data
     QStringList attriblist;     //!< List of all attributes that we understand
+    QString structName;         //!< Name of the structure (usually the same as typeName)
 
 };
 

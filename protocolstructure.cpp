@@ -83,6 +83,7 @@ void ProtocolStructure::clear(void)
     hidden = false;
     hasinit = false;
     hasverify = false;
+    structName.clear();
 
 }// ProtocolStructure::clear
 
@@ -112,7 +113,7 @@ void ProtocolStructure::parse(void)
     testAndWarnAttributes(map, attriblist);
 
     // for now the typename is derived from the name
-    typeName = support.prefix + name + "_t";
+    structName = typeName = support.prefix + name + "_t";
 
     // We can't have a variable array length without an array
     if(array.isEmpty() && !variableArray.isEmpty())
@@ -700,7 +701,7 @@ QString ProtocolStructure::getFunctionEncodePrototype() const
 
     if(getNumberOfEncodeParameters() > 0)
     {
-        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount, const " + typeName + "* user)";
+        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount, const " + structName + "* user)";
     }
     else
     {
@@ -828,7 +829,7 @@ QString ProtocolStructure::getFunctionDecodePrototype() const
     QString output;
 
     if(getNumberOfDecodeParameters() > 0)
-        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + typeName + "* user)";
+        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + structName + "* user)";
     else
         output = "int decode" + typeName + "(const uint8_t* data, int* bytecount)";
 
@@ -1174,7 +1175,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(bool includeChi
 
     // My set to initial values function
     output += "//! Set a " + typeName + " structure to initial values\n";
-    output += "void init" + typeName + "(" + typeName + "* user);\n";
+    output += "void init" + typeName + "(" + structName + "* user);\n";
 
     return output;
 
@@ -1219,7 +1220,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildr
     output += " * only those which the protocol specifies.\n";
     output += " * \\param user is the structure whose data are set to initial values\n";
     output += " */\n";
-    output += "void init" + typeName + "(" + typeName + "* user)\n";
+    output += "void init" + typeName + "(" + structName + "* user)\n";
     output += "{\n";
 
     if(needsEncodeIterator)
@@ -1325,7 +1326,7 @@ QString ProtocolStructure::getVerifyFunctionPrototype(bool includeChildren) cons
 
     // My set to initial values function
     output += "//! Verify a " + typeName + " structure has acceptable values\n";
-    output += "int verify" + typeName + "(" + typeName + "* user);\n";
+    output += "int verify" + typeName + "(" + structName + "* user);\n";
 
     return output;
 
@@ -1372,7 +1373,7 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
     output += " * \\param user is the structure whose data are verified\n";
     output += " * \\return 1 if all verifiable data where valid, else 0 if data had to be corrected\n";
     output += " */\n";
-    output += "int verify" + typeName + "(" + typeName + "* user)\n";
+    output += "int verify" + typeName + "(" + structName + "* user)\n";
     output += "{\n";
     output += TAB_IN + "int good = 1;\n";
 

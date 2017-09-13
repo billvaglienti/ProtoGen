@@ -27,6 +27,7 @@ static int testVersionPacket(void);
 static int verifyVersionData(Version_t version);
 static int testZeroLengthPacket(void);
 static int testBitfieldGroupPacket(void);
+static int testMultiDimensionPacket(void);
 
 static int fcompare(double input1, double input2, double epsilon);
 
@@ -75,6 +76,9 @@ int main(int argc, char *argv[])
         Return = 0;
 
     if(testBitfieldGroupPacket() == 0)
+        Return = 0;
+
+    if(testMultiDimensionPacket() == 0)
         Return = 0;
 
     if(Return == 1)
@@ -927,6 +931,116 @@ int testBitfieldGroupPacket(void)
 
     return 1;
 }
+
+
+int testMultiDimensionPacket(void)
+{
+    MultiDimensionTable_t table = MultiDimensionTable_t();
+    testPacket_t highpkt;
+    testPacket_t lowpkt;
+
+
+    table.numCols = table.numRows = 2;
+    for(int row = 0; row < table.numRows; row++)
+    {
+        for(int col = 0; col < table.numCols; col++)
+        {
+            table.scaledData[row][col] = table.floatData[row][col] = row*col*(1.0f/3.0f);
+            table.intData[row][col] = row + col;
+            table.dates[row][col].day = row+1;
+            table.dates[row][col].month = col+1;
+            table.dates[row][col].year = 2017;
+        }
+
+    }
+
+    encodeMultiDimensionTablePacketStructure(&highpkt, &table);
+    encodelowPrecisionMultiTablePacketStructure(&lowpkt, &table);
+
+    if((highpkt.pkttype != MULTIDIMENSIONTABLE) || (lowpkt.pkttype != LOWPREC_MULTIDIMENSIONTABLE))
+    {
+        std::cout << "Multi-dimensional packet types are wrong" << std::endl;
+        return 0;
+    }
+
+    if(highpkt.length != (2 + table.numCols*table.numRows*(4 + 2 + 2 + getMinLengthOfDate_t())))
+    {
+        std::cout << "Multi-dimensional packet size is wrong" << std::endl;
+        return 0;
+    }
+
+    if(lowpkt.length != (2 + table.numCols*table.numRows*(2 + 1 + 1 + getMinLengthOfsmallDate_t())))
+    {
+        std::cout << "Low precision multi-dimensional packet size is wrong" << std::endl;
+        return 0;
+    }
+
+    table = MultiDimensionTable_t();
+    if(!decodeMultiDimensionTablePacketStructure(&highpkt, &table))
+    {
+        std::cout << "Multi-dimensional packet failed to decode" << std::endl;
+        return 0;
+    }
+
+    if((table.numCols != 2) || (table.numRows != 2))
+    {
+        std::cout << "Multi-dimensional packet data are wrong" << std::endl;
+        return 0;
+    }
+
+    for(int row = 0; row < table.numRows; row++)
+    {
+        for(int col = 0; col < table.numCols; col++)
+        {
+            if( fcompare(table.scaledData[row][col],  row*col*(1.0f/3.0f), 0.001f) ||
+                fcompare(table.floatData[row][col],  row*col*(1.0f/3.0f), 0.001f)  ||
+                (table.intData[row][col] != row + col)  ||
+                (table.dates[row][col].day != row+1)    ||
+                (table.dates[row][col].month != col+1)  ||
+                (table.dates[row][col].year != 2017) )
+            {
+                std::cout << "Multi-dimensional packet data are wrong" << std::endl;
+                return 0;
+
+            }
+        }
+    }
+
+    table = MultiDimensionTable_t();
+    if(!decodelowPrecisionMultiTablePacketStructure(&lowpkt, &table))
+    {
+        std::cout << "Low precision multi-dimensional packet failed to decode" << std::endl;
+        return 0;
+    }
+
+    if((table.numCols != 2) || (table.numRows != 2))
+    {
+        std::cout << "Low precision multi-dimensional packet data are wrong" << std::endl;
+        return 0;
+    }
+
+    for(int row = 0; row < table.numRows; row++)
+    {
+        for(int col = 0; col < table.numCols; col++)
+        {
+            if( fcompare(table.scaledData[row][col],  row*col*(1.0f/3.0f), 0.02f) ||
+                fcompare(table.floatData[row][col],  row*col*(1.0f/3.0f), 0.001f)  ||
+                (table.intData[row][col] != row + col)  ||
+                (table.dates[row][col].day != row+1)    ||
+                (table.dates[row][col].month != col+1)  ||
+                (table.dates[row][col].year != 2017) )
+            {
+                std::cout << "Low precision multi-dimensional packet data are wrong" << std::endl;
+                return 0;
+
+            }
+        }
+    }
+
+    return 1;
+
+}// testMultiDimensionPacket
+
 
 int fcompare(double input1, double input2, double epsilon)
 {
