@@ -769,10 +769,10 @@ int testVersionPacket(void)
     version.board.assemblyNumber = 0x12345678;
     version.board.isCalibrated = 1;
     version.board.serialNumber = 0x98765432;
-    version.board.manufactureDate.year = 1903;
+    version.board.manufactureDate.year = 2003;
     version.board.manufactureDate.month = 12;
     version.board.manufactureDate.day = 17;
-    version.board.calibratedDate.year = 1969;
+    version.board.calibratedDate.year = 2069;
     version.board.calibratedDate.month = 7;
     version.board.calibratedDate.day = 20;
 
@@ -849,10 +849,10 @@ int verifyVersionData(Version_t version)
     if(version.board.assemblyNumber != 0x12345678) return 0;
     if(version.board.isCalibrated != 1) return 0;
     if(version.board.serialNumber != 0x98765432) return 0;
-    if(version.board.manufactureDate.year != 1903) return 0;
+    if(version.board.manufactureDate.year != 2003) return 0;
     if(version.board.manufactureDate.month != 12) return 0;
     if(version.board.manufactureDate.day != 17) return 0;
-    if(version.board.calibratedDate.year != 1969) return 0;
+    if(version.board.calibratedDate.year != 2069) return 0;
     if(version.board.calibratedDate.month != 7) return 0;
     if(version.board.calibratedDate.day != 20) return 0;
 

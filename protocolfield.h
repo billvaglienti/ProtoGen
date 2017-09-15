@@ -355,6 +355,12 @@ protected:
     //! Get the source needed to close out a string of bitfields in the encode function.
     QString getCloseBitfieldString(int* bitcount) const;
 
+    //! Check to see if we should be doing floating point scaling on this field
+    bool isFloatScaling(void) const;
+
+    //! Check to see if we should be doing integer scaling on this field
+    bool isIntegerScaling(void) const;
+
     //! Compute the power of 2 raised to some bits
     uint64_t pow2(uint8_t bits) const;
 

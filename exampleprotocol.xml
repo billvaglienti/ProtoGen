@@ -146,7 +146,7 @@ interpretation
         <Data name="numCols" inMemoryType="unsigned8"/>
         <Data name="floatData" inMemoryType="float32" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
         <Data name="scaledData" inMemoryType="float32" encodedType="signed16" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
-        <Data name="intData" inMemoryType="signed16" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed16" scaler="3" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
         <Data name="dates" struct="Date" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
     </Packet>
 
@@ -205,13 +205,13 @@ interpretation
     </Packet>
             
     <Structure name="Date" deffile="../ProtoGenTest/OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
-        <Data name="year" inMemoryType="unsigned16" verifyMinValue="2000" comment="year of the date"/>
+        <Data name="year" inMemoryType="unsigned16" verifyMinValue="2000" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" verifyMaxValue="12" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" verifyMaxValue="31" comment="day of the month, from 1 to 31"/>
     </Structure>
     
     <Structure name="smallDate" redefine="Date" deffile="../ProtoGenTest/OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
-        <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" max="2127" comment="year of the date"/>
+        <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" encodedType="bitfield4" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" encodedType="bitfield5" comment="day of the month, from 1 to 31"/>
     </Structure>
