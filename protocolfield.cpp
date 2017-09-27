@@ -357,6 +357,8 @@ void ProtocolField::getBitfieldGroupNumBytes(int* num) const
  */
 void ProtocolField::extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory)
 {
+    Q_UNUSED(name);
+
     QString type(typeString);
 
     data.clear();
@@ -1273,7 +1275,7 @@ void ProtocolField::parse(void)
         {
             // In this case we don't already have scaling information, so we need to work out the value ourselves
             if(encodedType.isSigned)
-                verifyMinString = QString().setNum(-pow2(encodedType.bits-1));
+                verifyMinString = QString().setNum(-1*pow2(encodedType.bits-1));
             else
                 verifyMinString = "0";
         }
@@ -2251,6 +2253,8 @@ QString ProtocolField::getSetToValueString(bool isStructureMember, QString value
 //! Return the strings that #define initial and variable values
 QString ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
 {
+    Q_UNUSED(includeComment);
+
     QString output;
 
     if(inMemoryType.isNull || inMemoryType.isStruct)

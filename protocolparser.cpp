@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.8.a";
+const QString ProtocolParser::genVersion = "2.8.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1226,7 +1226,6 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     // Add html page breaks at each ---
     filecontents.replace("\n---", "<div class=\"page-break\"></div>\n\n\n---");
 
-    file.write(filecontents);
     file.write(filecontents);
 
     file.flush();

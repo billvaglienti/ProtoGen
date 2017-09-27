@@ -244,6 +244,8 @@ void ProtocolPacket::parse(void)
  */
 void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
 {
+    Q_UNUSED(e);
+
     // If no ID is supplied then use the packet name in upper case,
     // assuming that the user will define it elsewhere
     if(ids.count() <= 0)
@@ -886,6 +888,9 @@ QString ProtocolPacket::getDataDecodeBriefComment(void) const
 
 QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& packetids) const
 {
+    Q_UNUSED(global);
+    Q_UNUSED(packetids);
+
     QString output;
 
     if(ids.count() <= 1)

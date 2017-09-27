@@ -52,6 +52,8 @@ void ProtocolDocumentation::parse(void)
  */
 QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringList& ids) const
 {
+    Q_UNUSED(ids);
+
     QString markdown;
     int level = outlineLevel;
 

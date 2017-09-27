@@ -10,8 +10,11 @@
 #include "linkcode.h"
 
 #define PI 3.141592653589793
+#define PIf 3.141592653589793f
 #define deg2rad(x) (PI*(x)/180.0)
 #define rad2deg(x) (180.0*(x)/PI)
+#define deg2radf(x) (PIf*(x)/180.0f)
+#define rad2degf(x) (180.0f*(x)/PIf)
 
 static int testConstantPacket(void);
 static int testTelemetryPacket(void);
@@ -34,6 +37,9 @@ static int fcompare(double input1, double input2, double epsilon);
 
 int main(int argc, char *argv[])
 {
+    (void)argc;
+    (void)argv;
+
     int Return = 1;
 
     if(testSpecialFloat() == 0)
@@ -195,13 +201,13 @@ int testTelemetryPacket(void)
     telemetry.dynamicP = 254;
 
     telemetry.laserIncluded = 1;
-    telemetry.laserAGL = 131.256;
+    telemetry.laserAGL = 131.256f;
 
     telemetry.magIncluded = 1;
-    telemetry.mag[0] = 12.56;
-    telemetry.mag[1] = 85.76;
-    telemetry.mag[2] = -999.9;
-    telemetry.compassHeading = deg2rad(-64.56);
+    telemetry.mag[0] = 12.56f;
+    telemetry.mag[1] = 85.76f;
+    telemetry.mag[2] = -999.9f;
+    telemetry.compassHeading = deg2radf(-64.56f);
 
     telemetry.numControls = 14;
     for(int i = 0; i < telemetry.numControls; i++)
@@ -334,7 +340,7 @@ int testThrottleSettingsPacket(void)
     settings.highPWM = 2000;
     settings.lowPWM = 1000;
     settings.defaultBitfield = 6;
-    for(int i = 0; i < settings.numCurvePoints; i++)
+    for(uint32_t i = 0; i < settings.numCurvePoints; i++)
     {
         settings.curvePoint[i].PWM = settings.lowPWM + i*100;
         settings.curvePoint[i].throttle = i*0.2f;
@@ -367,7 +373,7 @@ int testThrottleSettingsPacket(void)
             return 0;
         }
 
-        for(int i = 0; i < settings.numCurvePoints; i++)
+        for(uint32_t i = 0; i < settings.numCurvePoints; i++)
         {
             if( (settings.curvePoint[i].PWM != settings.lowPWM + i*100) ||
                 fcompare(settings.curvePoint[i].throttle, i*0.2f, 1.0/255))
@@ -594,16 +600,16 @@ void fillOutGPSTest(GPS_t& gps)
     // 5 days, 11 hours, 32 minutes, 59 seconds, 251 ms
     gps.ITOW = ((((5*24) + 11)*60 + 32)*60 + 59)*1000 + 251;
     gps.Week = 1234;
-    gps.PDOP = -2.13;
+    gps.PDOP = -2.13f;
     gps.PositionLLA.altitude = 169.4;
     gps.PositionLLA.latitude = deg2rad(45.6980142);
     gps.PositionLLA.longitude = deg2rad(-121.5618339);
-    gps.VelocityNED.north = 23.311;
-    gps.VelocityNED.east = -42.399;
-    gps.VelocityNED.down = -.006;
+    gps.VelocityNED.north = 23.311f;
+    gps.VelocityNED.east = -42.399f;
+    gps.VelocityNED.down = -.006f;
     gps.numSvInfo = 5;
-    gps.svInfo[0].azimuth = deg2rad(91);
-    gps.svInfo[0].elevation = deg2rad(77);
+    gps.svInfo[0].azimuth = deg2radf(91);
+    gps.svInfo[0].elevation = deg2radf(77);
     gps.svInfo[0].healthy = 1;
     gps.svInfo[0].CNo[GPS_BAND_L1] = 50;
     gps.svInfo[0].CNo[GPS_BAND_L2] = 33;
@@ -617,14 +623,14 @@ void fillOutGPSTest(GPS_t& gps)
 
     // Make a few changes
     gps.svInfo[1].PRN = 13;
-    gps.svInfo[1].azimuth = deg2rad(-179.99);
-    gps.svInfo[1].elevation = deg2rad(-23);
+    gps.svInfo[1].azimuth = deg2radf(-179.99f);
+    gps.svInfo[1].elevation = deg2radf(-23);
     gps.svInfo[2].PRN = 23;
-    gps.svInfo[2].azimuth = deg2rad(179.1);
-    gps.svInfo[2].elevation = deg2rad(66);
+    gps.svInfo[2].azimuth = deg2radf(179.1f);
+    gps.svInfo[2].elevation = deg2radf(66);
     gps.svInfo[3].PRN = 1;
-    gps.svInfo[3].azimuth = deg2rad(90);
-    gps.svInfo[3].elevation = deg2rad(0);
+    gps.svInfo[3].azimuth = deg2radf(90);
+    gps.svInfo[3].elevation = deg2radf(0);
     gps.svInfo[3].healthy = 0;
     gps.svInfo[3].used = 0;
 }

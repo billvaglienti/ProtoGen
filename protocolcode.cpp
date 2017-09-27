@@ -75,6 +75,10 @@ void ProtocolCode::parse(void)
  */
 QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
+    Q_UNUSED(isBigEndian);
+    Q_UNUSED(bitcount);
+    Q_UNUSED(isStructureMember);
+
     QString output;
 
     if(encode.isEmpty())
@@ -102,6 +106,11 @@ QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isSt
  */
 QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
+    Q_UNUSED(isBigEndian);
+    Q_UNUSED(bitcount);
+    Q_UNUSED(isStructureMember);
+    Q_UNUSED(defaultEnabled);
+
     QString output;
 
     if(decode.isEmpty())

@@ -27,9 +27,9 @@ macx{
 }
 
 
-QMAKE_CXXFLAGS += -Wno-unused-parameter
-
-QMAKE_CXXFLAGS_WARN_ON = -Wall -Wno-unused-parameter
+#QMAKE_CXXFLAGS += -Wno-unused-parameter
+#QMAKE_CXXFLAGS_WARN_ON = -wall -wno-unused-variable
+#QMAKE_CXXFLAGS_WARN_ON += -wd4100
 
 SOURCES += main.cpp \
     protocolparser.cpp \

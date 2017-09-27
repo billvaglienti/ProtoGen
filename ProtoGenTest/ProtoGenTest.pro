@@ -14,11 +14,10 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -Wno-unused-parameter
-
-QMAKE_CFLAGS += -std=c99
-QMAKE_CFLAGS += -pedantic
-QMAKE_CFLAGS += -Wall
+#QMAKE_CXXFLAGS += -Wno-unused-parameter
+#QMAKE_CFLAGS += -std=c99
+#QMAKE_CFLAGS += -pedantic
+#QMAKE_CFLAGS += -Wall
 
 
 SOURCES += main.cpp \

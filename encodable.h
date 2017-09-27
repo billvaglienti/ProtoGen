@@ -20,7 +20,7 @@ public:
     static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const QDomElement& field);
 
     //! Provide the pointer to a previous encodable in the list
-    virtual void setPreviousEncodable(Encodable* prev) {}
+    virtual void setPreviousEncodable(Encodable* prev) {(void)prev;}
 
     //! Check names against the list of C keywords
     virtual void checkAgainstKeywords(void);
@@ -32,16 +32,16 @@ public:
     virtual QString getHierarchicalName(void) const = 0;
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const {return QString();}
+    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
 
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
-    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const {return QString();}
+    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
 
     //! Return the string that gives the function used to encode this encodable, may be empty
-    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const {return QString();}
+    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
 
     //! Return the string that gives the function used to decode this encodable, may be empty
-    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const {return QString();}
+    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
 
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
@@ -53,13 +53,13 @@ public:
     virtual QString getDeclaration(void) const = 0;
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const {}
+    virtual void getIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
 
     //! Return the include directives needed for this encodable's init and verify functions
-    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const {}
+    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
 
     //! Return the string that declares the whole structure
-    virtual QString getStructureDeclaration(bool alwaysCreate) const {return QString();}
+    virtual QString getStructureDeclaration(bool alwaysCreate) const {Q_UNUSED(alwaysCreate); return QString();}
 
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const;
@@ -74,16 +74,16 @@ public:
     virtual QString getDecodeParameterComment(void) const;
 
     //! Return the string that sets this encodable to its default value in code
-    virtual QString getSetToDefaultsString(bool isStructureMember) const {return QString();}
+    virtual QString getSetToDefaultsString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
     //! Get the string used for verifying this field.
-    virtual QString getVerifyString(bool isStructureMember) const {return QString();}
+    virtual QString getVerifyString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
     //! Return the string that sets this encodable to its initial value in code
-    virtual QString getSetInitialValueString(bool isStructureMember) const {return QString();}
+    virtual QString getSetInitialValueString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
     //! Return the strings that #define initial and variable values
-    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {return QString();}
+    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {Q_UNUSED(includeComment); return QString();}
 
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
@@ -128,7 +128,7 @@ public:
     virtual bool isDefault(void) const {return false;}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    virtual void getBitfieldGroupNumBytes(int* num) const {}
+    virtual void getBitfieldGroupNumBytes(int* num) const {Q_UNUSED(num);}
 
     //! True if this encodable uses bitfields or has a child that does
     virtual bool usesBitfields(void ) const = 0;

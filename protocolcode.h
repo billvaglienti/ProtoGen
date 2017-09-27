@@ -50,7 +50,10 @@ class ProtocolCode : public Encodable
     virtual bool hasDocumentation(void) {return false;}
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const {return;}
+    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+    {
+        Q_UNUSED(outline); Q_UNUSED(startByte); Q_UNUSED(bytes); Q_UNUSED(names); Q_UNUSED(encodings); Q_UNUSED(repeats); Q_UNUSED(comments); return;
+    }
 
     //! Returns true since protocol code is a primitive type
     virtual bool isPrimitive(void) const {return true;}

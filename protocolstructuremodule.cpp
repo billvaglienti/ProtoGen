@@ -55,6 +55,8 @@ void ProtocolStructureModule::clear(void)
  */
 void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
 {
+    Q_UNUSED(map);
+
     if(isArray())
     {
         emitWarning("top level object cannot be an array");

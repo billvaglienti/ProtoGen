@@ -959,6 +959,9 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
  */
 QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
+    Q_UNUSED(isBigEndian);
+    Q_UNUSED(bitcount);
+
     QString output;
     QString access;
     QString spacing = TAB_IN + "";
@@ -1054,6 +1057,10 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
  */
 QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
+    Q_UNUSED(isBigEndian);
+    Q_UNUSED(bitcount);
+    Q_UNUSED(defaultEnabled);
+
     QString output;
     QString access;
     QString spacing = TAB_IN;
