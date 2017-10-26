@@ -3490,8 +3490,9 @@ bool ProtocolField::isFloatScaling(void) const
 {
     if(inMemoryType.isFloat)
     {
-        if(scaler != 1.0)
-            return true;
+        // If the user input a scaler string, then they want float scaling
+        if(!scalerString.isEmpty() || (scaler != 1.0))
+           return true;
 
         // The min value only matters if we are signed
         if(!encodedType.isSigned && (encodedMin != 0.0))
