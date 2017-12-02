@@ -155,7 +155,7 @@ interpretation
         <Data name="numCols" inMemoryType="unsigned8"/>
         <Data name="floatData" inMemoryType="float32" encodedType="float16" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
         <Data name="scaledData" inMemoryType="float32" encodedType="signed8" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
-        <Data name="intData" inMemoryType="signed8" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed16" encodedType="signed8" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
         <Data name="dates" struct="smallDate" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
     </Packet>
 

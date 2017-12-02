@@ -2215,6 +2215,19 @@ QString ProtocolField::getSetToValueString(bool isStructureMember, QString value
     }
     else
     {
+        // Deal with casting doubles to floats
+        if(inMemoryType.isFloat && (inMemoryType.bits < 64))
+        {
+            // If the value contains a decimal then we assume it is a floating
+            // point constant, if it does not contain ".0f" then we assume it
+            // is a double precision constant
+            if(value.contains('.') && !value.endsWith('f'))
+            {
+                // Rather than presume to change the default constant we simply put a cast in front of it
+                value = "(float)" + value;
+            }
+        }
+
         if(isArray())
         {
             if(isStructureMember)
@@ -3374,7 +3387,13 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                 output += "[i]";
         }
         else
-            output += constantstring;
+        {
+            // It may be weird, but we do support it. Notice the cast in case the constant string is not the correct type
+            if(inMemoryType.isFloat && (inMemoryType.bits <= 32) && constantstring.contains('.') && !constantstring.endsWith('f'))
+                output += "(" + inMemoryType.toTypeString() + ")(" + constantstring + ")";
+            else
+                output += constantstring;
+        }
 
         output += ", data, &byteindex";
 
@@ -3867,7 +3886,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         }
 
         // Add a cast in case the encoded type is different from the in memory type
-        if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling())
+        if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling() || inMemoryType.isEnum)
         {
             // "int32ToBeBytes((int32_t)((user->value - min)*scale)" for example
             function = "(" + typeName + ")" + function;
