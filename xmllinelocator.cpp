@@ -24,20 +24,42 @@ void XMLContent::setXMLContents(const QString& text, int& startindex, int& linen
         // Look for xml tag delimeters
         if(character == '<')
         {
-            if(text.at(startindex) == '/')
+            if(text.at(startindex) == '!')
+            {
+                // "<!--" is the opening of a comment tag, find the end of it.
+                int endindex = text.indexOf("-->", startindex);
+
+                // In case there are line breaks between <!-- and -->
+                linenumber += countLines(text, startindex, endindex);
+
+                // Skip past the "-->"
+                if(startindex > 0)
+                    startindex = endindex + 3;
+                else
+                {
+                    startindex = -1;
+                    return;
+                }
+
+            }
+            else if(text.at(startindex) == '/')
             {
                 // "</" is the opening of a terminating tag, find the end of it.
-                // We assume there are no line breaks between </ and >
-                startindex = text.indexOf('>', startindex);
+                int endindex = text.indexOf('>', startindex);
 
-                if(startindex > 0)
-                {
+                // In case there are line breaks between </ and >
+                linenumber += countLines(text, startindex, endindex);
+
+                if(endindex > 0)
+                {                
                     // Skip past the '>'
-                    startindex++;
+                    startindex = endindex + 1;
 
                     // Figure out our name from the contents
                     parseNameFromContents();
                 }
+                else
+                    startindex = -1;
 
                 // Tag is closed (or failed), return to the next level
                 return;
@@ -45,14 +67,19 @@ void XMLContent::setXMLContents(const QString& text, int& startindex, int& linen
             else if(text.at(startindex) == '?')
             {
                 // This is the prolog, find the end of it, and just skip over
-                // We assume there are no line breaks between "<?" and "?>"
-                startindex = text.indexOf("?>", startindex);
+                int endindex = text.indexOf("?>", startindex);
+
+                // In case there are line breaks between <? and ?>
+                linenumber += countLines(text, startindex, endindex);
 
                 // Skip past the "?>"
                 if(startindex > 0)
-                    startindex+=2;
+                    startindex = endindex + 2;
                 else
+                {
+                    startindex = -1;
                     return;
+                }
             }
             else
             {
@@ -102,6 +129,30 @@ void XMLContent::setXMLContents(const QString& text, int& startindex, int& linen
     parseNameFromContents();
 
 }// XMLContent::setXMLContents
+
+
+/*!
+ * Count the number of linefeeds between a start and end index
+ * \param text is the string holding the linefeeds we want to count
+ * \param startindex is the first index to examine
+ * \param endindex is the last index to examine. If endindex is negative the remainder of the string is examined
+ * \return the number of linefeeds found
+ */
+int XMLContent::countLines(const QString& text, int startindex, int endindex)
+{
+    int lines = 0;
+
+    if(endindex < 0)
+        endindex = (text.count() -1) - startindex;
+
+    while((startindex <= endindex) && (startindex < text.count()))
+    {
+        if(text.at(startindex++) == '\n')
+            lines++;
+    }
+
+    return lines;
+}
 
 
 /*!

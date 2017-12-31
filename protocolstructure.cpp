@@ -256,8 +256,11 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                         // only the last fields can have defaults
                         for(int j = 0; j < encodables.size(); j++)
                         {
-                            encodables[j]->clearDefaults();
-                            encodables[j]->emitWarning("default value ignored, field is followed by non-default");
+                            if(encodables[j]->usesDefaults())
+                            {
+                                encodables[j]->clearDefaults();
+                                encodables[j]->emitWarning("default value ignored, field is followed by non-default");
+                            }
                         }
 
                         defaults = false;

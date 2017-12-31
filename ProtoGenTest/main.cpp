@@ -506,7 +506,9 @@ int testEngineSettingsPacket(void)
 int testEngineCommandPacket(void)
 {
     testPacket_t pkt;
-    float command = 0.5678f;
+    EngineCommand_t eng;
+
+    eng.command = 0.5678f;
 
     if(getEngineCommandMinDataLength() != 4)
     {
@@ -514,10 +516,10 @@ int testEngineCommandPacket(void)
         return 0;
     }
 
-    encodeEngineCommandPacket(&pkt, command);
+    encodeEngineCommandPacketStructure(&pkt, &eng);
 
 
-    if(pkt.length != 4 )
+    if(pkt.length != 5 )
     {
         std::cout << "Engine command packet has the wrong length" << std::endl;
         return 0;
@@ -529,10 +531,10 @@ int testEngineCommandPacket(void)
         return 0;
     }
 
-    command = 0;
-    if(decodeEngineCommandPacket(&pkt, &command))
+    eng.command = 0;
+    if(decodeEngineCommandPacketStructure(&pkt, &eng))
     {
-        if(fcompare(command, 0.5678, 0.0000001))
+        if(fcompare(eng.command, 0.5678, 0.0000001))
         {
             std::cout << "decodeEngineCommandPacket() yielded incorrect data" << std::endl;
             return 0;

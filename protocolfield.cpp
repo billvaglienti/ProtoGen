@@ -263,6 +263,25 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
 
             // We start at some nonzero bitcount that continues from the previous
             setStartingBitCount(prevField->getEndingBitCount());
+
+            // Now that we know our starting bitcount we can apply the bitfield defaults warning
+            if(!defaultString.isEmpty() && (defaultString != "0") && (bitfieldData.startingBitCount != 0) && !bitfieldCrossesByteBoundary())
+            {
+                // The key concept is this: bitfields can have defaults, but if
+                // the bitfield does not start a new byte it is possible (not
+                // guaranteed) that the default will be overwritten because the
+                // previous bitfield will have caused the packet length to
+                // satisfy the length requirement. As an example:
+                //
+                // Old packet = 1 byte + 1 bit.
+                // New augmented packet = 1 byte + 2 bits (second bit has a default).
+                //
+                // The length of the old and new packets is the same (2 bytes)
+                // which means the default value for the augmented bit will
+                // always be overwritten with zero.
+                emitWarning("Bitfield with non-zero default which does not start a new byte; default may not be obeyed");
+            }
+
         }
 
     }// if previous and us are bitfields
@@ -906,9 +925,6 @@ void ProtocolField::parse(void)
     // enumeration in which the maximum enumeration fits in fewer than 8 bits
     if(encodedType.isBitfield)
     {
-        // We always terminate the bitfield until we know otherwise
-        bitfieldData.lastBitfield = true;
-
         // Do we start a bitfield group?
         if(bitfieldData.groupMember)
         {
@@ -2636,19 +2652,29 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     // If this field has a default value, or overrides a previous value
     if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
     {
+        int bytes;
+
         QString lengthString;
 
         // How many bytes do we need? From 1 to 8 bits we need 1 byte, from
         // 9 to 15 we need 2 bytes, etc. However, some bits may already have
         // gone by
         if(bitfieldData.groupStart)
-            lengthString = QString::number((bitfieldData.groupBits+7)/8);
+            bytes = (bitfieldData.groupBits+7)/8;
         else
-            lengthString = QString::number(((*bitcount) + encodedType.bits + 7) / 8);
+            bytes = ((*bitcount) + encodedType.bits + 7)/8;
 
-        output += TAB_IN + "if(byteindex + " + lengthString + " > numBytes)\n";
-        output += TAB_IN + "    return 1;\n";
-        output += "\n";
+        lengthString = QString::number(bytes);
+
+        // Technically we only need to check the length if bitcount is zero
+        // (i.e. a new byte is being decoded) or if this bitfield will cross
+        // a byte boundary (again, requiring a new byte)
+        if(((*bitcount) == 0) || (bytes > 1))
+        {
+            output += TAB_IN + "if(byteindex + " + lengthString + " > numBytes)\n";
+            output += TAB_IN + "    return 1;\n";
+            output += "\n";
+        }
     }
 
     if(bitfieldData.groupStart)

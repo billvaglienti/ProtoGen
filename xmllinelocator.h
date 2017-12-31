@@ -37,6 +37,9 @@ protected:
     //! Determine an attribute value
     static QString parseAttribute(const QString& label, const QString& text);
 
+    //! Count the number of linefeeds between a start and end index
+    static int countLines(const QString& text, int startindex, int endindex);
+
     //! The list of sub-contents
     QList<XMLContent> subs;
 

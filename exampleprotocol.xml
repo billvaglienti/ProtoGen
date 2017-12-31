@@ -138,6 +138,8 @@ interpretation
         <Documentation name="Engine command details" comment="You can have documentation specific to a packet if you like."/>
 	
         <Data name="command" inMemoryType="float32" comment="The engine command, which is a throttle or an RPM depending on the engine control mode"/>
+        <Data name="field0" inMemoryType="bitfield1" default="1" comment="An extra bitfield to do whatever you want"/>
+        <Data name="field1" inMemoryType="bitfield1" default="0" comment="An extra bitfield to do whatever you want"/>
 
     </Packet>
    
@@ -284,7 +286,7 @@ interpretation
         <Data name="constant3" inMemoryType="unsigned32" constant="327612" comment="encoding an integer constant"/>
         <Data name="constant4" inMemoryType="null" encodedType="bitfield4" constant="12" checkConstant="true" comment="encoding an integer constant"/>
         <Data name="constant5" inMemoryType="bitfield4" constant="13" checkConstant="true" comment="encoding an integer constant"/>
-        <Data name="token" inMemoryType="float32" encodedType="bitfield7" default="5" max="127" comment="A value that the user provides"/>
+        <Data name="token" inMemoryType="float32" encodedType="bitfield7" default="0" max="127" comment="A value that the user provides"/>
     </Packet>
 
     <Packet name="Zero" ID="ZEROLENGTH" comment="This demonstrates a zero length packet"/>
