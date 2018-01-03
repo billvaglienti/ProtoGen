@@ -85,6 +85,9 @@ public:
     //! Return the strings that #define initial and variable values
     virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {Q_UNUSED(includeComment); return QString();}
 
+    //! Get the string used for comparing this field.
+    virtual QString getComparisonString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
 

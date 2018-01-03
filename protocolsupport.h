@@ -26,6 +26,7 @@ public:
     bool bigendian;                 //!< Protocol bigendian flag
     QString globalFileName;         //!< File name to be used if a name is not given
     QString globalVerifyName;       //!< Verify file name to be used if a name is not given
+    QString globalCompareName;      //!< Comparison file name to be used if a name is not given
     QString outputpath;             //!< path to output files to
     QString packetStructureSuffix;  //!< Name to use at end of encode/decode Packet structure functions
     QString packetParameterSuffix;  //!< Name to use at end of encode/decode Packet parameter functions

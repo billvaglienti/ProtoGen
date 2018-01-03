@@ -22,7 +22,8 @@ ProtocolFile::ProtocolFile(const QString& moduleName, bool temp) :
     module(moduleName),
     dirty(false),
     appending(false),
-    temporary(temp)
+    temporary(temp),
+    iscpp(false)
 {
 }
 
@@ -34,7 +35,8 @@ ProtocolFile::ProtocolFile(const QString& moduleName, bool temp) :
 ProtocolFile::ProtocolFile() :
     dirty(false),
     appending(false),
-    temporary(true)
+    temporary(true),
+    iscpp(false)
 {
 }
 
@@ -401,6 +403,7 @@ void ProtocolFile::copyTemporaryFile(const QString& path, const QString& fileNam
  */
 void ProtocolFile::deleteModule(const QString& moduleName)
 {
+    deleteFile(moduleName + ".cpp");
     deleteFile(moduleName + ".c");
     deleteFile(moduleName + ".h");
 }
@@ -539,10 +542,13 @@ QString ProtocolHeaderFile::getClosingStatement(void)
 {
     QString close;
 
-    // close the __cplusplus
-    close += "#ifdef __cplusplus\n";
-    close += "}\n";
-    close += "#endif\n";
+    if(!iscpp)
+    {
+        // close the __cplusplus
+        close += "#ifdef __cplusplus\n";
+        close += "}\n";
+        close += "#endif\n";
+    }
 
     // close the opening #ifdef
     close += "#endif\n";
@@ -599,10 +605,13 @@ void ProtocolHeaderFile::prepareToAppend(void)
         write(qPrintable("#ifndef " + define + "\n"));
         write(qPrintable("#define " + define + "\n"));
 
-        write("\n// C++ compilers: don't mangle us\n");
-        write("#ifdef __cplusplus\n");
-        write("extern \"C\" {\n");
-        write("#endif\n\n");
+        if(!iscpp)
+        {
+            write("\n// C++ compilers: don't mangle us\n");
+            write("#ifdef __cplusplus\n");
+            write("extern \"C\" {\n");
+            write("#endif\n\n");
+        }
     }
 
 }// ProtocolHeaderFile::prepareToAppend
@@ -616,9 +625,14 @@ void ProtocolSourceFile::extractExtension(QString& name)
 {
     ProtocolFile::extractExtension(name);
 
-    // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
-    if(!extension.contains(".c", Qt::CaseInsensitive))
-        extension = ".c";
+    if(iscpp)
+        extension = ".cpp";
+    else
+    {
+        // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
+        if(!extension.contains(".c", Qt::CaseInsensitive))
+            extension = ".c";
+    }
 
 }// ProtocolSourceFile::extractExtension
 

@@ -2118,6 +2118,98 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
 }// ProtocolField::getVerifyString
 
 
+//! Get the string used for comparing this field.
+QString ProtocolField::getComparisonString(bool isStructureMember) const
+{
+    QString output;
+
+    // No comparison if nothing is in memory or if not encoded
+    if(inMemoryType.isNull || encodedType.isNull)
+        return output;
+
+    QString access1, access2;
+
+    if(isStructureMember)
+    {
+        access1 = "user1->" + name;
+        access2 = "user2->" + name;
+    }
+    else
+    {
+        access1 = name + "_1";
+        access2 = name + "_2";
+    }
+
+    if(inMemoryType.isString)
+    {
+        output += TAB_IN + "if(QString::compare(" + access1 + ", " + access2 + ") != 0)\n";
+        output += TAB_IN + TAB_IN + "report += prename + \":" + name + " strings differ\\n\";\n";
+    }
+    else
+    {
+        QString spacing = TAB_IN;
+
+        if(isArray())
+        {
+            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            spacing += TAB_IN;
+
+            access1 = access1 + "[i]";
+            access2 = access2 + "[i]";
+        }
+
+        if(is2dArray())
+        {
+            output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+            spacing += TAB_IN;
+
+            access1 = access1 + "[j]";
+            access2 = access2 + "[j]";
+        }
+
+        if(inMemoryType.isStruct)
+        {
+            output += spacing + "report += compare" + typeName + "(prename + \":" + name + "\"";
+
+            if(isArray())
+                output += " + \"[\" + QString::number(i) + \"]\"";
+
+            if(is2dArray())
+                output += " + \"[\" + QString::number(j) + \"]\"";
+
+            // Structure compare we need to pass the address of the structure, not the object
+            output += ", &" + access1 + ", &" + access2 + ");\n";
+        }
+        else
+        {
+            // Simple value comparison to generate the report
+            output += spacing + "if(" + access1 + " != " + access2 + ")\n";
+
+            // The report includes the prename and the name
+            output += spacing + TAB_IN + "report += prename + \":" + name + "\" ";
+
+            // The report needs to include the array indices
+            if(isArray())
+                output += " + \"[\" + QString::number(i) + \"]\"";
+
+            if(is2dArray())
+                output += " + \"[\" + QString::number(j) + \"]\"";
+
+            // And finally the values go into the report
+            if(inMemoryType.isFloat)
+                output += " + \" \" + QString::number(" + access1 + ", 'g', 16) + \" \" + QString::number(" + access2 + ", 'g', 16) + \"\\n\";\n";
+            else
+                output += " + \" \" + QString::number(" + access1 + ") + \" \" + QString::number(" + access2 + ") + \"\\n\";\n";
+
+        }// else not a struct
+
+    }// else numeric output
+
+    return output;
+
+}// ProtocolField::getComparisonString
+
+
 /*!
  * Return the string that sets this encodable to its default value in code
  * \param isStructureMember should be true if this field is accessed through a "user" structure pointer

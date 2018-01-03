@@ -169,6 +169,9 @@ public:
     //! Get the string used for verifying this field.
     virtual QString getVerifyString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
+    //! Get the string used for comparing this field.
+    virtual QString getComparisonString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
     //! Return the string that sets this encodable to its initial value in code
     virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
