@@ -1526,7 +1526,7 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
     output += " * \\param user1 is the second data to compare\n";
     output += " * \\return a string describing any differences between user1 and user2. The string will be empty if there are no differences\n";
     output += " */\n";
-    output += "QString compare" + typeName + "(QString prename, " + structName + "* user1, " + structName + "* user2)\n";
+    output += "QString compare" + typeName + "(QString prename, const " + structName + "* user1, const " + structName + "* user2)\n";
     output += "{\n";
     output += TAB_IN + "QString report;\n";
 
