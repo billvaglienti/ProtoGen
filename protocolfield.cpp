@@ -2148,11 +2148,30 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
     else
     {
         QString spacing = TAB_IN;
+        bool closearraytest = false;
+        bool closearraytest2 = false;
+        bool closeforloop = false;
+        bool closeforloop2 = false;
 
         if(isArray())
         {
-            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
-            spacing += TAB_IN;
+            if(!variableArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "if(user1->" + variableArray + " == user2->" + variableArray + ")\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closearraytest = true;
+
+                output += spacing + "for(i = 0; (i < " + array + ") && (i < user1->" + variableArray + "); i++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closeforloop = true;
+            }
+            else
+            {
+                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+                spacing += TAB_IN;
+            }
 
             access1 = access1 + "[i]";
             access2 = access2 + "[i]";
@@ -2160,8 +2179,23 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
 
         if(is2dArray())
         {
-            output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
-            spacing += TAB_IN;
+            if(!variable2dArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "if(user1->" + variable2dArray + " == user2->" + variable2dArray + ")\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closearraytest2 = true;
+
+                output += spacing + "for(j = 0; (j < " + array2d + ") && (j < user1->" + variable2dArray + "); j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closeforloop2 = true;
+            }
+            else
+            {
+                output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+                spacing += TAB_IN;
+            }
 
             access1 = access1 + "[j]";
             access2 = access2 + "[j]";
@@ -2197,11 +2231,39 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
 
             // And finally the values go into the report
             if(inMemoryType.isFloat)
-                output += " + \" \" + QString::number(" + access1 + ", 'g', 16) + \" \" + QString::number(" + access2 + ", 'g', 16) + \"\\n\";\n";
+                output += " + \" '\" + QString::number(" + access1 + ", 'g', 16) + \"' '\" + QString::number(" + access2 + ", 'g', 16) + \"'\\n\";\n";
             else
-                output += " + \" \" + QString::number(" + access1 + ") + \" \" + QString::number(" + access2 + ") + \"\\n\";\n";
+                output += " + \" '\" + QString::number(" + access1 + ") + \"' '\" + QString::number(" + access2 + ") + \"'\\n\";\n";
 
         }// else not a struct
+
+        if(closeforloop2)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+        if(closearraytest2)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+            output += spacing + "else\n";
+            output += spacing + TAB_IN + "report += prename + \":" + name + " 2nd array dimension differs, array not compared\\n\";\n";
+        }
+
+        if(closeforloop)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+        if(closearraytest)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+            output += spacing + "else\n";
+            output += spacing + TAB_IN + "report += prename + \":" + name + " array dimension differs, array not compared\\n\";\n";
+        }
 
     }// else numeric output
 
