@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.10. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.11. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -100,6 +100,8 @@ The Protocol tag supports the following attributes:
 - `verifyfile` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the initilization and verification code output (if any); except for any objects which have their own `verifyfile` attribute.
 
 - `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
+
+- `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
@@ -297,9 +299,13 @@ Structure tag Attributes:
 
 - `compare` : By default compare functions will not be output. Set `compare="true"` to enable the compare function output. The compare functions will be output to the `prefix + name + "Compare"` module, unless the `comparefile` attribute or global `comparefile` attribute is given.
 
+- `print` : By default text print functions will not be output. Set `print="true"` to enable the text print function output. The print functions will be output to the `prefix + name + "Print"` module, unless the `printfile` attribute or global `printfile` attribute is given.
+
 - `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if verification or initialization values exist for a member field). If `verifyfile` is omitted then the init and verify functions are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
 
 - `comparefile` : Optional attribute used to specify a c++ module that implements a comparison function. The comparison functions compare the structure element by element and generate a human readable string report to indicate which elements are different. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `comparefile` attribute enables the compare output.
+
+- `printfile` : Optional attribute used to specify a c++ module that implements a function to text print the contents of a structure. The text print function goes through the structure element by element and generate a human readable string report for each element. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `printfile` attribute enables the print output.
 
 - `redefine` : It is possible to create multiple encodings for an existing structure definition by using the redefine attribute to reference a previously defined structure. When doing this the structure itself will not be declared, but the encoding and decoding functions will. This requires that the encoding rules must have fields with the same names and in-memory types as the referenced structure.
 
@@ -343,7 +349,9 @@ Packet tag attributes beyond Structure tag attributes:
 
 - `useInOtherPackets` : If set to `true` this attribute specifies that this packet will generate extra outputs as though it were a top level structure in addition to being a packet. This makes it possible to use this packet as a sub-structure of another packet. 
 
-- `compare` AND `comparefile` : When used within the context of a packet these attributes trigger the output of an additional comparison functions that uses packet pointers (rather than structure pointers) to do the comparison. The structure comparison function is still output.
+- `compare` AND `comparefile` : When used within the context of a packet these attributes trigger the output of an additional comparison function that uses packet pointers (rather than structure pointers) to do the comparison. The structure comparison function is still output.
+
+- `print` AND `printfile` : When used within the context of a packet these attributes trigger the output of an additional print function that uses packet pointers (rather than structure pointers) to do the print. The structure print function is still output.
 
 ### Packet : Data subtags
 

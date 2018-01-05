@@ -1463,7 +1463,11 @@ QString ProtocolStructure::getVerifyString(bool isStructureMember) const
 }// ProtocolStructure::getVerifyString
 
 
-//! Return the string that gives the prototype of the function used to compare this structure
+/*!
+ * Return the string that gives the prototype of the function used to compare this structure
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function prototype string, which may be empty
+ */
 QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) const
 {
     QString output;
@@ -1494,7 +1498,12 @@ QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) 
     return output;
 }
 
-//! Return the string that gives the function used to compare this structure
+
+/*!
+ * Return the string that gives the function used to compare this structure
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function string, which may be empty
+ */
 QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) const
 {
     QString output;
@@ -1551,7 +1560,11 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
 }
 
 
-//! Get the string used for comparing this field.
+/*!
+ * Get the string used for comparing this field.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the function string, which may be empty
+ */
 QString ProtocolStructure::getComparisonString(bool isStructureMember) const
 {
     QString output;
@@ -1622,6 +1635,175 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
     return output;
 
 }// ProtocolStructure::getComparisonString
+
+
+/*!
+ * Return the string that gives the prototype of the function used to text print this structure
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function prototype string, which may be empty
+ */
+QString ProtocolStructure::getTextPrintFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    // Go get any children structures textPrint functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getTextPrintFunctionPrototype(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My textPrint function
+    output += "//! Generate a string that describes the contents of a " + typeName + " structure\n";
+    output += "QString textPrint" + typeName + "(QString prename, const " + structName + "* user);\n";
+
+    return output;
+}
+
+
+/*!
+ * Return the string that gives the function used to compare this structure
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function string, which may be empty
+ */
+QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    // Go get any childrens structure textPrint functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getTextPrintFunctionString(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My textPrint function
+    output += "/*!\n";
+    output += " * Generate a string that describes the contents of a " + typeName + " structure\n";
+    output += " * \\param prename is prepended to the name of the data field in the report\n";
+    output += " * \\param user is the structure to report\n";
+    output += " * \\return a string containing a report of the contents of user\n";
+    output += " */\n";
+    output += "QString textPrint" + typeName + "(QString prename, const " + structName + "* user)\n";
+    output += "{\n";
+    output += TAB_IN + "QString report;\n";
+
+    if(needsEncodeIterator)
+        output += TAB_IN + "int i = 0;\n";
+
+    if(needs2ndEncodeIterator)
+        output += TAB_IN + "int j = 0;\n";
+
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getTextPrintString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += TAB_IN + "return report;\n";
+    output += "\n";
+    output += "}// textPrint" + typeName + "\n";
+
+    return output;
+
+}// ProtocolStructure::getTextPrintFunctionString
+
+
+/*!
+ * Get the string used for comparing this field.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the function string, which may be empty
+ */
+QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    if(isArray())
+    {
+        QString spacing = TAB_IN;
+        output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+        spacing += TAB_IN;
+
+        if(isStructureMember)
+        {
+            // The dereference of the array gets us back to the object, but we need the pointer
+            access = "&user->" + name + "[i]";
+        }
+        else
+        {
+            access = "&" + name + "[i]";
+        }
+
+        if(is2dArray())
+        {
+            access += "[j]";
+            output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+            spacing += TAB_IN;
+
+        }// if 2D array of structures
+
+        output += spacing + "report += textPrint" + typeName + "(prename + \":" + name + "\"";
+
+        if(isArray())
+            output += " + \"[\" + QString::number(i) + \"]\"";
+
+        if(is2dArray())
+            output += " + \"[\" + QString::number(j) + \"]\"";
+
+        output += ", " + access + ");\n";
+
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+        {
+            // The dereference of the user pointer gets us back to the object, but we need the pointer
+            access = "&user->" + name;
+        }
+        else
+        {
+            access = name;
+        }
+
+        output += TAB_IN + "report += textPrint" + typeName + "(prename + \":" + name + "\", "+ access + ");\n";
+
+    }// else if simple structure, no array
+
+    return output;
+
+}// ProtocolStructure::getTextPrintString
 
 
 //! Return the strings that #define initial and variable values

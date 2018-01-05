@@ -2118,7 +2118,11 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
 }// ProtocolField::getVerifyString
 
 
-//! Get the string used for comparing this field.
+/*!
+* Get the string used for coparing this field.
+* \param isStructureMember should be true to indicate this field is accessed as a member structure
+* \return the string used to compare this field, which may be empty
+*/
 QString ProtocolField::getComparisonString(bool isStructureMember) const
 {
     QString output;
@@ -2270,6 +2274,124 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
     return output;
 
 }// ProtocolField::getComparisonString
+
+
+/*!
+ * Get the string used for text printing this field.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the string used to print this field as text, which may be empty
+ */
+QString ProtocolField::getTextPrintString(bool isStructureMember) const
+{
+    QString output;
+
+    // No print if nothing is in memory
+    if(inMemoryType.isNull)
+        return output;
+
+    QString access;
+
+    if(isStructureMember)
+        access = "user->" + name;
+    else
+        access = name;
+
+    if(inMemoryType.isString)
+    {
+        output += TAB_IN + "report += prename + \":" + name + " \" + QString(" + access + ");\n";
+    }
+    else
+    {
+        QString spacing = TAB_IN;
+        bool closeforloop = false;
+        bool closeforloop2 = false;
+
+        if(isArray())
+        {
+            if(!variableArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "for(i = 0; (i < " + array + ") && (i < user->" + variableArray + "); i++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closeforloop = true;
+            }
+            else
+            {
+                output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+                spacing += TAB_IN;
+            }
+
+            access = access + "[i]";
+        }
+
+        if(is2dArray())
+        {
+            if(!variable2dArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "for(j = 0; (j < " + array2d + ") && (j < user->" + variable2dArray + "); j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+                closeforloop2 = true;
+            }
+            else
+            {
+                output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+                spacing += TAB_IN;
+            }
+
+            access = access + "[j]";
+        }
+
+        if(inMemoryType.isStruct)
+        {
+            output += spacing + "report += textPrint" + typeName + "(prename + \":" + name + "\"";
+
+            if(isArray())
+                output += " + \"[\" + QString::number(i) + \"]\"";
+
+            if(is2dArray())
+                output += " + \"[\" + QString::number(j) + \"]\"";
+
+            // Structure print we need to pass the address of the structure, not the object
+            output += ", &" + access + ");\n";
+        }
+        else
+        {
+            // The report includes the prename and the name
+            output += spacing + "report += prename + \":" + name + "\" ";
+
+            // The report needs to include the array indices
+            if(isArray())
+                output += " + \"[\" + QString::number(i) + \"]\"";
+
+            if(is2dArray())
+                output += " + \"[\" + QString::number(j) + \"]\"";
+
+            // And finally the values go into the report
+            if(inMemoryType.isFloat)
+                output += " + \" '\" + QString::number(" + access + ", 'g', 16) + \"'\\n\";\n";
+            else
+                output += " + \" '\" + QString::number(" + access + ") + \"'\\n\";\n";
+
+        }// else not a struct
+
+        if(closeforloop2)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+        if(closeforloop)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+    }// else numeric output
+
+    return output;
+
+}// ProtocolField::getTextPrintString
 
 
 /*!

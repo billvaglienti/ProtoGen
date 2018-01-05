@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.10.d";
+const QString ProtocolParser::genVersion = "2.11.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -253,6 +253,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(module->getCompareSourceFilePath());
         fileNameList.append(module->getCompareHeaderFileName());
         filePathList.append(module->getCompareHeaderFilePath());
+        fileNameList.append(module->getPrintSourceFileName());
+        filePathList.append(module->getPrintSourceFilePath());
+        fileNameList.append(module->getPrintHeaderFileName());
+        filePathList.append(module->getPrintHeaderFilePath());
 
     }// for all top level structures
 
@@ -288,6 +292,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getCompareSourceFilePath());
         fileNameList.append(packet->getCompareHeaderFileName());
         filePathList.append(packet->getCompareHeaderFilePath());
+        fileNameList.append(packet->getPrintSourceFileName());
+        filePathList.append(packet->getPrintSourceFilePath());
+        fileNameList.append(packet->getPrintHeaderFileName());
+        filePathList.append(packet->getPrintHeaderFilePath());
 
     }
 
@@ -317,6 +325,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getCompareSourceFilePath());
         fileNameList.append(packet->getCompareHeaderFileName());
         filePathList.append(packet->getCompareHeaderFilePath());
+        fileNameList.append(packet->getPrintSourceFileName());
+        filePathList.append(packet->getPrintSourceFilePath());
+        fileNameList.append(packet->getPrintHeaderFileName());
+        filePathList.append(packet->getPrintHeaderFilePath());
 
     }
 

@@ -18,13 +18,17 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     version(protocolVersion),
     encode(true),
     decode(true),
-    compare(false)
+    compare(false),
+    print(false)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "redefine";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "redefine";
 
     compareSource.setCpp(true);
     compareHeader.setCpp(true);
+    printSource.setCpp(true);
+    printHeader.setCpp(true);
+
 }
 
 
@@ -45,8 +49,10 @@ void ProtocolStructureModule::clear(void)
     defheader.clear();
     compareHeader.clear();
     compareSource.clear();
+    printHeader.clear();
+    printSource.clear();
     encode = decode = true;
-    compare = false;
+    print = compare = false;
     structfile = &header;
     verifyheaderfile = &header;
     verifysourcefile = &source;
@@ -99,9 +105,11 @@ void ProtocolStructureModule::parse(void)
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     QString comparemodulename = ProtocolParser::getAttribute("comparefile", map);
+    QString printmodulename = ProtocolParser::getAttribute("printfile", map);
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
+    print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
     // Warnings for users
@@ -124,7 +132,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Do the bulk of the file creation and setup
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, true, true, redefines);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, true, true, redefines);
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -146,6 +154,13 @@ void ProtocolStructureModule::parse(void)
         compareHeader.flush();
     }
 
+    // Only write the print if we have print functions to output
+    if(print)
+    {
+        printSource.flush();
+        printHeader.flush();
+    }
+
     // We don't write the verify files to disk if we are not initializing or verifying anything
     if(hasInit() || hasVerify())
     {
@@ -162,14 +177,23 @@ void ProtocolStructureModule::parse(void)
  * \param defheadermodulename is the structure header file name from the attributes
  * \param verifymodulename is the verify module name from the attributes
  * \param comparemodulename is the comparison module name from the attributes
+ * \param printmodulename is the print module name from the attributes
  * \param forceStructureDeclaration should be true to force the declaration of the structure, even if it only has one member
  * \param outputUtilties should be true to output the helper macros
  */
-void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
+void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, QString printmodulename, bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
 {
     // User can provide compare flag, or the file name
     if(!comparemodulename.isEmpty() || !support.globalCompareName.isEmpty())
         compare = true;
+
+    // User can provide print flag, or the file name
+    if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty())
+        print = true;
+
+    // Must have a structure definition to do compare or print operations (for now)
+    if(compare || print)
+        forceStructureDeclaration = true;
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
     if(moduleName.isEmpty())
@@ -222,6 +246,23 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         {
             compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath);
             compareSource.setModuleNameAndPath(comparemodulename, support.outputpath);
+        }
+    }
+
+    if(print)
+    {
+        if(printmodulename.isEmpty())
+            printmodulename = support.globalPrintName;
+
+        if(printmodulename.isEmpty())
+        {
+            printHeader.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath);
+            printSource.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath);
+        }
+        else
+        {
+            printHeader.setModuleNameAndPath(printmodulename, support.outputpath);
+            printSource.setModuleNameAndPath(printmodulename, support.outputpath);
         }
     }
 
@@ -280,11 +321,14 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         header.writeIncludeDirective(structfile->fileName());
     }
 
-    // The verify and comparison files needs access to the struct file
+    // The verify, comparison, and print files needs access to the struct file
     verifyheaderfile->writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(header.fileName());
     compareHeader.writeIncludeDirective("QString", QString(), true);
+    printHeader.writeIncludeDirective(structfile->fileName());
+    printHeader.writeIncludeDirective(header.fileName());
+    printHeader.writeIncludeDirective("QString", QString(), true);
 
     // The verification details may be spread across multiple files
     QStringList list;
@@ -470,6 +514,15 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             compareSource.makeLineSeparator();
         }
 
+        if(print)
+        {
+            printSource.makeLineSeparator();
+            printSource.write(structure->getTextPrintFunctionPrototype());
+            printSource.makeLineSeparator();
+            printSource.write(structure->getTextPrintFunctionString());
+            printSource.makeLineSeparator();
+        }
+
     }
 
     source.makeLineSeparator();
@@ -537,6 +590,18 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(const ProtocolStr
         compareSource.makeLineSeparator();
         compareSource.write(getComparisonFunctionString(false));
         compareSource.makeLineSeparator();
+    }
+
+
+    if(print)
+    {
+        printHeader.makeLineSeparator();
+        printHeader.write(getTextPrintFunctionPrototype(false));
+        printHeader.makeLineSeparator();
+
+        printSource.makeLineSeparator();
+        printSource.write(getTextPrintFunctionString(false));
+        printSource.makeLineSeparator();
     }
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions

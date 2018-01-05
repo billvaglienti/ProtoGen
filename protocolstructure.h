@@ -79,8 +79,17 @@ public:
     //! Return the string that gives the function used to compare this structure
     QString getComparisonFunctionString(bool includeChildren = true) const;
 
-    //! Get the string used for comparing this field.
+    //! Get the string used for comparing this structure.
     virtual QString getComparisonString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the string that gives the prototype of the function used to text print this structure
+    QString getTextPrintFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to text print this structure
+    QString getTextPrintFunctionString(bool includeChildren = true) const;
+
+    //! Get the string used for text printing this structure.
+    virtual QString getTextPrintString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the prototype of the function used to initialize this structure
     QString getSetToInitialValueFunctionPrototype(bool includeChildren = true) const;

@@ -75,10 +75,22 @@ public:
     //! Get the path of the source file that encompasses this structure comparison functions
     QString getCompareSourceFilePath(void) const {return compareSource.filePath();}
 
+    //! Get the name of the header file that encompasses this structure comparison functions
+    QString getPrintHeaderFileName(void) const {return printHeader.fileName();}
+
+    //! Get the name of the source file that encompasses this structure comparison functions
+    QString getPrintSourceFileName(void) const {return printSource.fileName();}
+
+    //! Get the path of the header file that encompasses this structure comparison functions
+    QString getPrintHeaderFilePath(void) const {return printHeader.filePath();}
+
+    //! Get the path of the source file that encompasses this structure comparison functions
+    QString getPrintSourceFilePath(void) const {return printSource.filePath();}
+
 protected:
 
     //! Setup the files, which accounts for all the ways the files can be organized for this structure.
-    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
+    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, QString printmodulename, bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
@@ -99,6 +111,8 @@ protected:
     ProtocolHeaderFile verifyHeader;//!< The header file for verify code (*.h)
     ProtocolSourceFile compareSource;       //!< The source file for comparison code (*.cpp)
     ProtocolHeaderFile compareHeader;       //!< The header file for comparison code (*.h)
+    ProtocolSourceFile printSource;         //!< The source file for print code (*.cpp)
+    ProtocolHeaderFile printHeader;         //!< The header file for print code (*.h)
     ProtocolHeaderFile* structfile;         //!< Reference to the file that holds the structure definition
     ProtocolHeaderFile* verifyheaderfile;   //!< Reference to the file that holds the verify prototypes
     ProtocolSourceFile* verifysourcefile;   //!< Reference to the file that holds the verify source code
@@ -107,6 +121,7 @@ protected:
     bool encode;                    //!< True if the encode function is output
     bool decode;                    //!< True if the decode function is output
     bool compare;                   //!< True if the comparison function is output
+    bool print;                     //!< True if the textPrint function is output
 };
 
 #endif // PROTOCOLSTRUCTUREMODULE_H

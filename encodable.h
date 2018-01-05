@@ -88,6 +88,9 @@ public:
     //! Get the string used for comparing this field.
     virtual QString getComparisonString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
+    //! Get the string used for text printing this field.
+    virtual QString getTextPrintString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
 

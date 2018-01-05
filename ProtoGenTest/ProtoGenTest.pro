@@ -35,7 +35,8 @@ SOURCES += main.cpp \
     definitions/verify.c \
     verify/dateverify.c \
     DemolinkProtocol.c \
-    compare/compareDemolink.cpp
+    compare/compareDemolink.cpp \
+    compare/printDemolink.cpp
 
 HEADERS += \
     indices.h \
@@ -55,7 +56,8 @@ HEADERS += \
     definitions/verify.h \
     OtherDefinitions.h \
     verify/dateverify.h \
-    compare/compareDemolink.h
+    compare/compareDemolink.h \
+    compare/printDemolink.h
 
 OTHER_FILES += \
     Doxyfile
