@@ -442,7 +442,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             source.write("{\n");
         }
 
-        source.write(TAB_IN + "uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
+        if(getNumberOfEncodes() > 0)
+            source.write(TAB_IN + "uint8_t* data = get" + support.protoName + "PacketData(pkt);\n");
+
         source.write(TAB_IN + "int byteindex = 0;\n");
 
         if(usestempencodebitfields)

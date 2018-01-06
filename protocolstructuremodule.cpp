@@ -273,21 +273,11 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     }
     else
     {
-        // Comment block at the top of the header file
+        // Comment block at the top of the header file needed so doxygen will document the file
         header.write("/*!\n");
         header.write(" * \\file\n");
-
-        // A potentially long comment that should be wrapped at 80 characters
-        if(!comment.isEmpty())
-        {
-            header.write(" *\n");
-            header.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-        }
-
-        // Finish the top comment block
         header.write(" */\n");
         header.write("\n");
-
     }
 
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
