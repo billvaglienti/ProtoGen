@@ -29,7 +29,7 @@ public:
     void writeIncludeDirectives(const QStringList& list);
 
     //! Output an include directive
-    void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool Global = false);
+    void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool global = false, bool autoextension = true);
 
     //! Set the license text for the file
     void setLicenseText(const QString text) { license = text; }

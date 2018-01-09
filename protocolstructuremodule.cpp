@@ -315,10 +315,10 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     verifyheaderfile->writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(header.fileName());
-    compareHeader.writeIncludeDirective("QString", QString(), true);
+    compareHeader.writeIncludeDirective("QString", QString(), true, false);
     printHeader.writeIncludeDirective(structfile->fileName());
     printHeader.writeIncludeDirective(header.fileName());
-    printHeader.writeIncludeDirective("QString", QString(), true);
+    printHeader.writeIncludeDirective("QString", QString(), true, false);
 
     // The verification details may be spread across multiple files
     QStringList list;

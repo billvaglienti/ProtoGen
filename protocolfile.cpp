@@ -165,8 +165,10 @@ void ProtocolFile::writeIncludeDirectives(const QStringList& list)
  * \param include is the module name to include
  * \param comment is a trailing comment for the include directive, can be empty
  * \param global should be true to use brackets ("<>") instead of quotes.
+ * \param autoextensions should be true to automatically append ".h" to the
+ *        include name if it is not already included
  */
-void ProtocolFile::writeIncludeDirective(const QString& include, const QString& comment, bool Global)
+void ProtocolFile::writeIncludeDirective(const QString& include, const QString& comment, bool global, bool autoextension)
 {
     if(include.isEmpty())
         return;
@@ -174,7 +176,7 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
     QString directive = include.trimmed();
 
     // Technically things other than .h* could be included, but not by ProtoGen
-    if(!directive.contains(".h"))
+    if(!directive.contains(".h") && autoextension)
         directive += ".h";
 
     // Don't include ourselves
@@ -182,7 +184,7 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
         return;
 
     // Build the include directive with quotes or brackets based on the global status
-    if (Global == false)
+    if (global == false)
         directive = "#include \"" + directive + "\"";
     else
         directive = "#include <" + directive + ">";
