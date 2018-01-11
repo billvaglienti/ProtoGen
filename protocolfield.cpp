@@ -1580,50 +1580,29 @@ void ProtocolField::getIncludeDirectives(QStringList& list) const
         include = parser->lookUpIncludeName(array);
         if(!include.isEmpty())
             list.append(include);
+
+        // Array sizes could be enumerations that need an include directive
+        if(!array2d.isEmpty())
+        {
+            include = parser->lookUpIncludeName(array2d);
+            if(!include.isEmpty())
+                list.append(include);
+        }
     }
 
-    // Array sizes could be enumerations that need an include directive
-    if(!array2d.isEmpty())
-    {
-        include = parser->lookUpIncludeName(array2d);
-        if(!include.isEmpty())
-            list.append(include);
-    }
-
-    if(inMemoryType.isEnum)
+    if(inMemoryType.isEnum || inMemoryType.isStruct)
     {
         include = parser->lookUpIncludeName(typeName);
-        if(!include.isEmpty())
-            list.append(include);
-
-    }// if enum
-    else if(inMemoryType.isStruct)
-    {
-        include = parser->lookUpIncludeName(typeName);
-
         if(include.isEmpty())
         {
-            if(!isNotEncoded())
-            {
-                // In this case, we guess at the include name
-                include = typeName;
-
-                if (include.endsWith("_t"))
-                {
-                    // Remove the last two characters
-                    include.chop(2);
-                }
-
-                include += ".h";
-                list.append(include);
-                emitWarning("unknown include for '" + typeName + "'; guess supplied - '" + include + "'");
-            }
-
+            // we don't warn for enumeration include failures, they are (potentially) less serious
+            if(inMemoryType.isStruct)
+                emitWarning("unknown include for \"" + typeName + "\"");
         }
         else
             list.append(include);
 
-    }// else if struct
+    }// if enum or struct
 
     // Only need one of each include
     list.removeDuplicates();
