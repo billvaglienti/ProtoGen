@@ -192,7 +192,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         print = true;
 
     // Must have a structure definition to do compare or print operations (for now)
-    if(compare || print)
+    if(compare || print || hasVerify() || hasInit())
         forceStructureDeclaration = true;
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
