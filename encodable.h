@@ -157,11 +157,23 @@ public:
     //! True if this encodable has a direct child that needs an iterator for decoding
     virtual bool usesDecodeIterator(void) const = 0;
 
+    //! True if this encodable has a direct child that needs an iterator for verifying
+    virtual bool usesVerifyIterator(void) const = 0;
+
+    //! True if this encodable has a direct child that needs an iterator for initializing
+    virtual bool usesInitIterator(void) const = 0;
+
     //! True if this encodable has a direct child that needs a second iterator for encoding
     virtual bool uses2ndEncodeIterator(void) const = 0;
 
     //! True if this encodable has a direct child that needs a second iterator for decoding
     virtual bool uses2ndDecodeIterator(void) const = 0;
+
+    //! True if this encodable has a direct child that needs an second iterator for verifying
+    virtual bool uses2ndVerifyIterator(void) const = 0;
+
+    //! True if this encodable has a direct child that needs an second iterator for initializing
+    virtual bool uses2ndInitIterator(void) const = 0;
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const = 0;

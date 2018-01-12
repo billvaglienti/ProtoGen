@@ -55,11 +55,23 @@ public:
     //! True if this encodable has a direct child that needs an iterator
     virtual bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return needsDecodeIterator;}
 
+    //! True if this encodable has a direct child that needs an iterator for verifying
+    virtual bool usesVerifyIterator(void) const Q_DECL_OVERRIDE {return needsVerifyIterator;}
+
+    //! True if this encodable has a direct child that needs an iterator for initializing
+    virtual bool usesInitIterator(void) const Q_DECL_OVERRIDE {return needsInitIterator;}
+
     //! True if this encodable has a direct child that needs a 2nd iterator
     virtual bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return needs2ndEncodeIterator;}
 
     //! True if this encodable has a direct child that needs a 2nd iterator
     virtual bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return needs2ndDecodeIterator;}
+
+    //! True if this encodable has a direct child that needs a 2nd iterator for verifying
+    virtual bool uses2ndVerifyIterator(void) const Q_DECL_OVERRIDE {return needs2ndVerifyIterator;}
+
+    //! True if this encodable has a direct child that needs a 2nd iterator for initializing
+    virtual bool uses2ndInitIterator(void) const Q_DECL_OVERRIDE {return needs2ndInitIterator;}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return defaults;}
@@ -188,8 +200,12 @@ protected:
     bool usestempdecodelongbitfields; //!< True if this structure uses a temporary long bitfield for decoding
     bool needsEncodeIterator;   //!< True if this structure uses arrays iterators on encode
     bool needsDecodeIterator;   //!< True if this structure uses arrays iterators on decode
+    bool needsInitIterator;     //!< True if this structure uses arrays iterators on initialization
+    bool needsVerifyIterator;   //!< True if this structure uses arrays iterators on verification
     bool needs2ndEncodeIterator;//!< True if this structure uses 2nd arrays iterators on encode
     bool needs2ndDecodeIterator;//!< True if this structure uses 2nd arrays iterators on decode
+    bool needs2ndInitIterator;  //!< True if this structure uses 2nd arrays iterators on initialization
+    bool needs2ndVerifyIterator;//!< True if this structure uses 2nd arrays iterators on verification
     bool defaults;              //!< True if this structure uses default values
     bool strings;               //!< True if this structure uses strings
     bool hidden;                //!< True if this structure is to be hidden from the documentation

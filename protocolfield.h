@@ -223,11 +223,23 @@ public:
     //! True if this encodable has a direct child that needs an iterator on decode
     virtual bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
+    //! True if this encodable has a direct child that needs an iterator for verifying
+    virtual bool usesVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && usesEncodeIterator();}
+
+    //! True if this encodable has a direct child that needs an iterator for initializing
+    virtual bool usesInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && usesEncodeIterator();}
+
     //! True if this encodable has a direct child that needs an iterator on encode
     virtual bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
     virtual bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+
+    //! True if this encodable has a direct child that needs an second iterator for verifying
+    virtual bool uses2ndVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && uses2ndEncodeIterator();}
+
+    //! True if this encodable has a direct child that needs an second iterator for initializing
+    virtual bool uses2ndInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && uses2ndEncodeIterator();}
 
     //! True if this encodable has a direct child that uses defaults
     virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}

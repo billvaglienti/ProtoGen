@@ -21,8 +21,12 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     usestempdecodelongbitfields(false),
     needsEncodeIterator(false),
     needsDecodeIterator(false),
+    needsInitIterator(false),
+    needsVerifyIterator(false),
     needs2ndEncodeIterator(false),
     needs2ndDecodeIterator(false),
+    needs2ndInitIterator(false),
+    needs2ndVerifyIterator(false),
     defaults(false),
     hidden(false),
     hasinit(false),
@@ -77,8 +81,12 @@ void ProtocolStructure::clear(void)
     usestempdecodelongbitfields = false;
     needsEncodeIterator = false;
     needsDecodeIterator = false;
+    needsInitIterator = false;
+    needsVerifyIterator = false;
     needs2ndEncodeIterator = false;
     needs2ndDecodeIterator = false;
+    needs2ndInitIterator = false;
+    needs2ndVerifyIterator = false;
     defaults = false;
     hidden = false;
     hasinit = false;
@@ -241,11 +249,23 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                     if(field->usesDecodeIterator())
                         needsDecodeIterator = true;
 
+                    if(field->usesInitIterator())
+                        needsInitIterator = true;
+
+                    if(field->usesVerifyIterator())
+                        needsVerifyIterator = true;
+
                     if(field->uses2ndEncodeIterator())
                         needs2ndEncodeIterator = true;
 
                     if(field->uses2ndDecodeIterator())
                         needs2ndDecodeIterator = true;
+
+                    if(field->uses2ndInitIterator())
+                        needs2ndInitIterator = true;
+
+                    if(field->uses2ndVerifyIterator())
+                        needs2ndVerifyIterator = true;
 
                     if(field->usesDefaults())
                         defaults = true;
@@ -271,10 +291,18 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                 {
                     // Structures can be arrays as well.
                     if(encodable->isArray())
+                    {
                         needsDecodeIterator = needsEncodeIterator = true;
+                        needsInitIterator = encodable->hasInit();
+                        needsVerifyIterator = encodable->hasVerify();
+                    }
 
                     if(encodable->is2dArray())
+                    {
                         needs2ndDecodeIterator = needs2ndEncodeIterator = true;
+                        needs2ndInitIterator = encodable->hasInit();
+                        needs2ndVerifyIterator = encodable->hasVerify();
+                    }
 
                 }// else if this encodable is not a field
 
@@ -1233,10 +1261,10 @@ QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildr
     output += "void init" + typeName + "(" + structName + "* user)\n";
     output += "{\n";
 
-    if(needsEncodeIterator)
+    if(needsInitIterator)
         output += TAB_IN + "int i = 0;\n";
 
-    if(needs2ndEncodeIterator)
+    if(needs2ndInitIterator)
         output += TAB_IN + "int j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
@@ -1387,10 +1415,10 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
     output += "{\n";
     output += TAB_IN + "int good = 1;\n";
 
-    if(needsEncodeIterator)
+    if(needsVerifyIterator)
         output += TAB_IN + "int i = 0;\n";
 
-    if(needs2ndEncodeIterator)
+    if(needs2ndVerifyIterator)
         output += TAB_IN + "int j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
