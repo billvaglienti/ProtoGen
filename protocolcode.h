@@ -17,34 +17,34 @@ class ProtocolCode : public Encodable
     virtual ~ProtocolCode(){}
 
     //! Reset all data to defaults
-    virtual void clear(void);
+    virtual void clear(void) Q_DECL_OVERRIDE;
 
     //! Parse the DOM element
-    virtual void parse(void);
+    virtual void parse(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const;
+    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to decode this encoable
-    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const;
+    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to declare this encodable
-    virtual QString getDeclaration(void) const {return QString();}
+    virtual QString getDeclaration(void) const Q_DECL_OVERRIDE {return QString();}
 
     //! Return the signature of this field in an encode function signature
-    virtual QString getEncodeSignature(void) const {return QString();}
+    virtual QString getEncodeSignature(void) const Q_DECL_OVERRIDE {return QString();}
 
     //! Return the signature of this field in a decode function signature
-    virtual QString getDecodeSignature(void) const {return QString();}
+    virtual QString getDecodeSignature(void) const Q_DECL_OVERRIDE {return QString();}
 
     //! Return the string that documents this field as a encode function parameter
-    virtual QString getEncodeParameterComment(void) const {return QString();}
+    virtual QString getEncodeParameterComment(void) const Q_DECL_OVERRIDE {return QString();}
 
     //! Return the string that documents this field as a decode function parameter
-    virtual QString getDecodeParameterComment(void) const {return QString();}
+    virtual QString getDecodeParameterComment(void) const Q_DECL_OVERRIDE {return QString();}
 
     //! Code tag does not add documentation
     virtual bool hasDocumentation(void) Q_DECL_OVERRIDE {return false;}
