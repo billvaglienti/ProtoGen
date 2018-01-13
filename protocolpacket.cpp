@@ -106,6 +106,10 @@ void ProtocolPacket::parse(void)
     // Its possible to have multiple ID attributes which are separated by white space
     ids = ProtocolParser::getAttribute("ID", map).split(QRegExp("[,;:\\s]+"), QString::SkipEmptyParts);
 
+    // In case the user didn't provide a comment, see if we use the comment for the ID
+    if(comment.isEmpty() && (ids.count() > 0))
+        comment = parser->getEnumerationValueComment(ids.at(0));
+
     // Warnings common to structures and packets
     issueWarnings(map);
 

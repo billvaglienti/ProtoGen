@@ -109,6 +109,9 @@ public:
     //! Determine if text is part of an enumeration.
     QString getEnumerationNameForEnumValue(const QString& text) const;
 
+    //! Find the enumeration with this name and return its comment, or an empty string
+    QString getEnumerationValueComment(const QString& name) const;
+
     //! Find the global structure point for a specific type
     const ProtocolStructureModule* lookUpStructure(const QString& typeName) const;
 

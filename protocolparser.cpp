@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.11.f";
+const QString ProtocolParser::genVersion = "2.12.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -71,6 +71,9 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     QDomDocument doc;
     QFile file(filename);
     QFileInfo fileinfo(filename);
+
+    // Top level printout of the version information
+    std::cout << "ProtoGen version " << genVersion.toStdString() << std::endl;
 
     // Remember the input path, in case there are files referenced by the main file
     inputpath = ProtocolFile::sanitizePath(fileinfo.absolutePath());
@@ -1119,6 +1122,37 @@ QString ProtocolParser::getEnumerationNameForEnumValue(const QString& text) cons
     }
 
     return QString();
+
+}
+
+
+/*!
+ * Find the enumeration value with this name and return its comment, or an empty
+ * string. This will search all the enumerations that the parser knows about to
+ * find the enumeration value.
+ * \param name is the name of the enumeration value to find
+ * \return the comment string of the name enumeration element, or an empty
+ *         string if name is not found
+ */
+QString ProtocolParser::getEnumerationValueComment(const QString& name) const
+{
+    QString comment;
+
+    for(int i = 0; i < globalEnums.size(); i++)
+    {
+        comment = globalEnums.at(i)->getEnumerationValueComment(name);
+        if(!comment.isEmpty())
+            return comment;
+    }
+
+    for(int i = 0; i < enums.size(); i++)
+    {
+        comment = enums.at(i)->getEnumerationValueComment(name);
+        if(!comment.isEmpty())
+            return comment;
+    }
+
+    return comment;
 
 }
 

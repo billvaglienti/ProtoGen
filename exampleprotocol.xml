@@ -119,8 +119,8 @@ interpretation
         <Data name="numSvInfo" inMemoryType="unsigned8" comment="The number of space vehicles for which there is data in this structure"/>
         <Structure name="svInfo" array="NUM_GPS_SATS" variableArray="numSvInfo" comment="details about individual space vehicles">
             <Data name="PRN" inMemoryType="unsigned8" comment="Satellite psuedo-random-number identifier"/>
-            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="pi" comment="elevation angle of the satellite in radians"/>
-            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="pi" comment="azimuth angle of the satellite in radians"/>
+            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="pi" printscaler="180/pi" comment="elevation angle of the satellite in radians"/>
+            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="pi" printscaler="180/pi" comment="azimuth angle of the satellite in radians"/>
             <Data name="CNo" inMemoryType="unsigned8" array="NUM_GPS_BANDS" comment="Carrier to noise ratio in dB-Hz for each GPS frequency"/>
             <Data name="visible" inMemoryType="bitfield1" comment="Set if the satellite should be visible"/>
             <Data name="tracked" inMemoryType="bitfield1" comment="Set if the satellite is tracked"/>

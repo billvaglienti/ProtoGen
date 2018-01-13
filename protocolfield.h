@@ -267,6 +267,9 @@ protected:
     //! String providing the scaler from in-Memory to encoded
     QString scalerString;
 
+    //! The string used to multiply the in-memory type to compare and print display
+    QString printScalerString;
+
     //! String giving the default value to use if the packet is too short
     QString defaultString;
 

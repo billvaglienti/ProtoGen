@@ -103,6 +103,9 @@ public:
     //! Replace any text that matches an enumeration name with the value of that enumeration
     QString& replaceEnumerationNameWithValue(QString& text) const;
 
+    //! Find the enumeration value with this name and return its comment, or an empty string
+    QString getEnumerationValueComment(const QString& name) const;
+
     //! Determine if text is an enumeration name
     bool isEnumerationValue(const QString& text) const;
 

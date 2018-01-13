@@ -21,20 +21,20 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.11. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.12. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [SupportFile.xml] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS protogen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [SupportFile.xml] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS ProtoGen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
 
 - `Protocol.xml` is the main file that defines the protocol details, setting the protocol name and various options. The main protocol file is always the first xml file on the command line.
 
 - `Outputpath` is an optional parameter that gives the path where the generated files should be placed. If `Outputpath` is not given then the files will be placed in the working directory from which ProtoGen is run.
 
-- `SupportFile.xml` is another file that defines protocol details. The contents of this file are used to augment the contents of the main protocol file, as such its protocol name and options are ignored in favor of the name and options from the main file. You can have as many support files as you like. Protogen will parse the support files before the main file, so the main file can have dependencies on the protocol elements from the support files.
+- `SupportFile.xml` is another file that defines protocol details. The contents of this file are used to augment the contents of the main protocol file, as such its protocol name and options are ignored in favor of the name and options from the main file. You can have as many support files as you like. ProtoGen will parse the support files before the main file, so the main file can have dependencies on the protocol elements from the support files.
 
 - `license <file>` is a template file contains license information that will be added verbatim to the top of each generated file.
 
@@ -58,7 +58,7 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `-no-css` will cause ProtoGen to skip output of CSS data in generated documentation files.
 
-- `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect Protogen to ignore. 
+- `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect ProtoGen to ignore. 
 
 - `-table-of-contents` specifies that a table of contents section should be added to the markdown output. This will be output using inline html with intra document links to the headings.
 
@@ -99,7 +99,7 @@ The Protocol tag supports the following attributes:
 
 - `verifyfile` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the initilization and verification code output (if any); except for any objects which have their own `verifyfile` attribute.
 
-- `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
+- `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
 
 - `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
 
@@ -121,7 +121,7 @@ The Protocol tag supports the following attributes:
 
 - `supportLongBitfield` : if this attribute is set to `true` then a second set of bitfield support functions will be defined. The Long bitfield functions use the integer type `uint64_t` instead of `unsigned int`. This attribute will be ignored if `supportInt64` or `supportBitfield` are `false`.
 
-- `bitfieldTest` : if this attribute is set to `true` then Protogen will output a module called "bitfieldtest", which contains a test function that can be used to determine if bitfield support is working on your compiler.
+- `bitfieldTest` : if this attribute is set to `true` then ProtoGen will output a module called "bitfieldtest", which contains a test function that can be used to determine if bitfield support is working on your compiler.
 
 - `supportSpecialFloat` : if this attribute is set to `false` then floating point types less than 32 bits will not be allowed for encoded types.
 
@@ -136,7 +136,7 @@ The Protocol tag supports the following attributes:
 Comments
 --------
 
-A large part of the value of ProtoGen is the documentation it outputs. To that end every tag supports a comment attribute. Good protocol documentation is verbose, it includes frames of reference, units, the effect on the system of receiving the packet, how often the packet is transmitted, or how to request the packet, etc. In order to make the comment text more readable in the xml file ProtoGen will reflow the comment so that multiple spaces and single linefeeds are discarded. Double linefeeds will be preserved in the output so it is possible to have separate paragraphs in the comment. Some comments are output as multiline doxygen comments wrapped at 80 characters:
+A large part of the value of ProtoGen is the documentation it outputs. To that end every tag supports a `comment` attribute. Good protocol documentation is verbose, it includes frames of reference, units, the effect on the system of receiving the packet, how often the packet is transmitted, or how to request the packet, etc. In order to make the comment text more readable in the xml file ProtoGen will reflow the comment so that multiple spaces and single linefeeds are discarded. Double linefeeds will be preserved in the output so it is possible to have separate paragraphs in the comment. Some comments are output as multiline doxygen comments wrapped at 80 characters:
 
     /*!
      * This is a multi-line comment. It appears before the object it documents
@@ -157,9 +157,9 @@ The reflow logic can be suspended by placing comment text between "\verbatim" es
 Files
 -----
 
-By default protogen will output a protocol header file; and a header and source file for every Packet and Structure tag, with the file name matching the tag name. However every global object (Enum, Structure, Packet) supports an optional `file` attribute. In addition there is an optional global `file` attribute which applies if an object does not specify a `file` attribute. Typically an extension is not given, in which case ".h" will be added for header files, and ".c" for source files. If an extension is given then Protogen will discard it unless it starts with ".h" (for headers) or ".c" (for sources). So for example if the `file` attribute of a packet has the extension ".cpp", the source file output by protogen will use that extension, and the header file will use ".h".
+By default ProtoGen will output a protocol header file; and a header and source file for every Packet and Structure tag, with the file name matching the tag name. However every global object (Enum, Structure, Packet) supports an optional `file` attribute. In addition there is an optional global `file` attribute which applies if an object does not specify a `file` attribute. Typically an extension is not given, in which case ".h" will be added for header files, and ".c" for source files. If an extension is given then ProtoGen will discard it unless it starts with ".h" (for headers) or ".c" (for sources). So for example if the `file` attribute of a packet has the extension ".cpp", the source file output by ProtoGen will use that extension, and the header file will use ".h".
 
-The `file` attribute can include path information (for example "src/protogen/filename"). If path information is provided it is assumed to be relative to the global output path, unless the path information is absolute. Path information is only used in the creation of the file; any include directive which references a file will not include the path information.
+The `file` attribute can include path information (for example "src/ProtoGen/filename"). If path information is provided it is assumed to be relative to the global output path, unless the path information is absolute. Path information is only used in the creation of the file; any include directive which references a file will not include the path information.
 
 Require tag
 -----------
@@ -172,7 +172,7 @@ The Require tag supports the following attributes:
 
 - `file` : gives the name of the file to insert, relative to the path of the file which requires it. You can include the .xml file extension, or leave it off.
 
-The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only difference is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that Protogen will prevent a protocol file from being referenced more than once, so circular references are avoided.
+The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only difference is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that ProtoGen will prevent a protocol file from being referenced more than once, so circular references are avoided.
 
 Include tag
 -----------
@@ -226,7 +226,7 @@ Enum tag attributes:
 
 - `title` : The name of the enumeration used in the documentation output. If title is not given then `name` is used.
 
-- `file` : Optional attribute that gives the header file name that will be used for this enumeration. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. Protogen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
+- `file` : Optional attribute that gives the header file name that will be used for this enumeration. The `file` attribute can only be used with enumerations that are global (i.e. not a child of a Packet or Structure tag). If `file` is not provided global enumerations are output in the main header file. ProtoGen will track the file location of the enumeration and will automatically add the necessary include directive to any module that references the enumeration.
 
 - `comment` : Gives a multi-line line doxygen comment wrapped at 80 characters that appears above the enumeration.
 
@@ -461,13 +461,15 @@ Data subtag attributes:
 
 - `initialValue` : is used to specify an initial value that is assigned to this field in the init function. If the `initialValue` is not given then this field will not receive an initial value in the init function. As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e".
 
-- `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function. If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the minimum value based on this fields encoding rules.
+- `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function. If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case ProtoGen will compute the minimum value based on this fields encoding rules.
 
-- `verifyMaxValue` : is used to specify the highest value that this in-memory field should hold. This is used in the verify function. If the value of this field is more than `verifyMaxValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case protogen will compute the maximum value based on this fields encoding rules.
+- `verifyMaxValue` : is used to specify the highest value that this in-memory field should hold. This is used in the verify function. If the value of this field is more than `verifyMaxValue` the verify function will change the value of the field and return 0 to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case ProtoGen will compute the maximum value based on this fields encoding rules.
+
+- `printscaler` : A scaler that is multiplied by the in-memory type when generating the comparison or print text functions. This scaler does not change the protocol design, it used *only* to improve the readability of the report from the comparison or text print functions. 
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
-- `range | units | notes` : If specified, each of these attributes will be added (as single-line comments) to the packet description table in the documentation markdown. These comments will appear next to this <Data> tag, and can be used if extra specificity is required. Note that these fields apply ONLY to the documentation, and will NOT appear anywhere in the generated code.
+- `range | units | notes` : If specified, each of these attributes will be added (as single-line comments) to the packet description table in the documentation markdown. These comments will appear next to this <Data> tag, and can be used if extra specificity is required. Note that these fields apply *only* to the documentation, and will not appear anywhere in the generated code.
 
 Documentation tag
 -----------------
@@ -488,7 +490,7 @@ Documentation examples:
 
     <Documentation comment="---"/>
 
-Inserts "---" into the markdown output. This will produce a horizontal rule in the generated html. ProtoGen will also insert inline html to replace the horizontal rule with a page break when the html is printed (this behavior depends on the stylesheet - see the default style sheet that protogen outputs inline with the markdown).
+Inserts "---" into the markdown output. This will produce a horizontal rule in the generated html. ProtoGen will also insert inline html to replace the horizontal rule with a page break when the html is printed (this behavior depends on the stylesheet - see the default style sheet that ProtoGen outputs inline with the markdown).
 
     <Documentation name="Enumerations" paragraph="1" comment="Packets in the protocol refer to these global enumerations."/>
 
@@ -619,7 +621,7 @@ ProtoGen also creates other files that are not specified by the xml, but are use
 fieldencode and fielddecode
 ---------------------------
 
-fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order (big or little endian) and memory alignment requirements. For example, if the processor is little endian (e.g. x86 or ARM) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packet data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
+fieldencode does the work of moving data from a native type to an array of bytes. This is not as simple as you might think. In the simplest case one could simply copy the data from one memory location to another (for example, using `memcpy()`); however that would ignore the complications caused by local byte order and memory alignment requirements. For example, if the processor is little endian (e.g. x86 or ARM) but the protocol is big endian the bytes of the native type have to be swapped. Furthermore, we do not necessarily know the alignment of the packet data pointer, so copying a four byte mis-aligned native type (for example) may not be allowed by the processor.
 
 The way to handle both these issues is to copy the data byte by byte. There are numerous methods by which this can be done. ProtoGen does it using leftshift (`<<`) and rightshift (`>>`) operators. This has the advantage of (potentially) leaving the native type in a register during the copy, and not needing to know the local endianness. Even this operation has room for interpretation. The maximum number of bits that can be shifted is architecture dependent; but is typically the number of bits of an `int`. Hence the process of shifting the bits from the field to the data array (and vice versa) is ordered such that only 8 bit shifts are used, allowing ProtoGen code to run on 8 bit processors.
 
@@ -648,20 +650,29 @@ ProtoGen assumes that the `float` (32-bit) and `double` (64-bit) types adhere to
 Bitfields
 ---------
 
-Protogen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code uses `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
+ProtoGen emits inline code for encoding and decoding bitfields into and out of byte arrays. If you set the protocol attribute `supportBitfield="false"` any bitfields in the protocol description will generate a warning, and the field will be converted to the next larger in-memory unsigned integer. If you use a bitfield which is larger than 32 bits, and if `supportLongBitfield` is set to `"true"` the bitfield type will be uint64_t, and long bitfield functions will be used for that bitfield. The normal bitfield code uses `unsigned int` as the base type; this has the advantage of working on all compilers. If the protocol attribute `bitfieldTest="true"` the bitfieldtest module will be output which can be used to test the bitfield routines on your compiler.
 
 Bitfields are fantastically useful for minimizing the size of packets, however there is some ambiguity when it comes to byte ordering within a bitfield. Since the byte boundaries are not fixed at 8-bit intervals a bitfield cannot be described as big or little endian. ProtoGen encodes bitfields with the most significant bits first in the data stream, and the least significant bits last. This can be changed by putting the bitfields into a "bitfield group", see the section on bitfield groups for more details.
 
 Although bitfields are typically used to convey integer or enumeration information, it is possible to scale an in-memory type to a bitfield.
 
-Protogen counts the bits of adjacent bitfields at code generation time (as opposed to run-time), which allows the generated bitfield code to be reasonably efficient. However this requires that the bitcount be fixed at code generation time; for this reason the presence of a bitfield cannot be dependent on other packet fields (see the `dependsOn` attribute). However bitfields can be given default values, since in that case the bitcount is not relevant once it has been determined that the packet size is not large enough to contain the defaulted fields. 
+ProtoGen counts the bits of adjacent bitfields at code generation time (as opposed to run-time), which allows the generated bitfield code to be reasonably efficient. However this requires the bitcount be fixed at code generation time; for this reason the presence of a bitfield cannot be dependent on other packet fields (see the `dependsOn` attribute). However bitfields can be dependent on packet length and given default values, but with special caveats: If a packet is extended with a bitfield and the addition of the bitfield causes the byte count of the packet to increase, then a default value can be safely applied. However since packet sizes are tracked in bytes (not bits), if the additional default bitfield does *not* increase the byte count a default value cannot be safely applied, *unless that default value is zero*. This is because ProtoGen automatically sets unused bits of bytes to zero. If you attempt to set a non-zero default value to such a bitfield ProtoGen will generate a warning.  
 
 Initialization and Verification
 -------------------------------
 
-It is common for projects to read and write structures directly to storage or memory, and to need some means to correctly initialize and verify a structure. Accordingly Protogen can output functions for initializing structures and for verifying the values in a structure. These functions will only be output if the Structure or Packet contains any fields that have the attributes `initialValue` and/or `verifyMinValue` or `verifyMaxValue`. Whenever these functions are output Protogen will also output a series of #defined constants that give the initial, min, and max values used in these functions. These can be helpful, for example, when creating user interfaces that represent the data in these structures.
+It is common for projects to read and write structures directly to storage or memory, and to need some means to correctly initialize and verify a structure. Accordingly ProtoGen can output functions for initializing structures and for verifying the values in a structure. These functions will only be output if the Structure or Packet contains any fields that have the attributes `initialValue` and/or `verifyMinValue` or `verifyMaxValue`. Whenever these functions are output ProtoGen will also output a series of #defined constants that give the initial, min, and max values used in these functions. These can be helpful, for example, when creating user interfaces that represent the data in these structures.
 
 Since the intialization and verification of structures are not related to the encoding and decoding of data for communications it is recommended that the files used for these functions be different then those used for packet encoding and deocoding. The attribute `verifyfile` can be used to change the file that the these functions are written to.
+
+Comparison and text output
+-------------------------------
+
+It is a common use case for the packets and structures defined by ProtoGen to be used for configuration data in an embedded system. Naturally the user interfaces that support these systems will want to provide a means of comparing two sets of configuration data to determine the differences between them. Using the `comparefile` attribute (globally or per-packet) will cause ProtoGen to emit code that takes two packet or structure pointers and compares their contents element by element, generating a text report for any differences that are found. This capability saves enormous amounts of time for developers of user interfaces. A typical embedded system (say, a fuel injection computer) may have thousands of user settable configuration values that are spread across many packets; and writing comparison code for each field would be unreasonably time consuming and prone to errors.
+
+Similar to the comparison case there is a need to generate human readable text reports of the binary packet contents. ProtoGen faciliates this using the `printfile` attribute (globally or per-packet), which causes code to be output that will generate a text report for every element of a packet or structure. As with the comparison case doing this by hand would be unreasonably time consuming and error prone.
+
+It is expected that the comparison and text output functions will only be used in the context of a user interface (rather than an embedded system), and computational efficiency can be sacrificed. Therefore these functions make use of the QString library from Qt, and accordingly the files output by ProtoGen for these functions are C++ modules.
 
 Generation of documentation
 ===========================

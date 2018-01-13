@@ -214,6 +214,7 @@ void ProtocolField::clear(void)
     encodedType = inMemoryType = TypeData(support);
     bitfieldData.clear();
     scalerString.clear();
+    printScalerString.clear();
     minString.clear();
     maxString.clear();
     prevField = 0;
@@ -673,6 +674,7 @@ void ProtocolField::parse(void)
                                              << "max"
                                              << "min"
                                              << "scaler"
+                                             << "printscaler"
                                              << "array"
                                              << "variableArray"
                                              << "array2d"
@@ -714,6 +716,8 @@ void ProtocolField::parse(void)
             minString = attr.value().trimmed();
         else if(attrname.compare("scaler", Qt::CaseInsensitive) == 0)
             scalerString = attr.value().trimmed();
+        else if(attrname.compare("printscaler", Qt::CaseInsensitive) == 0)
+            printScalerString = attr.value().trimmed();
         else if(attrname.compare("array", Qt::CaseInsensitive) == 0)
             array = attr.value().trimmed();
         else if(attrname.compare("variableArray", Qt::CaseInsensitive) == 0)
@@ -1005,6 +1009,24 @@ void ProtocolField::parse(void)
     {
         emitWarning("scaler ignored because max is provided");
         scalerString.clear();
+    }
+
+    // handle the scaler used for printing and comparing
+    if(!printScalerString.isEmpty())
+    {
+        bool ok;
+        double printScaler = ShuntingYard::computeInfix(printScalerString, &ok);
+
+        if(ok)
+        {
+            printScalerString = "*" + QString::number(printScaler, 'g', 16);
+        }
+        else
+        {
+            emitWarning("Print scaler is not a number, scaling during printing or comparing will not be done");
+            printScalerString = "";
+        }
+
     }
 
     if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
@@ -2212,9 +2234,9 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
             if(is2dArray())
                 output += " + \"[\" + QString::number(j) + \"]\"";
 
-            // And finally the values go into the report
-            if(inMemoryType.isFloat)
-                output += " + \" '\" + QString::number(" + access1 + ", 'g', 16) + \"' '\" + QString::number(" + access2 + ", 'g', 16) + \"'\\n\";\n";
+            // And finally the values that go into the report
+            if(inMemoryType.isFloat || !printScalerString.isEmpty())
+                output += " + \" '\" + QString::number(" + access1 + printScalerString + ", 'g', 16) + \"' '\" + QString::number(" + access2 + printScalerString + ", 'g', 16) + \"'\\n\";\n";
             else
                 output += " + \" '\" + QString::number(" + access1 + ") + \"' '\" + QString::number(" + access2 + ") + \"'\\n\";\n";
 
@@ -2347,8 +2369,8 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
                 output += " + \"[\" + QString::number(j) + \"]\"";
 
             // And finally the values go into the report
-            if(inMemoryType.isFloat)
-                output += " + \" '\" + QString::number(" + access + ", 'g', 16) + \"'\\n\";\n";
+            if(inMemoryType.isFloat || !printScalerString.isEmpty())
+                output += " + \" '\" + QString::number(" + access + printScalerString + ", 'g', 16) + \"'\\n\";\n";
             else
                 output += " + \" '\" + QString::number(" + access + ") + \"'\\n\";\n";
 
