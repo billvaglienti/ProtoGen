@@ -94,6 +94,7 @@ interpretation
     <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
         <Data name="api" inMemoryType="unsigned16" initialValue="0" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
         <Data name="version" inMemoryType="fixedstring" array="16" constant="getDemolinkVersion()" checkConstant="true" comment="the version of the sending side"/>
+        <Data name="reserved" inMemoryType="null" array="4" encodedType="unsigned8" comment="Reserved space for expansion"/>
     </Packet>
 
     <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>

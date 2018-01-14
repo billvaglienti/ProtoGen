@@ -709,7 +709,7 @@ int testKeepAlivePacket(void)
     testPacket_t pkt;
     KeepAlive_t keepalive;
 
-    if(getKeepAliveMinDataLength() != 18)
+    if(getKeepAliveMinDataLength() != 22)
     {
         std::cout << "KeepAlive packet minimum data length is wrong" << std::endl;
         return 0;
@@ -717,7 +717,7 @@ int testKeepAlivePacket(void)
 
     encodeKeepAlivePacketStructure(&pkt);
 
-    if(pkt.length != (18))
+    if(pkt.length != (22))
     {
         std::cout << "KeepAlive packet has the wrong length" << std::endl;
         return 0;

@@ -2286,8 +2286,8 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
 {
     QString output;
 
-    // No print if nothing is in memory
-    if(inMemoryType.isNull)
+    // No print if nothing is in memory or if not encoded
+    if(inMemoryType.isNull || encodedType.isNull)
         return output;
 
     QString access;

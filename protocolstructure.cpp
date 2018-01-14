@@ -1500,6 +1500,7 @@ QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) 
 {
     QString output;
 
+    // We must parameters that we decode to do a comparison
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1536,6 +1537,7 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
 {
     QString output;
 
+    // We must parameters that we decode to do a comparison
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1567,10 +1569,10 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
     output += "{\n";
     output += TAB_IN + "QString report;\n";
 
-    if(needsEncodeIterator)
+    if(needsDecodeIterator)
         output += TAB_IN + "int i = 0;\n";
 
-    if(needs2ndEncodeIterator)
+    if(needs2ndDecodeIterator)
         output += TAB_IN + "int j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
@@ -1598,6 +1600,7 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
     QString output;
     QString access1, access2;
 
+    // We must parameters that we decode to do a comparison
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1674,6 +1677,7 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(bool includeChildren) c
 {
     QString output;
 
+    // We must parameters that we decode to do a print out
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1710,6 +1714,7 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
 {
     QString output;
 
+    // We must parameters that we decode to do a print out
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1740,10 +1745,10 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
     output += "{\n";
     output += TAB_IN + "QString report;\n";
 
-    if(needsEncodeIterator)
+    if(needsDecodeIterator)
         output += TAB_IN + "int i = 0;\n";
 
-    if(needs2ndEncodeIterator)
+    if(needs2ndDecodeIterator)
         output += TAB_IN + "int j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
@@ -1772,6 +1777,7 @@ QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
     QString output;
     QString access;
 
+    // We must parameters that we decode to do a print out
     if(getNumberOfDecodeParameters() == 0)
         return output;
 

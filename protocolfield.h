@@ -121,8 +121,8 @@ public:
     //! True if this encodable is NOT in memory. Note how overriding a previous field means we are not in memory (because the previous one is)
     virtual bool isNotInMemory(void) const Q_DECL_OVERRIDE {return (inMemoryType.isNull || overridesPrevious);}
 
-    //! True if this encodable is a constant
-    virtual bool isConstant(void) const Q_DECL_OVERRIDE {return !constantString.isEmpty();}
+    //! True if this encodable is a constant. Note that protocol fields which are null in memory are constant by definition
+    virtual bool isConstant(void) const Q_DECL_OVERRIDE {return (!constantString.isEmpty() || inMemoryType.isNull);}
 
     //! True if this encoable is a primitive bitfield
     virtual bool isBitfield(void) const Q_DECL_OVERRIDE {return (encodedType.isBitfield && !isNotEncoded());}
