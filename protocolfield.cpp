@@ -2299,7 +2299,7 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
 
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "report += prename + \":" + name + " \" + QString(" + access + ");\n";
+        output += TAB_IN + "report += prename + \":" + name + " '\" + QString(" + access + ") + \"'\\n\";\n";
     }
     else
     {
