@@ -392,7 +392,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         compareHeader.makeLineSeparator();
         compareHeader.write("//! Compare two " + support.prefix + name + " packets and generate a report\n");
-        compareHeader.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
+        compareHeader.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
         compareHeader.makeLineSeparator();
     }
 
@@ -400,7 +400,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         printHeader.makeLineSeparator();
         printHeader.write("//! Generate a string that describes the contents of a " + name + " packet\n");
-        printHeader.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt);\n");
+        printHeader.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt);\n");
         printHeader.makeLineSeparator();
     }
 
@@ -648,7 +648,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         compareSource.write(" * \\param pkt2 is the second data to compare\n");
         compareSource.write(" * \\return a string describing any differences between pk1 and pkt2. The string will be empty if there are no differences\n");
         compareSource.write(" */\n");
-        compareSource.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2)\n");
+        compareSource.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2)\n");
         compareSource.write("{\n");
         compareSource.write(TAB_IN + "QString report;\n");
 
@@ -664,20 +664,28 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             compareSource.write(TAB_IN + "memset(&struct2, 0, sizeof(struct2));\n");
 
             compareSource.makeLineSeparator();
+            compareSource.write(TAB_IN + "if(prename.isEmpty())\n");
+            compareSource.write(TAB_IN + TAB_IN + "prename = \"" + name + "\";\n");
+
+            compareSource.makeLineSeparator();
             compareSource.write(TAB_IN + "// Decode each packet\n");
             compareSource.write(TAB_IN + "if(!decode" + extendedName() + "(pkt1, &struct1) || !decode" + extendedName() + "(pkt2, &struct2))\n");
             compareSource.write(TAB_IN + "{\n");
-            compareSource.write(TAB_IN + TAB_IN + "report = \"" + name + " packets failed to decode\\n\";\n");
+            compareSource.write(TAB_IN + TAB_IN + "report = prename + \" packets failed to decode\\n\";\n");
             compareSource.write(TAB_IN + TAB_IN + "return report;\n");
             compareSource.write(TAB_IN + "}\n");
         }
         else
         {
             compareSource.makeLineSeparator();
+            compareSource.write(TAB_IN + "if(prename.isEmpty())\n");
+            compareSource.write(TAB_IN + TAB_IN + "prename = \"" + name + "\";\n");
+
+            compareSource.makeLineSeparator();
             compareSource.write(TAB_IN + "// Check packet types\n");
             compareSource.write(TAB_IN + "if((get" + support.protoName + "PacketID(pkt1) != get" + support.protoName + "PacketID(pkt2)) || (get"+ support.protoName + "PacketID(pkt1) != get" + support.prefix + name + support.packetParameterSuffix + "ID()))\n");
             compareSource.write(TAB_IN + "{\n");
-            compareSource.write(TAB_IN + TAB_IN + "report += \"" + name + " packet IDs are different\\n\";\n");
+            compareSource.write(TAB_IN + TAB_IN + "report += prename + \" packet IDs are different\\n\";\n");
             compareSource.write(TAB_IN + TAB_IN + "return report;\n");
             compareSource.write(TAB_IN + "}\n");
         }
@@ -685,12 +693,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         compareSource.makeLineSeparator();
         compareSource.write(TAB_IN + "// Check packet sizes. Even if sizes are different the packets may contain the same result\n");
         compareSource.write(TAB_IN + "if(get" + support.protoName + "PacketSize(pkt1) != get" + support.protoName + "PacketSize(pkt2))\n");
-        compareSource.write(TAB_IN + TAB_IN + "report += \"" + name + " packet sizes are different\\n\";\n");
+        compareSource.write(TAB_IN + TAB_IN + "report += prename + \" packet sizes are different\\n\";\n");
 
         if(numDecodes > 0)
         {
             compareSource.makeLineSeparator();
-            compareSource.write(TAB_IN + "report += compare" + structName + "(\"name\", &struct1, &struct2);\n");
+            compareSource.write(TAB_IN + "report += compare" + structName + "(prename, &struct1, &struct2);\n");
         }
 
         compareSource.makeLineSeparator();
@@ -709,7 +717,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         printSource.write(" * \\param pkt is the data to print\n");
         printSource.write(" * \\return a string describing the contents of pkt\n");
         printSource.write(" */\n");
-        printSource.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt)\n");
+        printSource.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt)\n");
         printSource.write("{\n");
         printSource.write(TAB_IN + "QString report;\n");
 
@@ -724,32 +732,40 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             printSource.write(TAB_IN + "memset(&user, 0, sizeof(user));\n");
 
             printSource.makeLineSeparator();
+            printSource.write(TAB_IN + "if(prename.isEmpty())\n");
+            printSource.write(TAB_IN + TAB_IN + "prename = \"" + name + "\";\n");
+
+            printSource.makeLineSeparator();
             printSource.write(TAB_IN + "// Decode packet\n");
             printSource.write(TAB_IN + "if(!decode" + extendedName() + "(pkt, &user))\n");
             printSource.write(TAB_IN + "{\n");
-            printSource.write(TAB_IN + TAB_IN + "report = \"" + name + " packet failed to decode\\n\";\n");
+            printSource.write(TAB_IN + TAB_IN + "report = prename + \" packet failed to decode\\n\";\n");
             printSource.write(TAB_IN + TAB_IN + "return report;\n");
             printSource.write(TAB_IN + "}\n");
         }
         else
         {
             printSource.makeLineSeparator();
+            printSource.write(TAB_IN + "if(prename.isEmpty())\n");
+            printSource.write(TAB_IN + TAB_IN + "prename = \"" + name + "\";\n");
+
+            printSource.makeLineSeparator();
             printSource.write(TAB_IN + "// Check packet type\n");
             printSource.write(TAB_IN + "if(get"+ support.protoName + "PacketID(pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
             printSource.write(TAB_IN + "{\n");
-            printSource.write(TAB_IN + TAB_IN + "report += \"" + name + " packet ID is incorrect\\n\";\n");
+            printSource.write(TAB_IN + TAB_IN + "report += prename + \" packet ID is incorrect\\n\";\n");
             printSource.write(TAB_IN + TAB_IN + "return report;\n");
             printSource.write(TAB_IN + "}\n");
         }
 
         printSource.makeLineSeparator();
         printSource.write(TAB_IN + "// Print the packet size\n");
-        printSource.write(TAB_IN + "report += \"" + name + " packet size is \" + QString::number(get" + support.protoName + "PacketSize(pkt)) + \"\\n\";\n");
+        printSource.write(TAB_IN + "report += prename + \" packet size is \" + QString::number(get" + support.protoName + "PacketSize(pkt)) + \"\\n\";\n");
 
         if(numDecodes > 0)
         {
             printSource.makeLineSeparator();
-            printSource.write(TAB_IN + "report += textPrint" + structName + "(\"name\", &user);\n");
+            printSource.write(TAB_IN + "report += textPrint" + structName + "(prename, &user);\n");
         }
 
         printSource.makeLineSeparator();
