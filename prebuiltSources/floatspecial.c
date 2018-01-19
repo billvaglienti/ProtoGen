@@ -13,7 +13,7 @@
 int isFloat32Valid(uint32_t value)
 {
     // Five cases for floating point numbers:
-    // 0) The eponent is greater than zero and less than the maximum. This is a normal non-zero number.
+    // 0) The exponent is greater than zero and less than the maximum. This is a normal non-zero number.
     // 1) The exponent and the significand are zero. This is zero.
     // 2) The exponent is zero, and the significant is non-zero. This is denormalized.
     // 3) The exponent is the maximum value, and the significand is zero. This is infinity.
@@ -51,7 +51,7 @@ int isFloat32Valid(uint32_t value)
 int isFloat64Valid(uint64_t value)
 {
     // Five cases for floating point numbers:
-    // 0) The eponent is greater than zero and less than the maximum. This is a normal non-zero number.
+    // 0) The exponent is greater than zero and less than the maximum. This is a normal non-zero number.
     // 1) The exponent and the significand are zero. This is zero.
     // 2) The exponent is zero, and the significant is non-zero. This is denormalized.
     // 3) The exponent is the maximum value, and the significand is zero. This is infinity.

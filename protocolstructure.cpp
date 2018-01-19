@@ -732,11 +732,11 @@ QString ProtocolStructure::getFunctionEncodePrototype() const
 
     if(getNumberOfEncodeParameters() > 0)
     {
-        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount, const " + structName + "* user)";
+        output = VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount, const " + structName + "* _pg_user)";
     }
     else
     {
-        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount)";
+        output = VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount)";
     }
 
     return output;
@@ -808,35 +808,35 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     output += " * \\brief Encode a " + typeName + " structure into a byte array\n";
     output += " *\n";
     output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-    output += " * \\param data points to the byte array to add encoded data to\n";
-    output += " * \\param bytecount points to the starting location in the byte array, and will be incremented by the number of encoded bytes.\n";
+    output += " * \\param _pg_data points to the byte array to add encoded data to\n";
+    output += " * \\param _pg_bytecount points to the starting location in the byte array, and will be incremented by the number of encoded bytes.\n";
     if(numEncodes > 0)
-        output += " * \\param user is the data to encode in the byte array\n";
+        output += " * \\param _pg_user is the data to encode in the byte array\n";
     output += " */\n";
 
     output += getFunctionEncodePrototype() + "\n";
 
     output += "{\n";
 
-    output += TAB_IN + "int byteindex = *bytecount;\n";
+    output += TAB_IN + "int _pg_byteindex = *_pg_bytecount;\n";
 
     if(usestempencodebitfields)
-        output += TAB_IN + "unsigned int tempbitfield = 0;\n";
+        output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
 
     if(usestempencodelongbitfields)
-        output += TAB_IN + "uint64_t templongbitfield = 0;\n";
+        output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
 
     if(numbitfieldgroupbytes > 0)
     {
-        output += TAB_IN + "int bitfieldindex = 0;\n";
-        output += TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsEncodeIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndEncodeIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -846,7 +846,7 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += TAB_IN + "*bytecount = byteindex;\n";
+    output += TAB_IN + "*_pg_bytecount = _pg_byteindex;\n";
     output += "\n";
     output += "}// encode" + typeName + "\n";
 
@@ -860,9 +860,9 @@ QString ProtocolStructure::getFunctionDecodePrototype() const
     QString output;
 
     if(getNumberOfDecodeParameters() > 0)
-        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + structName + "* user)";
+        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount, " + structName + "* _pg_user)";
     else
-        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount)";
+        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount)";
 
     return output;
 }
@@ -931,36 +931,36 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     output += " * \\brief Decode a " + typeName + " structure from a byte array\n";
     output += " *\n";
     output += ProtocolParser::outputLongComment(" *", comment) + "\n";
-    output += " * \\param data points to the byte array to decoded data from\n";
-    output += " * \\param bytecount points to the starting location in the byte array, and will be incremented by the number of bytes decoded\n";
+    output += " * \\param _pg_data points to the byte array to decoded data from\n";
+    output += " * \\param _pg_bytecount points to the starting location in the byte array, and will be incremented by the number of bytes decoded\n";
     if(numDecodes > 0)
-        output += " * \\param user is the data to decode from the byte array\n";
-    output += " * \\return 1 if the data are decoded, else 0. If 0 is returned bytecount will not be updated.\n";
+        output += " * \\param _pg_user is the data to decode from the byte array\n";
+    output += " * \\return 1 if the data are decoded, else 0. If 0 is returned _pg_bytecount will not be updated.\n";
     output += " */\n";
 
     output += getFunctionDecodePrototype() + "\n";
 
     output += "{\n";
 
-    output += TAB_IN + "int byteindex = *bytecount;\n";
+    output += TAB_IN + "int _pg_byteindex = *_pg_bytecount;\n";
 
     if(usestempdecodebitfields)
-        output += TAB_IN + "unsigned int tempbitfield = 0;\n";
+        output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
 
     if(usestempdecodelongbitfields)
-        output += TAB_IN + "uint64_t templongbitfield = 0;\n";
+        output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
 
     if(numbitfieldgroupbytes > 0)
     {
-        output += TAB_IN + "int bitfieldindex = 0;\n";
-        output += TAB_IN + "uint8_t bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -970,7 +970,7 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += TAB_IN + "*bytecount = byteindex;\n\n";
+    output += TAB_IN + "*_pg_bytecount = _pg_byteindex;\n\n";
     output += TAB_IN + "return 1;\n";
     output += "\n";
     output += "}// decode" + typeName + "\n";
@@ -1001,14 +1001,14 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
         output += spacing + "// " + comment + "\n";
 
     if(isStructureMember)
-        access = "&user->" + name;
+        access = "&_pg_user->" + name;
     else
         access = name;
 
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
         else
             output += spacing + "if(" + dependsOn + ")\n";
         output += spacing + "{\n";
@@ -1019,15 +1019,15 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     {
         if(variableArray.isEmpty())
         {
-            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
         }
         else
         {
             // Variable length array
             if(isStructureMember)
-                output += spacing + "for(i = 0; i < (int)user->" + variableArray + " && i < " + array + "; i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(i = 0; i < (int)(" + variableArray + ") && i < " + array + "; i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (int)(" + variableArray + ") && i < " + array + "; _pg_i++)\n";
         }
 
 
@@ -1036,40 +1036,40 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
             spacing += TAB_IN + "";
 
             if(variable2dArray.isEmpty())
-                output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
             else
             {
                 // Variable length array
                 if(isStructureMember)
-                    output += spacing + "for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                    output += spacing + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + "for(j = 0; j < (int)(" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+                    output += spacing + "for(_pg_j = 0; _pg_j < (int)(" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             if(isStructureMember)
-                access = "&user->" + name + "[i][j]";
+                access = "&_pg_user->" + name + "[_pg_i][_pg_j]";
             else
-                access = "&" + name + "[i][j]";
+                access = "&" + name + "[_pg_i][_pg_j]";
 
         }// if 2d array
         else
         {
             if(isStructureMember)
-                access = "&user->" + name + "[i]";
+                access = "&_pg_user->" + name + "[_pg_i]";
             else
-                access = "&" + name + "[i]";
+                access = "&" + name + "[_pg_i]";
         }
 
-        output += spacing + TAB_IN + "encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        output += spacing + TAB_IN + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     }
     else
     {
         if(isStructureMember)
-            access = "&user->" + name;
+            access = "&_pg_user->" + name;
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "encode" + typeName + "(data, &byteindex, " + access + ");\n";
+        output += spacing + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     }
 
     if(!dependsOn.isEmpty())
@@ -1105,7 +1105,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
         else
             output += spacing + "if(" + dependsOn + ")\n";
         output += spacing + "{\n";
@@ -1115,14 +1115,14 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     if(isArray())
     {
         if(variableArray.isEmpty())
-            output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+            output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
         else
         {
             // Variable length array
             if(isStructureMember)
-                output += spacing + "for(i = 0; i < (int)user->" + variableArray + " && i < " + array + "; i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(i = 0; i < (int)(*" + variableArray + ") && i < " + array + "; i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (int)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
         }
 
         output += spacing + "{\n";
@@ -1130,24 +1130,24 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         if(is2dArray())
         {
             if(variable2dArray.isEmpty())
-                output += spacing + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+                output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
             else
             {
                 // Variable length array
                 if(isStructureMember)
-                    output += spacing + TAB_IN + "for(j = 0; j < (int)user->" + variable2dArray + " && j < " + array2d + "; j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(j = 0; j < (int)(*" + variable2dArray + ") && j < " + array2d + "; j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             output += spacing + TAB_IN + "{\n";
 
             if(isStructureMember)
-                access = "&user->" + name + "[i][j]";
+                access = "&_pg_user->" + name + "[_pg_i][_pg_j]";
             else
-                access = "&" + name + "[i][j]";
+                access = "&" + name + "[_pg_i][_pg_j]";
 
-            output += spacing + TAB_IN + "    if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + TAB_IN + "    if(decode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ") == 0)\n";
             output += spacing + TAB_IN + "        return 0;\n";
             output += spacing + TAB_IN + "}\n";
             output += spacing + "}\n";
@@ -1155,11 +1155,11 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         else
         {
             if(isStructureMember)
-                access = "&user->" + name + "[i]";
+                access = "&_pg_user->" + name + "[_pg_i]";
             else
-                access = "&" + name + "[i]";
+                access = "&" + name + "[_pg_i]";
 
-            output += spacing + TAB_IN + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+            output += spacing + TAB_IN + "if(decode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ") == 0)\n";
             output += spacing + TAB_IN + "    return 0;\n";
             output += spacing + "}\n";
         }
@@ -1167,11 +1167,11 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     else
     {
         if(isStructureMember)
-            access = "&user->" + name;
+            access = "&_pg_user->" + name;
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
-        output += spacing + "if(decode" + typeName + "(data, &byteindex, " + access + ") == 0)\n";
+        output += spacing + "if(decode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ") == 0)\n";
         output += spacing + TAB_IN + "return 0;\n";
     }
 
@@ -1213,7 +1213,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(bool includeChi
 
     // My set to initial values function
     output += "//! Set a " + typeName + " structure to initial values\n";
-    output += "void init" + typeName + "(" + structName + "* user);\n";
+    output += "void init" + typeName + "(" + structName + "* _pg_user);\n";
 
     return output;
 
@@ -1256,16 +1256,16 @@ QString ProtocolStructure::getSetToInitialValueFunctionString(bool includeChildr
     output += " *\n";
     output += " * Set a " + typeName + " structure to initial values. Not all fields are set,\n";
     output += " * only those which the protocol specifies.\n";
-    output += " * \\param user is the structure whose data are set to initial values\n";
+    output += " * \\param _pg_user is the structure whose data are set to initial values\n";
     output += " */\n";
-    output += "void init" + typeName + "(" + structName + "* user)\n";
+    output += "void init" + typeName + "(" + structName + "* _pg_user)\n";
     output += "{\n";
 
     if(needsInitIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndInitIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1299,18 +1299,18 @@ QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) cons
     if(isArray())
     {
         QString spacing;
-        output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+        output += TAB_IN + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
 
         if(isStructureMember)
-            access = "&user->" + name + "[i]";
+            access = "&_pg_user->" + name + "[_pg_i]";
         else
-            access = "&" + name + "[i]";
+            access = "&" + name + "[_pg_i]";
 
         if(is2dArray())
         {
-            access += "[j]";
+            access += "[_pg_j]";
             spacing += TAB_IN;
-            output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+            output += TAB_IN + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
 
         }// if 2D array of structures
 
@@ -1320,7 +1320,7 @@ QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) cons
     else
     {
         if(isStructureMember)
-            access = "&user->" + name;
+            access = "&_pg_user->" + name;
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
@@ -1364,7 +1364,7 @@ QString ProtocolStructure::getVerifyFunctionPrototype(bool includeChildren) cons
 
     // My set to initial values function
     output += "//! Verify a " + typeName + " structure has acceptable values\n";
-    output += "int verify" + typeName + "(" + structName + "* user);\n";
+    output += "int verify" + typeName + "(" + structName + "* _pg_user);\n";
 
     return output;
 
@@ -1408,18 +1408,18 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
     output += " * Verify a " + typeName + " structure has acceptable values. Not all fields are\n";
     output += " * verified, only those which the protocol specifies. Fields which are outside\n";
     output += " * the allowable range are changed to the maximum or minimum allowable value. \n";
-    output += " * \\param user is the structure whose data are verified\n";
+    output += " * \\param _pg_user is the structure whose data are verified\n";
     output += " * \\return 1 if all verifiable data where valid, else 0 if data had to be corrected\n";
     output += " */\n";
-    output += "int verify" + typeName + "(" + structName + "* user)\n";
+    output += "int verify" + typeName + "(" + structName + "* _pg_user)\n";
     output += "{\n";
-    output += TAB_IN + "int good = 1;\n";
+    output += TAB_IN + "int _pg_good = 1;\n";
 
     if(needsVerifyIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndVerifyIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1428,7 +1428,7 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += TAB_IN + "return good;\n";
+    output += TAB_IN + "return _pg_good;\n";
     output += "\n";
     output += "}// verify" + typeName + "\n";
 
@@ -1455,34 +1455,34 @@ QString ProtocolStructure::getVerifyString(bool isStructureMember) const
     if(isArray())
     {
         QString spacing;
-        output += TAB_IN + "for(i = 0; i < " + array + "; i++)\n";
+        output += TAB_IN + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
 
         if(isStructureMember)
-            access = "&user->" + name + "[i]";
+            access = "&_pg_user->" + name + "[_pg_i]";
         else
-            access = "&" + name + "[i]";
+            access = "&" + name + "[_pg_i]";
 
         if(is2dArray())
         {
-            access += "[j]";
+            access += "[_pg_j]";
             spacing += TAB_IN;
-            output += TAB_IN + TAB_IN + "for(j = 0; j < " + array2d + "; j++)\n";
+            output += TAB_IN + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
 
         }// if 2D array of structures
 
         output += TAB_IN + TAB_IN + spacing + "if(!verify" + typeName + "(" + access + "))\n";
-        output += TAB_IN + TAB_IN + spacing + TAB_IN + "good = 0;\n";
+        output += TAB_IN + TAB_IN + spacing + TAB_IN + "_pg_good = 0;\n";
 
     }// if array of structures
     else
     {
         if(isStructureMember)
-            access = "&user->" + name;
+            access = "&_pg_user->" + name;
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
 
         output += TAB_IN + "if(!verify" + typeName + "(" + access + "))\n";
-        output += TAB_IN + TAB_IN + "good = 0;\n";
+        output += TAB_IN + TAB_IN + "_pg_good = 0;\n";
 
     }// else if simple structure, no array
 
@@ -1522,7 +1522,7 @@ QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) 
 
     // My comparison function
     output += "//! Compare two " + typeName + " structures and generate a report\n";
-    output += "QString compare" + typeName + "(QString prename, const " + structName + "* user1, const " + structName + "* user2);\n";
+    output += "QString compare" + typeName + "(const QString& prename, const " + structName + "* _pg_user1, const " + structName + "* _pg_user2);\n";
 
     return output;
 }
@@ -1560,20 +1560,20 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
     // My compare function
     output += "/*!\n";
     output += " * Compare two " + typeName + " structures and generate a report of any differences.\n";
-    output += " * \\param prename is prepended to the name of the data field in the comparison report\n";
-    output += " * \\param user1 is the first data to compare\n";
-    output += " * \\param user1 is the second data to compare\n";
-    output += " * \\return a string describing any differences between user1 and user2. The string will be empty if there are no differences\n";
+    output += " * \\param _pg_prename is prepended to the name of the data field in the comparison report\n";
+    output += " * \\param _pg_user1 is the first data to compare\n";
+    output += " * \\param _pg_user1 is the second data to compare\n";
+    output += " * \\return a string describing any differences between _pg_user1 and _pg_user2. The string will be empty if there are no differences\n";
     output += " */\n";
-    output += "QString compare" + typeName + "(QString prename, const " + structName + "* user1, const " + structName + "* user2)\n";
+    output += "QString compare" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user1, const " + structName + "* _pg_user2)\n";
     output += "{\n";
-    output += TAB_IN + "QString report;\n";
+    output += TAB_IN + "QString _pg_report;\n";
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1582,7 +1582,7 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += TAB_IN + "return report;\n";
+    output += TAB_IN + "return _pg_report;\n";
     output += "\n";
     output += "}// compare" + typeName + "\n";
 
@@ -1600,7 +1600,7 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
     QString output;
     QString access1, access2;
 
-    // We must parameters that we decode to do a comparison
+    // We must have parameters that we decode to do a comparison
     if(getNumberOfDecodeParameters() == 0)
         return output;
 
@@ -1610,14 +1610,14 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
     if(isArray())
     {
         QString spacing = TAB_IN;
-        output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+        output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
         spacing += TAB_IN;
 
         if(isStructureMember)
         {
             // The dereference of the array gets us back to the object, but we need the pointer
-            access1 = "&user1->" + name + "[i]";
-            access2 = "&user2->" + name + "[i]";
+            access1 = "&_pg_user1->" + name + "[_pg_i]";
+            access2 = "&_pg_user2->" + name + "[_pg_i]";
         }
         else
         {
@@ -1627,20 +1627,20 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
 
         if(is2dArray())
         {
-            access1 += "[j]";
-            access2 += "[j]";
-            output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+            access1 += "[_pg_j]";
+            access2 += "[_pg_j]";
+            output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
             spacing += TAB_IN;
 
         }// if 2D array of structures
 
-        output += spacing + "report += compare" + typeName + "(prename + \":" + name + "\"";
+        output += spacing + "_pg_report += compare" + typeName + "(_pg_prename + \":" + name + "\"";
 
         if(isArray())
-            output += " + \"[\" + QString::number(i) + \"]\"";
+            output += " + \"[\" + QString::number(_pg_i) + \"]\"";
 
         if(is2dArray())
-            output += " + \"[\" + QString::number(j) + \"]\"";
+            output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
         output += ", " + access1 + ", " + access2 + ");\n";
 
@@ -1650,8 +1650,8 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
         if(isStructureMember)
         {
             // The dereference of the user pointer gets us back to the object, but we need the pointer
-            access1 = "&user1->" + name;
-            access2 = "&user2->" + name;
+            access1 = "&_pg_user1->" + name;
+            access2 = "&_pg_user2->" + name;
         }
         else
         {
@@ -1659,7 +1659,7 @@ QString ProtocolStructure::getComparisonString(bool isStructureMember) const
             access2 = name + "_2";
         }
 
-        output += TAB_IN + "report += compare" + typeName + "(prename + \":" + name + "\", "+ access1 + ", " + access2 + ");\n";
+        output += TAB_IN + "_pg_report += compare" + typeName + "(_pg_prename + \":" + name + "\", "+ access1 + ", " + access2 + ");\n";
 
     }// else if simple structure, no array
 
@@ -1699,7 +1699,7 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(bool includeChildren) c
 
     // My textPrint function
     output += "//! Generate a string that describes the contents of a " + typeName + " structure\n";
-    output += "QString textPrint" + typeName + "(QString prename, const " + structName + "* user);\n";
+    output += "QString textPrint" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user);\n";
 
     return output;
 }
@@ -1737,19 +1737,19 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
     // My textPrint function
     output += "/*!\n";
     output += " * Generate a string that describes the contents of a " + typeName + " structure\n";
-    output += " * \\param prename is prepended to the name of the data field in the report\n";
-    output += " * \\param user is the structure to report\n";
+    output += " * \\param _pg_prename is prepended to the name of the data field in the report\n";
+    output += " * \\param _pg_user is the structure to report\n";
     output += " * \\return a string containing a report of the contents of user\n";
     output += " */\n";
-    output += "QString textPrint" + typeName + "(QString prename, const " + structName + "* user)\n";
+    output += "QString textPrint" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user)\n";
     output += "{\n";
-    output += TAB_IN + "QString report;\n";
+    output += TAB_IN + "QString _pg_report;\n";
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int i = 0;\n";
+        output += TAB_IN + "int _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int j = 0;\n";
+        output += TAB_IN + "int _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1758,7 +1758,7 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
     }
 
     ProtocolFile::makeLineSeparator(output);
-    output += TAB_IN + "return report;\n";
+    output += TAB_IN + "return _pg_report;\n";
     output += "\n";
     output += "}// textPrint" + typeName + "\n";
 
@@ -1768,9 +1768,9 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
 
 
 /*!
- * Get the string used for comparing this field.
+ * Get the string used for printing this field as text.
  * \param isStructureMember should be true to indicate this field is accessed as a member structure
- * \return the function string, which may be empty
+ * \return the print string, which may be empty
  */
 QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
 {
@@ -1787,34 +1787,34 @@ QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
     if(isArray())
     {
         QString spacing = TAB_IN;
-        output += spacing + "for(i = 0; i < " + array + "; i++)\n";
+        output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
         spacing += TAB_IN;
 
         if(isStructureMember)
         {
             // The dereference of the array gets us back to the object, but we need the pointer
-            access = "&user->" + name + "[i]";
+            access = "&_pg_user->" + name + "[_pg_i]";
         }
         else
         {
-            access = "&" + name + "[i]";
+            access = "&" + name + "[_pg_i]";
         }
 
         if(is2dArray())
         {
-            access += "[j]";
-            output += spacing + "for(j = 0; j < " + array2d + "; j++)\n";
+            access += "[_pg_j]";
+            output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
             spacing += TAB_IN;
 
         }// if 2D array of structures
 
-        output += spacing + "report += textPrint" + typeName + "(prename + \":" + name + "\"";
+        output += spacing + "_pg_report += textPrint" + typeName + "(_pg_prename + \":" + name + "\"";
 
         if(isArray())
-            output += " + \"[\" + QString::number(i) + \"]\"";
+            output += " + \"[\" + QString::number(_pg_i) + \"]\"";
 
         if(is2dArray())
-            output += " + \"[\" + QString::number(j) + \"]\"";
+            output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
         output += ", " + access + ");\n";
 
@@ -1824,20 +1824,194 @@ QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
         if(isStructureMember)
         {
             // The dereference of the user pointer gets us back to the object, but we need the pointer
-            access = "&user->" + name;
+            access = "&_pg_user->" + name;
         }
         else
         {
             access = name;
         }
 
-        output += TAB_IN + "report += textPrint" + typeName + "(prename + \":" + name + "\", "+ access + ");\n";
+        output += TAB_IN + "_pg_report += textPrint" + typeName + "(_pg_prename + \":" + name + "\", "+ access + ");\n";
 
     }// else if simple structure, no array
 
     return output;
 
 }// ProtocolStructure::getTextPrintString
+
+
+/*!
+ * Return the string that gives the prototype of the function used to read this structure from text
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function prototype string, which may be empty
+ */
+QString ProtocolStructure::getTextReadFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    // We must parameters that we decode to do a print out
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    // Go get any children structures textRead functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getTextReadFunctionPrototype(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My textRead function
+    output += "//! Read the contents of a " + typeName + " structure from text\n";
+    output += "int textRead" + typeName + "(const QString& _pg_prename, const QString& _pg_source, " + structName + "* _pg_user);\n";
+
+    return output;
+}
+
+
+/*!
+ * Return the string that gives the function used to read this structure from text
+ * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \return the function string, which may be empty
+ */
+QString ProtocolStructure::getTextReadFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    // We must parameters that we decode to do a print out
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    // Go get any childrens structure textRead functions
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getTextReadFunctionString(includeChildren);
+        }
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My textRead function
+    output += "/*!\n";
+    output += " * Read the contents of a " + typeName + " structure from text\n";
+    output += " * \\param _pg_prename is prepended to the name of the data field to form the text key\n";
+    output += " * \\param _pg_source is text to search to find the data field keys\n";
+    output += " * \\param _pg_user receives any data read from the text source\n";
+    output += " * \\return The number of fields that were read from the text source\n";
+    output += " */\n";
+    output += "int textRead" + typeName + "(const QString& _pg_prename, const QString& _pg_source, " + structName + "* _pg_user)\n";
+    output += "{\n";
+    output += TAB_IN + "QString _pg_text;\n";
+    output += TAB_IN + "int _pg_fieldcount = 0;\n";
+
+    if(needsDecodeIterator)
+        output += TAB_IN + "int _pg_i = 0;\n";
+
+    if(needs2ndDecodeIterator)
+        output += TAB_IN + "int _pg_j = 0;\n";
+
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getTextReadString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+    output += TAB_IN + "return _pg_fieldcount;\n";
+    output += "\n";
+    output += "}// textRead" + typeName + "\n";
+
+    return output;
+
+}// ProtocolStructure::getTextReadFunctionString
+
+
+/*!
+ * Get the string used for reading this field from text.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the read string, which may be empty
+ */
+QString ProtocolStructure::getTextReadString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    // We must parameters that we decode to do a print out
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    if(isArray())
+    {
+        QString spacing = TAB_IN;
+        output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+        spacing += TAB_IN;
+
+        if(isStructureMember)
+        {
+            // The dereference of the array gets us back to the object, but we need the pointer
+            access = "&_pg_user->" + name + "[_pg_i]";
+        }
+        else
+        {
+            access = "&" + name + "[_pg_i]";
+        }
+
+        if(is2dArray())
+        {
+            access += "[_pg_j]";
+            output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+            spacing += TAB_IN;
+
+        }// if 2D array of structures
+
+        output += spacing + "_pg_fieldcount += textRead" + typeName + "(_pg_prename + \":" + name + "\"";
+
+        if(isArray())
+            output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+
+        if(is2dArray())
+            output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+        output += ", _pg_source, " + access + ");\n";
+
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+        {
+            // The dereference of the user pointer gets us back to the object, but we need the pointer
+            access = "&_pg_user->" + name;
+        }
+        else
+        {
+            access = name;
+        }
+
+        output += TAB_IN + "_pg_fieldcount += textRead" + typeName + "(_pg_prename + \":" + name + "\", _pg_source, " + access + ");\n";
+
+    }// else if simple structure, no array
+
+    return output;
+
+}// ProtocolStructure::getTextReadString
 
 
 //! Return the strings that #define initial and variable values

@@ -175,6 +175,9 @@ public:
     //! Get the string used for text printing this field.
     virtual QString getTextPrintString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
+    //! Get the string used for text reading this field.
+    virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
     //! Return the string that sets this encodable to its initial value in code
     virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
@@ -267,8 +270,11 @@ protected:
     //! String providing the scaler from in-Memory to encoded
     QString scalerString;
 
-    //! The string used to multiply the in-memory type to compare and print display
+    //! The string used to multiply the in-memory type to compare and print to text
     QString printScalerString;
+
+    //! The string used to divide the in-memory type to read from text
+    QString readScalerString;
 
     //! String giving the default value to use if the packet is too short
     QString defaultString;

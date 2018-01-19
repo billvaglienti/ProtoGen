@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.12.d";
+const QString ProtocolParser::genVersion = "2.13.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -682,19 +682,19 @@ void ProtocolParser::finishProtocolHeader(void)
     header.write("// They are not auto-generated functions, but must be hand-written\n");
     header.write("\n");
     header.write("//! \\return the packet data pointer from the packet\n");
-    header.write("uint8_t* get" + name + "PacketData(" + support.pointerType + " pkt);\n");
+    header.write("uint8_t* get" + name + "PacketData(" + support.pointerType + " _pg_pkt);\n");
     header.write("\n");
     header.write("//! \\return the packet data pointer from the packet, const\n");
-    header.write("const uint8_t* get" + name + "PacketDataConst(const " + support.pointerType + " pkt);\n");
+    header.write("const uint8_t* get" + name + "PacketDataConst(const " + support.pointerType + " _pg_pkt);\n");
     header.write("\n");
     header.write("//! Complete a packet after the data have been encoded\n");
-    header.write("void finish" + name + "Packet(" + support.pointerType + " pkt, int size, uint32_t packetID);\n");
+    header.write("void finish" + name + "Packet(" + support.pointerType + " _pg_pkt, int size, uint32_t packetID);\n");
     header.write("\n");
     header.write("//! \\return the size of a packet from the packet header\n");
-    header.write("int get" + name + "PacketSize(const " + support.pointerType + " pkt);\n");
+    header.write("int get" + name + "PacketSize(const " + support.pointerType + " _pg_pkt);\n");
     header.write("\n");
     header.write("//! \\return the ID of a packet from the packet header\n");
-    header.write("uint32_t get" + name + "PacketID(const " + support.pointerType + " pkt);\n");
+    header.write("uint32_t get" + name + "PacketID(const " + support.pointerType + " _pg_pkt);\n");
     header.write("\n");
 
     header.flush();

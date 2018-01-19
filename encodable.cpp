@@ -60,6 +60,42 @@ void Encodable::checkAgainstKeywords(void)
         dependsOn = "_" + dependsOn;
     }
 
+    if(variablenames.contains(name))
+    {
+        emitWarning("name matches ProtoGen variable, changed to _name");
+        name = "_" + name;
+    }
+
+    if(variablenames.contains(array))
+    {
+        emitWarning("array matches ProtoGen variable, changed to _array");
+        array = "_" + array;
+    }
+
+    if(variablenames.contains(variableArray))
+    {
+        emitWarning("variableArray matches ProtoGen variable, changed to _variableArray");
+        variableArray = "_" + variableArray;
+    }
+
+    if(variablenames.contains(array2d))
+    {
+        emitWarning("array2d matches ProtoGen variable, changed to _array2d");
+        array2d = "_" + array2d;
+    }
+
+    if(variablenames.contains(variable2dArray))
+    {
+        emitWarning("variable2dArray matches ProtoGen variable, changed to _variable2dArray");
+        variable2dArray = "_" + variable2dArray;
+    }
+
+    if(variablenames.contains(dependsOn))
+    {
+        emitWarning("dependsOn matches ProtoGen variable, changed to _dependsOn");
+        dependsOn = "_" + dependsOn;
+    }
+
 }// Encodable::checkAgainstKeywords
 
 

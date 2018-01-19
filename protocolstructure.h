@@ -103,6 +103,15 @@ public:
     //! Get the string used for text printing this structure.
     virtual QString getTextPrintString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
+    //! Return the string that gives the prototype of the function used to read this structure from text
+    QString getTextReadFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to read this structure this structure from text
+    QString getTextReadFunctionString(bool includeChildren = true) const;
+
+    //! Get the string used for text reading this structure.
+    virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
     //! Return the string that gives the prototype of the function used to initialize this structure
     QString getSetToInitialValueFunctionPrototype(bool includeChildren = true) const;
 

@@ -65,6 +65,8 @@ protected:
 
     static QStringList keywords;//!< keywords for the C language
 
+    static QStringList variablenames;//!< variables used by protogen
+
 private:
     int outlineLevel;       //!< The paragraph outline level
     QString docfile;        //!< File for external documentation

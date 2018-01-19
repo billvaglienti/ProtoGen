@@ -64,7 +64,8 @@ OTHER_FILES += \
 
 INCLUDEPATH += ./ \
                ./definitions \
-               ./verify
+               ./verify \
+               ./compare
 
 #protogen.target = $$PWD/Demolink.markdown
 #protogen.commands = $$PWD/../ProtoGenInstall/ProtoGen.exe $$PWD/../exampleprotocol.xml $$PWD -no-doxygen

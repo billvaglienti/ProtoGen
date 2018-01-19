@@ -247,6 +247,19 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
             compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath);
             compareSource.setModuleNameAndPath(comparemodulename, support.outputpath);
         }
+
+        compareHeader.makeLineSeparator();
+
+        // We may be appending an a-priori existing file, or we may be starting one fresh.
+        if(!compareHeader.isAppending())
+        {
+            // Comment block at the top of the header file needed so doxygen will document the file
+            compareHeader.write("/*!\n");
+            compareHeader.write(" * \\file\n");
+            compareHeader.write(" */\n");
+            compareHeader.write("\n");
+        }
+
     }
 
     if(print)
@@ -263,6 +276,26 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         {
             printHeader.setModuleNameAndPath(printmodulename, support.outputpath);
             printSource.setModuleNameAndPath(printmodulename, support.outputpath);
+        }
+
+        printHeader.makeLineSeparator();
+
+        // We may be appending an a-priori existing file, or we may be starting one fresh.
+        if(!printHeader.isAppending())
+        {
+            // Comment block at the top of the header file needed so doxygen will document the file
+            printHeader.write("/*!\n");
+            printHeader.write(" * \\file\n");
+            printHeader.write(" */\n");
+            printHeader.write("\n");
+        }
+
+        if(!printSource.isAppending())
+        {
+            // Make sure to provide the extractText function
+            printSource.makeLineSeparator();
+            printSource.write(getExtractTextFunction());
+            printSource.makeLineSeparator();
         }
     }
 
@@ -511,6 +544,10 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             printSource.makeLineSeparator();
             printSource.write(structure->getTextPrintFunctionString());
             printSource.makeLineSeparator();
+            printSource.write(structure->getTextReadFunctionPrototype());
+            printSource.makeLineSeparator();
+            printSource.write(structure->getTextReadFunctionString());
+            printSource.makeLineSeparator();
         }
 
     }
@@ -588,10 +625,67 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(const ProtocolStr
         printHeader.makeLineSeparator();
         printHeader.write(getTextPrintFunctionPrototype(false));
         printHeader.makeLineSeparator();
+        printHeader.write(getTextReadFunctionPrototype(false));
+        printHeader.makeLineSeparator();
 
         printSource.makeLineSeparator();
         printSource.write(getTextPrintFunctionString(false));
         printSource.makeLineSeparator();
+        printSource.write(getTextReadFunctionString(false));
+        printSource.makeLineSeparator();
     }
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
+
+
+//! Get the text used to extract text for text read functions
+QString ProtocolStructureModule::getExtractTextFunction(void)
+{
+    return QString("\
+//! Extract text that is identified by a key\n\
+QString extractText(const QString& key, const QString& source);\n\
+\n\
+/*!\n\
+ * Extract text that is identified by a key\n\
+ * \\param key is the key, the text to extract follows the key and is on the same line\n\
+ * \\param source is the source information to find the key in\n\
+ * \\param fieldcount is incremented whenever the key is found in the source\n\
+ * \\return the extracted text, which may be empty\n\
+ */\n\
+QString extractText(const QString& key, const QString& source, int* fieldcount)\n\
+{\n\
+    QString text;\n\
+\n\
+    int index = source.indexOf(key);\n\
+\n\
+    if(index >= 0)\n\
+    {\n\
+        // This is the location of the first character after the key\n\
+        int first = index + key.length();\n\
+\n\
+        // This is how many characters until we get to the linefeed\n\
+        int length = source.indexOf(\"\\n\", first) - first;\n\
+\n\
+        if(length > 0)\n\
+        {\n\
+            // Increment our field count\n\
+            (*fieldcount)++;\n\
+\n\
+            // Extract the text between the key and the linefeed\n\
+            text = source.mid(first, length);\n\
+\n\
+            // Remove the first \" '\" from the string\n\
+            if((text.length() > 1) && (text.at(0) == QChar(' ')) && (text.at(1) == QChar('\\'')))\n\
+                text.remove(0, 2);\n\
+\n\
+            // Remove the last \"'\" from the string\n\
+            if((text.length() > 0) && (text.at(text.length()-1) == QChar('\\'')))\n\
+                text.remove(text.length()-1, 1);\n\
+        }\n\
+    }\n\
+\n\
+    return text;\n\
+\n\
+}// extractText\n\n");
+
+}// ProtocolStructureModule::getExtractTextFunction

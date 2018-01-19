@@ -104,6 +104,9 @@ protected:
     //! Write data to the source and header files to encode and decode this structure but not its children
     void createTopLevelStructureFunctions(const ProtocolStructureModule* redefines = NULL);
 
+    //! Get the text used to extract text for text read functions
+    static QString getExtractTextFunction(void);
+
     ProtocolSourceFile source;      //!< The source file (*.c)
     ProtocolHeaderFile header;      //!< The header file (*.h)
     ProtocolHeaderFile defheader;   //!< The header file name for the structure definition

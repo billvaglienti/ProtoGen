@@ -8,6 +8,8 @@
 #include "TelemetryPacket.h"
 #include "packetinterface.h"
 #include "linkcode.h"
+#include "compareDemolink.h"
+#include "printDemolink.h"
 
 #define PI 3.141592653589793
 #define PIf 3.141592653589793f
@@ -800,13 +802,11 @@ int testVersionPacket(void)
         return 0;
     }
 
-    for(int i = 0; i < pkt.length + 2; i++)
+    QString diff = compareVersionPacket("Version", &pkt, &pkt2);
+    if(!diff.isEmpty())
     {
-        if(((uint8_t*)&pkt)[i] != ((uint8_t*)&pkt2)[i])
-        {
-            std::cout << "Structure encoded version packet is different than parameter encoded version packet" << std::endl;
-            return 0;
-        }
+        std::cout << "Structure encoded version packet is different than parameter encoded version packet: " << diff.toStdString() << std::endl;
+        return 0;
     }
 
     memset(&version, 0, sizeof(version));
@@ -836,6 +836,26 @@ int testVersionPacket(void)
     else
     {
         std::cout << "decodeVersionPacket() failed" << std::endl;
+        return 0;
+    }
+
+    // Encode to and from text using structures
+    QString textversion = textPrintVersion_t("Version", &version);
+    memset(&version, 0, sizeof(version));
+
+    if((textReadVersion_t("Version", textversion, &version) != 17) || !verifyVersionData(version))
+    {
+        std::cout << "textPrintVersion_t() to textReadVersion_t() yielded incorrect data" << std::endl;
+        return 0;
+    }
+
+    // Encode to and from text using packets
+    textversion = textPrintVersionPacket("Testing", &pkt);
+    memset(&version, 0, sizeof(version));
+
+    if((textReadVersion_t("Testing", textversion, &version) != 17) || !verifyVersionData(version))
+    {
+        std::cout << "textPrintVersionPacket() to textReadVersion_t() yielded incorrect data" << std::endl;
         return 0;
     }
 

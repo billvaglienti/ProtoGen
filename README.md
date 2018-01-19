@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.12. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.13. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -101,7 +101,7 @@ The Protocol tag supports the following attributes:
 
 - `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
 
-- `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
+- `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print and text read code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
 
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
@@ -299,13 +299,13 @@ Structure tag Attributes:
 
 - `compare` : By default compare functions will not be output. Set `compare="true"` to enable the compare function output. The compare functions will be output to the `prefix + name + "Compare"` module, unless the `comparefile` attribute or global `comparefile` attribute is given.
 
-- `print` : By default text print functions will not be output. Set `print="true"` to enable the text print function output. The print functions will be output to the `prefix + name + "Print"` module, unless the `printfile` attribute or global `printfile` attribute is given.
+- `print` : By default text print and text read functions will not be output. Set `print="true"` to enable the text function output. The functions will be output to the `prefix + name + "Print"` module, unless the `printfile` attribute or global `printfile` attribute is given.
 
 - `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if verification or initialization values exist for a member field). If `verifyfile` is omitted then the init and verify functions are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
 
 - `comparefile` : Optional attribute used to specify a c++ module that implements a comparison function. The comparison functions compare the structure element by element and generate a human readable string report to indicate which elements are different. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `comparefile` attribute enables the compare output.
 
-- `printfile` : Optional attribute used to specify a c++ module that implements a function to text print the contents of a structure. The text print function goes through the structure element by element and generate a human readable string report for each element. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `printfile` attribute enables the print output.
+- `printfile` : Optional attribute used to specify a c++ module that implements functions to text print and text read the contents of a structure. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `printfile` attribute enables the output.
 
 - `redefine` : It is possible to create multiple encodings for an existing structure definition by using the redefine attribute to reference a previously defined structure. When doing this the structure itself will not be declared, but the encoding and decoding functions will. This requires that the encoding rules must have fields with the same names and in-memory types as the referenced structure.
 
@@ -517,19 +517,19 @@ Generic Packets
 Despite the name ProtoGen is not really a protocol or packet generator. It is instead an encode/decode generator. By design ProtoGen does not know (or care) about specific packet details. The low level packet routines do not often change and therefore do not realize the same auto-coding advantages as the encoding/decoding code. ProtoGen assumes the following about packets: Packets transport a hunk of data which is internally represented as an array of bytes. Packets have an identifier number that designates their function. Packets have a size, which describes the number of bytes of data they transport. These assumptions are represented by five functions whose prototypes are created by ProtoGen and which the generated code calls (you provide the implementation):
 
     //! Return the packet data pointer from the packet
-    uint8_t* getDemolinkPacketData(void* pkt);
+    uint8_t* getDemolinkPacketData(void* _pg_pkt);
 
     //! Return the packet data pointer from the packet
-    const uint8_t* getDemolinkPacketDataConst(const void* pkt);
+    const uint8_t* getDemolinkPacketDataConst(const void* _pg_pkt);
 
     //! Complete a packet after the data have been encoded
-    void finishDemolinkPacket(void* pkt, int size, uint32_t packetID);
+    void finishDemolinkPacket(void* _pg_pkt, int size, uint32_t packetID);
 
     //! Return the size of a packet from the packet header
-    int getDemolinkPacketSize(const void* pkt);
+    int getDemolinkPacketSize(const void* _pg_pkt);
 
     //! Return the ID of a packet from the packet header
-    uint32_t getDemolinkPacketID(const void* pkt);
+    uint32_t getDemolinkPacketID(const void* _pg_pkt);
 
 Each function takes a pointer to a packet. The implementation of the function will cast this void pointer to the correct packet structure type. When the generated encode routine encodes data into a packet it will first call `getDemolinkPacketData()` to retrieve a pointer to the start of the packets data buffer. When the generated code finishes the data encoding it will call `finishProtocolPacket()`, which can then perform any work to complete the packet (such as filling out the header and or generating the CRC). In the reverse direction the decode routine checks a packets ID by comparing the return of `getDemolinkPacketID()` with the ID indicated by the protocol ICD. The decode routine will also verify the packet size meets the minimum requirements.
 
@@ -578,17 +578,17 @@ Packet encoding and decoding functions
 The autogenerated code will define functions to encode and decode the packets. These functions convert the in-memory representation to and from the encoded representation. These are the functions that your code will most likely interface with. Notice that there are two forms to the packet functions. The form that ends in "Structure" takes a pointer to a structure (`Version_t` in this example) defined by this packets module. The other form allows you to specify individual data fields as parameters. Which form you use is up to you based on how you want to keep the data in memory. Which form is output in the generated code is a function of the attributes `parameterInterface` and `structureInterface`.
 
     //! Create the Version packet
-    void encodeVersionPacketStructure(void* pkt, const Version_t* user);
+    void encodeVersionPacketStructure(void* _pg_pkt, const Version_t* _pg_user);
 
     //! Decode the Version packet
-    int decodeVersionPacketStructure(const void* pkt, Version_t* user);
+    int decodeVersionPacketStructure(const void* _pg_pkt, Version_t* _pg_user);
 
     //! Create the Version packet
-    void encodeVersionPacket(void* pkt, const Board_t* board, uint8_t major, uint8_t minor,
+    void encodeVersionPacket(void* _pg_pkt, const Board_t* board, uint8_t major, uint8_t minor,
                  uint8_t sub, uint8_t patch, const Date_t* date, const char description[64]);
 
     //! Decode the Version packet
-    int decodeVersionPacket(const void* pkt, Board_t* board, uint8_t* major, uint8_t* minor,
+    int decodeVersionPacket(const void* _pg_pkt, Board_t* board, uint8_t* major, uint8_t* minor,
                  uint8_t* sub, uint8_t* patch, Date_t* date, char description[64]);
 
 The packet is allocated by the caller and passed in via void pointer. Using void pointer means that the generated code does not need to know the low level packet details. See the section on Generic Packets for the means by which the generated code will interface to the packet definition. Notice that the decode function returns `int`. If you attempt to decode a packet whose ID does not match the xml description, or whose size is not sufficient, then `0` will be returned. In that case the `user` structure will be unchanged if the packet is a fixed length; but if the packet is variable length the structure may have been modified with bogus data. Hence the return value from the decode function *must* be checked.
@@ -599,10 +599,10 @@ Structure encoding and decoding functions
 In addition to the packet functions the generated code can include functions to encode and decode a structure to a byte array. These functions can be used if you do not want the generated code to interact with packet routines. Perhaps because your data are not being encoded in packets, or the simple packet interfaces that ProtoGen supports are not sophisticated enough. These functions will only be generated for Structure tags, not Packet tags. If you want to simultaneously have a structure with generic encoding functions and packet functions; then create both a structure tag and a packet tag which references the structure (see the GPS packet in exampleprotocol.xml).
 
 	//! Create the GPS packet
-    void encodeGPSPacket(void* pkt, const GPS_t* gps);
+    void encodeGPSPacket(void* _pg_pkt, const GPS_t* gps);
 
     //! Decode the GPS packet
-    int decodeGPSPacket(const void* pkt, GPS_t* gps);
+    int decodeGPSPacket(const void* _pg_pkt, GPS_t* gps);
 
 Note that Structures do not emit markdown documentation. If a structure is included as part of a packet, then its documentation will be output when the packets documentation is output, in order to complemetely document the packet.
 
@@ -665,14 +665,14 @@ It is common for projects to read and write structures directly to storage or me
 
 Since the intialization and verification of structures are not related to the encoding and decoding of data for communications it is recommended that the files used for these functions be different then those used for packet encoding and deocoding. The attribute `verifyfile` can be used to change the file that the these functions are written to.
 
-Comparison and text output
+Comparison and human readable input and output
 -------------------------------
 
 It is a common use case for the packets and structures defined by ProtoGen to be used for configuration data in an embedded system. Naturally the user interfaces that support these systems will want to provide a means of comparing two sets of configuration data to determine the differences between them. Using the `comparefile` attribute (globally or per-packet) will cause ProtoGen to emit code that takes two packet or structure pointers and compares their contents element by element, generating a text report for any differences that are found. This capability saves enormous amounts of time for developers of user interfaces. A typical embedded system (say, a fuel injection computer) may have thousands of user settable configuration values that are spread across many packets; and writing comparison code for each field would be unreasonably time consuming and prone to errors.
 
-Similar to the comparison case there is a need to generate human readable text reports of the binary packet contents. ProtoGen faciliates this using the `printfile` attribute (globally or per-packet), which causes code to be output that will generate a text report for every element of a packet or structure. As with the comparison case doing this by hand would be unreasonably time consuming and error prone.
+Similar to the comparison case there is a need to generate human readable text reports of the binary packet contents. ProtoGen faciliates this using the `printfile` attribute (globally or per-packet), which causes functions to be output that generate a text report for every element of a packet or structure. Corresponding functions that read the text report and regenerate the in memory data are also ouptut. 
 
-It is expected that the comparison and text output functions will only be used in the context of a user interface (rather than an embedded system), and computational efficiency can be sacrificed. Therefore these functions make use of the QString library from Qt, and accordingly the files output by ProtoGen for these functions are C++ modules.
+It is expected that the comparison and text output and input functions will only be used in the context of a user interface (rather than an embedded system), and computational efficiency can be sacrificed. Therefore these functions make use of the QString library from Qt, and accordingly the files output by ProtoGen for these functions are C++ modules.
 
 Generation of documentation
 ===========================
