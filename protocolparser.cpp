@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.13.a";
+const QString ProtocolParser::genVersion = "2.13.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1408,6 +1408,7 @@ QString ProtocolParser::getTableOfContents(const QString& filecontents)
             refname.remove("]");
             refname.remove("`");
             refname.remove("\"");
+            refname.remove("*");
         }
 
         // Finally the actual line
