@@ -1183,7 +1183,9 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
         minLength = EncodedLength::collapseLengthString(minLength, true);
 
         // Output the length, replacing the multiply asterisk with a times symbol
-        output += "- data length: " + minLength.replace("*", "&times;") + "\n";
+        // We put spaces around the multiply symbol, so that the html tables can
+        // better reflow the resulting text
+        output += "- data length: " + minLength.replace("*", " &times; ") + "\n";
     }
     else
     {
@@ -1200,10 +1202,14 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
         minLength = EncodedLength::collapseLengthString(minLength, true);
 
         // Output the length, replacing the multiply asterisk with a times symbol
-        output += "- minimum data length: " + minLength.replace("*", "&times;") + "\n";
+        // We put spaces around the multiply symbol, so that the html tables can
+        // better reflow the resulting text
+        output += "- minimum data length: " + minLength.replace("*", " &times; ") + "\n";
 
         // Output the length, replacing the multiply asterisk with a times symbol
-        output += "- maximum data length: " + maxLength.replace("*", "&times;") + "\n";
+        // We put spaces around the multiply symbol, so that the html tables can
+        // better reflow the resulting text
+        output += "- maximum data length: " + maxLength.replace("*", " &times; ") + "\n";
     }
 
     // Output any documetation data
@@ -1271,8 +1277,10 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
             // is clearer. Also replace "*" with the html times symbol. This
             // looks better and does not cause markdown to emphasize the text
             // if there are multiple "*".
-            bytes[i].replace("1*", "").replace("*", "&times;");
-            repeats[i].replace("*", "&times;");
+            // We put spaces around the multiply symbol, so that the html tables can
+            // better reflow the resulting text
+            bytes[i].replace("1*", "").replace("*", " &times; ");
+            repeats[i].replace("*", " &times; ");
 
             if(bytes.at(i).length() > byteColumn)
                 byteColumn = bytes.at(i).length();

@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     argParser.addOption({"no-css", "Skip generation of any css data in documentation files"});
     argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
     argParser.addOption({"table-of-contents", "Generate a table of contents"});
+    argParser.addOption({{"t", "titlepage"}, "Path to title page file with text that will above at the beginning of the markdown", "titlefile"});
 
     argParser.process(a);
 
@@ -154,6 +155,24 @@ int main(int argc, char *argv[])
         else
         {
             std::cerr << "warning: Failed to open '" << QDir::toNativeSeparators(css).toStdString() << "', using default css" << std::endl;
+        }
+    }
+
+    QString titlePage = argParser.value("titlepage");
+
+    if (!titlePage.isEmpty() )
+    {
+        // First attempt to open the file
+        QFile file(titlePage);
+
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            parser.setTitlePage(file.readAll());
+            file.close();
+        }
+        else
+        {
+            std::cerr << "warning: Failed to open '" << QDir::toNativeSeparators(titlePage).toStdString() << "', skipping title page output" << std::endl;
         }
     }
 

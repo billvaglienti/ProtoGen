@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.13.b";
+const QString ProtocolParser::genVersion = "2.14.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1246,6 +1246,12 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     if (hasAboutSection())
         filecontents += getAboutSection(isBigEndian);
 
+    // The title attribute, remove any emphasis characters. We only put this
+    // out if we have a title page, this preserves the behavior before 2.14,
+    // which did not have a title attribute
+    if(!titlePage.isEmpty())
+        file.write("Title:" + title.remove("*") + "\n\n");
+
     // Specific header-level definitions are required for LaTeX compatibility
     if (latexEnabled)
     {
@@ -1254,9 +1260,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("\n");
     }
 
-    /* Add stylesheet information
-     * (unless it is disabled entirely)
-     */
+    // Add stylesheet information (unless it is disabled entirely)
     if (!nocss)
     {
         // Open the style tag
@@ -1281,8 +1285,19 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         filecontents = temp;
     }
 
+    if(!titlePage.isEmpty())
+    {
+        QString temp = titlePage;
+        temp += "\n----------------------------\n\n";
+        temp += filecontents;
+        filecontents = temp;
+    }
+
     // Add html page breaks at each ---
     filecontents.replace("\n---", "<div class=\"page-break\"></div>\n\n\n---");
+
+    // Deal with the degrees symbol, which doesn't render in html
+    filecontents.replace("°", "&deg;");
 
     file.write(filecontents);
 

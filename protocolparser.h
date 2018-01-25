@@ -46,6 +46,9 @@ public:
     //! Option to enable table of contents section
     void enableTableOfContents(bool enable) {tableOfContents = enable;}
 
+    //! Option to enable title page section
+    void setTitlePage(QString pagetext) {titlePage = pagetext;}
+
     //! Return status of 'About this ICD' section
     bool hasAboutSection() const { return !noAboutSection; }
 
@@ -185,7 +188,8 @@ protected:
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
     QString inlinecss;  //!< CSS used for markdown output
     bool nocss;         //!< Disable all CSS output
-    bool tableOfContents;   //!< Enable table of contents
+    bool tableOfContents;//!< Enable table of contents
+    QString titlePage;     //!< Title page information
 
     QStringList filesparsed;
     QList<XMLLineLocator*>lines;

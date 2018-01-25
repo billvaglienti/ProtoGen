@@ -1371,10 +1371,12 @@ QString ProtocolField::handleNumericConstants(QString& input) const
 
         // For the display string we replace the symbol "pi" with the
         // appropriate value for html outputs
-        display.replace("pi", "&pi", Qt::CaseInsensitive);
+        display.replace("pi", "&pi;", Qt::CaseInsensitive);
 
         // Change to get rid of * multiply symbol, which plays havoc with markdown
-        display.replace("*", "&times;");
+        // We put spaces around the multiply symbol, so that the html tables can
+        // better reflow the resulting text
+        display.replace("*", " &times; ");
     }
 
     return display;

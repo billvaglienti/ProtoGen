@@ -21,14 +21,14 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.13. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.14. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
 Usage
 =====
 
-ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [SupportFile.xml] [-docs dir] [-latex] [-no-doxygen] [-no-markdown] [-no-helper-files] [Style.css] [-no-unrecognized-warnings]`. On Mac OS ProtoGen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
+ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion as a automated build step (Qt provides the xml, string, and file handling). The command line is: `ProtoGen Protocol.xml [Outputpath] [SupportFile.xml] [-license <licensefile>] [-docs <dir>] [-latex] [-latex-header-level <level>] [-no-doxygen] [-no-markdown] [-no-helper-files] [-style <style.css>] [-no-unrecognized-warnings] [-table-of-contents] [-titlepage <file>]`. On Mac OS ProtoGen is invoked through an app bundle: `ProtoGen.app/Contents/MacOS/ProtoGen`
 
 - `Protocol.xml` is the main file that defines the protocol details, setting the protocol name and various options. The main protocol file is always the first xml file on the command line.
 
@@ -40,27 +40,29 @@ ProtoGen is a C++/Qt5 compiled command line application, suitable for inclusion 
 
 - `-docs <dir>` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same same directory as `Outputpath`.
 
-- `-show-hidden-items` will cause documentation to be generated for **all** elements, even if the element has the *hidden="true"* flag
+- `-show-hidden-items` will cause documentation to be generated for **all** elements, even if the element has the *hidden="true"* attribute
 
 - `-latex` will cause ProtoGen to generate LaTeX style markdown (if multimarkdown is installed and in the PATH).
 
-- `-latex-header-level level` specifies the starting header-level for generated LaTeX output. If unspecified, it defaults to `1` (Chapter headings)
+- `-latex-header-level <level>` specifies the starting header-level for generated LaTeX output. If unspecified, it defaults to `1` (Chapter headings)
 
-- `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. 
+- `-no-doxygen` will cause ProtoGen to skip the output of the developer level html documentation. This can save a significant amount of time.
 
-- `-no-markdown` will cause ProtoGen to skip the output of the user level html documentation. 
+- `-no-markdown` will cause ProtoGen to skip the output of the user level markdown and html documentation. 
 
 - `-no-about-section` will cause ProtoGen to skip the output of extra preface and postface information in the generated documentation.
 
 - `-no-helper-files` will cause ProtoGen to skip the output of files not directly specified by the protocol.xml. 
 
-- `Style.css` will replace the default inline css in the markdown documentation with the contents of the Style.css file.
+- `-style <style.css>` will replace the default inline css in the markdown documentation with the contents of the style.css file.
 
-- `-no-css` will cause ProtoGen to skip output of CSS data in generated documentation files.
+- `-no-css` will cause ProtoGen to skip output of inline CSS data in the user level markdown.
 
 - `-no-unrecognized-warnings` will suppress warnings about unrecognized tags or attributes in the `Protocol.xml` file. This is useful if you add data to your xml that you expect ProtoGen to ignore. 
 
 - `-table-of-contents` specifies that a table of contents section should be added to the markdown output. This will be output using inline html with intra document links to the headings.
+
+- `-titlepage <file>` will generate a title page before any other markdown documentation with the contents of the file. In addition if the titlepage argument is used a "Title:" description will be added as the first line of the markdown output, using the `title` attribute of the protocol (or the name if the title is empty)
 
 Dependencies
 ------------
