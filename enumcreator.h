@@ -78,7 +78,7 @@ public:
     virtual void parse() Q_DECL_OVERRIDE;
 
     //! Parse the DOM to fill out the enumeration list for a global enum
-    void parseGlobal(QString filename);
+    void parseGlobal(void);
 
     //! Check names against the list of C keywords
     virtual void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
@@ -118,8 +118,11 @@ public:
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
-    //! Return the header file name (if any) of the file holding this enumeration
+    //! Get the name of the header file (if any) holding this enumeration
     QString getHeaderFileName(void) const {return file;}
+
+    //! Get the path of the header file (if any) holding this enumeration
+    QString getHeaderFilePath(void) const {return filepath;}
 
 protected:
 
@@ -134,6 +137,9 @@ protected:
 
     //! Output file for global enumerations
     QString file;
+
+    //! Output file path for global enumerations
+    QString filepath;
 
     //! Output file for source code file (may not be used)
     QString sourceOutput;

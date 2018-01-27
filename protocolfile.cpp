@@ -40,7 +40,6 @@ ProtocolFile::ProtocolFile() :
 {
 }
 
-
 void ProtocolFile::setModuleNameAndPath(QString name, QString filepath)
 {
     setModuleNameAndPath(QString(), name, filepath);
@@ -52,6 +51,68 @@ void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString fi
     // Remove any contents we currently have
     clear();
 
+    // Clean it all up
+    separateModuleNameAndPath(name, filepath);
+
+    // Extract the extension
+    extractExtension(name);
+
+    // Remember the module name
+    module = prefix + name;
+
+    // And the path
+    path = filepath;
+
+    // This will see if the file already exists and will setup the initial output
+    prepareToAppend();
+}
+
+
+/*!
+ * Get the extension information for this name, and remove it from the name.
+ * \param name has its extension (if any) recorded and removed
+ */
+void ProtocolFile::extractExtension(QString& name)
+{
+    extractExtension(name, extension);
+}
+
+
+/*!
+ * Get the extension information for this name, and remove it from the name.
+ * \param name has its extension (if any) removed
+ * \param extension receives the extension
+ */
+void ProtocolFile::extractExtension(QString& name, QString& extension)
+{
+    // Note that "." as the first character is not an extension, it indicates a hidden file
+    int index = name.lastIndexOf(".");
+    if(index >= 1)
+    {
+        // The extension, including the "."
+        extension = name.right(name.size() - index);
+
+        // The name without the extension
+        name = name.left(index);
+    }
+    else
+        extension.clear();
+
+}// ProtocolFile::extractExtension
+
+
+/*!
+ * Given a module name and path adjust the name and path so that all the path
+ * information is in the path, the base name is in the name
+ * \param name contains the name with may include some path information. The
+ *        path and extension will be removed
+ * \param filepath contains the path information, which will be augmented
+ *        with any path information from the name, unless the name contains
+ *        absolute path information, in which case the filepath will be
+ *        replaced with the name path
+ */
+void ProtocolFile::separateModuleNameAndPath(QString& name, QString& filepath)
+{
     // Handle the case where the file includes "./" to reference the current working
     // directory. We just remove this as its not needed.
     if(name.startsWith("./"))
@@ -87,40 +148,10 @@ void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString fi
 
     }// If name contains a path separator
 
-    // Remove and log the extension
-    extractExtension(name);
-
-    // Remember the module name
-    module = prefix + name;
-
     // Make sure the path uses native separators and ends with a separator (unless its empty)
-    path = sanitizePath(filepath);
+    filepath = sanitizePath(filepath);
 
-    // This will see if the file already exists and will setup the initial output
-    prepareToAppend();
-}
-
-
-/*!
- * Get the extension information for this name, and remove it from the name.
- * \param name has its extension (if any) logged and removed
- */
-void ProtocolFile::extractExtension(QString& name)
-{
-    // Note that "." as the first character is not an extension, it indicates a hidden file
-    int index = name.lastIndexOf(".");
-    if(index >= 1)
-    {
-        // The extension, including the "."
-        extension = name.right(name.size() - index);
-
-        // The name without the extension
-        name = name.left(index);
-    }
-    else
-        extension.clear();
-
-}// ProtocolFile::extractExtension
+}// ProtocolFile::separateModuleNameAndPath
 
 
 /*!

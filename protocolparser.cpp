@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.14.a";
+const QString ProtocolParser::genVersion = "2.14.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -205,9 +205,9 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     {
         EnumCreator* module = globalEnums.at(i);
 
-        module->parseGlobal(name + "Protocol");
+        module->parseGlobal();
         enumfile.setLicenseText(support.licenseText);
-        enumfile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
+        enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();
@@ -635,19 +635,25 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
         header.write("\n");
     }
 
+    if(version.isEmpty() && api.isEmpty())
+        header.write("\n");
+
     header.write(" */\n");
-    header.write("\n");
+
+    header.makeLineSeparator();
 
     // Includes
-    header.write("#include <stdint.h>\n");
+    header.writeIncludeDirective("stdint.h", QString(), true);
 
     // Add other includes
     outputIncludes(name, header, docElem);
 
+    header.makeLineSeparator();
+
     // API functions
     if(!api.isEmpty())
     {
-        header.write("\n");
+        header.makeLineSeparator();
         header.write("//! \\return the protocol API enumeration\n");
         header.write("#define get" + name + "Api() " + api + "\n");
     }
@@ -655,10 +661,12 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     // Version functions
     if(!version.isEmpty())
     {
-        header.write("\n");
+        header.makeLineSeparator();
         header.write("//! \\return the protocol version string\n");
         header.write("#define get" + name + "Version() \""  + version + "\"\n");
     }
+
+    header.makeLineSeparator();
 
     header.flush();
 

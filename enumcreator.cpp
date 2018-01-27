@@ -118,6 +118,7 @@ EnumCreator::~EnumCreator(void)
 void EnumCreator::clear(void)
 {
     file.clear();
+    filepath.clear();
     sourceOutput.clear();
     minbitwidth = 0;
     hidden = false;
@@ -148,17 +149,12 @@ void EnumCreator::clear(void)
  * Parse the DOM to fill out the enumeration list for a global enum. This sill
  * also set the header reference file name that others need to include to use
  * this enum.
- * \param filename is the reference file if none is specified in the xml
  */
-void EnumCreator::parseGlobal(QString filename)
+void EnumCreator::parseGlobal(void)
 {
     isglobal = true;
 
     parse();
-
-    // Global enums must have a reference file
-    if(file.isEmpty())
-        file = filename.left(filename.indexOf("."));    // remove any extension
 
     isglobal = false;
 }
@@ -199,12 +195,34 @@ void EnumCreator::parse(void)
     hidden = ProtocolParser::isFieldSet("hidden", map);
     lookup = ProtocolParser::isFieldSet("lookup", map);
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
+    file = ProtocolParser::getAttribute("file", map);
 
+    // The file attribute is only supported on global enumerations
     if(isglobal)
     {
-        // Remove the extension if any
-        file = ProtocolParser::getAttribute("file", map);
-        file = file.left(file.indexOf("."));
+        QString extension;
+        filepath = support.outputpath;
+
+        // If no file information is provided we use the global header name
+        if(file.isEmpty())
+            file = support.protoName + "Protocol";
+
+        // This will separate all the path information
+        ProtocolFile::separateModuleNameAndPath(file, filepath);
+
+        // Make sure the extension is correct (.h, .hpp, .hxx, etc)
+        ProtocolFile::extractExtension(file, extension);
+        if(!extension.contains(".h"))
+            extension = ".h";
+
+        // Now put the (corrected) extension back
+        file += extension;
+
+    }
+    else if(!file.isEmpty())
+    {
+        file.clear();
+        emitWarning("Enumeration must be global to support file attribute");
     }
 
     QDomNodeList list = e.elementsByTagName("Value");

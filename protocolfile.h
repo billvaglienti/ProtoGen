@@ -61,6 +61,12 @@ public:
     //! Make sure one blank line at end
     void makeLineSeparator(void);
 
+    //! Adjust the name and path so that all the path information is in the path
+    static void separateModuleNameAndPath(QString& name, QString& filepath);
+
+    //! Extract the extension from a name
+    static void extractExtension(QString& name, QString& extension);
+
     //! Make a nice, native, relative path
     static QString sanitizePath(const QString& path);
 
@@ -88,7 +94,7 @@ public:
 protected:
 
     //! Prepare to do an append operation
-    virtual void prepareToAppend(void){}
+    virtual void prepareToAppend(void) {}
 
     //! Get the extension information for this name
     virtual void extractExtension(QString& name);
@@ -120,10 +126,10 @@ public:
 protected:
 
     //! Prepare to do an append operation
-    virtual void prepareToAppend(void);
+    virtual void prepareToAppend(void) Q_DECL_OVERRIDE;
 
     //! Get the extension information for this name
-    virtual void extractExtension(QString& name);
+    virtual void extractExtension(QString& name) Q_DECL_OVERRIDE;
 
     //! \return the text that is appended to close a header file
     QString getClosingStatement(void);
@@ -140,10 +146,10 @@ public:
 protected:
 
     //! Prepare to do an append operation
-    virtual void prepareToAppend(void);
+    virtual void prepareToAppend(void) Q_DECL_OVERRIDE;
 
     //! Get the extension information for this name
-    virtual void extractExtension(QString& name);
+    virtual void extractExtension(QString& name) Q_DECL_OVERRIDE;
 
     //! \return the text that is appended to close a source file
     QString getClosingStatement(void);
