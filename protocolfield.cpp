@@ -2172,7 +2172,7 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
                 spacing += TAB_IN;
                 closearraytest = true;
 
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < _pg_user1->" + variableArray + "); _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user1->" + variableArray + "); _pg_i++)\n";
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop = true;
@@ -2196,7 +2196,7 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
                 spacing += TAB_IN;
                 closearraytest2 = true;
 
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < _pg_user1->" + variable2dArray + "); _pg_j++)\n";
+                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user1->" + variable2dArray + "); _pg_j++)\n";
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop2 = true;
@@ -2316,7 +2316,7 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
         {
             if(!variableArray.isEmpty() && isStructureMember)
             {
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < _pg_user->" + variableArray + "); _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop = true;
@@ -2334,7 +2334,7 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
         {
             if(!variable2dArray.isEmpty() && isStructureMember)
             {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < _pg_user->" + variable2dArray + "); _pg_j++)\n";
+                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop2 = true;
@@ -2435,7 +2435,7 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
             closeforloop = true;
 
             if(!variableArray.isEmpty() && isStructureMember)
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < _pg_user->" + variableArray + "); _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
             else
                 output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
 
@@ -2450,7 +2450,7 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
 
             if(!variable2dArray.isEmpty() && isStructureMember)
             {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < _pg_user->" + variable2dArray + "); _pg_j++)\n";
+                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
                 output += spacing + "{\n";
                 spacing += TAB_IN;
             }
@@ -3146,30 +3146,38 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         // Handle scaled bitfield
         if(isFloatScaling() && !inMemoryType.isNull)
         {
+            QString cast;
+
             if(isStructureMember)
                 output += TAB_IN + "_pg_user->" + name + " = ";    // Access via structure pointer
             else
                 output += TAB_IN + "(*" + name + ")" + " = ";  // Access via direct pointer
 
+            if(!inMemoryType.isFloat)
+                cast = "(" + typeName +")";
+
             if(encodedType.bits > 32)
             {
+                if((inMemoryType.bits != 64) && support.float64)
+                    cast = "(" + typeName +")";
+
                 if(support.longbitfield)
                 {
                     if(support.float64)
-                        output += "float64ScaledFromLongBitfield(" + argument;
+                        output += cast + "float64ScaledFromLongBitfield(" + argument;
                     else
-                        output += "float32ScaledFromLongBitfield(" + argument;
+                        output += cast + "float32ScaledFromLongBitfield(" + argument;
                 }
                 else
                 {
                     if(support.float64)
-                        output += "float64ScaledFromBitfield(" + argument;
+                        output += cast + "float64ScaledFromBitfield(" + argument;
                     else
-                        output += "float32ScaledFromBitfield(" + argument;
+                        output += cast + "float32ScaledFromBitfield(" + argument;
                 }
             }
             else
-                output += "float32ScaledFromBitfield(" + argument;
+                output += cast + "float32ScaledFromBitfield(" + argument;
 
             output += ", " + getNumberString(encodedMin, encodedType.bits);
             output += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
@@ -3423,9 +3431,9 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
         else
         {
             if(isStructureMember)
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
         }
 
 
@@ -3438,9 +3446,9 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
             else
             {
                 if(isStructureMember)
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             if(isStructureMember)
@@ -3514,9 +3522,9 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
         else
         {
             if(isStructureMember)
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
         }
 
         output += spacing + "{\n";
@@ -3528,9 +3536,9 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
             else
             {
                 if(isStructureMember)
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             output += spacing + "    {\n";
@@ -3718,14 +3726,14 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             if(variableArray.isEmpty())
                 output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
 
             if(is2dArray())
             {
                 if(variable2dArray.isEmpty())
                     output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
 
                 if(constantstring.isEmpty())
                     output += spacing + TAB_IN + TAB_IN + "float" + QString().setNum(encodedType.bits) + "To" + endian + "Bytes(" + cast + lhs + name +  scalestring + "[_pg_i][_pg_j], _pg_data, &_pg_byteindex";
@@ -3762,14 +3770,14 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             if(variableArray.isEmpty())
                 output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
 
             if(is2dArray())
             {
                 if(variable2dArray.isEmpty())
                     output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
 
                 // indent the next line
                 output += TAB_IN;
@@ -3914,7 +3922,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
             if(variableArray.isEmpty())
                 output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
 
             spacing += TAB_IN;
 
@@ -3923,7 +3931,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                 if(variable2dArray.isEmpty())
                     output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + "for(_pg_j = 0; _pg_j < (int)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + "for(_pg_j = 0; _pg_j < (unsigned)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
 
                 spacing += TAB_IN;
             }
@@ -4175,9 +4183,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             else
             {
                 if(isStructureMember)
-                    output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
                 else
-                    output += spacing + "for(_pg_i = 0; _pg_i < (int)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
             }
 
             if(is2dArray())
@@ -4187,9 +4195,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 else
                 {
                     if(isStructureMember)
-                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                     else
-                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
+                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
                 }
 
                 output += spacing + TAB_IN + TAB_IN + lhs + name + "[_pg_i][_pg_j] = " + scalestring + "float" + QString().setNum(encodedType.bits) + "From" + endian + "Bytes(_pg_data, &_pg_byteindex";
@@ -4223,14 +4231,14 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             if(variableArray.isEmpty())
                 output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + lhs + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
 
             if(is2dArray())
             {
                 if(variable2dArray.isEmpty())
                     output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + lhs + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
 
                 // start the next line
                 output += spacing + TAB_IN + TAB_IN + lhs + name + "[_pg_i][_pg_j] = ";
@@ -4339,9 +4347,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
             else
             {
                 if(isStructureMember)
-                    output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
                 else
-                    output += spacing + "for(_pg_i = 0; _pg_i < (int)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
             }
 
             value = "    " + value;
@@ -4353,9 +4361,9 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 else
                 {
                     if(isStructureMember)
-                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                     else
-                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
+                        output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
                 }
 
                 value = "    " + value;

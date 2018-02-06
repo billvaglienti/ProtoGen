@@ -833,10 +833,10 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     }
 
     if(needsEncodeIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndEncodeIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -957,10 +957,10 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     }
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     int bitcount = 0;
     for(int i = 0; i < encodables.length(); i++)
@@ -1025,9 +1025,9 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
         {
             // Variable length array
             if(isStructureMember)
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)(" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(" + variableArray + ") && i < " + array + "; _pg_i++)\n";
         }
 
 
@@ -1041,9 +1041,9 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
             {
                 // Variable length array
                 if(isStructureMember)
-                    output += spacing + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + "for(_pg_j = 0; _pg_j < (int)(" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + "for(_pg_j = 0; _pg_j < (unsigned)(" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             if(isStructureMember)
@@ -1120,9 +1120,9 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         {
             // Variable length array
             if(isStructureMember)
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (int)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
         }
 
         output += spacing + "{\n";
@@ -1135,9 +1135,9 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
             {
                 // Variable length array
                 if(isStructureMember)
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)_pg_user->" + variable2dArray + " && _pg_j < " + array2d + "; _pg_j++)\n";
                 else
-                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (int)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
+                    output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
             }
 
             output += spacing + TAB_IN + "{\n";
@@ -1570,10 +1570,10 @@ QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) con
     output += TAB_IN + "QString _pg_report;\n";
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1746,10 +1746,10 @@ QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) cons
     output += TAB_IN + "QString _pg_report;\n";
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {
@@ -1920,10 +1920,10 @@ QString ProtocolStructure::getTextReadFunctionString(bool includeChildren) const
     output += TAB_IN + "int _pg_fieldcount = 0;\n";
 
     if(needsDecodeIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {

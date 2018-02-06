@@ -468,10 +468,10 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         }
 
         if(needsEncodeIterator)
-            source.write(TAB_IN + "int _pg_i = 0;\n");
+            source.write(TAB_IN + "unsigned _pg_i = 0;\n");
 
         if(needs2ndEncodeIterator)
-            source.write(TAB_IN + "int _pg_j = 0;\n");
+            source.write(TAB_IN + "unsigned _pg_j = 0;\n");
 
         int bitcount = 0;
         for(int i = 0; i < encodables.length(); i++)
@@ -529,9 +529,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             }
 
             if(needsDecodeIterator)
-                source.write(TAB_IN + "int _pg_i = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
             if(needs2ndDecodeIterator)
-                source.write(TAB_IN + "int _pg_j = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
             source.write("\n");
 
             if(ids.count() <= 1)
@@ -842,10 +842,10 @@ void ProtocolPacket::createPacketFunctions(void)
             }
 
             if(needsEncodeIterator)
-                source.write(TAB_IN + "int _pg_i = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
 
             if(needs2ndEncodeIterator)
-                source.write(TAB_IN + "int _pg_j = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
 
             // Keep our own track of the bitcount so we know what to do when we close the bitfield
             for(i = 0; i < encodables.length(); i++)
@@ -904,9 +904,9 @@ void ProtocolPacket::createPacketFunctions(void)
             }
 
             if(needsDecodeIterator)
-                source.write(TAB_IN + "int _pg_i = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
             if(needs2ndDecodeIterator)
-                source.write(TAB_IN + "int _pg_j = 0;\n");
+                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
             source.write(TAB_IN + "int _pg_byteindex = 0;\n");
             source.write(TAB_IN + "const uint8_t* _pg_data = get" + support.protoName + "PacketDataConst(_pg_pkt);\n");
             source.write(TAB_IN + "int _pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n");
