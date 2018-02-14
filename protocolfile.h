@@ -121,7 +121,7 @@ class ProtocolHeaderFile : public ProtocolFile
 public:
 
     //! Write the file to disc, including any prologue/epilogue
-    virtual bool flush(void);
+    virtual bool flush(void) Q_DECL_OVERRIDE;
 
 protected:
 
@@ -141,7 +141,7 @@ class ProtocolSourceFile : public ProtocolFile
 public:
 
     //! Write the file to disc, including any prologue/epilogue
-    bool flush(void);
+    bool flush(void) Q_DECL_OVERRIDE;
 
 protected:
 
