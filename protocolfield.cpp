@@ -1923,7 +1923,7 @@ QString ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isS
     if(encodedType.isBitfield)
         output += getDecodeStringForBitfield(bitcount, isStructureMember, defaultEnabled);
     else if(inMemoryType.isString)
-        output += getDecodeStringForString(isStructureMember);
+        output += getDecodeStringForString(isStructureMember, defaultEnabled);
     else if(inMemoryType.isStruct)
         output += getDecodeStringForStructure(isStructureMember);
     else
@@ -3355,11 +3355,13 @@ QString ProtocolField::getEncodeStringForString(bool isStructureMember) const
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
+ * \param defaultEnabled should be true to handle defaults
  * \return The string to add to the source file to that decodes this field
  */
-QString ProtocolField::getDecodeStringForString(bool isStructureMember) const
+QString ProtocolField::getDecodeStringForString(bool isStructureMember, bool defaultEnabled) const
 {
     QString output;
+    QString spacing = TAB_IN;
 
     if(encodedType.isNull)
         return output;
@@ -3372,22 +3374,43 @@ QString ProtocolField::getDecodeStringForString(bool isStructureMember) const
         lhs = "";
 
     if(!comment.isEmpty())
-        output += "    // " + comment + "\n";
+        output += spacing + "// " + comment + "\n";
 
-    output += "    stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array;
+    // If this field has a default value, or overrides a previous value
+    if(defaultEnabled && (!defaultString.isEmpty() || overridesPrevious))
+    {
+        if(inMemoryType.isFixedString)
+        {
+            // If its a fixed string we must have the full monty
+            output += spacing + "if(_pg_byteindex + " + array + " > _pg_numbytes)\n";
+            output += spacing + TAB_IN + "return 1;\n";
+            output += "\n";
+            output += spacing + "stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array + ", 1);\n";
+        }
+        else
+        {
+            // Normal strings can be as short as a single character (empty strings with just a null)
+            output += spacing + "if(_pg_byteindex + 1 > _pg_numbytes)\n";
+            output += spacing + TAB_IN + "return 1;\n";
+            output += "\n";
 
-    if(inMemoryType.isFixedString)
-        output += ", 1);\n";
+            // When pulling the bytes we have to control the maximum, it could be limited by the in memory space, or by the packet size
+            output += spacing + "stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array + " < (_pg_numbytes - _pg_byteindex) ? " + array + " : (_pg_numbytes - _pg_byteindex), 0);\n";
+        }
+    }
     else
-        output += ", 0);\n";
+    {
+        // When pulling the bytes we have to control the maximum, it could be limited by the in memory space, or by the packet size
+        output += spacing + "stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array + " < (_pg_numbytes - _pg_byteindex) ? " + array + " : (_pg_numbytes - _pg_byteindex), 0);\n";
+    }
 
     if(checkConstant)
     {
         QString constantstring = getConstantString();
         output += "\n";
-        output += "    // Decoded value must be " + constantstring + "\n";
-        output += "    if (strncmp(" + lhs + name + ", " + constantstring + ", " + array + ") != 0)\n";
-        output += "        return 0;\n";
+        output += spacing + "// Decoded value must be " + constantstring + "\n";
+        output += spacing + "if (strncmp(" + lhs + name + ", " + constantstring + ", " + array + ") != 0)\n";
+        output += spacing + TAB_IN + "return 0;\n";
     }
 
     return output;

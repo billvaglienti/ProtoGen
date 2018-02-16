@@ -371,7 +371,7 @@ protected:
     QString getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the next lines of source needed to decode a string field
-    QString getDecodeStringForString(bool isStructureMember) const;
+    QString getDecodeStringForString(bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the next lines of source needed to decode a string field
     QString getDecodeStringForStructure(bool isStructureMember) const;

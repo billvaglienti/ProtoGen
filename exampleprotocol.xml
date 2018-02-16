@@ -135,6 +135,12 @@ efficiently encode data for little or big endian architectures.">
 
     </Packet>
    
+    <Packet name="TestStrings" ID="100">
+        <Data name="Field0" inMemoryType="unsigned32"/>
+        <Data name="Field1" inMemoryType="fixedstring" array="32" default="test"/>
+        <Data name="Field2" inMemoryType="string" array="32" default="secondtest"/>
+    </Packet>
+
     <Packet name="MultiDimensionTable" ID="MULTIDIMENSIONTABLE">
         <Data name="numRows" inMemoryType="unsigned8"/>
         <Data name="numCols" inMemoryType="unsigned8"/>

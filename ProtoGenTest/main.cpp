@@ -33,6 +33,7 @@ static int verifyVersionData(Version_t version);
 static int testZeroLengthPacket(void);
 static int testBitfieldGroupPacket(void);
 static int testMultiDimensionPacket(void);
+static int testDefaultStringsPacket(void);
 
 static int fcompare(double input1, double input2, double epsilon);
 
@@ -87,6 +88,9 @@ int main(int argc, char *argv[])
         Return = 0;
 
     if(testMultiDimensionPacket() == 0)
+        Return = 0;
+
+    if(testDefaultStringsPacket() == 0)
         Return = 0;
 
     if(Return == 1)
@@ -1068,6 +1072,61 @@ int testMultiDimensionPacket(void)
     return 1;
 
 }// testMultiDimensionPacket
+
+
+int testDefaultStringsPacket(void)
+{
+    TestStrings_t test = {0x12345678, "Field1", "Field2"};
+    testPacket_t pkt;
+
+    encodeTestStringsPacketStructure(&pkt, &test);
+
+    if(pkt.length != 43)
+    {
+        std::cout << "Default strings packet length is wrong" << std::endl;
+        return 0;
+    }
+
+    test = TestStrings_t();
+    decodeTestStringsPacketStructure(&pkt, &test);
+    if( (test.Field0 != 0x12345678) ||
+        (strcmp(test.Field1, "Field1") != 0) ||
+        (strcmp(test.Field2, "Field2") != 0))
+    {
+        std::cout << "Default strings packet decoded to wrong data" << std::endl;
+        return 0;
+    }
+
+    // Now test the default functions
+    test = TestStrings_t();
+    pkt.length = 36;
+    decodeTestStringsPacketStructure(&pkt, &test);
+    if(strcmp(test.Field2, "secondtest") != 0)
+    {
+        std::cout << "Default strings packet field2 default failed" << std::endl;
+        return 0;
+    }
+
+    test = TestStrings_t();
+    pkt.length = 35;
+    decodeTestStringsPacketStructure(&pkt, &test);
+    if(strcmp(test.Field1, "test") != 0)
+    {
+        std::cout << "Default strings packet field1 default failed" << std::endl;
+        return 0;
+    }
+
+    test = TestStrings_t();
+    pkt.length = 39;
+    decodeTestStringsPacketStructure(&pkt, &test);
+    if(strcmp(test.Field2, "Fi") != 0)
+    {
+        std::cout << "Default strings packet field2 decode failed" << std::endl;
+        return 0;
+    }
+
+    return 1;
+}
 
 
 int fcompare(double input1, double input2, double epsilon)
