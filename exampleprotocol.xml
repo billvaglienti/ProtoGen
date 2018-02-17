@@ -135,10 +135,13 @@ efficiently encode data for little or big endian architectures.">
 
     </Packet>
    
-    <Packet name="TestStrings" ID="100">
+    <Packet name="TestWeirdStuff" ID="100">
         <Data name="Field0" inMemoryType="unsigned32"/>
-        <Data name="Field1" inMemoryType="fixedstring" array="32" default="test"/>
-        <Data name="Field2" inMemoryType="string" array="32" default="secondtest"/>
+        <Data name="Field1" inMemoryType="bitfield1" default="0"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield15" default="0"/>
+        <Data name="Field2" inMemoryType="float32" default="0" encodedType="signed16" max="pi"/>
+        <Data name="Field3" inMemoryType="fixedstring" array="32" default="test"/>
+        <Data name="Field4" inMemoryType="string" array="32" default="secondtest"/>
     </Packet>
 
     <Packet name="MultiDimensionTable" ID="MULTIDIMENSIONTABLE">

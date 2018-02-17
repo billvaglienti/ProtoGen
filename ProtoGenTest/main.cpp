@@ -1076,52 +1076,52 @@ int testMultiDimensionPacket(void)
 
 int testDefaultStringsPacket(void)
 {
-    TestStrings_t test = {0x12345678, "Field1", "Field2"};
+    TestWeirdStuff_t test = {0x12345678, 0, 0, "Field3", "Field4"};
     testPacket_t pkt;
 
-    encodeTestStringsPacketStructure(&pkt, &test);
+    encodeTestWeirdStuffPacketStructure(&pkt, &test);
 
-    if(pkt.length != 43)
+    if(pkt.length != 47)
     {
-        std::cout << "Default strings packet length is wrong" << std::endl;
+        std::cout << "Weird stuff packet length is wrong" << std::endl;
         return 0;
     }
 
-    test = TestStrings_t();
-    decodeTestStringsPacketStructure(&pkt, &test);
+    test = TestWeirdStuff_t();
+    decodeTestWeirdStuffPacketStructure(&pkt, &test);
     if( (test.Field0 != 0x12345678) ||
-        (strcmp(test.Field1, "Field1") != 0) ||
-        (strcmp(test.Field2, "Field2") != 0))
+        (strcmp(test.Field3, "Field3") != 0) ||
+        (strcmp(test.Field4, "Field4") != 0))
     {
-        std::cout << "Default strings packet decoded to wrong data" << std::endl;
+        std::cout << "Weird stuff packet decoded to wrong data" << std::endl;
         return 0;
     }
 
     // Now test the default functions
-    test = TestStrings_t();
-    pkt.length = 36;
-    decodeTestStringsPacketStructure(&pkt, &test);
-    if(strcmp(test.Field2, "secondtest") != 0)
+    test = TestWeirdStuff_t();
+    pkt.length = 40;
+    decodeTestWeirdStuffPacketStructure(&pkt, &test);
+    if(strcmp(test.Field4, "secondtest") != 0)
     {
-        std::cout << "Default strings packet field2 default failed" << std::endl;
+        std::cout << "Weird stuff packet field4 default failed" << std::endl;
         return 0;
     }
 
-    test = TestStrings_t();
-    pkt.length = 35;
-    decodeTestStringsPacketStructure(&pkt, &test);
-    if(strcmp(test.Field1, "test") != 0)
-    {
-        std::cout << "Default strings packet field1 default failed" << std::endl;
-        return 0;
-    }
-
-    test = TestStrings_t();
+    test = TestWeirdStuff_t();
     pkt.length = 39;
-    decodeTestStringsPacketStructure(&pkt, &test);
-    if(strcmp(test.Field2, "Fi") != 0)
+    decodeTestWeirdStuffPacketStructure(&pkt, &test);
+    if(strcmp(test.Field3, "test") != 0)
     {
-        std::cout << "Default strings packet field2 decode failed" << std::endl;
+        std::cout << "Weird stuff packet field3 default failed" << std::endl;
+        return 0;
+    }
+
+    test = TestWeirdStuff_t();
+    pkt.length = 43;
+    decodeTestWeirdStuffPacketStructure(&pkt, &test);
+    if(strcmp(test.Field4, "Fi") != 0)
+    {
+        std::cout << "Weird stuff packet field4 decode failed" << std::endl;
         return 0;
     }
 

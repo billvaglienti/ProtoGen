@@ -197,7 +197,7 @@ public:
     virtual void clearOverridesPrevious(void) Q_DECL_OVERRIDE {overridesPrevious = false;}
 
     //! True if this encodable invalidates an earlier default
-    virtual bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !usesDefaults() && !overridesPrevious;}
+    virtual bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !inMemoryType.isNull && !usesDefaults() && !overridesPrevious;}
 
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const Q_DECL_OVERRIDE;
