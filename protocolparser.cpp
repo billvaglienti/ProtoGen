@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.14.e";
+const QString ProtocolParser::genVersion = "2.14.f";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -218,7 +218,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         if(!source.isEmpty())
         {
             enumSourceFile.setLicenseText(support.licenseText);
-            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), support.outputpath);
+            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
 
             enumSourceFile.write(source);
             enumSourceFile.makeLineSeparator();
