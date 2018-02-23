@@ -3547,7 +3547,7 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
             if(isStructureMember)
                 output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
         }
 
         output += spacing + "{\n";
@@ -4208,7 +4208,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 if(isStructureMember)
                     output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
                 else
-                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
             }
 
             if(is2dArray())
@@ -4372,7 +4372,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 if(isStructureMember)
                     output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
                 else
-                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                    output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
             }
 
             value = "    " + value;

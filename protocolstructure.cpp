@@ -1027,7 +1027,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
             if(isStructureMember)
                 output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
         }
 
 
@@ -1122,7 +1122,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
             if(isStructureMember)
                 output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)_pg_user->" + variableArray + " && _pg_i < " + array + "; _pg_i++)\n";
             else
-                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && i < " + array + "; _pg_i++)\n";
+                output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
         }
 
         output += spacing + "{\n";
