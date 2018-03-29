@@ -79,6 +79,8 @@ void ProtocolPacket::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     QString comparemodulename = ProtocolParser::getAttribute("comparefile", map);
     QString printmodulename = ProtocolParser::getAttribute("printfile", map);
+    QString mapmodulename = ProtocolParser::getAttribute("mapfile", map);
+
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
@@ -171,7 +173,7 @@ void ProtocolPacket::parse(void)
     // Most of the file setup work, note that we do not declare a structure in
     // the event that it has only one member and we are not doing structure
     // interfaces to the encode/decode routines
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, structureFunctions, false, redefines);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false, redefines);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions

@@ -2532,6 +2532,232 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
 }// ProtocolField::getTextReadString
 
 
+QString ProtocolField::getMapEncodeString(bool isStructureMember) const
+{
+    QString output;
+
+    if(inMemoryType.isNull || encodedType.isNull)
+        return output;
+
+    QString access;
+
+    if(isStructureMember)
+        access = "_pg_user->" + name;
+    else
+        access = name;
+
+    if(inMemoryType.isString)
+    {
+        output += TAB_IN + "_pg_map[_pg_prefix + \"" + name + "\"] = QString(" + access + ");\n";
+    }
+    else
+    {
+        QString spacing = TAB_IN;
+        bool closeforloop = false;
+        bool closeforloop2 = false;
+
+        if(isArray())
+        {
+            closeforloop = true;
+
+            if(!variableArray.isEmpty() && isStructureMember)
+                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
+            else
+                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+
+            output += spacing + "{\n";
+            spacing += TAB_IN;
+            access = access + "[_pg_i]";
+        }
+
+        if(is2dArray())
+        {
+            closeforloop2 = true;
+
+            if(!variable2dArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+            }
+            else
+            {
+                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+            }
+
+            access = access + "[_pg_j]";
+        }
+
+        if(inMemoryType.isStruct)
+        {
+            output += spacing + "mapEncode" + typeName + "(_pg_prefix + \"" + name + "\"";
+
+            if(isArray())
+                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+            if(is2dArray())
+                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+            output += ", _pg_map, &" + access + ");\n";
+        }// data type is a struct
+        else
+        {
+            output += spacing + "_pg_map[_pg_prefix + \"" + name + "\"";
+
+            if(isArray())
+                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+            if(is2dArray())
+                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+            output += "] = ";
+
+            if(inMemoryType.isFloat || !printScalerString.isEmpty())
+                output += "QString::number(" + access + printScalerString + ", 'g', 16)";
+            else
+                output += "QString::number(" + access + ")";
+
+            output += ";\n";
+
+        }// else not a struct
+
+        if(closeforloop2)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+        if(closeforloop)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+    }// else numeric output
+
+    return output;
+}// ProtocolField::getMapEncodeString
+
+
+
+QString ProtocolField::getMapDecodeString(bool isStructureMember) const
+{
+    QString output;
+
+    if(inMemoryType.isNull || encodedType.isNull)
+        return output;
+
+    QString access;
+
+    if(isStructureMember)
+        access = "_pg_user->" + name;
+    else
+        access = name;
+
+    if(inMemoryType.isString)
+    {
+#warning "implement string decode"
+    }
+    else
+    {
+        QString spacing = TAB_IN;
+        bool closeforloop = false;
+        bool closeforloop2 = false;
+
+        if(isArray())
+        {
+            closeforloop = true;
+
+            if(!variableArray.isEmpty() && isStructureMember)
+                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
+            else
+                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+
+            output += spacing + "{\n";
+            spacing += TAB_IN;
+            access = access + "[_pg_i]";
+        }
+
+        if(is2dArray())
+        {
+            closeforloop2 = true;
+
+            if(!variable2dArray.isEmpty() && isStructureMember)
+            {
+                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+            }
+            else
+            {
+                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+                output += spacing + "{\n";
+                spacing += TAB_IN;
+            }
+
+            access = access + "[_pg_j]";
+        }
+
+        if(inMemoryType.isStruct)
+        {
+            output += spacing + "mapDecode" + typeName + "(_pg_prefix + \"" + name + "\"";
+
+            if(isArray())
+                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+            if(is2dArray())
+                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+            output += ", _pg_map, &" + access + ");\n";
+        }// data type is a struct
+        else
+        {
+            // Construct the map key
+            QString key;
+
+            key = "_pg_prefix + \"" + name + "\"";
+
+            if(isArray())
+                key += " + \"[\" + QString::number(_pg_i) + \"]\"";
+            if(is2dArray())
+                key += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+            output += spacing + "key = " + key + ";\n";
+
+            output += spacing + "if(_pg_map.contains(key))\n";
+            output += spacing + TAB_IN + access + " = _pg_map[key]";
+
+            if(inMemoryType.isFloat || !printScalerString.isEmpty())
+                output += ".toDouble();\n";
+            else if(inMemoryType.isSigned)
+                if(inMemoryType.bits > 32)
+                    output += ".toLongLong();\n";
+                else
+                    output += ".toInt();\n";
+            else
+                if(inMemoryType.bits > 32)
+                    output += ".toULongLong();\n";
+                else
+                    output += ".toUInt();\n";
+        }// else not a struct
+
+        if(closeforloop2)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+
+        if(closeforloop)
+        {
+            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
+            output += spacing + "}\n";
+        }
+    }// else numeric output
+
+#warning "Implement this";
+
+    return output;
+}
+
+
 /*!
  * Return the string that sets this encodable to its default value in code
  * \param isStructureMember should be true if this field is accessed through a "user" structure pointer

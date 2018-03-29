@@ -178,6 +178,12 @@ public:
     //! Get the string used for text reading this field.
     virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
+    //! Get the string used for map encoding this field
+    virtual QString getMapEncodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Get the string used for map decoding this field
+    virtual QString getMapDecodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
     //! Return the string that sets this encodable to its initial value in code
     virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
 

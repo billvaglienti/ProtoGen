@@ -260,6 +260,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(module->getPrintSourceFilePath());
         fileNameList.append(module->getPrintHeaderFileName());
         filePathList.append(module->getPrintHeaderFilePath());
+        fileNameList.append(module->getMapSourceFileName());
+        filePathList.append(module->getMapSourceFilePath());
+        fileNameList.append(module->getMapHeaderFileName());
+        filePathList.append(module->getMapHeaderFilePath());
 
     }// for all top level structures
 
@@ -299,6 +303,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getPrintSourceFilePath());
         fileNameList.append(packet->getPrintHeaderFileName());
         filePathList.append(packet->getPrintHeaderFilePath());
+        fileNameList.append(packet->getMapSourceFileName());
+        filePathList.append(packet->getMapSourceFilePath());
+        fileNameList.append(packet->getMapHeaderFileName());
+        filePathList.append(packet->getMapHeaderFilePath());
 
     }
 
@@ -332,6 +340,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         filePathList.append(packet->getPrintSourceFilePath());
         fileNameList.append(packet->getPrintHeaderFileName());
         filePathList.append(packet->getPrintHeaderFilePath());
+        fileNameList.append(packet->getMapSourceFileName());
+        filePathList.append(packet->getMapSourceFilePath());
+        fileNameList.append(packet->getMapHeaderFileName());
+        filePathList.append(packet->getMapHeaderFilePath());
 
     }
 

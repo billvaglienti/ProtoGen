@@ -87,10 +87,28 @@ public:
     //! Get the path of the source file that encompasses this structure comparison functions
     QString getPrintSourceFilePath(void) const {return printSource.filePath();}
 
+    //! Get the name of the header file that encompasses this structure map functions
+    QString getMapHeaderFileName(void) const {return mapHeader.fileName();}
+
+    //! Get the path of the header file that encompasses this structure map functions
+    QString getMapHeaderFilePath(void) const {return mapHeader.filePath();}
+
+    //! Get the name of the source file that encompasses this structure map functions
+    QString getMapSourceFileName(void) const {return mapSource.fileName();}
+
+    //! Get the path of the source file that encompasses this structure map functions
+    QString getMapSourceFilePath(void) const {return mapSource.filePath();}
+
 protected:
 
     //! Setup the files, which accounts for all the ways the files can be organized for this structure.
-    void setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, QString printmodulename, bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
+    void setupFiles(QString moduleName,
+                    QString defheadermodulename,
+                    QString verifymodulename,
+                    QString comparemodulename,
+                    QString printmodulename,
+                    QString mapmodulename,
+                    bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
@@ -116,6 +134,8 @@ protected:
     ProtocolHeaderFile compareHeader;       //!< The header file for comparison code (*.h)
     ProtocolSourceFile printSource;         //!< The source file for print code (*.cpp)
     ProtocolHeaderFile printHeader;         //!< The header file for print code (*.h)
+    ProtocolSourceFile mapSource;   //!< The source file for map code (*.cpp)
+    ProtocolHeaderFile mapHeader;   //!< The header file for map code (*.h)
     ProtocolHeaderFile* structfile;         //!< Reference to the file that holds the structure definition
     ProtocolHeaderFile* verifyheaderfile;   //!< Reference to the file that holds the verify prototypes
     ProtocolSourceFile* verifysourcefile;   //!< Reference to the file that holds the verify source code
@@ -125,6 +145,7 @@ protected:
     bool decode;                    //!< True if the decode function is output
     bool compare;                   //!< True if the comparison function is output
     bool print;                     //!< True if the textPrint function is output
+    bool mapEncode;                 //!< True if the mapEncode function is output
 };
 
 #endif // PROTOCOLSTRUCTUREMODULE_H
