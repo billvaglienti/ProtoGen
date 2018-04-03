@@ -23,7 +23,7 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     mapEncode(false)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapFile" << "redefine";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine";
 
     compareSource.setCpp(true);
     compareHeader.setCpp(true);
@@ -615,11 +615,15 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
 
         if(mapEncode)
         {
-#warning "Complete this"
             mapSource.makeLineSeparator();
             mapSource.write(structure->getMapEncodeFunctionPrototype());
             mapSource.makeLineSeparator();
             mapSource.write(structure->getMapEncodeFunctionString());
+            mapSource.makeLineSeparator();
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapDecodeFunctionPrototype());
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapDecodeFunctionString());
             mapSource.makeLineSeparator();
         }
 
@@ -710,15 +714,14 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(const ProtocolStr
 
     if (mapEncode)
     {
-#warning "Testing true/false for includeChildren"
         mapHeader.makeLineSeparator();
-        mapHeader.write(getMapEncodeFunctionPrototype(true));
+        mapHeader.write(getMapEncodeFunctionPrototype(false));
         mapHeader.makeLineSeparator();
         mapHeader.write(getMapDecodeFunctionPrototype(false));
         mapHeader.makeLineSeparator();
 
         mapSource.makeLineSeparator();
-        mapSource.write(getMapEncodeFunctionString(true));
+        mapSource.write(getMapEncodeFunctionString(false));
         mapSource.makeLineSeparator();
         mapSource.write(getMapDecodeFunctionString(false));
         mapSource.makeLineSeparator();

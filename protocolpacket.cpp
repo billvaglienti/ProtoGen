@@ -250,6 +250,27 @@ void ProtocolPacket::parse(void)
             structureFunctions = true;
         }
 
+        if(mapEncode)
+        {
+            if (redefines == NULL)
+            {
+                mapHeader.makeLineSeparator();
+                mapHeader.write(getMapEncodeFunctionPrototype(false));
+                mapHeader.makeLineSeparator();
+                mapHeader.write(getMapDecodeFunctionPrototype(false));
+                mapHeader.makeLineSeparator();
+
+                mapSource.makeLineSeparator();
+                mapSource.write(getMapEncodeFunctionString(false));
+                mapSource.makeLineSeparator();
+                mapSource.write(getMapDecodeFunctionString(false));
+                mapSource.makeLineSeparator();
+            }
+
+            // Must have structure functions to do map encode/decode
+            structureFunctions = true;
+        }
+
     }
 
     // The functions that encode and decode the packet from a structure.
@@ -293,6 +314,12 @@ void ProtocolPacket::parse(void)
     {
         printHeader.flush();
         printSource.flush();
+    }
+
+    if(mapEncode)
+    {
+        mapHeader.flush();
+        mapSource.flush();
     }
 
 }// ProtocolPacket::parse
