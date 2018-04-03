@@ -85,6 +85,8 @@ void ProtocolPacket::parse(void)
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
     print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
+    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
+
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 

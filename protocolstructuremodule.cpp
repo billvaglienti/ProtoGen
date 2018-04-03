@@ -23,7 +23,7 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     mapEncode(false)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine" << "map";
 
     compareSource.setCpp(true);
     compareHeader.setCpp(true);
@@ -117,7 +117,7 @@ void ProtocolStructureModule::parse(void)
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
     print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
-    mapEncode = ProtocolParser::isFieldClear(ProtocolParser::getAttribute("map", map));
+    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
 
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
@@ -213,7 +213,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty())
         print = true;
 
-    if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty())
+    if(!mapmodulename.isEmpty())
         mapEncode = true;
 
     // Must have a structure definition to do compare or print operations (for now)
