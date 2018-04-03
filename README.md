@@ -105,6 +105,8 @@ The Protocol tag supports the following attributes:
 
 - `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print and text read code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
 
+- `mapfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for encoding and decoding structure objects to a key:value map; except for any objects which have their own `mapfile` attribute set.
+
 - `prefix` : A string that can be used to prepend structure and file names. This is typically left out, but if a single project uses multiple ProtoGen protocols then it may be useful to give them different prefixes to avoid namespace collisions.
 
 - `maxSize` : A number that specifies the maximum number of data bytes that a packet can support. If this is provided, and is greater than zero, ProtoGen will issue a warning for any packet whose maximum encoded size is greater than this.
@@ -303,11 +305,15 @@ Structure tag Attributes:
 
 - `print` : By default text print and text read functions will not be output. Set `print="true"` to enable the text function output. The functions will be output to the `prefix + name + "Print"` module, unless the `printfile` attribute or global `printfile` attribute is given.
 
+- `map` : By default, map encode and decode functions will not be output. Set `map="true"` to enable the map function output. The functions will be output to the `prefix + name + "Map"` module, unless the `mapfile` attribute or global `mapfile` attribute is given.
+
 - `verifyfile` : Optional attribute used to specify a module which receives both the init and verify functions (only if verification or initialization values exist for a member field). If `verifyfile` is omitted then the init and verify functions are output in the normal file. As with other file attributes the verify file will be correctly appended if it is used multiple times.
 
 - `comparefile` : Optional attribute used to specify a c++ module that implements a comparison function. The comparison functions compare the structure element by element and generate a human readable string report to indicate which elements are different. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `comparefile` attribute enables the compare output.
 
 - `printfile` : Optional attribute used to specify a c++ module that implements functions to text print and text read the contents of a structure. String handling is provided by Qt's QString (which is why this is a c++ module separate from the other output files). Presence of the `printfile` attribute enables the output.
+
+- `mapfile` : Optional attribute used to specify a c++ module that implements functions to encode and decode the contents of a structure to a key:value map. Map handling is provided by Qt's QMap class. Presence of the `mapfile` attribute enables the output.
 
 - `redefine` : It is possible to create multiple encodings for an existing structure definition by using the redefine attribute to reference a previously defined structure. When doing this the structure itself will not be declared, but the encoding and decoding functions will. This requires that the encoding rules must have fields with the same names and in-memory types as the referenced structure.
 
