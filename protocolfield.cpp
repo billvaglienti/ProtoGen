@@ -2641,6 +2641,7 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 
 QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 {
+    QString key;
     QString output;
 
     if(inMemoryType.isNull || encodedType.isNull)
@@ -2655,7 +2656,12 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
     if(inMemoryType.isString)
     {
-#warning "implement string decode"
+        key = "_pg_prefix + \"" + name + "\"";
+
+        output += TAB_IN + "key = " + key + ";\n\n";
+
+        output += TAB_IN + "if (_pg_map.contains(key))\n";
+        output += TAB_IN + TAB_IN + "strncpy(" + access + ", _pg_map[key].toLatin1().constData(), " + array + ");\n";
     }
     else
     {
@@ -2710,8 +2716,6 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
         }// data type is a struct
         else
         {
-            // Construct the map key
-            QString key;
 
             key = "_pg_prefix + \"" + name + "\"";
 
