@@ -35,6 +35,7 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "verifyfile"
             << "comparefile"
             << "printfile"
+            << "mapfile"
             << "prefix"
             << "packetStructureSuffix"
             << "packetParameterSuffix"
