@@ -2099,11 +2099,6 @@ QString ProtocolStructure::getMapEncodeFunctionString(bool includeChildren) cons
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    output += TAB_IN + "QString _pg_prefix = _pg_prename;\n";
-
-    output += TAB_IN + "if(!_pg_prefix.isEmpty() && !_pg_prefix.endsWith(':'))\n";
-    output += TAB_IN + TAB_IN + "_pg_prefix += \":\";\n";
-
     for(int i=0; i<encodables.length(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
@@ -2264,11 +2259,6 @@ QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) cons
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     output += TAB_IN + "QString key;\n\n";
-
-    output += TAB_IN + "QString _pg_prefix = _pg_prename;\n";
-
-    output += TAB_IN + "if(!_pg_prefix.isEmpty() && !_pg_prefix.endsWith(':'))\n";
-    output += TAB_IN + TAB_IN + "_pg_prefix += \":\";\n";
 
     for(int i=0; i<encodables.length(); i++)
     {

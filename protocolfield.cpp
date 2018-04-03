@@ -2548,7 +2548,7 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "_pg_map[_pg_prefix + \"" + name + "\"] = QString(" + access + ");\n";
+        output += TAB_IN + "_pg_map[_pg_prename + \":" + name + "\"] = QString(" + access + ");\n";
     }
     else
     {
@@ -2592,7 +2592,7 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "mapEncode" + typeName + "(_pg_prefix + \"" + name + "\"";
+            output += spacing + "mapEncode" + typeName + "(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2603,7 +2603,7 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
         }// data type is a struct
         else
         {
-            output += spacing + "_pg_map[_pg_prefix + \"" + name + "\"";
+            output += spacing + "_pg_map[_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2656,7 +2656,7 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
     if(inMemoryType.isString)
     {
-        key = "_pg_prefix + \"" + name + "\"";
+        key = "_pg_prename + \":" + name + "\"";
 
         output += TAB_IN + "key = " + key + ";\n\n";
 
@@ -2705,7 +2705,7 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "mapDecode" + typeName + "(_pg_prefix + \"" + name + "\"";
+            output += spacing + "mapDecode" + typeName + "(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2717,7 +2717,7 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
         else
         {
 
-            key = "_pg_prefix + \"" + name + "\"";
+            key = "_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 key += " + \"[\" + QString::number(_pg_i) + \"]\"";
