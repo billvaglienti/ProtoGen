@@ -2546,6 +2546,9 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
     else
         access = name;
 
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
     if(inMemoryType.isString)
     {
         output += TAB_IN + "_pg_map[_pg_prename + \":" + name + "\"] = QString(" + access + ");\n";
@@ -2643,6 +2646,7 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 {
     QString key;
     QString output;
+    QString decode;
 
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
@@ -2653,6 +2657,9 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
         access = "_pg_user->" + name;
     else
         access = name;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
 
     if(inMemoryType.isString)
     {
@@ -2726,21 +2733,34 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
             output += spacing + "key = " + key + ";\n";
 
-            output += spacing + "if(_pg_map.contains(key))\n";
-            output += spacing + TAB_IN + access + " = _pg_map[key]";
+            decode = "_pg_map[key]";
 
             if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += ".toDouble();\n";
-            else if(inMemoryType.isSigned)
+                decode += ".toDouble";
+            else if (inMemoryType.isSigned)
                 if(inMemoryType.bits > 32)
-                    output += ".toLongLong();\n";
+                    decode += ".toLongLong";
                 else
-                    output += ".toInt();\n";
+                    decode += ".toInt";
             else
                 if(inMemoryType.bits > 32)
-                    output += ".toULongLong();\n";
+                    decode += ".toULongLong";
                 else
-                    output += ".toUInt();\n";
+                    decode += ".toUInt";
+
+            /* Generate code to load the data from the map:
+             * 1. Check that the given key exists
+             * 2. Check that the provided value decodes properly (for the given data type)
+             * 3. Load out the value from the map if 1. and 2. pass
+             */
+
+            output += spacing + "if(_pg_map.contains(key))\n";
+            output += spacing + "{\n";
+            output += spacing + TAB_IN + decode + "(&ok);\n";
+            output += spacing + TAB_IN + "if(ok)\n";
+            output += spacing + TAB_IN + TAB_IN + access + " = " + decode + "();\n";
+            output += spacing + "}\n";
+
         }// else not a struct
 
         if(closeforloop2)

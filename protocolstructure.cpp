@@ -2250,13 +2250,14 @@ QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) cons
     output += "void mapDecode" + typeName + "(const QString& _pg_prename, QMap<QString, QString>& _pg_map, " + structName + "* _pg_user)\n";
     output += "{\n";
 
+    output += TAB_IN + "QString key;  // Temporary map key variable\n";
+    output += TAB_IN + "bool ok = false;  // Temporary data validation variable\n";
+
     if(needsDecodeIterator)
-        output += TAB_IN + "unsigned _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;  // Array iterator\n";
 
     if(needs2ndDecodeIterator)
-        output += TAB_IN + "unsigned _pg_j = 0;\n";
-
-    output += TAB_IN + "QString key;\n\n";
+        output += TAB_IN + "unsigned _pg_j = 0; // Secondary array iterator\n";
 
     for(int i=0; i<encodables.length(); i++)
     {
