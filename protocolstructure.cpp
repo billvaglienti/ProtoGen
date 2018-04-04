@@ -2131,8 +2131,6 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
-    std::cout << name.toStdString() << " - getMapEncodeString\n";
-
     if(isArray())
     {
 
@@ -2286,9 +2284,6 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
-    std::cout << name.toStdString() << " - getMapDecodeString\n";
-
-#warning "Complete this! (Is it even used?)"
 
     if(isArray())
     {
