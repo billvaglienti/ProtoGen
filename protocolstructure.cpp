@@ -2048,7 +2048,7 @@ QString ProtocolStructure::getMapEncodeFunctionPrototype(bool includeChildren) c
     // My mapEncode function
 
     output += "//! Encode the contents of a " + typeName + " structure to a string Key:Value map\n";
-    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QMap<QString, QString>& _pg_map, const " + structName + "* _pg_user);\n";
+    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user);\n";
 
     return output;
 }// ProtocolStructure::getMapEncodeFunctionPrototype
@@ -2090,7 +2090,7 @@ QString ProtocolStructure::getMapEncodeFunctionString(bool includeChildren) cons
     output += " * \\param _pg_user is the structure to encode\n";
     output += " */\n";
 
-    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QMap<QString, QString>& _pg_map, const " + structName + "* _pg_user)\n";
+    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user)\n";
     output += "{\n";
 
     if(needsDecodeIterator)
@@ -2210,7 +2210,7 @@ QString ProtocolStructure::getMapDecodeFunctionPrototype(bool includeChildren) c
     // My mapEncode function
 
     output += "//! Decode the contents of a " + typeName + " structure from a string Key:Value map\n";
-    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QMap<QString, QString>& _pg_map, " + structName + "* _pg_user);\n";
+    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, " + structName + "* _pg_user);\n";
 
     return output;
 }// ProtocolStructure::getMapDecodeeFunctionPrototype
@@ -2247,7 +2247,7 @@ QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) cons
     output += " * \\param _pg_user is the structure to encode\n";
     output += " */\n";
 
-    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QMap<QString, QString>& _pg_map, " + structName + "* _pg_user)\n";
+    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, " + structName + "* _pg_user)\n";
     output += "{\n";
 
     output += TAB_IN + "QString key;  // Temporary map key variable\n";

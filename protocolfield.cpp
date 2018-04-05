@@ -2615,10 +2615,11 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 
             output += "] = ";
 
+            // Numeric values are automatically converted to correct QVariant types
             if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += "QString::number(" + access + printScalerString + ", 'g', 16)";
+                output += access + printScalerString;
             else
-                output += "QString::number(" + access + ")";
+                output += access;
 
             output += ";\n";
 
@@ -2668,7 +2669,7 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
         output += TAB_IN + "key = " + key + ";\n\n";
 
         output += TAB_IN + "if (_pg_map.contains(key))\n";
-        output += TAB_IN + TAB_IN + "strncpy(" + access + ", _pg_map[key].toLatin1().constData(), " + array + ");\n";
+        output += TAB_IN + TAB_IN + "strncpy(" + access + ", _pg_map[key].toString().toLatin1().constData(), " + array + ");\n";
     }
     else
     {
@@ -2756,7 +2757,11 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
             output += spacing + "if(_pg_map.contains(key))\n";
             output += spacing + "{\n";
-            output += spacing + TAB_IN + decode + "(&ok);\n";
+            output += spacing + TAB_IN + decode + "(&ok)";
+
+            if(inMemoryType.isFloat && !printScalerString.isEmpty())
+                output += readScalerString;
+            output += ";\n";
             output += spacing + TAB_IN + "if(ok)\n";
             output += spacing + TAB_IN + TAB_IN + access + " = " + decode + "();\n";
             output += spacing + "}\n";

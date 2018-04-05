@@ -413,8 +413,8 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     printHeader.writeIncludeDirective(header.fileName());
     printHeader.writeIncludeDirective("QString", QString(), true, false);
     mapHeader.writeIncludeDirective(header.fileName());
-    mapHeader.writeIncludeDirective("QString", QString(), true, false);
-    mapHeader.writeIncludeDirective("QMap", QString(), true, false);
+    mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
+    mapHeader.writeIncludeDirective("string", QString(), true, false);
 
     // The verification details may be spread across multiple files
     QStringList list;
