@@ -477,6 +477,8 @@ Data subtag attributes:
 
 - `comment` : A one line doxygen comment that follows the data declaration.
 
+- `map` : If mapEncode and mapDecode functions are defined for this struct or packet, this tag can be used to specify if each individual field is encoded or decoded to the map. By default (and if this tag is not present) the field will be both encoded and decoded. If this tag is set to `encode` then the field will only be encoded. If this tag is set to `decode` then the field will only be decoded. If this tag is set to `false` then the field will not be encoded or decoded.
+
 - `range | units | notes` : If specified, each of these attributes will be added (as single-line comments) to the packet description table in the documentation markdown. These comments will appear next to this <Data> tag, and can be used if extra specificity is required. Note that these fields apply *only* to the documentation, and will not appear anywhere in the generated code.
 
 Documentation tag

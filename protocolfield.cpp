@@ -189,7 +189,8 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupp
     inMemoryType(supported),
     encodedType(supported),
     prevField(0),
-    hidden(false)
+    hidden(false),
+    mapOptions(MAP_BOTH)
 {
 }
 
@@ -693,7 +694,8 @@ void ProtocolField::parse(void)
                                              << "hidden"
                                              << "initialValue"
                                              << "verifyMinValue"
-                                             << "verifyMaxValue");
+                                             << "verifyMaxValue"
+                                             << "map");
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -764,6 +766,21 @@ void ProtocolField::parse(void)
             verifyMinString = attr.value().trimmed();
         else if(attrname.compare("verifyMaxValue", Qt::CaseInsensitive) == 0)
             verifyMaxString = attr.value().trimmed();
+        else if(attrname.compare("map", Qt::CaseInsensitive) == 0)
+        {
+            QString v = attr.value().trimmed().toLower();
+
+            if(v.compare("encode") == 0)
+                mapOptions = MAP_ENCODE;
+            else if(v.compare("decode") == 0)
+                mapOptions = MAP_DECODE;
+            else if(ProtocolParser::isFieldSet(v))
+                mapOptions = MAP_BOTH;
+            else if (ProtocolParser::isFieldClear(v))
+                mapOptions = MAP_NONE;
+            else
+                emitWarning("Value for 'map' field is incorrect: '" + v + "'");
+        }
 
     }// for all attributes
 
@@ -2533,8 +2550,12 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
 
 
 QString ProtocolField::getMapEncodeString(bool isStructureMember) const
-{
+{  
     QString output;
+
+    // Return empty string if this field should not be encoded to map
+    if((mapOptions & MAP_ENCODE) == 0)
+        return output;
 
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
@@ -2649,7 +2670,8 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
     QString output;
     QString decode;
 
-    if(inMemoryType.isNull || encodedType.isNull)
+    // Return empty string if this field is not to be decoded
+    if((mapOptions & MAP_DECODE) == 0)
         return output;
 
     QString access;
