@@ -2553,6 +2553,10 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 {  
     QString output;
 
+    // Cannot encode to a null memory type
+    if(inMemoryType.isNull)
+        return output;
+
     // Return empty string if this field should not be encoded to map
     if((mapOptions & MAP_ENCODE) == 0)
         return output;
@@ -2669,6 +2673,10 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
     QString key;
     QString output;
     QString decode;
+
+    // Cannot decode to a null memory type
+    if(inMemoryType.isNull)
+        return output;
 
     // Return empty string if this field is not to be decoded
     if((mapOptions & MAP_DECODE) == 0)
