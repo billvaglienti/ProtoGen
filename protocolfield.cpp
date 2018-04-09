@@ -2001,6 +2001,9 @@ bool ProtocolField::hasInit(void) const
  */
 QString ProtocolField::getVerifyString(bool isStructureMember) const
 {
+    if(!hasVerify())
+        return QString();
+
     // No verify for null or string
     if(inMemoryType.isNull || inMemoryType.isString)
         return QString();
@@ -2834,6 +2837,9 @@ QString ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
 {
     QString output;
+
+    if(!hasInit())
+        return output;
 
     if(inMemoryType.isNull)
         return output;
