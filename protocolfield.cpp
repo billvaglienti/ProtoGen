@@ -2811,8 +2811,6 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
         }
     }// else numeric output
 
-#warning "Implement this";
-
     return output;
 }
 
