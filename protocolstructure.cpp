@@ -2131,11 +2131,21 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
+    QString key = "\":" + name + "\"";
+
     if(isArray())
     {
+        key += " + \"[\" + QString::number(_pg_i) + \"]\"";
 
         QString spacing = TAB_IN;
-        output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+        output += spacing + "for(_pg_i = 0; ";
+
+        if(variableArray.isEmpty())
+            output += "_pg_i < " + array + ";";
+        else
+            output += "(_pg_i < " + array + ") && (_pg_i < " + variableArray + ");";
+
+        output += " _pg_i++)\n";
         spacing += TAB_IN;
 
         if(isStructureMember)
@@ -2151,15 +2161,23 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
         if(is2dArray())
         {
             access += "[_pg_j]";
-            output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+            output += spacing + "for(_pg_j = 0;";
+
+            if(variable2dArray.isEmpty())
+                output += "_pg_j < " + array2d + ";";
+            else
+                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+
+            output += " _pg_j++)\n";
+
             spacing += TAB_IN;
+
+            key += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
         }// if 2D array of structures
 
-        output += spacing + "_pg_map[<key>] = (array)\n";
+        output += spacing + "mapEncode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
 
-
-        //TODO
     }// if array of structures
     else
     {
@@ -2172,9 +2190,8 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
             access = name;
         }
 
-        output += TAB_IN + "_pg_map[<key>] = \n";
+        output += TAB_IN + "mapEncode" + typeName + "(pg_prename + " + key + ", _pg_map, " + access + ");\n";
 
-        //TODO
     }// else if simple structure, no array
 
     return output;
@@ -2285,12 +2302,22 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
+    QString key = "\":" + name + "\"";
 
     if(isArray())
     {
+        key = key + " + \"[\" + QString::number(_pg_i) + \"]\"";
 
         QString spacing = TAB_IN;
-        output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+        output += spacing + "for(_pg_i = 0; ";
+
+        if(variableArray.isEmpty())
+            output += "_pg_i < " + array + ";";
+        else
+            output += "(_pg_i < " + array + ") && (_pg_j < " + variableArray + ");";
+
+        output += " _pg_i++)\n";
+
         spacing += TAB_IN;
 
         if(isStructureMember)
@@ -2306,12 +2333,19 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
         if(is2dArray())
         {
             access += "[_pg_j]";
-            output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+            output += spacing + "for(_pg_j = 0; ";
+
+            if(variable2dArray.isEmpty())
+                output += "_pg_j < " + array2d + ";";
+            else
+                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+
+            output += " _pg_j++)\n";
             spacing += TAB_IN;
 
         }// if 2D array of structures
 
-        output += spacing + "decode -> _pg_map[<key>] = (array)\n";
+        output += spacing + "mapDecode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
 
         //TODO
     }// if array of structures
@@ -2326,9 +2360,8 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
             access = name;
         }
 
-        output += TAB_IN + "decode -> _pg_map[<key>] = \n";
+        output += TAB_IN + "mapDecode" + typeName + "(_pg_prename " + key + ", _pg_map, " + access + ");\n";
 
-        //TODO
     }// else if simple structure, no array
 
     return output;

@@ -213,7 +213,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty())
         print = true;
 
-    if(!mapmodulename.isEmpty())
+    if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty())
         mapEncode = true;
 
     // Must have a structure definition to do compare or print operations (for now)
