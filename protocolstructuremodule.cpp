@@ -19,15 +19,18 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     encode(true),
     decode(true),
     compare(false),
-    print(false)
+    print(false),
+    mapEncode(false)
 {
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "redefine";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine" << "map";
 
     compareSource.setCpp(true);
     compareHeader.setCpp(true);
     printSource.setCpp(true);
     printHeader.setCpp(true);
+    mapSource.setCpp(true);
+    mapHeader.setCpp(true);
 
 }
 
@@ -51,8 +54,10 @@ void ProtocolStructureModule::clear(void)
     compareSource.clear();
     printHeader.clear();
     printSource.clear();
+    mapSource.clear();
+    mapHeader.clear();
     encode = decode = true;
-    print = compare = false;
+    print = compare = mapEncode = false;
     structfile = &header;
     verifyheaderfile = &header;
     verifysourcefile = &source;
@@ -106,10 +111,14 @@ void ProtocolStructureModule::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     QString comparemodulename = ProtocolParser::getAttribute("comparefile", map);
     QString printmodulename = ProtocolParser::getAttribute("printfile", map);
+    QString mapmodulename = ProtocolParser::getAttribute("mapfile", map);
+
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
     print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
+    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
+
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
     // Warnings for users
@@ -132,7 +141,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Do the bulk of the file creation and setup
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, true, true, redefines);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, true, true, redefines);
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -161,6 +170,13 @@ void ProtocolStructureModule::parse(void)
         printHeader.flush();
     }
 
+    // Only write the map functions if we have map functions to support
+    if(mapEncode)
+    {
+        mapSource.flush();
+        mapHeader.flush();
+    }
+
     // We don't write the verify files to disk if we are not initializing or verifying anything
     if(hasInit() || hasVerify())
     {
@@ -181,7 +197,13 @@ void ProtocolStructureModule::parse(void)
  * \param forceStructureDeclaration should be true to force the declaration of the structure, even if it only has one member
  * \param outputUtilties should be true to output the helper macros
  */
-void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermodulename, QString verifymodulename, QString comparemodulename, QString printmodulename, bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
+void ProtocolStructureModule::setupFiles(QString moduleName,
+                                         QString defheadermodulename,
+                                         QString verifymodulename,
+                                         QString comparemodulename,
+                                         QString printmodulename,
+                                         QString mapmodulename,
+                                         bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
 {
     // User can provide compare flag, or the file name
     if(!comparemodulename.isEmpty() || !support.globalCompareName.isEmpty())
@@ -190,6 +212,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     // User can provide print flag, or the file name
     if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty())
         print = true;
+
+    if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty())
+        mapEncode = true;
 
     // Must have a structure definition to do compare or print operations (for now)
     if(compare || print || hasVerify() || hasInit())
@@ -207,6 +232,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
 
     compareHeader.setLicenseText(support.licenseText);
     compareSource.setLicenseText(support.licenseText);
+
+    mapHeader.setLicenseText(support.licenseText);
+    mapSource.setLicenseText(support.licenseText);
 
     // The file names
     if(moduleName.isEmpty())
@@ -299,6 +327,38 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         }
     }
 
+    if(mapEncode)
+    {
+        if(mapmodulename.isEmpty())
+            mapmodulename = support.globalMapName;
+
+        if(mapmodulename.isEmpty())
+        {
+            mapHeader.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath);
+            mapSource.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath);
+        }
+        else
+        {
+            mapHeader.setModuleNameAndPath(mapmodulename, support.outputpath);
+            mapSource.setModuleNameAndPath(mapmodulename, support.outputpath);
+        }
+
+        mapHeader.makeLineSeparator();
+
+        if(!mapHeader.isAppending())
+        {
+            mapHeader.write("/*!\n");
+            mapHeader.write(" * \\file\n");
+            mapHeader.write(" */\n");
+            mapHeader.write("\n");
+        }
+
+        if(!printSource.isAppending())
+        {
+            mapSource.makeLineSeparator();
+        }
+    }
+
     // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
     if(header.isAppending())
     {
@@ -344,7 +404,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
         header.writeIncludeDirective(structfile->fileName());
     }
 
-    // The verify, comparison, and print files needs access to the struct file
+    // The verify, comparison, print, and map files needs access to the struct file
     verifyheaderfile->writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(structfile->fileName());
     compareHeader.writeIncludeDirective(header.fileName());
@@ -352,6 +412,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName, QString defheadermo
     printHeader.writeIncludeDirective(structfile->fileName());
     printHeader.writeIncludeDirective(header.fileName());
     printHeader.writeIncludeDirective("QString", QString(), true, false);
+    mapHeader.writeIncludeDirective(header.fileName());
+    mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
+    mapHeader.writeIncludeDirective("string", QString(), true, false);
 
     // The verification details may be spread across multiple files
     QStringList list;
@@ -550,6 +613,20 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             printSource.makeLineSeparator();
         }
 
+        if(mapEncode)
+        {
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapEncodeFunctionPrototype());
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapEncodeFunctionString());
+            mapSource.makeLineSeparator();
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapDecodeFunctionPrototype());
+            mapSource.makeLineSeparator();
+            mapSource.write(structure->getMapDecodeFunctionString());
+            mapSource.makeLineSeparator();
+        }
+
     }
 
     source.makeLineSeparator();
@@ -633,6 +710,21 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(const ProtocolStr
         printSource.makeLineSeparator();
         printSource.write(getTextReadFunctionString(false));
         printSource.makeLineSeparator();
+    }
+
+    if (mapEncode)
+    {
+        mapHeader.makeLineSeparator();
+        mapHeader.write(getMapEncodeFunctionPrototype(false));
+        mapHeader.makeLineSeparator();
+        mapHeader.write(getMapDecodeFunctionPrototype(false));
+        mapHeader.makeLineSeparator();
+
+        mapSource.makeLineSeparator();
+        mapSource.write(getMapEncodeFunctionString(false));
+        mapSource.makeLineSeparator();
+        mapSource.write(getMapDecodeFunctionString(false));
+        mapSource.makeLineSeparator();
     }
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions

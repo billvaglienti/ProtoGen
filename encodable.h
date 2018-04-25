@@ -94,6 +94,12 @@ public:
     //! Get the string used for text reading this field.
     virtual QString getTextReadString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
+    //! Get the string used to encode this field to a map
+    virtual QString getMapEncodeString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
+    //! Get the string used to decode this field from a map
+    virtual QString getMapDecodeString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
 

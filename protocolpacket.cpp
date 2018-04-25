@@ -79,10 +79,14 @@ void ProtocolPacket::parse(void)
     QString verifymodulename = ProtocolParser::getAttribute("verifyfile", map);
     QString comparemodulename = ProtocolParser::getAttribute("comparefile", map);
     QString printmodulename = ProtocolParser::getAttribute("printfile", map);
+    QString mapmodulename = ProtocolParser::getAttribute("mapfile", map);
+
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
     compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
     print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
+    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
+
     bool outputTopLevelStructureCode = ProtocolParser::isFieldSet("useInOtherPackets", map);
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
@@ -171,7 +175,7 @@ void ProtocolPacket::parse(void)
     // Most of the file setup work, note that we do not declare a structure in
     // the event that it has only one member and we are not doing structure
     // interfaces to the encode/decode routines
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, structureFunctions, false, redefines);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false, redefines);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
@@ -248,6 +252,27 @@ void ProtocolPacket::parse(void)
             structureFunctions = true;
         }
 
+        if(mapEncode)
+        {
+            if (redefines == NULL)
+            {
+                mapHeader.makeLineSeparator();
+                mapHeader.write(getMapEncodeFunctionPrototype(false));
+                mapHeader.makeLineSeparator();
+                mapHeader.write(getMapDecodeFunctionPrototype(false));
+                mapHeader.makeLineSeparator();
+
+                mapSource.makeLineSeparator();
+                mapSource.write(getMapEncodeFunctionString(false));
+                mapSource.makeLineSeparator();
+                mapSource.write(getMapDecodeFunctionString(false));
+                mapSource.makeLineSeparator();
+            }
+
+            // Must have structure functions to do map encode/decode
+            structureFunctions = true;
+        }
+
     }
 
     // The functions that encode and decode the packet from a structure.
@@ -291,6 +316,12 @@ void ProtocolPacket::parse(void)
     {
         printHeader.flush();
         printSource.flush();
+    }
+
+    if(mapEncode)
+    {
+        mapHeader.flush();
+        mapSource.flush();
     }
 
 }// ProtocolPacket::parse

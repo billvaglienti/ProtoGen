@@ -2014,6 +2014,360 @@ QString ProtocolStructure::getTextReadString(bool isStructureMember) const
 }// ProtocolStructure::getTextReadString
 
 
+/*!
+ * Return the string that gives the prototype of the function used to encode this structure to a map
+ * \param includeChildren should be true to include the function prototypes of the child structures
+ * \return the function prototype string, which may be empty
+ */
+QString ProtocolStructure::getMapEncodeFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfEncodeParameters() == 0)
+    {
+        return output;
+    }
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length();  i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+
+            output += structure->getMapEncodeFunctionPrototype(includeChildren);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My mapEncode function
+
+    output += "//! Encode the contents of a " + typeName + " structure to a string Key:Value map\n";
+    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user);\n";
+
+    return output;
+}// ProtocolStructure::getMapEncodeFunctionPrototype
+
+
+/*!
+ * Return the string that gives the function used to encode this structure to a map
+ * \param includeChildren should be true to include the functions of the child structures
+ * \return the function string, which may be empty
+ */
+QString ProtocolStructure::getMapEncodeFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if (!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getMapEncodeFunctionString(includeChildren);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My mapEncode function
+    output += "/*!\n";
+    output += " * Encode the contents of a " + typeName + " structure to a Key:Value string map\n";
+    output += " * \\param _pg_prename is prepended to the key fields in the map\n";
+    output += " * \\param _pg_map is a reference to the map\n";
+    output += " * \\param _pg_user is the structure to encode\n";
+    output += " */\n";
+
+    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user)\n";
+    output += "{\n";
+
+    if(needsDecodeIterator)
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
+
+    if(needs2ndDecodeIterator)
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
+
+    for(int i=0; i<encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getMapEncodeString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+
+    output += "\n";
+    output += "}// mapEncode" + typeName + "\n";
+
+    return output;
+}// ProtocolStructure::getMapEncodeFunctionString
+
+
+/*!
+ * Return the string used for encoding this field to a map
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the encode string, which may be empty
+ */
+
+QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    QString key = "\":" + name + "\"";
+
+    if(isArray())
+    {
+        key += " + \"[\" + QString::number(_pg_i) + \"]\"";
+
+        QString spacing = TAB_IN;
+        output += spacing + "for(_pg_i = 0; ";
+
+        if(variableArray.isEmpty())
+            output += "_pg_i < " + array + ";";
+        else
+            output += "(_pg_i < " + array + ") && (_pg_i < " + variableArray + ");";
+
+        output += " _pg_i++)\n";
+        spacing += TAB_IN;
+
+        if(isStructureMember)
+        {
+            // The dereference of the array gets us back to the object, but we need the pointer
+            access = "&_pg_user->" + name + "[_pg_i]";
+        }
+        else
+        {
+            access = "&" + name + "[_pg_i]";
+        }
+
+        if(is2dArray())
+        {
+            access += "[_pg_j]";
+            output += spacing + "for(_pg_j = 0;";
+
+            if(variable2dArray.isEmpty())
+                output += "_pg_j < " + array2d + ";";
+            else
+                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+
+            output += " _pg_j++)\n";
+
+            spacing += TAB_IN;
+
+            key += " + \"[\" + QString::number(_pg_j) + \"]\"";
+
+        }// if 2D array of structures
+
+        output += spacing + "mapEncode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
+
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+        {
+            access = "&pg_user->" + name;
+        }
+        else
+        {
+            access = name;
+        }
+
+        output += TAB_IN + "mapEncode" + typeName + "(pg_prename + " + key + ", _pg_map, " + access + ");\n";
+
+    }// else if simple structure, no array
+
+    return output;
+}// ProtocolStructure::getMapEncodeString
+
+
+QString ProtocolStructure::getMapDecodeFunctionPrototype(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfEncodeParameters() == 0)
+    {
+        return output;
+    }
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length();  i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+
+            output += structure->getMapDecodeFunctionPrototype(includeChildren);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My mapEncode function
+
+    output += "//! Decode the contents of a " + typeName + " structure from a string Key:Value map\n";
+    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, " + structName + "* _pg_user);\n";
+
+    return output;
+}// ProtocolStructure::getMapDecodeeFunctionPrototype
+
+
+QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) const
+{
+    QString output;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(includeChildren)
+    {
+        for(int i = 0; i < encodables.length(); i++)
+        {
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if (!structure)
+                continue;
+
+            ProtocolFile::makeLineSeparator(output);
+            output += structure->getMapDecodeFunctionString(includeChildren);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // My mapEncode function
+    output += "/*!\n";
+    output += " * Decode the contents of a " + typeName + " structure to a Key:Value string map\n";
+    output += " * \\param _pg_prename is prepended to the key fields in the map\n";
+    output += " * \\param _pg_map is a reference to the map\n";
+    output += " * \\param _pg_user is the structure to encode\n";
+    output += " */\n";
+
+    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, " + structName + "* _pg_user)\n";
+    output += "{\n";
+
+    output += TAB_IN + "QString key;  // Temporary map key variable\n";
+    output += TAB_IN + "bool ok = false;  // Temporary data validation variable\n";
+
+    if(needsDecodeIterator)
+        output += TAB_IN + "unsigned _pg_i = 0;  // Array iterator\n";
+
+    if(needs2ndDecodeIterator)
+        output += TAB_IN + "unsigned _pg_j = 0; // Secondary array iterator\n";
+
+    for(int i=0; i<encodables.length(); i++)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += encodables[i]->getMapDecodeString(true);
+    }
+
+    ProtocolFile::makeLineSeparator(output);
+
+    output += "\n";
+    output += "}// mapEncode" + typeName + "\n";
+
+    return output;
+}// ProtocolStructure::getMapDecodeFunctionString
+
+
+QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
+{
+    QString output;
+    QString access;
+
+    if(getNumberOfDecodeParameters() == 0)
+        return output;
+
+    if(!comment.isEmpty())
+        output += TAB_IN + "// " + comment + "\n";
+
+    QString key = "\":" + name + "\"";
+
+    if(isArray())
+    {
+        key = key + " + \"[\" + QString::number(_pg_i) + \"]\"";
+
+        QString spacing = TAB_IN;
+        output += spacing + "for(_pg_i = 0; ";
+
+        if(variableArray.isEmpty())
+            output += "_pg_i < " + array + ";";
+        else
+            output += "(_pg_i < " + array + ") && (_pg_j < " + variableArray + ");";
+
+        output += " _pg_i++)\n";
+
+        spacing += TAB_IN;
+
+        if(isStructureMember)
+        {
+            // The dereference of the array gets us back to the object, but we need the pointer
+            access = "&_pg_user->" + name + "[_pg_i]";
+        }
+        else
+        {
+            access = "&" + name + "[_pg_i]";
+        }
+
+        if(is2dArray())
+        {
+            access += "[_pg_j]";
+            output += spacing + "for(_pg_j = 0; ";
+
+            if(variable2dArray.isEmpty())
+                output += "_pg_j < " + array2d + ";";
+            else
+                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+
+            output += " _pg_j++)\n";
+            spacing += TAB_IN;
+
+        }// if 2D array of structures
+
+        output += spacing + "mapDecode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
+
+        //TODO
+    }// if array of structures
+    else
+    {
+        if(isStructureMember)
+        {
+            access = "&pg_user->" + name;
+        }
+        else
+        {
+            access = name;
+        }
+
+        output += TAB_IN + "mapDecode" + typeName + "(_pg_prename " + key + ", _pg_map, " + access + ");\n";
+
+    }// else if simple structure, no array
+
+    return output;
+}
+
+
 //! Return the strings that #define initial and variable values
 QString ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
 {

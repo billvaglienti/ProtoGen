@@ -35,6 +35,7 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "verifyfile"
             << "comparefile"
             << "printfile"
+            << "mapfile"
             << "prefix"
             << "packetStructureSuffix"
             << "packetParameterSuffix"
@@ -83,6 +84,8 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     globalCompareName = globalCompareName.left(globalCompareName.indexOf("."));
     globalPrintName = ProtocolParser::getAttribute("printfile", map);
     globalPrintName = globalPrintName.left(globalPrintName.indexOf("."));
+    globalMapName = ProtocolParser::getAttribute("mapfile", map);
+    globalMapName = globalMapName.left(globalMapName.indexOf("."));
 
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);

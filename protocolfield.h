@@ -82,6 +82,15 @@ class ProtocolField : public Encodable
 {
 public:
 
+    // Option enumeration for determining if a certain field should be encoded / decoded
+    enum MapOptions
+    {
+        MAP_NONE,   // Do not encode or decode this field
+        MAP_ENCODE, // Only encode this field
+        MAP_DECODE, // Only decode this field
+        MAP_BOTH    // Encode and decode this field
+    };
+
     //! Construct a field, setting the protocol name and name prefix
     ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported);
 
@@ -177,6 +186,12 @@ public:
 
     //! Get the string used for text reading this field.
     virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Get the string used for map encoding this field
+    virtual QString getMapEncodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Get the string used for map decoding this field
+    virtual QString getMapDecodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that sets this encodable to its initial value in code
     virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
@@ -333,6 +348,9 @@ protected:
 
     //! Indicates if this field is hidden from documentation
     bool hidden;
+
+    //! Indicates the map encode / decode settings for this field
+    int mapOptions;
 
     //! Extract the type information from the type string
     void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);

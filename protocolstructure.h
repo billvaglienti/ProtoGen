@@ -112,6 +112,24 @@ public:
     //! Get the string used for text reading this structure.
     virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
+    //! Return the string that gives the prototype of the function used to encode this structure to a map
+    QString getMapEncodeFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to encode this structure to a map
+    QString getMapEncodeFunctionString(bool includeChildren = true) const;
+
+    //! Return the string used for map encoding this structure
+    virtual QString getMapEncodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
+    //! Return the string that gives the prototype of the function used to decode this structure from a map
+    QString getMapDecodeFunctionPrototype(bool includeChildren = true) const;
+
+    //! Return the string that gives the function used to decode this structure from a map
+    QString getMapDecodeFunctionString(bool includeChildren = true) const;
+
+    //! Return the string used for map decoding this structure
+    virtual QString getMapDecodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+
     //! Return the string that gives the prototype of the function used to initialize this structure
     QString getSetToInitialValueFunctionPrototype(bool includeChildren = true) const;
 
