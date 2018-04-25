@@ -54,10 +54,10 @@ protected:
     void createUtilityFunctions(const QDomElement& e);
 
     //! Get the packet encode signature
-    QString getPacketEncodeSignature(void) const;
+    QString getPacketEncodeSignature(bool _pg_) const;
 
     //! Get the packet decode signature
-    QString getPacketDecodeSignature(void) const;
+    QString getPacketDecodeSignature(bool _pg_) const;
 
     //! Get the packet encode comment
     QString getPacketEncodeBriefComment(void) const;

@@ -372,7 +372,7 @@ void ProtocolField::getBitfieldGroupNumBytes(int* num) const
 
 /*!
  * Extract the type information from the type string, for in memory types
- * \param _pg_data holds the extracted type
+ * \param data holds the extracted type
  * \param type is the type string
  * \param name is the name of this field, used for warnings
  * \param inMemory is true if this is an in-memory type string, else encoded

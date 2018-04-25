@@ -387,8 +387,8 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     int numDecodes = getNumberOfDecodeParameters();
 
     // Helper strings to prevent code repetition
-    const QString PKT_ENCODE = VOID_ENCODE + extendedName() + "(" + support.pointerType + " _pg_pkt";
-    const QString PKT_DECODE = INT_DECODE + extendedName() + "(const " + support.pointerType + " _pg_pkt";
+    QString PKT_ENCODE = VOID_ENCODE + extendedName() + "(" + support.pointerType + " pkt";
+    QString PKT_DECODE = INT_DECODE + extendedName() + "(const " + support.pointerType + " pkt";
 
     if(encode)
     {
@@ -398,9 +398,9 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(numEncodes > 0)
         {
             if(ids.count() <= 1)
-                header.write(PKT_ENCODE + ", const " + structName + "* _pg_user);\n");
+                header.write(PKT_ENCODE + ", const " + structName + "* user);\n");
             else
-                header.write(PKT_ENCODE + ", const " + structName + "* _pg_user, uint32_t _pg_id);\n");
+                header.write(PKT_ENCODE + ", const " + structName + "* user, uint32_t id);\n");
         }
         else
         {
@@ -418,7 +418,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
 
         if(numDecodes > 0)
-            header.write(PKT_DECODE + ", " + structName + "* _pg_user);\n");
+            header.write(PKT_DECODE + ", " + structName + "* user);\n");
         else
             header.write(PKT_DECODE + ");\n");
     }
@@ -427,7 +427,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         compareHeader.makeLineSeparator();
         compareHeader.write("//! Compare two " + support.prefix + name + " packets and generate a report\n");
-        compareHeader.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " pkt2);\n");
+        compareHeader.write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
         compareHeader.makeLineSeparator();
     }
 
@@ -435,9 +435,13 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         printHeader.makeLineSeparator();
         printHeader.write("//! Generate a string that describes the contents of a " + name + " packet\n");
-        printHeader.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString _pg_prename, const " + support.pointerType + " _pg_pkt);\n");
+        printHeader.write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt);\n");
         printHeader.makeLineSeparator();
     }
+
+    // Change the helper strings to include the "_pg_" decorations
+    PKT_ENCODE = VOID_ENCODE + extendedName() + "(" + support.pointerType + " _pg_pkt";
+    PKT_DECODE = INT_DECODE + extendedName() + "(const " + support.pointerType + " _pg_pkt";
 
     if(encode)
     {
@@ -823,7 +827,7 @@ void ProtocolPacket::createPacketFunctions(void)
         // The prototype for the packet encode function
         header.makeLineSeparator();
         header.write("//! " + getPacketEncodeBriefComment() + "\n");
-        header.write(getPacketEncodeSignature() + ";\n");
+        header.write(getPacketEncodeSignature(false) + ";\n");
     }
 
     if(decode)
@@ -831,7 +835,7 @@ void ProtocolPacket::createPacketFunctions(void)
         // The prototype for the packet decode function
         header.makeLineSeparator();
         header.write("//! " + getPacketDecodeBriefComment() + "\n");
-        header.write(getPacketDecodeSignature() + ";\n");
+        header.write(getPacketDecodeSignature(false) + ";\n");
     }
 
     int i;
@@ -852,7 +856,7 @@ void ProtocolPacket::createPacketFunctions(void)
             source.write(" * \\param id is the packet identifier for _pg_pkt\n");
 
         source.write(" */\n");
-        source.write(getPacketEncodeSignature() + "\n");
+        source.write(getPacketEncodeSignature(true) + "\n");
         source.write("{\n");
 
         if(!encodedLength.isZeroLength())
@@ -890,7 +894,7 @@ void ProtocolPacket::createPacketFunctions(void)
             if(ids.count() <= 1)
                 source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, id);\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n");
         }
         else
         {
@@ -898,7 +902,7 @@ void ProtocolPacket::createPacketFunctions(void)
             if(ids.count() <= 1)
                 source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
             else
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, id);\n");
+                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, _pg_id);\n");
         }
 
         source.write("}\n");
@@ -917,7 +921,7 @@ void ProtocolPacket::createPacketFunctions(void)
             source.write(encodables.at(i)->getDecodeParameterComment());
         source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
         source.write(" */\n");
-        source.write(getPacketDecodeSignature() + "\n");
+        source.write(getPacketDecodeSignature(true) + "\n");
         source.write("{\n");
 
         if(!encodedLength.isZeroLength())
@@ -1037,29 +1041,56 @@ void ProtocolPacket::createPacketFunctions(void)
 
 
 /*!
- * \return The signature of the packet encode function, without semicolon or comments or line feed
+ * Get the signature of the packet encode function, without semicolon or
+ * comments or line feed
+ * \param _pg_ should be true to use the "_pg_" decoration on each parameter
+ * \return the encode signature
  */
-QString ProtocolPacket::getPacketEncodeSignature(void) const
+QString ProtocolPacket::getPacketEncodeSignature(bool _pg_) const
 {
-    QString output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(" + support.pointerType + " _pg_pkt";
+    QString output;
 
-    output += getDataEncodeParameterList();
+    if(_pg_)
+    {
+        output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(" + support.pointerType + " _pg_pkt";
 
-    if(ids.count() <= 1)
-        output += ")";
+        output += getDataEncodeParameterList();
+
+        if(ids.count() <= 1)
+            output += ")";
+        else
+            output += ", uint32_t _pg_id)";
+    }
     else
-        output += ", uint32_t id)";
+    {
+        output = VOID_ENCODE + support.prefix + name + support.packetParameterSuffix + "(" + support.pointerType + " pkt";
+
+        output += getDataEncodeParameterList();
+
+        if(ids.count() <= 1)
+            output += ")";
+        else
+            output += ", uint32_t id)";
+
+    }
 
     return output;
 }
 
 
 /*!
- * \return The signature of the packet decode function, without semicolon or comments or line feed
+ * Get the signature of the packet decode function, without semicolon or
+ * comments or line feed
+ * \param _pg_ should be true to use the "_pg_" decoration on each parameter
+ * \return the decode signature
  */
-QString ProtocolPacket::getPacketDecodeSignature(void) const
+QString ProtocolPacket::getPacketDecodeSignature(bool _pg_) const
 {
-    QString output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " _pg_pkt";
+    QString output;
+    if(_pg_)
+        output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " _pg_pkt";
+    else
+        output = INT_DECODE + support.prefix + name + support.packetParameterSuffix + "(const " + support.pointerType + " pkt";
 
     output += getDataDecodeParameterList() + ")";
 

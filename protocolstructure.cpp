@@ -732,11 +732,11 @@ QString ProtocolStructure::getFunctionEncodePrototype() const
 
     if(getNumberOfEncodeParameters() > 0)
     {
-        output = VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount, const " + structName + "* _pg_user)";
+        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount, const " + structName + "* user)";
     }
     else
     {
-        output = VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount)";
+        output = VOID_ENCODE + typeName + "(uint8_t* data, int* bytecount)";
     }
 
     return output;
@@ -813,8 +813,10 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     if(numEncodes > 0)
         output += " * \\param _pg_user is the data to encode in the byte array\n";
     output += " */\n";
-
-    output += getFunctionEncodePrototype() + "\n";
+    if(numEncodes > 0)
+        output += VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount, const " + structName + "* _pg_user)\n";
+    else
+        output += VOID_ENCODE + typeName + "(uint8_t* _pg_data, int* _pg_bytecount)\n";
 
     output += "{\n";
 
@@ -860,9 +862,9 @@ QString ProtocolStructure::getFunctionDecodePrototype() const
     QString output;
 
     if(getNumberOfDecodeParameters() > 0)
-        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount, " + structName + "* _pg_user)";
+        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount, " + structName + "* user)";
     else
-        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount)";
+        output = "int decode" + typeName + "(const uint8_t* data, int* bytecount)";
 
     return output;
 }
@@ -937,8 +939,10 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
         output += " * \\param _pg_user is the data to decode from the byte array\n";
     output += " * \\return 1 if the data are decoded, else 0. If 0 is returned _pg_bytecount will not be updated.\n";
     output += " */\n";
-
-    output += getFunctionDecodePrototype() + "\n";
+    if(numDecodes > 0)
+        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount, " + structName + "* _pg_user)\n";
+    else
+        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount)\n";
 
     output += "{\n";
 
@@ -1206,14 +1210,14 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(bool includeChi
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += structure->getVerifyFunctionPrototype(includeChildren);
+            output += structure->getSetToInitialValueFunctionPrototype(includeChildren);
         }
         ProtocolFile::makeLineSeparator(output);
     }
 
     // My set to initial values function
     output += "//! Set a " + typeName + " structure to initial values\n";
-    output += "void init" + typeName + "(" + structName + "* _pg_user);\n";
+    output += "void init" + typeName + "(" + structName + "* user);\n";
 
     return output;
 
@@ -1364,7 +1368,7 @@ QString ProtocolStructure::getVerifyFunctionPrototype(bool includeChildren) cons
 
     // My set to initial values function
     output += "//! Verify a " + typeName + " structure has acceptable values\n";
-    output += "int verify" + typeName + "(" + structName + "* _pg_user);\n";
+    output += "int verify" + typeName + "(" + structName + "* user);\n";
 
     return output;
 
@@ -1522,7 +1526,7 @@ QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) 
 
     // My comparison function
     output += "//! Compare two " + typeName + " structures and generate a report\n";
-    output += "QString compare" + typeName + "(const QString& prename, const " + structName + "* _pg_user1, const " + structName + "* _pg_user2);\n";
+    output += "QString compare" + typeName + "(const QString& prename, const " + structName + "* user1, const " + structName + "* user2);\n";
 
     return output;
 }
@@ -1530,7 +1534,8 @@ QString ProtocolStructure::getComparisonFunctionPrototype(bool includeChildren) 
 
 /*!
  * Return the string that gives the function used to compare this structure
- * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
  * \return the function string, which may be empty
  */
 QString ProtocolStructure::getComparisonFunctionString(bool includeChildren) const
@@ -1699,7 +1704,7 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(bool includeChildren) c
 
     // My textPrint function
     output += "//! Generate a string that describes the contents of a " + typeName + " structure\n";
-    output += "QString textPrint" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user);\n";
+    output += "QString textPrint" + typeName + "(const QString& prename, const " + structName + "* user);\n";
 
     return output;
 }
@@ -1707,7 +1712,8 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(bool includeChildren) c
 
 /*!
  * Return the string that gives the function used to compare this structure
- * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
  * \return the function string, which may be empty
  */
 QString ProtocolStructure::getTextPrintFunctionString(bool includeChildren) const
@@ -1841,8 +1847,10 @@ QString ProtocolStructure::getTextPrintString(bool isStructureMember) const
 
 
 /*!
- * Return the string that gives the prototype of the function used to read this structure from text
- * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * Return the string that gives the prototype of the function used to read this
+ * structure from text
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
  * \return the function prototype string, which may be empty
  */
 QString ProtocolStructure::getTextReadFunctionPrototype(bool includeChildren) const
@@ -1871,7 +1879,7 @@ QString ProtocolStructure::getTextReadFunctionPrototype(bool includeChildren) co
 
     // My textRead function
     output += "//! Read the contents of a " + typeName + " structure from text\n";
-    output += "int textRead" + typeName + "(const QString& _pg_prename, const QString& _pg_source, " + structName + "* _pg_user);\n";
+    output += "int textRead" + typeName + "(const QString& prename, const QString& source, " + structName + "* user);\n";
 
     return output;
 }
@@ -2051,7 +2059,7 @@ QString ProtocolStructure::getMapEncodeFunctionPrototype(bool includeChildren) c
     // My mapEncode function
 
     output += "//! Encode the contents of a " + typeName + " structure to a string Key:Value map\n";
-    output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user);\n";
+    output += "void mapEncode" + typeName + "(const QString& prename, QVariantMap& map, const " + structName + "* user);\n";
 
     return output;
 
@@ -2250,7 +2258,7 @@ QString ProtocolStructure::getMapDecodeFunctionPrototype(bool includeChildren) c
     // My mapEncode function
 
     output += "//! Decode the contents of a " + typeName + " structure from a string Key:Value map\n";
-    output += "void mapDecode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, " + structName + "* _pg_user);\n";
+    output += "void mapDecode" + typeName + "(const QString& prename, QVariantMap& map, " + structName + "* user);\n";
 
     return output;
 }// ProtocolStructure::getMapDecodeeFunctionPrototype
