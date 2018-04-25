@@ -1878,8 +1878,9 @@ QString ProtocolStructure::getTextReadFunctionPrototype(bool includeChildren) co
 
 
 /*!
- * Return the string that gives the function used to read this structure from text
- * \param includeChildren should be true to include the function prototypes of the children structures of this structure
+ * Get the string that gives the function used to read this structure from text
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
  * \return the function string, which may be empty
  */
 QString ProtocolStructure::getTextReadFunctionString(bool includeChildren) const
@@ -2015,8 +2016,10 @@ QString ProtocolStructure::getTextReadString(bool isStructureMember) const
 
 
 /*!
- * Return the string that gives the prototype of the function used to encode this structure to a map
- * \param includeChildren should be true to include the function prototypes of the child structures
+ * Return the string that gives the prototype of the function used to encode
+ * this structure to a map
+ * \param includeChildren should be true to include the function prototypes
+ *        of the child structures
  * \return the function prototype string, which may be empty
  */
 QString ProtocolStructure::getMapEncodeFunctionPrototype(bool includeChildren) const
@@ -2051,6 +2054,7 @@ QString ProtocolStructure::getMapEncodeFunctionPrototype(bool includeChildren) c
     output += "void mapEncode" + typeName + "(const QString& _pg_prename, QVariantMap& _pg_map, const " + structName + "* _pg_user);\n";
 
     return output;
+
 }// ProtocolStructure::getMapEncodeFunctionPrototype
 
 
@@ -2111,15 +2115,16 @@ QString ProtocolStructure::getMapEncodeFunctionString(bool includeChildren) cons
     output += "}// mapEncode" + typeName + "\n";
 
     return output;
+
 }// ProtocolStructure::getMapEncodeFunctionString
 
 
 /*!
  * Return the string used for encoding this field to a map
- * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \param isStructureMember should be true to indicate this field is accessed
+ *        as a member structure
  * \return the encode string, which may be empty
  */
-
 QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
 {
     QString output;
@@ -2143,7 +2148,12 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
         if(variableArray.isEmpty())
             output += "_pg_i < " + array + ";";
         else
-            output += "(_pg_i < " + array + ") && (_pg_i < " + variableArray + ");";
+        {
+            if(isStructureMember)
+                output += "(_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + ");";
+            else
+                output += "(_pg_i < " + array + ") && (_pg_i < " + variableArray + ");";
+        }
 
         output += " _pg_i++)\n";
         spacing += TAB_IN;
@@ -2166,7 +2176,12 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
             if(variable2dArray.isEmpty())
                 output += "_pg_j < " + array2d + ";";
             else
-                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+            {
+                if(isStructureMember)
+                    output += "(_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + ");";
+                else
+                    output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+            }
 
             output += " _pg_j++)\n";
 
@@ -2183,21 +2198,29 @@ QString ProtocolStructure::getMapEncodeString(bool isStructureMember) const
     {
         if(isStructureMember)
         {
-            access = "&pg_user->" + name;
+            access = "&_pg_user->" + name;
         }
         else
         {
             access = name;
         }
 
-        output += TAB_IN + "mapEncode" + typeName + "(pg_prename + " + key + ", _pg_map, " + access + ");\n";
+        output += TAB_IN + "mapEncode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
 
     }// else if simple structure, no array
 
     return output;
+
 }// ProtocolStructure::getMapEncodeString
 
 
+/*!
+ * Get the string that gives the prototype of the function used to decode this
+ * structure from a map
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
+ * \return the function string, which may be empty
+ */
 QString ProtocolStructure::getMapDecodeFunctionPrototype(bool includeChildren) const
 {
     QString output;
@@ -2233,6 +2256,12 @@ QString ProtocolStructure::getMapDecodeFunctionPrototype(bool includeChildren) c
 }// ProtocolStructure::getMapDecodeeFunctionPrototype
 
 
+/*!
+ * Get the string that gives the function used to decode this structure from a map
+ * \param includeChildren should be true to include the function prototypes of
+ *        the children structures of this structure
+ * \return the function string, which may be empty
+ */
 QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) const
 {
     QString output;
@@ -2285,12 +2314,19 @@ QString ProtocolStructure::getMapDecodeFunctionString(bool includeChildren) cons
     ProtocolFile::makeLineSeparator(output);
 
     output += "\n";
-    output += "}// mapEncode" + typeName + "\n";
+    output += "}// mapDecode" + typeName + "\n";
 
     return output;
+
 }// ProtocolStructure::getMapDecodeFunctionString
 
 
+/*!
+ * Get the string used for decoding this field from a map.
+ * \param isStructureMember should be true to indicate this field is accessed
+ *        as a member structure
+ * \return the map decode string, which may be empty
+ */
 QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
 {
     QString output;
@@ -2314,7 +2350,12 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
         if(variableArray.isEmpty())
             output += "_pg_i < " + array + ";";
         else
-            output += "(_pg_i < " + array + ") && (_pg_j < " + variableArray + ");";
+        {
+            if(isStructureMember)
+                output += "(_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + ");";
+            else
+                output += "(_pg_i < " + array + ") && (_pg_i < " + variableArray + ");";
+        }
 
         output += " _pg_i++)\n";
 
@@ -2338,7 +2379,12 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
             if(variable2dArray.isEmpty())
                 output += "_pg_j < " + array2d + ";";
             else
-                output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+            {
+                if(isStructureMember)
+                    output += "(_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + ");";
+                else
+                    output += "(_pg_j < " + array2d + ") && (_pg_j < " + variable2dArray + ");";
+            }
 
             output += " _pg_j++)\n";
             spacing += TAB_IN;
@@ -2353,14 +2399,14 @@ QString ProtocolStructure::getMapDecodeString(bool isStructureMember) const
     {
         if(isStructureMember)
         {
-            access = "&pg_user->" + name;
+            access = "&_pg_user->" + name;
         }
         else
         {
             access = name;
         }
 
-        output += TAB_IN + "mapDecode" + typeName + "(_pg_prename " + key + ", _pg_map, " + access + ");\n";
+        output += TAB_IN + "mapDecode" + typeName + "(_pg_prename + " + key + ", _pg_map, " + access + ");\n";
 
     }// else if simple structure, no array
 

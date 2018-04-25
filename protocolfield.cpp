@@ -2552,6 +2552,11 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
 }// ProtocolField::getTextReadString
 
 
+/*!
+ * Get the string used for storing this field in a map.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the string used to read this field as text, which may be empty
+ */
 QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 {  
     QString output;
@@ -2670,7 +2675,11 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 }// ProtocolField::getMapEncodeString
 
 
-
+/*!
+ * Get the string used for extracting this field from a map.
+ * \param isStructureMember should be true to indicate this field is accessed as a member structure
+ * \return the string used to read this field as text, which may be empty
+ */
 QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 {
     QString key;
@@ -2754,10 +2763,10 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
             output += ", _pg_map, &" + access + ");\n";
+
         }// data type is a struct
         else
         {
-
             key = "_pg_prename + \":" + name + "\"";
 
             if(isArray())
@@ -2772,15 +2781,19 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
             if(inMemoryType.isFloat || !printScalerString.isEmpty())
                 decode += ".toDouble";
             else if (inMemoryType.isSigned)
+            {
                 if(inMemoryType.bits > 32)
                     decode += ".toLongLong";
                 else
                     decode += ".toInt";
+            }
             else
+            {
                 if(inMemoryType.bits > 32)
                     decode += ".toULongLong";
                 else
                     decode += ".toUInt";
+            }
 
             /* Generate code to load the data from the map:
              * 1. Check that the given key exists
@@ -2790,13 +2803,12 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
 
             output += spacing + "if(_pg_map.contains(key))\n";
             output += spacing + "{\n";
-            output += spacing + TAB_IN + decode + "(&ok)";
-
+            output += spacing + TAB_IN + decode + "(&ok);\n";
+            output += spacing + TAB_IN + "if(ok)\n";
+            output += spacing + TAB_IN + TAB_IN + access + " = (" + typeName + ")" + decode + "()";
             if(inMemoryType.isFloat && !printScalerString.isEmpty())
                 output += readScalerString;
             output += ";\n";
-            output += spacing + TAB_IN + "if(ok)\n";
-            output += spacing + TAB_IN + TAB_IN + access + " = " + decode + "();\n";
             output += spacing + "}\n";
 
         }// else not a struct
@@ -2812,10 +2824,12 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
             spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
             output += spacing + "}\n";
         }
+
     }// else numeric output
 
     return output;
-}
+
+}// ProtocolField::getMapDecodeString
 
 
 /*!
@@ -3716,7 +3730,7 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
 {
     QString output;
     QString access;
-    QString spacing = "    ";
+    QString spacing = TAB_IN;
 
     if(encodedType.isNull)
         return output;

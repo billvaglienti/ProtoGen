@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.14.f";
+const QString ProtocolParser::genVersion = "2.15.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser

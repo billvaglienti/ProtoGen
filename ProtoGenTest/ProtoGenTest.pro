@@ -36,7 +36,8 @@ SOURCES += main.cpp \
     verify/dateverify.c \
     DemolinkProtocol.c \
     compare/compareDemolink.cpp \
-    compare/printDemolink.cpp
+    compare/printDemolink.cpp \
+    map/mapDemolink.cpp
 
 HEADERS += \
     indices.h \
@@ -57,7 +58,8 @@ HEADERS += \
     OtherDefinitions.h \
     verify/dateverify.h \
     compare/compareDemolink.h \
-    compare/printDemolink.h
+    compare/printDemolink.h \
+    map/mapDemolink.h
 
 OTHER_FILES += \
     Doxyfile
@@ -65,7 +67,8 @@ OTHER_FILES += \
 INCLUDEPATH += ./ \
                ./definitions \
                ./verify \
-               ./compare
+               ./compare \
+               ./map
 
 #protogen.target = $$PWD/Demolink.markdown
 #protogen.commands = $$PWD/../ProtoGenInstall/ProtoGen.exe $$PWD/../exampleprotocol.xml $$PWD -no-doxygen
