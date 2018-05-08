@@ -216,8 +216,12 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty())
         mapEncode = true;
 
-    // Must have a structure definition to do compare or print operations (for now)
-    if(compare || print || hasVerify() || hasInit())
+    // In order to do compare, print, map, verify or init we must actually have some parameters
+    if((getNumberOfEncodeParameters() <= 0) && (getNumberOfDecodeParameters() <= 0))
+        compare = print = mapEncode = hasverify = hasinit = false;
+
+    // Must have a structure definition to do any of these operations
+    if(compare || print || hasverify || hasinit)
         forceStructureDeclaration = true;
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
