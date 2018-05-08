@@ -940,9 +940,9 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     output += " * \\return 1 if the data are decoded, else 0. If 0 is returned _pg_bytecount will not be updated.\n";
     output += " */\n";
     if(numDecodes > 0)
-        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount, " + structName + "* _pg_user)\n";
+        output += "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount, " + structName + "* _pg_user)\n";
     else
-        output = "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount)\n";
+        output += "int decode" + typeName + "(const uint8_t* _pg_data, int* _pg_bytecount)\n";
 
     output += "{\n";
 
