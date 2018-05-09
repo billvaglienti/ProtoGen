@@ -221,7 +221,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         compare = print = mapEncode = hasverify = hasinit = false;
 
     // Must have a structure definition to do any of these operations
-    if(compare || print || hasverify || hasinit)
+    if(compare || print || mapEncode || hasverify || hasinit)
         forceStructureDeclaration = true;
 
     // The file directive tells us if we are creating a separate file, or if we are appending an existing one
