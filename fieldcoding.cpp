@@ -131,18 +131,25 @@ bool FieldCoding::generateEncodeHeader(void)
                 header.write("\n#endif // UINT64_MAX\n");
         }
 
-        // big endian
-        header.write("\n");
-        header.write("//! " + briefEncodeComment(i, true) + "\n");
-        header.write(encodeSignature(i, true) + ";\n");
-
-        // little endian
         if(typeSizes[i] != 1)
         {
+            // big endian
+            header.write("\n");
+            header.write("//! " + briefEncodeComment(i, true) + "\n");
+            header.write(encodeSignature(i, true) + ";\n");
+            
+            // little endian
             header.write("\n");
             header.write("//! " + briefEncodeComment(i, false) + "\n");
             header.write(encodeSignature(i, false) + ";\n");
         }
+        else
+        {
+            header.write("\n");
+            header.write("//! " + briefEncodeComment(i, true) + "\n");
+            header.write(encodeSignature(i, true) + "\n");            
+        }
+
 
     }// for all output byte counts
 
@@ -280,14 +287,14 @@ void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
                 source.write("#endif // UINT64_MAX\n");
         }
 
-        // big endian
-        source.write("\n");
-        source.write(fullEncodeComment(i, true) + "\n");
-        source.write(fullEncodeFunction(i, true) + "\n");
-
-        // little endian
         if(typeSizes[i] != 1)
         {
+            // big endian
+            source.write("\n");
+            source.write(fullEncodeComment(i, true) + "\n");
+            source.write(fullEncodeFunction(i, true) + "\n");
+            
+            // little endian
             source.write("\n");
             source.write(fullEncodeComment(i, false) + "\n");
             source.write(fullEncodeFunction(i, false) + "\n");
@@ -407,12 +414,16 @@ QString FieldCoding::encodeSignature(int type, bool bigendian)
             endian = "Be";
         else
             endian = "Le";
-    }
 
-    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
-        return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index, int sigbits)");
+        if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+            return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index, int sigbits)");
+        else
+            return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
+    }
     else
-        return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
+    {
+        return QString("#define " + typeSigNames[type] + "ToBytes(number, bytes, index) (bytes)[(*(index))++] = (number)");
+    }
 
 }// FieldCoding::encodeSignature
 
@@ -496,7 +507,7 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
     function += "{\n";
 
     if(typeSizes[type] == 1)
-        function += "    bytes[(*index)++] = (uint8_t)(number);\n";
+        return "// ";
     else
     {
         function += "    // increment byte pointer for starting point\n";
@@ -614,16 +625,23 @@ bool FieldCoding::generateDecodeHeader(void)
                 header.write("\n#endif // UINT64_MAX\n");
         }
 
-        header.write("\n");
-        header.write("//! " + briefDecodeComment(type, true) + "\n");
-        header.write(decodeSignature(type, true) + ";\n");
-
         if(typeSizes[type] != 1)
         {
+            header.write("\n");
+            header.write("//! " + briefDecodeComment(type, true) + "\n");
+            header.write(decodeSignature(type, true) + ";\n");
+
             header.write("\n");
             header.write("//! " + briefDecodeComment(type, false) + "\n");
             header.write(decodeSignature(type, false) + ";\n");
         }
+        else
+        {
+            header.write("\n");
+            header.write("//! " + briefDecodeComment(type, true) + "\n");
+            header.write(decodeSignature(type, true) + "\n");
+        }
+
 
     }// for all input types
 
@@ -754,14 +772,14 @@ void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\
                 source.write("#endif // UINT64_MAX\n");
         }
 
-        // big endian unsigned
-        source.write("\n");
-        source.write(fullDecodeComment(type, true) + "\n");
-        source.write(fullDecodeFunction(type, true) + "\n");
-
-        // little endian unsigned
         if(typeSizes[type] != 1)
         {
+            // big endian unsigned
+            source.write("\n");
+            source.write(fullDecodeComment(type, true) + "\n");
+            source.write(fullDecodeFunction(type, true) + "\n");
+
+            // little endian unsigned
             source.write("\n");
             source.write(fullDecodeComment(type, false) + "\n");
             source.write(fullDecodeFunction(type, false) + "\n");
@@ -848,12 +866,16 @@ QString FieldCoding::decodeSignature(int type, bool bigendian)
             endian = "Be";
         else
             endian = "Le";
-    }
 
-    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
-        return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index, int sigbits)");
+        if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+            return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index, int sigbits)");
+        else
+            return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
+    }
     else
-        return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
+    {
+        return QString("#define " + typeSigNames[type] + "FromBytes(bytes, index) (bytes)[(*(index))++]");
+    }
 
 }// FieldCoding::decodeSignature
 
