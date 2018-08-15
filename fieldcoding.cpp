@@ -422,7 +422,7 @@ QString FieldCoding::encodeSignature(int type, bool bigendian)
     }
     else
     {
-        return QString("#define " + typeSigNames[type] + "ToBytes(number, bytes, index) (bytes)[(*(index))++] = (number)");
+        return QString("#define " + typeSigNames[type] + "ToBytes(number, bytes, index) (bytes)[(*(index))++] = ((" + typeNames[type] + ")(number))");
     }
 
 }// FieldCoding::encodeSignature
@@ -874,7 +874,7 @@ QString FieldCoding::decodeSignature(int type, bool bigendian)
     }
     else
     {
-        return QString("#define " + typeSigNames[type] + "FromBytes(bytes, index) (bytes)[(*(index))++]");
+        return QString("#define " + typeSigNames[type] + "FromBytes(bytes, index) (" + typeNames[type] + ")((bytes)[(*(index))++])");
     }
 
 }// FieldCoding::decodeSignature

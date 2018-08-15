@@ -3704,7 +3704,7 @@ QString ProtocolField::getDecodeStringForString(bool isStructureMember, bool def
     else
     {
         // When pulling the bytes we have to control the maximum, it could be limited by the in memory space, or by the packet size
-        output += spacing + "stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array + " < (_pg_numbytes - _pg_byteindex) ? " + array + " : (_pg_numbytes - _pg_byteindex), 0);\n";
+        output += spacing + "stringFromBytes(" + lhs + name + ", _pg_data, &_pg_byteindex, " + array + ", 0);\n";
     }
 
     if(checkConstant)

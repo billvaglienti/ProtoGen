@@ -225,6 +225,7 @@ efficiently encode data for little or big endian architectures.">
         <Data name="serialNumber" inMemoryType="unsigned32" comment="serial number of the board"/>
         <Data name="assemblyNumber" inMemoryType="bitfield31" comment="serial number of the assembly"/>
         <Data name="isCalibrated" inMemoryType="bitfield1" comment="set if the board has been calibrated"/>        
+        <Data name="description" inMemoryType="string" array="32" comment="The board description"/>
     </Structure>
 
     <Packet name="Version" parameterInterface="true" structureInterface="true"

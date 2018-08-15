@@ -766,7 +766,7 @@ int testVersionPacket(void)
     testPacket_t pkt, pkt2;
     Version_t version;
 
-    if(getVersionMinDataLength() != 25)
+    if(getVersionMinDataLength() != 26)
     {
         std::cout << "Version packet minimum data length is wrong" << std::endl;
         return 0;
@@ -789,12 +789,13 @@ int testVersionPacket(void)
     version.board.calibratedDate.year = 2069;
     version.board.calibratedDate.month = 7;
     version.board.calibratedDate.day = 20;
+    strcpy(version.board.description, "special testing version");
 
     // Two different interfaces the encoding
     encodeVersionPacketStructure(&pkt, &version);
     encodeVersionPacket(&pkt2, &version.board, version.major, version.minor, version.sub, version.patch, &version.date, version.description);
 
-    if(pkt.length != (24 + strlen(version.description) + 1))
+    if(pkt.length != (24 + strlen(version.description) + 1 + strlen(version.board.description) + 1))
     {
         std::cout << "Version packet has the wrong length" << std::endl;
         return 0;
@@ -847,7 +848,7 @@ int testVersionPacket(void)
     QString textversion = textPrintVersion_t("Version", &version);
     memset(&version, 0, sizeof(version));
 
-    if((textReadVersion_t("Version", textversion, &version) != 17) || !verifyVersionData(version))
+    if((textReadVersion_t("Version", textversion, &version) != 18) || !verifyVersionData(version))
     {
         std::cout << "textPrintVersion_t() to textReadVersion_t() yielded incorrect data" << std::endl;
         return 0;
@@ -857,7 +858,7 @@ int testVersionPacket(void)
     textversion = textPrintVersionPacket("Testing", &pkt);
     memset(&version, 0, sizeof(version));
 
-    if((textReadVersion_t("Testing", textversion, &version) != 17) || !verifyVersionData(version))
+    if((textReadVersion_t("Testing", textversion, &version) != 18) || !verifyVersionData(version))
     {
         std::cout << "textPrintVersionPacket() to textReadVersion_t() yielded incorrect data" << std::endl;
         return 0;
@@ -887,6 +888,7 @@ int verifyVersionData(Version_t version)
     if(version.board.calibratedDate.year != 2069) return 0;
     if(version.board.calibratedDate.month != 7) return 0;
     if(version.board.calibratedDate.day != 20) return 0;
+    if(strcmp(version.board.description, "special testing version") != 0) return 0;
 
     return 1;
 }
