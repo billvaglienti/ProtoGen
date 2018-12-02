@@ -109,6 +109,9 @@ void ProtocolStructure::parse(void)
     array = ProtocolParser::getAttribute("array", map);
     variableArray = ProtocolParser::getAttribute("variableArray", map);
     dependsOn = ProtocolParser::getAttribute("dependsOn", map);
+    dependsOnValue = ProtocolParser::getAttribute("dependsOnValue", map);
+    dependsOnCompare = ProtocolParser::getAttribute("dependsOnCompare", map);
+
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
 
@@ -130,11 +133,27 @@ void ProtocolStructure::parse(void)
         variableArray.clear();
     }
 
-
     if(!dependsOn.isEmpty() && !variableArray.isEmpty())
     {
         emitWarning("variable length arrays cannot also use dependsOn");
         dependsOn.clear();
+    }
+
+    if(!dependsOnValue.isEmpty() && dependsOn.isEmpty())
+    {
+        emitWarning("dependsOnValue does not make sense unless dependsOn is defined");
+        dependsOnValue.clear();
+    }
+
+    if(!dependsOnCompare.isEmpty() && dependsOnValue.isEmpty())
+    {
+        emitWarning("dependsOnCompare does not make sense unless dependsOnValue is defined");
+        dependsOnCompare.clear();
+    }
+    else if(dependsOnCompare.isEmpty() && !dependsOnValue.isEmpty())
+    {
+        // This is not a warning, it is expected
+        dependsOnCompare = "==";
     }
 
     // Check to make sure we did not step on any keywords
@@ -403,6 +422,8 @@ void ProtocolStructure::parseChildren(const QDomElement& field)
                         {
                            encodable->emitWarning("dependsOn ignored, failed to find dependsOn variable");
                            encodable->dependsOn.clear();
+                           encodable->dependsOnValue.clear();
+                           encodable->dependsOnCompare.clear();
                         }
                     }
 
@@ -1012,11 +1033,15 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(" + dependsOn + ")\n";
-        output += spacing + "{\n";
-        spacing += TAB_IN + "";
+            output += spacing + "if(" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += ")\n" + spacing + "{\n";
+        spacing += TAB_IN;
     }
 
     if(isArray())
@@ -1109,11 +1134,15 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(" + dependsOn + ")\n";
-        output += spacing + "{\n";
-        spacing += TAB_IN + "";
+            output += spacing + "if(" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += ")\n" + spacing + "{\n";
+        spacing += TAB_IN;
     }
 
     if(isArray())
@@ -2504,7 +2533,15 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
         if(!description.endsWith('.'))
             description += ".";
 
-        description += " Only included if " + dependsOn + " is non-zero.";
+        if(dependsOnValue.isEmpty())
+            description += " Only included if " + dependsOn + " is non-zero.";
+        else
+        {
+            if(dependsOnCompare.isEmpty())
+                description += " Only included if " + dependsOn + " equal to " + dependsOnValue + ".";
+            else
+                description += " Only included if " + dependsOn + " " + dependsOnCompare + " " + dependsOnValue + ".";
+        }
     }
 
     if(description.isEmpty())

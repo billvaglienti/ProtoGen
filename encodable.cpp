@@ -60,6 +60,12 @@ void Encodable::checkAgainstKeywords(void)
         dependsOn = "_" + dependsOn;
     }
 
+    if(keywords.contains(dependsOnValue))
+    {
+        emitWarning("dependsOnValue matches C keyword, changed to _dependsOnValue");
+        dependsOnValue = "_" + dependsOnValue;
+    }
+
     if(variablenames.contains(name))
     {
         emitWarning("name matches ProtoGen variable, changed to _name");
@@ -96,6 +102,12 @@ void Encodable::checkAgainstKeywords(void)
         dependsOn = "_" + dependsOn;
     }
 
+    if(variablenames.contains(dependsOnValue))
+    {
+        emitWarning("dependsOnValue matches ProtoGen variable, changed to _dependsOnValue");
+        dependsOnValue = "_" + dependsOnValue;
+    }
+
 }// Encodable::checkAgainstKeywords
 
 
@@ -113,6 +125,9 @@ void Encodable::clear(void)
     array2d.clear();
     variable2dArray.clear();
     encodedLength.clear();
+    dependsOn.clear();
+    dependsOnValue.clear();
+    dependsOnCompare.clear();
 }
 
 

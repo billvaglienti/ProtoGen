@@ -189,6 +189,7 @@ efficiently encode data for little or big endian architectures.">
             straight line, or a linearly interpolated table with up to 10 points.">
         
         <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" comment="Number of points in the throttle curve"/>
+        <!-- Enable this to demonstrate the bug I need to fix <Code name="CodeShouldNotInterruptBitFields" encode=";"/> -->
         <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield27"/>
         <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>
         
@@ -257,9 +258,8 @@ efficiently encode data for little or big endian architectures.">
         <Data inMemoryType="null" array="N3D" encodedType="unsigned8"
               comment="Reserve an array for future expansion"/>
         <Data name="magIncluded" inMemoryType="bitfield1" comment="set if magnetometer data are included in this packet"/>
-        <Data name="laserIncluded" inMemoryType="bitfield1" comment="set if laser range finder data are included in this packet"/>
+        <Data name="laserStatus" inMemoryType="bitfield3" comment="set if laser range finder data are included in this packet"/>
         <Data name="airDataIncluded" inMemoryType="bitfield1" comment="set if air data are included in this packet"/>
-        <Data inMemoryType="null" encodedType="bitfield2" comment="Bits reserved for future use"/>
         <Data name="insMode" enum="insMode_t" encodedType="bitfield3" comment="The operational mode of the INS"/>
         <Data name="numGPSs" inMemoryType="uint8_t" comment="number of GPS sources"/>
         <Data name="gpsData" struct="GPS" array="3" variableArray="numGPSs" comment="Information from all possible GPS systems"/>
@@ -273,8 +273,8 @@ efficiently encode data for little or big endian architectures.">
         <Data name="staticP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" max="115000" comment="Static pressure in Pascals"/>
         <Data name="OAT" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint8_t" min="200" max="400" comment="Outside air temperature in Kelvin"/>
         <Data name="mag" inMemoryType="float" array="N3D" dependsOn="magIncluded" encodedType="int16_t" max="100000" comment="magnetic field in nanoTesla in body X, Y, Z"/>
-        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" encodedType="int16_t" max="3.15" default="pi/2" comment="True heading computed by magnetic field in radians"/>
-        <Data name="laserAGL" inMemoryType="float" dependsOn="laserIncluded" encodedType="uint16_t" min="-5" max="145" default="10" comment="Altitude above ground in meters as measured by the laser altimeter"/>
+        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" dependsOnValue="1" encodedType="int16_t" max="3.15" default="pi/2" comment="True heading computed by magnetic field in radians"/>
+        <Data name="laserAGL" inMemoryType="float" dependsOn="laserStatus" dependsOnValue="3" dependsOnCompare="&lt;=" encodedType="uint16_t" min="-5" max="145" default="10" comment="Altitude above ground in meters as measured by the laser altimeter"/>
         <Data name="dynamicP" inMemoryType="override" encodedType="float32"/>
         <Data name="fuel" inMemoryType="override" encodedType="float24"/>
 

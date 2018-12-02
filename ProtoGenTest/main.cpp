@@ -206,7 +206,7 @@ int testTelemetryPacket(void)
     telemetry.staticP = 101325;
     telemetry.dynamicP = 254;
 
-    telemetry.laserIncluded = 1;
+    telemetry.laserStatus = 1;
     telemetry.laserAGL = 131.256f;
 
     telemetry.magIncluded = 1;
@@ -299,7 +299,7 @@ int verifyTelemetryData(Telemetry_t telemetry)
     if(fcompare(telemetry.staticP, 101325.0f, 115000.0/65536.0)) return 0;
     if(fcompare(telemetry.dynamicP, 254.0f, 16200/65536.0)) return 0;
 
-    if(telemetry.laserIncluded != 1) return 0;
+    if(telemetry.laserStatus != 1) return 0;
     if(fcompare(telemetry.laserAGL, 131.256, 150/65536.0)) return 0;
 
     // We don't test this one because we do both cases

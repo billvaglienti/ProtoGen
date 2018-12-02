@@ -90,6 +90,12 @@ void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
         dependsOn.clear();
     }
 
+    if(!dependsOnValue.isEmpty())
+    {
+        emitWarning("dependsOnValue makes no sense for a top level object");
+        dependsOnValue.clear();
+    }
+
 }// ProtocolStructureModule::issueWarnings
 
 

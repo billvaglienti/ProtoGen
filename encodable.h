@@ -216,6 +216,8 @@ public:
     QString variableArray;  //!< variable that gives the length of the array in a packet
     QString variable2dArray;//!< variable that gives the length of the 2nd array dimension in a packet
     QString dependsOn;      //!< variable that determines if this field is present
+    QString dependsOnValue; //!< String providing the details of the depends on value
+    QString dependsOnCompare;//!< Comparison to use for dependsOnValue
     EncodedLength encodedLength;    //!< The lengths of the encodables
 };
 

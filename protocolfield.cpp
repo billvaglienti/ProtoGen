@@ -682,6 +682,8 @@ void ProtocolField::parse(void)
                                              << "array2d"
                                              << "variable2dArray"
                                              << "dependsOn"
+                                             << "dependsOnValue"
+                                             << "dependsOnCompare"
                                              << "enum"
                                              << "default"
                                              << "constant"
@@ -731,6 +733,10 @@ void ProtocolField::parse(void)
             variable2dArray = attr.value().trimmed();
         else if(attrname.compare("dependsOn", Qt::CaseInsensitive) == 0)
             dependsOn = attr.value().trimmed();
+        else if(attrname.compare("dependsOnValue", Qt::CaseInsensitive) == 0)
+            dependsOnValue = attr.value().trimmed();
+        else if(attrname.compare("dependsOnCompare", Qt::CaseInsensitive) == 0)
+            dependsOnCompare = attr.value().trimmed();
         else if(attrname.compare("enum", Qt::CaseInsensitive) == 0)
             enumName = attr.value().trimmed();
         else if(attrname.compare("default", Qt::CaseInsensitive) == 0)
@@ -1139,6 +1145,23 @@ void ProtocolField::parse(void)
             emitWarning("dependsOn does not make sense for types that are not encoded (null)");
             dependsOn.clear();
         }
+    }
+
+    if(!dependsOnValue.isEmpty() && dependsOn.isEmpty())
+    {
+        emitWarning("dependsOnValue does not make sense unless dependsOn is defined");
+        dependsOnValue.clear();
+    }
+
+    if(!dependsOnCompare.isEmpty() && dependsOnValue.isEmpty())
+    {
+        emitWarning("dependsOnCompare does not make sense unless dependsOnValue is defined");
+        dependsOnCompare.clear();
+    }
+    else if(dependsOnCompare.isEmpty() && !dependsOnValue.isEmpty())
+    {
+        // This is not a warning, it is expected
+        dependsOnCompare = "==";
     }
 
     bool ok;
@@ -1788,7 +1811,15 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             if(!description.endsWith('.'))
                 description += ".";
 
-            description += " Only included if " + dependsOn + " is non-zero.";
+            if(dependsOnValue.isEmpty())
+                description += " Only included if " + dependsOn + " is non-zero.";
+            else
+            {
+                if(dependsOnCompare.isEmpty())
+                    description += " Only included if " + dependsOn + " equal to " + dependsOnValue + ".";
+                else
+                    description += " Only included if " + dependsOn + " " + dependsOnCompare + " " + dependsOnValue + ".";
+            }
         }
 
         if(description.isEmpty())
@@ -1863,7 +1894,17 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
             description += "<br>Data are given constant value on encode " + constantStringForDisplay + ".";
 
         if(!dependsOn.isEmpty())
-            description += "<br>Only included if " + dependsOn + " is non-zero.";
+        {
+            if(dependsOnValue.isEmpty())
+                description += "<br>Only included if " + dependsOn + " is non-zero.";
+            else
+            {
+                if(dependsOnCompare.isEmpty())
+                    description += "<br>Only included if " + dependsOn + " equal to " + dependsOnValue + ".";
+                else
+                    description += "<br>Only included if " + dependsOn + " " + dependsOnCompare + " " + dependsOnValue + ".";
+            }
+        }
 
         if(!defaultString.isEmpty())
             description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultStringForDisplay + ".";
@@ -3741,11 +3782,15 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(" + dependsOn + ")\n";
-        output += spacing + "{\n";
-        spacing += "    ";
+            output += spacing + "if(" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += spacing + ")\n{\n";
+        spacing += TAB_IN;
     }
 
     if(isArray())
@@ -3805,7 +3850,7 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
     }
 
     if(!dependsOn.isEmpty())
-        output += "    }\n";
+        output += TAB_IN + "}\n";
 
     return output;
 
@@ -3834,11 +3879,15 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(" + dependsOn + ")\n";
-        output += spacing + "{\n";
-        spacing += "    ";
+            output += spacing + "if(" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += ")\n" + spacing + "{\n";
+        spacing += TAB_IN;
     }
 
     if(isArray())
@@ -3904,7 +3953,7 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
     }
 
     if(!dependsOn.isEmpty())
-        output += "    }\n";
+        output += TAB_IN + "}\n";
 
     return output;
 
@@ -4005,10 +4054,14 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(" + dependsOn + ")\n";
-        output += spacing + "{\n";
+            output += spacing + "if(" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += ")\n" + spacing + "{\n";
         spacing += TAB_IN;
     }
 
@@ -4415,10 +4468,14 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
     if(!dependsOn.isEmpty())
     {
         if(isStructureMember)
-            output += spacing + "if(_pg_user->" + dependsOn + ")\n";
+            output += spacing + "if(_pg_user->" + dependsOn;
         else
-            output += spacing + "if(*" + dependsOn + ")\n";
-        output += spacing + "{\n";
+            output += spacing + "if(*" + dependsOn;
+
+        if(!dependsOnValue.isEmpty())
+            output += " " + dependsOnCompare + " " + dependsOnValue;
+
+        output += ")\n" + spacing + "{\n";
         spacing += TAB_IN;
     }
 
