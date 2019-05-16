@@ -1363,9 +1363,6 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
 
         output += "\n";
 
-        // Table caption
-        output += "[" + title + " packet bytes]\n";
-
         // Table header, notice the column markers lead and follow. We have to do this for merged cells
         output +=  "| ";
         output += spacedString(bytes.at(0), byteColumn);
@@ -1445,6 +1442,9 @@ QString ProtocolPacket::getTopLevelMarkdown(bool global, const QStringList& pack
             output += spacedString(comments.at(i), commentColumn);
             output += " |\n";
         }
+
+        // Table caption
+        output += "[" + title + " packet bytes]\n";
 
         output += "\n";
 

@@ -594,12 +594,6 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             output += "\n\n";
         }
 
-        // Table caption, with an anchor for the enumeration name
-        if(title.isEmpty())
-            output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
-        else
-            output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
-
         // Table header
         output += "| ";
         output += spacedString("Name", firstColumnSpacing);
@@ -638,6 +632,12 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
             output += spacedString(element.comment, thirdColumnSpacing);
             output += " |\n";
         }
+
+        // Table caption, with an anchor for the enumeration name
+        if(title.isEmpty())
+            output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
+        else
+            output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
 
         output += "\n";
         output += "\n";

@@ -1321,11 +1321,6 @@ void ProtocolField::parse(void)
             emitWarning("structure cannot have a constant value");
             constantString.clear();
         }
-        else if(!defaultString.isEmpty())
-        {
-            emitWarning("fields with default values cannot also be constant");
-            constantString.clear();
-        }
     }
 
     // Make sure no keyword conflicts
