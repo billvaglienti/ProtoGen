@@ -1,0 +1,6 @@
+
+*.stash
+*.obj
+*.user
+*.exe
+ProtoGenTest/

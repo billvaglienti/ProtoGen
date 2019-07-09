@@ -20,16 +20,16 @@ int isFloat32Valid(uint32_t value)
     // 4) The exponent is the maximum value, and the significand is non-zero. This is NaN.
     // We check for cases 2, 3, 4 and return 0 if it happens
 
-    if((value & 0x7F800000) == (0x7F800000))
+    if((value & 0x7F800000ul) == (0x7F800000ul))
     {
         // inifinity or NaN.
         return 0;
 
     }// if the exponent is the maximum value
-    else if((value & 0x7F800000) == 0)
+    else if((value & 0x7F800000ul) == 0)
     {
         // Check for denormalized number
-        if(value & 0x007FFFFF)
+        if(value & 0x007FFFFFul)
             return 0;
 
     }// else if the exponent is zero
@@ -98,7 +98,8 @@ uint32_t float32ToFloat24(float value)
  * point representation with a variable number of bits for the significand.
  * Underflow will be returned as zero and overflow as the maximum possible value.
  * \param value is the 32-bit floating point data to convert.
- * \param sigbits is the number of bits to use for the significand.
+ * \param sigbits is the number of bits to use for the significand, and must be
+ *        between 4 and 20 bits inclusive.
  * \return The float24 as a simple 24-bit integer (most significant byte clear).
  */
 uint32_t float32ToFloat24ex(float value, int sigbits)
@@ -113,6 +114,7 @@ uint32_t float32ToFloat24ex(float value, int sigbits)
     uint32_t unsignedExponent;
     int32_t  signedExponent;
     uint32_t output;
+    uint32_t maxsignificand = (1 << sigbits) - 1;
 
     // The bias is computed as 2 raised to the number of exponent bits divided
     // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
@@ -125,20 +127,34 @@ uint32_t float32ToFloat24ex(float value, int sigbits)
     field.Float = value;
 
     // The significand is the least significant 23 bits (IEEE754)
-    significand = field.Integer & 0x007FFFFF;
+    significand = field.Integer & 0x007FFFFFul;
 
     // Exponent occupies the next 8 bits (IEEE754)
-    unsignedExponent = (field.Integer & 0x7F800000) >> 23;
+    unsignedExponent = (field.Integer & 0x7F800000ul) >> 23;
 
-    // Get rid of some bits, here is where we sacrifice resolution
-    output = (uint16_t)(significand >> (23-sigbits));
+    // Get rid of some bits; here is where we sacrifice resolution, so we need
+    // to round correctly, for that reason we do not shift the last bit yet
+    output = significand >> (22-sigbits);
+
+    // Check for rounding, if the most significant bit that we are going to
+    // throw away is a 1 we need to round up.
+    if(output & 0x01)
+    {
+        output = (output >> 1);
+
+        // Don't round past the maximum significand
+        if(output < maxsignificand)
+            output++;
+    }
+    else
+        output = (output >> 1);
 
     // If significand and exponent are zero means a number of zero
     if((output == 0) && (unsignedExponent == 0))
     {
         // return correctly signed result
-        if(field.Integer & 0x80000000)
-            return 0x00800000;
+        if(field.Integer & 0x80000000ul)
+            return 0x00800000ul;
         else
             return 0;
     }
@@ -165,8 +181,8 @@ uint32_t float32ToFloat24ex(float value, int sigbits)
     }
 
     // Account for the sign
-    if(field.Integer & 0x80000000)
-        output |= 0x00800000;
+    if(field.Integer & 0x80000000ul)
+        output |= 0x00800000ul;
 
     // return the 24-bit representation
     return output;
@@ -191,7 +207,8 @@ float float24ToFloat32(uint32_t value)
  * Convert a 24-bit floating point representation with variable number of
  * significand bits to binary32
  * \param value is the float16 representation to convert.
- * \param sigbits is the number of bits to use for the significand of the 24-bit float.
+ * \param sigbits is the number of bits to use for the significand of the
+ *        24-bit float, and must be between 4 and 20 bits inclusive.
  * \return the binary32 version as a float.
  */
 float float24ToFloat32ex(uint32_t value, int sigbits)
@@ -203,7 +220,7 @@ float float24ToFloat32ex(uint32_t value, int sigbits)
     }field;
 
     // Zero is a special case
-    if((value & 0x007FFFFF) == 0)
+    if((value & 0x007FFFFFul) == 0)
     {
         field.Integer = 0;
     }
@@ -213,7 +230,7 @@ float float24ToFloat32ex(uint32_t value, int sigbits)
         int sigmask = (1 << sigbits) - 1;
 
         // The unsigned exponent, mask off the leading sign bit
-        uint32_t unsignedExponent = ((value & 0x007FFFFF) >> sigbits);
+        uint32_t unsignedExponent = ((value & 0x007FFFFFul) >> sigbits);
 
         // The bias is computed as 2 raised to the number of exponent bits divided
         // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
@@ -231,8 +248,8 @@ float float24ToFloat32ex(uint32_t value, int sigbits)
     }
 
     // And the sign bit
-    if(value & 0x00800000)
-        field.Integer |= 0x80000000;
+    if(value & 0x00800000ul)
+        field.Integer |= 0x80000000ul;
 
     return field.Float;
 
@@ -273,7 +290,8 @@ float float16ToFloat32(uint16_t value)
  * point representation with a variable number of bits for the significand.
  * Underflow will be returned as zero and overflow as the maximum possible value.
  * \param value is the 32-bit floating point data to convert.
- * \param sigbits is the number of bits to use for the significand.
+ * \param sigbits is the number of bits to use for the significand, and must be
+ *        between 4 and 12 bits inclusive.
  * \return The float16 as a simple 16-bit integer.
  */
 uint16_t float32ToFloat16ex(float value, int sigbits)
@@ -288,6 +306,7 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
     uint32_t unsignedExponent;
     int32_t  signedExponent;
     uint16_t output;
+    uint16_t maxsignificand = (uint16_t)((1 << sigbits) - 1);
 
     // The bias is computed as 2 raised to the number of exponent bits divided
     // by two, minus 1. This can be simplified as 2^(exponent bits -1) - 1
@@ -300,19 +319,33 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
     field.Float = value;
 
     // The significand is the least significant 23 bits (IEEE754)
-    significand = field.Integer & 0x007FFFFF;
+    significand = field.Integer & 0x007FFFFFul;
 
     // Exponent occupies the next 8 bits (IEEE754)
-    unsignedExponent = (field.Integer & 0x7F800000) >> 23;
+    unsignedExponent = (field.Integer & 0x7F800000ul) >> 23;
 
-    // Get rid of some bits, here is where we sacrifice resolution
-    output = (uint16_t)(significand >> (23-sigbits));
+    // Get rid of some bits; here is where we sacrifice resolution, so we need
+    // to round correctly, for that reason we do not shift the last bit yet
+    output = (uint16_t)(significand >> (22-sigbits));
+
+    // Check for rounding, if the most significant bit that we are going to
+    // throw away is a 1 we need to round up.
+    if(output & 0x01)
+    {
+        output = (output >> 1);
+
+        // Don't round past the maximum significand
+        if(output < maxsignificand)
+            output++;
+    }
+    else
+        output = (output >> 1);
 
     // If significand and exponent are zero means a number of zero
     if((output == 0) && (unsignedExponent == 0))
     {
         // return correctly signed result
-        if(field.Integer & 0x80000000)
+        if(field.Integer & 0x80000000ul)
             return 0x8000;
         else
             return 0;
@@ -349,7 +382,7 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
         {
             // Largest possible exponent and significand without making a NaN or Inf
             signedExponent = bias;
-            output = (uint32_t)(1 << sigbits) - 1;
+            output = (uint16_t)(1 << sigbits) - 1;
         }
 
         // re-bias with the new bias
@@ -360,7 +393,7 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
     }
 
     // Account for the sign
-    if(field.Integer & 0x80000000)
+    if(field.Integer & 0x80000000ul)
         output |= 0x8000;
 
     // return the binary16 representation
@@ -373,7 +406,8 @@ uint16_t float32ToFloat16ex(float value, int sigbits)
  * Convert a 16-bit floating point representation with variable number of
  * significand bits to binary32
  * \param value is the float16 representation to convert.
- * \param sigbits is the number of bits to use for the significand of the 16-bit float.
+ * \param sigbits is the number of bits to use for the significand of the
+ *        16-bit float, and must be between 4 and 12 bits inclusive.
  * \return the binary32 version as a float.
  */
 float float16ToFloat32ex(uint16_t value, int sigbits)
@@ -414,7 +448,7 @@ float float16ToFloat32ex(uint16_t value, int sigbits)
 
     // And the sign bit
     if(value & 0x8000)
-        field.Integer |= 0x80000000;
+        field.Integer |= 0x80000000ul;
 
     return field.Float;
 
@@ -462,6 +496,15 @@ int testSpecialFloat(void)
     }
 
     if(error > 0.01f)
+        return 0;
+
+    // Test rounding
+    test.Float = float16ToFloat32ex(float32ToFloat16ex(33.34f, 10), 10);
+    if(test.Float < 33.34f)
+        return 0;
+
+    test.Float = float16ToFloat32ex(float32ToFloat16ex(33.32f, 10), 10);
+    if(test.Float > 33.32f)
         return 0;
 
     // Maximum possible float without Inf or Nan
