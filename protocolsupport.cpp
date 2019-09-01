@@ -13,6 +13,7 @@ ProtocolSupport::ProtocolSupport() :
     bitfieldtest(false),
     disableunrecognized(false),
     bigendian(true),
+    supportbool(false),
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet")
 {
@@ -40,7 +41,8 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "packetStructureSuffix"
             << "packetParameterSuffix"
             << "endian"
-            << "pointer";
+            << "pointer"
+            << "supportBool";
 
     return attribs;
 }
@@ -74,6 +76,10 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     // bitfield test support can be turned on
     if(ProtocolParser::isFieldSet("bitfieldTest", map))
         bitfieldtest = true;
+
+    // bool support can be turned on
+    if(ProtocolParser::isFieldSet("supportBool", map))
+        supportbool = true;
 
     // Global file names can be specified, but cannot have a "." in it
     globalFileName = ProtocolParser::getAttribute("file", map);

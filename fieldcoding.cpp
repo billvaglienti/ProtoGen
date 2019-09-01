@@ -107,6 +107,9 @@ bool FieldCoding::generateEncodeHeader(void)
     header.write("\n#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
 
+    if(support.supportbool)
+        header.writeIncludeDirective("stdbool.h", "", true);
+
     header.write("\n");
     header.write("//! Encode a null terminated string on a byte stream\n");
     header.write("void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
@@ -600,6 +603,9 @@ bool FieldCoding::generateDecodeHeader(void)
     header.write("\n");
     header.write("#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
+
+    if(support.supportbool)
+        header.writeIncludeDirective("stdbool.h", "", true);
 
     header.write("\n");
     header.write("//! Decode a null terminated string from a byte stream\n");

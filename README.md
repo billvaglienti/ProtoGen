@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.16. You can download the prebuilt versions for [windows, mac, and linux here](https://github.com/billvaglienti/ProtoGen/releases). Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.18. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -76,7 +76,7 @@ Using ProtoGen as a compiler pre-build step
 
 ProtoGen will not touch an output file if the generated file is not different from what already exists. In this way you can run ProtoGen repeatedly without worrying about causing unneeded rebuild of your project. ProtoGen runs very quickly, and if you use the `-no-doxygen` switch it is typically fast enough to run it every time you compile. Note that the generated files include a comment with the ProtoGen version, so if you change ProtoGen version you will get updated output (and hence a project rebuild) even if the protocol code did not change.
 
-ProtoGen applies many checks to the protocol xml. In most cases if a problem is discovered the protocol is altered as needed and ProtoGen will output a warning on stdout. The warnings conform to the layout most IDEs will expect; so you can click directly on the warning and go straight to the offending line in the xml (I've only tesed this in Qt Creator).
+ProtoGen applies many checks to the protocol xml. In most cases if a problem is discovered the protocol is altered as needed and ProtoGen will output a warning on stdout. The warnings conform to the layout most IDEs will expect; so you can click directly on the warning and go straight to the offending line in the xml (I've only tested this in Qt Creator).
 
 Protocol ICD
 ================
@@ -93,7 +93,7 @@ The root element of the XML is "Protocol". It must be present for ProtoGen to ge
 
 The Protocol tag supports the following attributes:
 
-- `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink". This attribute is mandatory, all other Protcol attributes are optional.
+- `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink". This attribute is mandatory, all other attributes are optional.
 
 - `title` : The title of the protocol. This is used as the title for the first paragraph in the documentation output. If title is not given the title of the first paragraph will be `name` + "Protocol".
 
@@ -128,6 +128,8 @@ The Protocol tag supports the following attributes:
 - `bitfieldTest` : if this attribute is set to `true` ProtoGen will output a module called "bitfieldtest", which contains a test function that can be used to determine if bitfield support is working on your compiler.
 
 - `supportSpecialFloat` : if this attribute is set to `false` floating point types less than 32 bits will not be allowed for encoded types.
+
+- `supportBool` : if this attribute is set to `true` support for the `bool` datatype is included. This will cause `<stdbool.h>` to be inccluded in the generated files, and will allow you to specify the `bool` type for in-memory fields. Since `bool` is not guaranteed to be supported in in all C/C++ environments this feature is off by default.
 
 - `packetStructureSuffix` : This attribute defines the ending of the function names used to encode and decode structures into packets. If not specified the function name ending is `PacketStructure`. For example the default name of the function that encodes a structure of date information would be `encodeDatePacketStructure()`; using this attribute the name could be changed to (for example) `encodeDatePktStruct()`.
 
@@ -420,6 +422,7 @@ Data subtag attributes:
     - `float` : is a 32 bit floating point.
     - `double` : is a 64 bit floating point.
     - `bitfieldX` : is a bitfield with X bits where X can go from 1 to the number of bits in an int, or 64 bits if long bitfields are supported.
+    - `bool` : is a boolean which can only support values of `true` or `false`. The protocol must have `supportBool="true"` set to use this type.
     - `string` : is a variable length null terminated string of bytes. The maximum length is given by the attribute `array`.
     - `fixedstring` : is a fixed length null terminated string of bytes. The length is given by the attribute `array`.
     - `null` : indicates empty (i.e. reserved for future expansion) space in the packet.

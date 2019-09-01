@@ -7,7 +7,7 @@
 const QString ProtocolDocumentation::TAB_IN = "    ";
 
 //! The list of C language keywords, visible to all encodables
-QStringList ProtocolDocumentation::keywords = QStringList() << "auto" << "double" << "int" << "struct" << "break" << "else" << "long" << "switch" << "case" << "enum" << "register" << "typedef" << "char" << "extern" << "return" << "union" << "const" << "float" << "short" << "unsigned" << "continue" << "for" << "signed" << "void" << "default" << "goto" << "sizeof" << "volatile" << "do" << "if" << "static" << "while";
+QStringList ProtocolDocumentation::keywords = QStringList() << "auto" << "double" << "int" << "struct" << "break" << "else" << "long" << "switch" << "case" << "enum" << "register" << "typedef" << "char" << "extern" << "return" << "union" << "const" << "float" << "short" << "unsigned" << "continue" << "for" << "signed" << "void" << "default" << "goto" << "sizeof" << "volatile" << "do" << "if" << "static" << "while" << "bool";
 
 //! The list of protogen variable names, visible to all encodables
 QStringList ProtocolDocumentation::variablenames = QStringList() << "_pg_user" << "_pg_user1" << "_pg_user2" << "_pg_data" << "_pg_i" << "_pg_j" << "_pg_byteindex" << "_pg_bytecount" << "_pg_numBytes" << "_pg_bitfieldbytes" << "_pg_tempbitfield" << "_pg_templongbitfield" << "_pg_bitfieldindex" << "_pg_good" << "_pg_struct1" << "_pg_struct2" << "_pg_prename" << "_pg_report";

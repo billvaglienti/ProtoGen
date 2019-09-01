@@ -258,6 +258,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         source.setModuleNameAndPath(moduleName, support.outputpath);
     }
 
+    if(support.supportbool)
+        header.writeIncludeDirective("stdbool.h", "", true);
+
     if(verifymodulename.isEmpty())
         verifymodulename = support.globalVerifyName;
 
@@ -265,6 +268,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     {
         verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
         verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
+
+        if(support.supportbool)
+            verifyHeader.writeIncludeDirective("stdbool.h", "", true);
 
         verifyheaderfile = &verifyHeader;
         verifysourcefile = &verifySource;
@@ -396,9 +402,11 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     else if(!defheadermodulename.isEmpty())
     {
         // Handle the idea that the structure might be defined in a different file
-
         defheader.setLicenseText(support.licenseText);
         defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+
+        if(support.supportbool)
+            defheader.writeIncludeDirective("stdbool.h", "", true);
 
         if(defheader.isAppending())
             defheader.makeLineSeparator();
@@ -422,6 +430,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     printHeader.writeIncludeDirective(structfile->fileName());
     printHeader.writeIncludeDirective(header.fileName());
     printHeader.writeIncludeDirective("QString", QString(), true, false);
+    mapHeader.writeIncludeDirective(structfile->fileName());
     mapHeader.writeIncludeDirective(header.fileName());
     mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
     mapHeader.writeIncludeDirective("string", QString(), true, false);

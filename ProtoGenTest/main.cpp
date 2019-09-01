@@ -618,13 +618,13 @@ void fillOutGPSTest(GPS_t& gps)
     gps.numSvInfo = 5;
     gps.svInfo[0].azimuth = deg2radf(91);
     gps.svInfo[0].elevation = deg2radf(77);
-    gps.svInfo[0].healthy = 1;
     gps.svInfo[0].CNo[GPS_BAND_L1] = 50;
     gps.svInfo[0].CNo[GPS_BAND_L2] = 33;
     gps.svInfo[0].PRN = 12;
-    gps.svInfo[0].tracked = 1;
-    gps.svInfo[0].used = 1;
-    gps.svInfo[0].visible = 1;
+    gps.svInfo[0].healthy = true;
+    gps.svInfo[0].tracked = true;
+    gps.svInfo[0].used = true;
+    gps.svInfo[0].visible = true;
 
     // Just replicate the data
     gps.svInfo[1] = gps.svInfo[2] = gps.svInfo[3] = gps.svInfo[0];
@@ -657,13 +657,13 @@ int verifyGPSData(GPS_t gps)
     if(gps.numSvInfo != 5) return 0;
     if(fcompare(gps.svInfo[0].azimuth, deg2rad(91), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[0].elevation, deg2rad(77), 1.0/40.42535554534142)) return 0;
-    if(gps.svInfo[0].healthy != 1) return 0;
     if(gps.svInfo[0].CNo[GPS_BAND_L1] != 50) return 0;
     if(gps.svInfo[0].CNo[GPS_BAND_L2] != 33) return 0;
     if(gps.svInfo[0].PRN != 12) return 0;
-    if(gps.svInfo[0].tracked != 1) return 0;
-    if(gps.svInfo[0].used != 1) return 0;
-    if(gps.svInfo[0].visible != 1) return 0;
+    if(gps.svInfo[0].healthy != true) return 0;
+    if(gps.svInfo[0].tracked != true) return 0;
+    if(gps.svInfo[0].used != true) return 0;
+    if(gps.svInfo[0].visible != true) return 0;
 
     if(fcompare(gps.svInfo[1].azimuth, deg2rad(-179.99), 1.0/40.42535554534142)) return 0;
     if(fcompare(gps.svInfo[1].elevation, deg2rad(-23), 1.0/40.42535554534142)) return 0;
@@ -1083,7 +1083,7 @@ int testDefaultStringsPacket(void)
 
     encodeTestWeirdStuffPacketStructure(&pkt, &test);
 
-    if(pkt.length != 47)
+    if(pkt.length != 47 + 2*3*4)
     {
         std::cout << "Weird stuff packet length is wrong" << std::endl;
         return 0;

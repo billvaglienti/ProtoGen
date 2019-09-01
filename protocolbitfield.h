@@ -30,6 +30,9 @@ public:
     //! Get the encode string for a bitfield
     static QString getDecodeString(QString spacing, QString argument, QString cast, QString dataname, QString dataindex, int bitcount, int numbits);
 
+    //! Get the inner string that does a simple bitfield decode
+    static QString getInnerDecodeString(QString dataname, QString dataindex, int bitcount, int numbits);
+
 private:
 
     //! Get the encode string for a complex bitfield (crossing byte boundaries)

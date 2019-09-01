@@ -4,3 +4,10 @@
 *.user
 *.exe
 ProtoGenTest/
+ProtoGenInstall/
+*.zip
+*.ilk
+*.pdb
+*Makefile
+*.Release
+*.Debug

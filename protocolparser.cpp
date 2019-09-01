@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.17.b";
+const QString ProtocolParser::genVersion = "2.18.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -208,6 +208,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         module->parseGlobal();
         enumfile.setLicenseText(support.licenseText);
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
+
+        if(support.supportbool)
+            enumfile.writeIncludeDirective("stdbool.h", "", true);
+
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();
@@ -655,6 +659,9 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     header.makeLineSeparator();
 
     // Includes
+    if(support.supportbool)
+        header.writeIncludeDirective("stdbool.h", "", true);
+
     header.writeIncludeDirective("stdint.h", QString(), true);
 
     // Add other includes

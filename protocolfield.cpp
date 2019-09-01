@@ -9,6 +9,7 @@
 #include <math.h>
 
 TypeData::TypeData(ProtocolSupport sup) :
+    isBool(false),
     isStruct(false),
     isSigned(false),
     isBitfield(false),
@@ -25,6 +26,7 @@ TypeData::TypeData(ProtocolSupport sup) :
 
 
 TypeData::TypeData(const TypeData& that) :
+    isBool(that.isBool),
     isStruct(that.isStruct),
     isSigned(that.isSigned),
     isBitfield(that.isBitfield),
@@ -45,6 +47,7 @@ TypeData::TypeData(const TypeData& that) :
  */
 void TypeData::clear(void)
 {
+    isBool = false;
     isStruct = false;
     isSigned = false;
     isBitfield = false;
@@ -139,7 +142,9 @@ QString TypeData::toTypeString(QString enumName, QString structName) const
     else
     {
         // create the type name
-        if(isFloat)
+        if(isBool)
+            typeName = "bool";
+        else if(isFloat)
         {
             if(bits > 32)
                 typeName = "double";
@@ -415,7 +420,25 @@ void ProtocolField::extractType(TypeData& data, const QString& typeString, const
 
         data.bits = 8;
     }
-    else if(type.startsWith("b", Qt::CaseInsensitive))
+    else if(type.startsWith("bo", Qt::CaseInsensitive))
+    {
+        // default to unsigned 8
+        data.bits = 8;
+
+        if(support.supportbool == false)
+        {
+            emitWarning("bool support is disabled in this protocol");
+        }
+        else if(!inMemory)
+        {
+            emitWarning("bool is not a valid encoded type - it can only be used for in-memory types");
+        }
+        else
+        {
+            data.isBool = true;
+        }
+    }
+    else if(type.startsWith("bi", Qt::CaseInsensitive))
     {
         // Get the number of bits, between 1 and 32 inclusive
         data.bits = data.extractPositiveInt(type);
@@ -1055,9 +1078,20 @@ void ProtocolField::parse(void)
 
     }
 
+    if(inMemoryType.isBool)
+    {
+        if(encodedType.isBitfield && (encodedType.bits > 1))
+            emitWarning("Boolean in memory is encoded to bitfield larger than 1 bit");
+        else if(encodedType.isFloat)
+        {
+            emitWarning("Boolean cannot be encoded as float");
+            encodedType.isFloat = 0;
+        }
+    }
+
     if(!maxString.isEmpty() || !minString.isEmpty() || !scalerString.isEmpty())
     {
-        if(inMemoryType.isStruct || inMemoryType.isString || encodedType.isNull)
+        if(inMemoryType.isStruct || inMemoryType.isString || encodedType.isNull || inMemoryType.isBool)
         {
             emitWarning("min, max, and scaler do not apply to this type data");
             maxString.clear();
@@ -3078,6 +3112,10 @@ bool ProtocolField::requiresSizeCheck(void) const
     if(!constantString.isEmpty())
         return false;
 
+    // If encoding a boolean, it will fit in as little as one bit
+    if(inMemoryType.isBool)
+        return false;
+
     // Different in-memory versus encoded bit size, requires size check
     if(inMemoryType.bits > encodedType.bits)
         return true;
@@ -3256,8 +3294,11 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
     else
         argument = constantstring;
 
-    // check to see if this is a scaled bitfield
-    if(isFloatScaling())
+    if(inMemoryType.isBool)
+    {
+        argument = "((" + argument + " == true) ? 1 : 0)";
+    }
+    else if(isFloatScaling())
     {
         // Additional commenting to describe the scaling
         output += TAB_IN + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
@@ -3382,7 +3423,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
 
     return output;
 
-}// ProtocolField::getEncodeBitfieldString
+}// ProtocolField::getEncodeStringForBitfield
 
 
 /*!
@@ -3445,6 +3486,19 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
+    QString bitssource;
+    QString bitsindex;
+    if(bitfieldData.groupMember)
+    {
+        bitssource = "_pg_bitfieldbytes";
+        bitsindex = "_pg_bitfieldindex";
+    }
+    else
+    {
+        bitssource = "_pg_data";
+        bitsindex = "_pg_byteindex";
+    }
+
     // Handle the case where we just want to skip some bits
     if(inMemoryType.isNull && !checkConstant)
     {
@@ -3455,114 +3509,145 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         QString argument;
         QString cast;
 
-        // How we are going to access the field
-        if(usesDecodeTempBitfield())
-            argument = "_pg_tempbitfield";
-        else if(usesDecodeTempLongBitfield())
-            argument = "_pg_templongbitfield";
-        else
+        if(inMemoryType.isBool)
         {
-            // If we are going to assign this bitfield directly to an enumeration,
-            // and we do not have an intermediate temporary field, then we need a cast
-            if(inMemoryType.isEnum)
-                cast = "(" + typeName + ")";
-
             if(isStructureMember)
                 argument = "_pg_user->" + name;     // Access via structure pointer
             else
                 argument = "(*" + name + ")";   // Access via direct pointer
-        }
 
-        // Additional commenting to describe the scaling
-        if(isFloatScaling() || isIntegerScaling())
-            output += TAB_IN + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
-
-        if(bitfieldData.groupMember)
-            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, cast, "_pg_bitfieldbytes", "_pg_bitfieldindex", *bitcount, encodedType.bits);
-        else
-            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, cast, "_pg_data", "_pg_byteindex", *bitcount, encodedType.bits);
-
-        // Handle scaled bitfield
-        if(isFloatScaling() && !inMemoryType.isNull)
-        {
-            QString cast;
-
-            if(isStructureMember)
-                output += TAB_IN + "_pg_user->" + name + " = ";    // Access via structure pointer
-            else
-                output += TAB_IN + "(*" + name + ")" + " = ";  // Access via direct pointer
-
-            if(!inMemoryType.isFloat)
-                cast = "(" + typeName +")";
-
-            if(encodedType.bits > 32)
+            // How we are going to access the field
+            if(usesDecodeTempBitfield())
             {
-                if((inMemoryType.bits != 64) && support.float64)
-                    cast = "(" + typeName +")";
+                // This decodes the bitfield into the temporary variable
+                output += ProtocolBitfield::getDecodeString(TAB_IN, "_pg_tempbitfield", cast, bitssource, bitsindex, *bitcount, encodedType.bits);
 
-                if(support.longbitfield)
-                {
-                    if(support.float64)
-                        output += cast + "float64ScaledFromLongBitfield(" + argument;
-                    else
-                        output += cast + "float32ScaledFromLongBitfield(" + argument;
-                }
-                else
-                {
-                    if(support.float64)
-                        output += cast + "float64ScaledFromBitfield(" + argument;
-                    else
-                        output += cast + "float32ScaledFromBitfield(" + argument;
-                }
+                // This tests the temporary variable and sets the boolean
+                output += TAB_IN + argument + " = (_pg_tempbitfield) ? true : false;\n";
+            }
+            else if(usesDecodeTempLongBitfield())
+            {
+                // This decodes the bitfield into the temporary variable
+                output += ProtocolBitfield::getDecodeString(TAB_IN, "_pg_templongbitfield", cast, bitssource, bitsindex, *bitcount, encodedType.bits);
+
+                // This tests the temporary variable and sets the boolean
+                output += TAB_IN + argument + " = (_pg_templongbitfield) ? true : false;\n";
             }
             else
-                output += cast + "float32ScaledFromBitfield(" + argument;
-
-            output += ", " + getNumberString(encodedMin, encodedType.bits);
-            output += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
-            output += ");\n";
-
-            if(isStructureMember)
-                argument = "_pg_user->" + name;    // Access via structure pointer
-            else
-                argument = "(*" + name + ")";  // Access via direct pointer
-
-        }// if scaled bitfield
-        else if(!inMemoryType.isNull)
-        {
-            // Do the assignment from the temporary field
-            if(usesDecodeTempBitfield() || usesDecodeTempLongBitfield())
             {
-                if(isIntegerScaling())
-                {
-                    if(scaler != 1.0)
-                        argument = "(" + argument + "/" + QString::number(scaler, 'f', 0) + ")";
-
-                    if((encodedMin != 0) && !encodedType.isSigned)
-                        argument = "(" + argument + " + " + QString::number(encodedMin, 'f', 0) + ")";
-                }
-
-                // If we are going to assign directly to an enumeration we need a cast
+                // This tests the bitfield and sets the boolean
+                output += TAB_IN + argument + " = (" + ProtocolBitfield::getInnerDecodeString(bitssource, bitsindex, *bitcount, encodedType.bits) + ") ? true : false;\n";
+            }
+        }
+        else
+        {
+            // How we are going to access the field
+            if(usesDecodeTempBitfield())
+                argument = "_pg_tempbitfield";
+            else if(usesDecodeTempLongBitfield())
+                argument = "_pg_templongbitfield";
+            else
+            {
+                // If we are going to assign this bitfield directly to an enumeration,
+                // and we do not have an intermediate temporary field, then we need a cast
                 if(inMemoryType.isEnum)
                     cast = "(" + typeName + ")";
-                else
-                    cast.clear();
 
                 if(isStructureMember)
-                {
-                    // Access via structure pointer
-                    output += TAB_IN + "_pg_user->" + name +   " = " + cast + argument + ";\n";
-                    argument = "_pg_user->" + name;
-                }
+                    argument = "_pg_user->" + name;     // Access via structure pointer
                 else
-                {
-                    // Access via direct pointer
-                    output += TAB_IN + "(*" + name + ")" + " = " + cast + argument + ";\n";
-                    argument = "(*" + name + ")";
-                }
+                    argument = "(*" + name + ")";   // Access via direct pointer
             }
 
-        }// else if not scaled, but goes in memory
+            // Additional commenting to describe the scaling
+            if(isFloatScaling() || isIntegerScaling())
+                output += TAB_IN + "// Range of " + name + " is " + getNumberString(encodedMin) + " to " + getNumberString(encodedMax) +  ".\n";
+
+            output += ProtocolBitfield::getDecodeString(TAB_IN, argument, cast, bitssource, bitsindex, *bitcount, encodedType.bits);
+
+            // Handle scaled bitfield
+            if(isFloatScaling() && !inMemoryType.isNull)
+            {
+                QString cast;
+
+                if(isStructureMember)
+                    output += TAB_IN + "_pg_user->" + name + " = ";    // Access via structure pointer
+                else
+                    output += TAB_IN + "(*" + name + ")" + " = ";  // Access via direct pointer
+
+                if(!inMemoryType.isFloat)
+                    cast = "(" + typeName +")";
+
+                if(encodedType.bits > 32)
+                {
+                    if((inMemoryType.bits != 64) && support.float64)
+                        cast = "(" + typeName +")";
+
+                    if(support.longbitfield)
+                    {
+                        if(support.float64)
+                            output += cast + "float64ScaledFromLongBitfield(" + argument;
+                        else
+                            output += cast + "float32ScaledFromLongBitfield(" + argument;
+                    }
+                    else
+                    {
+                        if(support.float64)
+                            output += cast + "float64ScaledFromBitfield(" + argument;
+                        else
+                            output += cast + "float32ScaledFromBitfield(" + argument;
+                    }
+                }
+                else
+                    output += cast + "float32ScaledFromBitfield(" + argument;
+
+                output += ", " + getNumberString(encodedMin, encodedType.bits);
+                output += ", " + getNumberString(1.0, encodedType.bits) + "/" + getNumberString(scaler, encodedType.bits);
+                output += ");\n";
+
+                if(isStructureMember)
+                    argument = "_pg_user->" + name;    // Access via structure pointer
+                else
+                    argument = "(*" + name + ")";  // Access via direct pointer
+
+            }// if scaled bitfield
+            else if(!inMemoryType.isNull)
+            {
+                // Do the assignment from the temporary field
+                if(usesDecodeTempBitfield() || usesDecodeTempLongBitfield())
+                {
+                    if(isIntegerScaling())
+                    {
+                        if(scaler != 1.0)
+                            argument = "(" + argument + "/" + QString::number(scaler, 'f', 0) + ")";
+
+                        if((encodedMin != 0) && !encodedType.isSigned)
+                            argument = "(" + argument + " + " + QString::number(encodedMin, 'f', 0) + ")";
+                    }
+
+                    // If we are going to assign directly to an enumeration we need a cast
+                    if(inMemoryType.isEnum)
+                        cast = "(" + typeName + ")";
+                    else
+                        cast.clear();
+
+                    if(isStructureMember)
+                    {
+                        // Access via structure pointer
+                        output += TAB_IN + "_pg_user->" + name +   " = " + cast + argument + ";\n";
+                        argument = "_pg_user->" + name;
+                    }
+                    else
+                    {
+                        // Access via direct pointer
+                        output += TAB_IN + "(*" + name + ")" + " = " + cast + argument + ";\n";
+                        argument = "(*" + name + ")";
+                    }
+                }
+
+            }// else if not scaled, but goes in memory
+
+        }// else not bool
 
         if(checkConstant)
         {
@@ -4233,7 +4318,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         output += ");\n";
 
-    }// if scaled to integer
+    }// else if float scaling
     else
     {
         QString function;
@@ -4283,9 +4368,14 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
                     value = "(" + value + "*" + QString::number(scaler, 'f', 0) + ")";
             }
 
-            // Add a cast in case the encoded type is different from the in memory type
-            if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling())
+            if(inMemoryType.isBool)
             {
+                function += "(" + value + " == true) ? 1 : 0";
+            }
+            else if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling())
+            {
+                // Add a cast in case the encoded type is different from the in memory type
+
                 // "int32ToBeBytes((int32_t)((_pg_user->value - min)*scale)" for example
                 function += "(" + encodedType.toTypeString() + ")(" + value + ")";
             }
@@ -4319,7 +4409,7 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
 
         output += spacing + function;
 
-    }// else not floating point scaled
+    }// else if not float scaled
 
     if(!dependsOn.isEmpty())
         output += TAB_IN + "}\n";
@@ -4717,9 +4807,13 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                 function = "(" + function + " + " + QString::number(encodedMin, 'f', 0) + ")";
         }
 
-        // Add a cast in case the encoded type is different from the in memory type
-        if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling() || inMemoryType.isEnum)
+        if(inMemoryType.isBool)
         {
+            function = "(" + function + ") ? true : false";
+        }
+        else if(inMemoryType.isFloat || (inMemoryType.bits != encodedType.bits) || isIntegerScaling() || inMemoryType.isEnum)
+        {
+            // Add a cast in case the encoded type is different from the in memory type
             // "int32ToBeBytes((int32_t)((_pg_user->value - min)*scale)" for example
             function = "(" + typeName + ")" + function;
         }
@@ -4736,7 +4830,7 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                     output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)(*" + variableArray + ") && _pg_i < " + array + "; _pg_i++)\n";
             }
 
-            value = "    " + value;
+            value = TAB_IN + value;
 
             if(is2dArray())
             {
@@ -4750,13 +4844,13 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
                         output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)(*" + variable2dArray + ") && _pg_j < " + array2d + "; _pg_j++)\n";
                 }
 
-                value = "    " + value;
+                value = TAB_IN + value;
 
             }// if 2D array
 
         }// if 1D array
 
-        output += "    " + value + function + ";\n";
+        output += TAB_IN + value + function + ";\n";
 
     }// else not floating point scaled
 

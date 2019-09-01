@@ -21,6 +21,7 @@ public:
     void clear(void);
 
 public:
+    bool isBool;        //!< true if type is a 'bool'
     bool isStruct;      //!< true if this is an externally defined struct
     bool isSigned;      //!< true if type is signed
     bool isBitfield;    //!< true if type is a bitfield

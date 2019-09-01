@@ -160,47 +160,59 @@ uint64_t ProtocolBitfield::maxvalueoffield(int numbits)
  * \param dataindex is the string describing the index into the array of bytes
  * \param bitcount is the current bitcount of this field
  * \param numbits is the number of bits in this field
- * \return the string that is the encoding code
+ * \return the string that is the decoding code
  */
 QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QString cast, QString dataname, QString dataindex, int bitcount, int numbits)
 {
     if((numbits > 1) && (((bitcount % 8) + numbits) > 8))
         return getComplexDecodeString(spacing, argument, dataname, dataindex, bitcount, numbits);
     else
-    {
-        // This is the easiest case, we can just decode it directly
-        QString rightshift;
-        QString offset;
-        QString mask;
-
-        // Don't do shifting by zero bits
-        int right = 8 - (bitcount%8 + numbits);
-        if(right > 0)
-            rightshift = " >> " + QString().setNum(8 - (bitcount%8 + numbits));
-
-        // This mask protects against any other bits we don't want. We don't
-        // need the mask if we are grabbing the most significant bit of this byte
-        if((numbits + right) < 8)
-            mask = " & 0x" + QString().setNum(maxvalueoffield(numbits), 16).toUpper();
-
-        // The value of the bit count after moving all the bits
-        int bitoffset = bitcount + numbits;
-
-        // The byte offset of this bitfield
-        int byteoffset = (bitoffset-1) >> 3;
-
-        if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
-
-        if(mask.isEmpty() && rightshift.isEmpty())
-            return spacing + argument + " = " + cast + dataname + "[" + dataindex + offset + "];\n";
-        else if(mask.isEmpty())
-            return spacing + argument + " = " + cast + "(" + dataname + "[" + dataindex + offset + "]" + rightshift + ");\n";
-        else
-            return spacing + argument + " = " + cast + "((" + dataname + "[" + dataindex + offset + "]" + rightshift + ")" + mask + ");\n";
-    }
+        return spacing + argument + " = " + cast + getInnerDecodeString(dataname, dataindex, bitcount, numbits) + ";\n";
 
 }// ProtocolBitfield::getDecodeString
+
+
+/*!
+ * Get the inner string that does a simple bitfield decode
+ * \param dataname is the string describing the array of bytes
+ * \param dataindex is the string describing the index into the array of bytes
+ * \param bitcount is the current bitcount of this field
+ * \param numbits is the number of bits in this field
+ * \return the string that is the decoding code
+ */
+QString ProtocolBitfield::getInnerDecodeString(QString dataname, QString dataindex, int bitcount, int numbits)
+{
+    // This is the easiest case, we can just decode it directly
+    QString rightshift;
+    QString offset;
+    QString mask;
+
+    // Don't do shifting by zero bits
+    int right = 8 - (bitcount%8 + numbits);
+    if(right > 0)
+        rightshift = " >> " + QString().setNum(8 - (bitcount%8 + numbits));
+
+    // This mask protects against any other bits we don't want. We don't
+    // need the mask if we are grabbing the most significant bit of this byte
+    if((numbits + right) < 8)
+        mask = " & 0x" + QString().setNum(maxvalueoffield(numbits), 16).toUpper();
+
+    // The value of the bit count after moving all the bits
+    int bitoffset = bitcount + numbits;
+
+    // The byte offset of this bitfield
+    int byteoffset = (bitoffset-1) >> 3;
+
+    if(byteoffset > 0)
+        offset = " + " + QString().setNum(byteoffset);
+
+    if(mask.isEmpty() && rightshift.isEmpty())
+        return dataname + "[" + dataindex + offset + "]";
+    else if(mask.isEmpty())
+        return "(" + dataname + "[" + dataindex + offset + "]" + rightshift + ")";
+    else
+        return "((" + dataname + "[" + dataindex + offset + "]" + rightshift + ")" + mask + ")";
+}
 
 
 /*!
