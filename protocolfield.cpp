@@ -1720,9 +1720,63 @@ void ProtocolField::getInitAndVerifyIncludeDirectives(QStringList& list) const
         if(struc != NULL)
             struc->getInitAndVerifyIncludeDirectives(list);
 
-    }// else if struct
+    }// if struct
 
 }// ProtocolField::getInitAndVerifyIncludeDirectives
+
+
+/*!
+ * Return the include directives needed for this encodable's map functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolField::getMapIncludeDirectives(QStringList& list) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructureModule* struc = parser->lookUpStructure(typeName);
+
+        if(struc != NULL)
+            struc->getMapIncludeDirectives(list);
+
+    }// if struct
+
+}// ProtocolField::getMapIncludeDirectives
+
+
+/*!
+ * Return the include directives needed for this encodable's compare functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolField::getCompareIncludeDirectives(QStringList& list) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructureModule* struc = parser->lookUpStructure(typeName);
+
+        if(struc != NULL)
+            struc->getCompareIncludeDirectives(list);
+
+    }// if struct
+
+}// ProtocolField::getCompareIncludeDirectives
+
+
+/*!
+ * Return the include directives needed for this encodable's print functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolField::getPrintIncludeDirectives(QStringList& list) const
+{
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructureModule* struc = parser->lookUpStructure(typeName);
+
+        if(struc != NULL)
+            struc->getPrintIncludeDirectives(list);
+
+    }// if struct
+
+}// ProtocolField::getPrintIncludeDirectives
 
 
 /*!

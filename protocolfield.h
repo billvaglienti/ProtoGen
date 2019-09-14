@@ -152,6 +152,15 @@ public:
     //! Return the include directives needed for this encodable's init and verify functions
     virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
+    //! Return the include directives needed for this encodable's map functions
+    virtual void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's compare functions
+    virtual void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's print functions
+    virtual void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const Q_DECL_OVERRIDE;
 

@@ -33,6 +33,15 @@ public:
     //! Return the include directives needed for this encodable's init and verify functions
     virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
+    //! Return the include directives needed for this encodable's map functions
+    virtual void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's compare functions
+    virtual void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
+    //! Return the include directives needed for this encodable's print functions
+    virtual void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
     //! Get the name of the header file that encompasses this structure definition
     QString getDefinitionFileName(void) const {return structfile->fileName();}
 
@@ -125,18 +134,18 @@ protected:
     //! Get the text used to extract text for text read functions
     static QString getExtractTextFunction(void);
 
-    ProtocolSourceFile source;      //!< The source file (*.c)
-    ProtocolHeaderFile header;      //!< The header file (*.h)
-    ProtocolHeaderFile defheader;   //!< The header file name for the structure definition
-    ProtocolSourceFile verifySource;//!< The source file for verify code (*.c)
-    ProtocolHeaderFile verifyHeader;//!< The header file for verify code (*.h)
-    ProtocolSourceFile compareSource;       //!< The source file for comparison code (*.cpp)
-    ProtocolHeaderFile compareHeader;       //!< The header file for comparison code (*.h)
-    ProtocolSourceFile printSource;         //!< The source file for print code (*.cpp)
-    ProtocolHeaderFile printHeader;         //!< The header file for print code (*.h)
-    ProtocolSourceFile mapSource;   //!< The source file for map code (*.cpp)
-    ProtocolHeaderFile mapHeader;   //!< The header file for map code (*.h)
-    ProtocolHeaderFile* structfile;         //!< Reference to the file that holds the structure definition
+    ProtocolSourceFile source;          //!< The source file (*.c)
+    ProtocolHeaderFile header;          //!< The header file (*.h)
+    ProtocolHeaderFile defheader;       //!< The header file name for the structure definition
+    ProtocolSourceFile verifySource;    //!< The source file for verify code (*.c)
+    ProtocolHeaderFile verifyHeader;    //!< The header file for verify code (*.h)
+    ProtocolSourceFile compareSource;   //!< The source file for comparison code (*.cpp)
+    ProtocolHeaderFile compareHeader;   //!< The header file for comparison code (*.h)
+    ProtocolSourceFile printSource;     //!< The source file for print code (*.cpp)
+    ProtocolHeaderFile printHeader;     //!< The header file for print code (*.h)
+    ProtocolSourceFile mapSource;       //!< The source file for map code (*.cpp)
+    ProtocolHeaderFile mapHeader;       //!< The header file for map code (*.h)
+    ProtocolHeaderFile* structfile;     //!< Reference to the file that holds the structure definition
     ProtocolHeaderFile* verifyheaderfile;   //!< Reference to the file that holds the verify prototypes
     ProtocolSourceFile* verifysourcefile;   //!< Reference to the file that holds the verify source code
     QString api;                    //!< The protocol API enumeration

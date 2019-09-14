@@ -609,9 +609,9 @@ void fillOutGPSTest(GPS_t& gps)
     gps.ITOW = ((((5*24) + 11)*60 + 32)*60 + 59)*1000 + 251;
     gps.Week = 1234;
     gps.PDOP = -2.13f;
-    gps.PositionLLA.altitude = 169.4;
-    gps.PositionLLA.latitude = deg2rad(45.6980142);
-    gps.PositionLLA.longitude = deg2rad(-121.5618339);
+    gps.PosLLA.altitude = 169.4;
+    gps.PosLLA.latitude = deg2rad(45.6980142);
+    gps.PosLLA.longitude = deg2rad(-121.5618339);
     gps.VelocityNED.north = 23.311f;
     gps.VelocityNED.east = -42.399f;
     gps.VelocityNED.down = -.006f;
@@ -648,9 +648,9 @@ int verifyGPSData(GPS_t gps)
     if(gps.ITOW != ((((5*24) + 11)*60 + 32)*60 + 59)*1000 + 251) return 0;
     if(gps.Week != 1234) return 0;
     if(fcompare(gps.PDOP, 0, 0.1)) return 0;
-    if(fcompare(gps.PositionLLA.altitude, 169.4, 1.0/1000)) return 0;
-    if(fcompare(gps.PositionLLA.latitude, deg2rad(45.6980142), 1.0/1367130551.152863)) return 0;
-    if(fcompare(gps.PositionLLA.longitude, deg2rad(-121.5618339), 1.0/683565275.2581217)) return 0;
+    if(fcompare(gps.PosLLA.altitude, 169.4, 1.0/1000)) return 0;
+    if(fcompare(gps.PosLLA.latitude, deg2rad(45.6980142), 1.0/1367130551.152863)) return 0;
+    if(fcompare(gps.PosLLA.longitude, deg2rad(-121.5618339), 1.0/683565275.2581217)) return 0;
     if(fcompare(gps.VelocityNED.north, 23.311, 1.0/100)) return 0;
     if(fcompare(gps.VelocityNED.east, -42.399, 1.0/100)) return 0;
     if(fcompare(gps.VelocityNED.down, -.006, 1.0/100)) return 0;

@@ -595,6 +595,48 @@ void ProtocolStructure::getInitAndVerifyIncludeDirectives(QStringList& list) con
 
 
 /*!
+ * Return the include directives needed for this encodable's map functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getMapIncludeDirectives(QStringList& list) const
+{
+    // Includes that our encodable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getMapIncludeDirectives(list);
+
+    list.removeDuplicates();
+}
+
+
+/*!
+ * Return the include directives needed for this encodable's compare functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getCompareIncludeDirectives(QStringList& list) const
+{
+    // Includes that our encodable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getCompareIncludeDirectives(list);
+
+    list.removeDuplicates();
+}
+
+
+/*!
+ * Return the include directives needed for this encodable's print functions
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getPrintIncludeDirectives(QStringList& list) const
+{
+    // Includes that our encodable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getPrintIncludeDirectives(list);
+
+    list.removeDuplicates();
+}
+
+
+/*!
  * Return the string used to declare this encodable as part of a structure.
  * This includes the spacing, typename, name, semicolon, comment, and linefeed
  * \return the declaration string for this encodable

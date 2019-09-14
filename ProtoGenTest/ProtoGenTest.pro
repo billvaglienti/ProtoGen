@@ -22,10 +22,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     Engine.c \
+    base_types.c \
+    compare/base_compare.cpp \
     fielddecode.c \
     fieldencode.c \
     floatspecial.c \
     GPS.c \
+    map/base_map.cpp \
     scaleddecode.c \
     scaledencode.c \
     TelemetryPacket.c \
@@ -40,6 +43,8 @@ SOURCES += main.cpp \
     map/mapDemolink.cpp
 
 HEADERS += \
+    base_types.h \
+    compare/base_compare.h \
     indices.h \
     DemolinkProtocol.h \
     Engine.h \
@@ -47,6 +52,7 @@ HEADERS += \
     fieldencode.h \
     floatspecial.h \
     GPS.h \
+    map/base_map.h \
     scaleddecode.h \
     scaledencode.h \
     TelemetryPacket.h \
