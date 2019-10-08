@@ -7,12 +7,7 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -Wno-unused-parameter
-
-QMAKE_CXXFLAGS_WARN_ON = -Wall -Wno-unused-parameter
-
 SOURCES += main.cpp \
-    bitfieldspecial.c \
     fielddecode.c \
     fieldencode.c \
     floatspecial.c \
@@ -24,7 +19,6 @@ SOURCES += main.cpp \
     NovatelShim.c
 
 HEADERS += \
-    bitfieldspecial.h \
     fielddecode.h \
     fieldencode.h \
     floatspecial.h \

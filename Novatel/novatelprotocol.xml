@@ -17,6 +17,9 @@
         <Value name="GPSEPHEM" value="7" comment="GPS ephemeris for a single satellite"/>
         <Value name="BESTPOS" value="42" comment="This log contains the best position computed by the receiver."/>
         <Value name="RANGE" value="43" comment="This log contains the channel measurements for the currently tracked satellites."/>
+        <Value name="PSRPOS" value="47" comment="This log contains the position computed from pseudo range"/>
+        <Value name="BESTVEL" value="99" comment="This log contains the best velocity computed by the receiver."/>
+        <Value name="PSRVEL" value="100" comment="This log contains the velocity computed by the pseudo range filter."/>
         <Value name="TIME" value="101" comment="UTC time information, included the leap seconds"/>
         <Value name="RANGECMP" value="140" comment="This log contains the compressed channel measurements for the currently tracked satellites."/>
         <Value name="PSRDOP" value="174" comment="This log contains the pseudo range dilution of precision computed by the receiver."/>
@@ -275,7 +278,18 @@
         <Data name="extendedSolStatus" struct="ExtendedSolStatus" comment="Extended solution status bits"/>
         <Data name="galileoAndBeiDouSignalsUsed" struct="GalileoAndBeiDouSignalsUsed" comment="Types of signals used from Galileo and BeiDou"/>
         <Data name="gpsAndGlonassSignalsUsed" struct="GpsAndGlonassSignalsUsed" comment="Types of signals used from GPS and GLONASS"/>
-        <Code name="ConstructAlt" decode="user->alt = user->hgtmsl + user->undulation;" comment="Construct the altitude with respect to the datum."/>
+        <Code name="ConstructAlt" decode="_pg_user->alt = _pg_user->hgtmsl + _pg_user->undulation;" comment="Construct the altitude with respect to the datum."/>
+    </Structure>
+
+    <Structure name="Vel" file="NovatelStructures" encode="false" comment="Velocity information">
+        <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the velocity solution"/>
+        <Data name="type" enum="PositionType_t" encodedType="unsigned32" comment="Type of velocity information"/>
+        <Data name="latency" inMemoryType="float32" comment="Latency of the velocity solution in seconds"/>
+        <Data name="age" inMemoryType="float32" comment="Differential solution age"/>
+        <Data name="horspd" inMemoryType="float32" encodedType="float64" comment="Horizontal speed in meters per second"/>
+        <Data name="course" inMemoryType="float32" encodedType="float64" scaler="180/pi" comment="Direction of the horizontal velocity with respect to true North, converted to radians from encoded degrees"/>
+        <Data name="verspd" inMemoryType="float32" encodedType="float64" comment="Vertical velocity in meters per second"/>
+        <Data name="reserved" inMemoryType="null" encodedType="unsigned32" comment="Reserved."/>
     </Structure>
 
     <Structure name="XYZ" file="NovatelStructures" encode="false" comment="Cartesian position and velocity information">
@@ -338,7 +352,7 @@
             <Value name="CodeSearch_TRACKING" value="10" comment="Code search"/>
             <Value name="AidedPLL_TRACKING" value="11" comment="Aided phase lock loop"/>
         </Enum>
-        <Data name="channelAssignmentForced" inMemoryType="bitfield1" comment="Set if this channel's assignment is forced, else it is automatic"/>
+        <Data name="channelAssignmentForced" inMemoryType="bitfield1" bitfieldGroup="true" comment="Set if this channel's assignment is forced, else it is automatic"/>
         <Data name="prnLockFlag" inMemoryType="bitfield1" comment="Set if this PRN is locked out"/>
         <Data name="reserved" inMemoryType="null" encodedType="bitfield1" comment="Reserved bit"/>
         <Data name="halfCycleAdded" inMemoryType="bitfield1" comment="Set if the carrier phase measurement has a half cycle added to it"/>
@@ -358,14 +372,14 @@
 
     <Packet name="BinaryResponse" file="NovatelPackets" ID="1" encode="false" comment="Response from a command, in the form of the command enumeration and a ASCII string (typically OK)">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="responseID" inMemoryType="unsigned32" comment="ID of the message that triggered this number"/>
         <Data name="response" inMemoryType="string" array="32" comment="String containing the ASCII response"/>
     </Packet>
 
     <Packet name="Log" file="NovatelPackets" ID="LOG" comment="Request a specific message log">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
 
         <Enum name="Trigger_t" comment="Log trigger">
             <Value name="ONNEW" comment="Does not output current message but outputs when the message is updated (not necessarily changed)"/>
@@ -388,7 +402,7 @@
 
     <Packet name="InterfaceMode" file="NovatelPackets" ID="INTERFACEMODE" comment="Configure the transmit and receive communications protocols for a port.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Enum name="InterfaceProtocols_t" comment="Protocols used for transmit or receive on a port">
             <Value name="NOINTERFACE" value="0" comment="The port accepts/generates nothing. The port is disabled"/>
             <Value name="NOVATEL" value="1" comment="The port accepts/generates NovAtel commands and logs"/>
@@ -416,7 +430,7 @@
 
     <Packet name="GPSEphemeris" file="NovatelPackets" ID="GPSEPHEM" encode="false" comment="Ephemeris data for a single satellite">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="prn" inMemoryType="unsigned8" encodedType="unsigned32" comment="Satellite PRN number"/>
         <Data name="tow" inMemoryType="float64" comment="Timestamp of subframe 0 in seconds"/>
         <Data name="health" inMemoryType="unsigned32" comment="Health status - a 6-bit health code as defined in ICDGPS-200"/>
@@ -456,30 +470,34 @@
                        the nominal value (variance)."/>
     </Packet>
 
-    <Packet name="BestPos" file="NovatelPackets" ID="BESTPOS" encode="false" comment="Best available cartesian position and velocity">
+    <Packet name="Position" file="NovatelPackets" ID="BESTPOS, PSRPOS" encode="false" comment="Cartesian position and velocity">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="pos" struct="Pos" comment="Latitude, Longitude, Altitude position information."/>
     </Packet>
 
-    <Packet name="UndulationFromBestPos" file="NovatelPackets" encode="false" ID="BESTPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value. This packet can only be used for decode, not encode.">
+    <Packet name="UndulationFromPosition" file="NovatelPackets" encode="false" ID="BESTPOS, PSRPOS" parameterInterface="true" comment="This is the BESTPOS packet, but decoded for just the undulation value. This packet can only be used for decode, not encode.">
         <Data name="skipped0" inMemoryType="null" array="MinHeaderLength" encodedType="unsigned8" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (data[3] - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_data[3] - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="skipped1" inMemoryType="null" array="32" encodedType="unsigned8" comment="Data before the undulation that we ignore."/>
         <Data name="undulation" inMemoryType="float32" comment="Height of the mean sea level geoid with respect to the datum ellipsoid. alt = hgtmsl+undulation"/>
     </Packet>
 
+    <Packet name="Velocity" file="NovatelPackets" ID="BESTVEL, PSRVEL" encode="false" comment="Velocity information">
+        <Data name="header" struct="Header" comment="Header information for this packet."/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Data name="vel" struct="Vel" comment="Speed and course information."/>
+    </Packet>
+
     <Packet name="Range" file="NovatelPackets" ID="RANGE" encode="false" comment="The raw data.">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numObs" inMemoryType="unsigned32" comment="Number of satellite observations with information to follow"/>
         <Enum name="MaxRanges_t" comment="Maximum number of range measurements">
             <Value name="maxRanges" value="24" comment="Maximum number of range measurements."/>
         </Enum>
 
         <Structure name="range" array="maxRanges" variableArray="numObs" comment="The raw measurements from each channel">
-            <Code name="trackingStatusVar1" decode="int trackcount = 0;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
-            <Code name="trackingStatusVar2" decode="uint8_t temp;" comment="Because the tracking status word needs byte swap before bitfield interpretation we need this hack"/>
             <Data name="prn" inMemoryType="uint16_t" comment="Satellite PRN number"/>
             <Data name="glofreq" inMemoryType="uint16_t" comment="GLONASS Frequency + 7"/>
             <Data name="pseudoRange" inMemoryType="float64" comment="Pseudo range in meters"/>
@@ -490,14 +508,11 @@
             <Data name="cno" inMemoryType="float32" comment="Carrier to noise ratio in dB-Hz"/>
             <Data name="lockTime" inMemoryType="float32" comment="Lock time in seconds"/>
             <Data name="trackingStatusBytes" inMemoryType="unsigned8" array="4" comment="The bytes as they arrive in the message, so we can swap them because of strange Novatel encoding here"/>
-            <Data name="trackingStatus" struct="TrackingStatus" encodedType="null" comment="Tracking status details"/>
-            <Code name="swapone" decode="temp = user->trackingStatusBytes[3]; user->trackingStatusBytes[3] = user->trackingStatusBytes[0]; user->trackingStatusBytes[0] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
-            <Code name="swaptwo" decode="temp = user->trackingStatusBytes[2]; user->trackingStatusBytes[2] = user->trackingStatusBytes[1]; user->trackingStatusBytes[1] = temp;" comment="Perform byte swap to account for requirement to flip bytes before bitfield interpretation"/>
-            <Code name="trackingStatusFixup" decode="decodeTrackingStatus_t(user->trackingStatusBytes, &amp;trackcount, &amp;user->trackingStatus);" comment="Channel tracking status bits"/>
+            <Data name="trackingStatus" struct="TrackingStatus" comment="Tracking status details"/>
             <Data name="phaseRangeRate" inMemoryType="float32" encodedType="null" comment="Time rate of change of accumulatedDoppler, converted to meters per second. Compute locally based on successive measurements"/>
             <Data name="phaseRangeRateDeviation" inMemoryType="float32" encodedType="null" comment="Standard deviation of phaseRangeRate in meters per second. Compute locally based on successive measurements"/>
             <Data name="phaseRangeRateValid" inMemoryType="bitfield1" encodedType="null" comment="Set if the phaseRangeRate has valid data"/>
-            <Code name="phaseRangeRateSet" decode="user->phaseRangeRate = user->phaseRangeRateDeviation = 0; user->phaseRangeRateValid = 0;" comment="Initialize these to zero before they are computed"/>    
+            <Code name="phaseRangeRateSet" decode="_pg_user->phaseRangeRate = _pg_user->phaseRangeRateDeviation = 0; _pg_user->phaseRangeRateValid = 0;" comment="Initialize these to zero before they are computed"/>
         </Structure>
     </Packet>
 
@@ -514,7 +529,7 @@
             <Value name="UTC_WARNING" comment="UTC data based on almanac"/>
         </Enum>
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="clockStatus" enum="ClockStatus_t" encodedType="unsigned32" comment="clock status enumeration"/>
         <Data name="offset" inMemoryType="float64" comment="Receiver clock offset in seconds from GPS time"/>
         <Data name="offsetDev" inMemoryType="float64" comment="Receiver clock offset standard deviation"/>
@@ -526,41 +541,34 @@
         <Data name="utcMin" inMemoryType="unsigned8" comment="UTC minute of the hour from 0 to 59"/>
         <Data name="utcms" inMemoryType="unsigned32" comment="UTC milliseconds of the minute from 0 to 60999"/>
         <Data name="utcStatus" enum="UtcStatus_t" encodedType="unsigned32" comment="UTC status enumeration"/>
+        <Data name="leapSeconds" inMemoryType="unsigned8" encodedType="null"/>
     </Packet>
 
     <Packet name="PsrDOP" file="NovatelPackets" ID="PSRDOP" encode="false" comment="Pseudo range dilution of precision">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="dop" struct="DOP" comment="Dilution of precision data."/>
     </Packet>
 
-    <Packet name="BestXYZ" file="NovatelPackets" ID="BESTXYZ" encode="false" comment="Best available cartesian position and velocity">
+    <Packet name="XYZData" file="NovatelPackets" ID="BESTXYZ, PSRXYZ" encode="false" comment="Position and velocity information in ECEF">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
-        <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
-    </Packet>
-
-    <Packet name="PsrXYZ" file="NovatelPackets" ID="PSRXYZ" encode="false" comment="Pseudo range based cartesian position and velocity">
-        <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="xyz" struct="XYZ" comment="Cartesion position and velocity."/>
     </Packet>
 
     <Packet name="Heading" file="NovatelPackets" ID="HEADING" encode="false" comment="Yaw and pitch from the align system">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="solStatus" enum="SolutionStatus_t" encodedType="unsigned32" comment="Status of the position solution"/>
         <Data name="posType" enum="PositionType_t" encodedType="unsigned32" comment="Type of position information"/>
         <Data name="length" inMemoryType="float32" comment="Baseline length between the align master and align rover in meters"/>
         <Data name="heading" inMemoryType="float32" scaler="180/pi" comment="Heading angle with respect to true North of the vector from the master to the rover in radians from 0 to 2pi"/>
-        <Data name="pitch" inMemoryType="float32" comment="Pitch angle of the vector from the master to the rover in radians from -pi to pi"/>
-        <Code name="headingfix" decode="user->heading /= 57.29577951308232f" comment="This is here because Protogen 1.4.5.b has a bug on scaling float32"/>
-        <Code name="pitchfix" decode="user->pitch /= 57.29577951308232f" comment="This is here because Protogen 1.4.5.b has a bug on scaling float32"/>
+        <Data name="pitch" inMemoryType="float32" scaler="180/pi" comment="Pitch angle of the vector from the master to the rover in radians from -pi to pi"/>
     </Packet>
 
     <Packet name="SerialConfig" file="NovatelPackets" ID="SERIALCONFIG" comment="Used to configure serial port settings on the receiver">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Enum name="Parity_t" comment="Parity options for a serial port">
             <Value name="NOV_NOPARITY" comment="No parity"/>
             <Value name="NOV_EVENPARITY" comment="Even parity"/>
@@ -582,7 +590,7 @@
 
     <Packet name="SatXYZ2" file="NovatelPackets" ID="SATXYZ2" encode="false" comment="Satellite position and errors as computed by Novatel from the GPS ephemeris">
         <Data name="header" struct="Header" comment="Header information for this packet."/>
-        <Code name="AdjustIndex" decode="byteindex += (user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
+        <Code name="AdjustIndex" decode="_pg_byteindex += (_pg_user->header.headerLength - MinHeaderLength);" comment="Account for extended Novatel headers"/>
         <Data name="numSats" inMemoryType="unsigned32" comment="Number of satellite positions to follow"/>
         <Structure name="satpos" array="12" variableArray="numSats" comment="The satellite positions">
             <Data name="satelliteSystem" enum="SatelliteSystem_t" encodedType="unsigned32" comment="Type of navigation system"/>
