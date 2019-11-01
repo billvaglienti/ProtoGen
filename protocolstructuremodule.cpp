@@ -819,7 +819,7 @@ QString ProtocolStructureModule::getExtractTextFunction(void)
 {
     return QString("\
 //! Extract text that is identified by a key\n\
-static QString extractText(const QString& key, const QString& source);\n\
+static QString extractText(const QString& key, const QString& source, int* fieldcount);\n\
 \n\
 /*!\n\
  * Extract text that is identified by a key\n\
@@ -828,7 +828,7 @@ static QString extractText(const QString& key, const QString& source);\n\
  * \\param fieldcount is incremented whenever the key is found in the source\n\
  * \\return the extracted text, which may be empty\n\
  */\n\
-static QString extractText(const QString& key, const QString& source, int* fieldcount)\n\
+QString extractText(const QString& key, const QString& source, int* fieldcount)\n\
 {\n\
     QString text;\n\
 \n\
