@@ -382,10 +382,18 @@ void EnumCreator::parse(void)
                 continue;
 
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
-            if(element.title.isEmpty())
-                sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getLookupName() + "\";\n";
-            else
-                sourceOutput += TAB_IN + TAB_IN + "return \"" + element.title + "\";\n";
+
+            // Title takes first preference, if supplied
+            QString title = element.title;
+
+            // Comment takes second preference, if supplied
+            if (title.isEmpty())
+                title = element.comment;
+
+            if (title.isEmpty())
+                title = element.getLookupName();
+
+            sourceOutput += TAB_IN + TAB_IN + "return \"" + title + "\";\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
