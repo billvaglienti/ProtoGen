@@ -12,6 +12,9 @@ public:
     //! Parse attributes from the ProtocolTag
     void parse(const QDomNamedNodeMap& map);
 
+    //! Parse the global file names
+    void parseFileNames(const QDomNamedNodeMap& map);
+
     //! Return the list of attributes understood by ProtocolSupport
     QStringList getAttriblist(void) const;
 

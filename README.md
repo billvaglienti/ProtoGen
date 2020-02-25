@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The C source code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 2.18. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 2.19. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -170,7 +170,7 @@ The `file` attribute can include path information (for example "src/ProtoGen/fil
 Require tag
 -----------
 
-The Require tag is used to insert XML from an external protocol file at the specified location. The generated code will be structued as if the linked xml was written *at the location it is referenced* - this tag provides the ability to separate the protocol definition into multiple files; which is most commonly used to put common features for multiple protocols into a single file.
+The Require tag is used to insert XML from an external protocol file. This tag provides the ability to separate the protocol definition into multiple files; which is most commonly used to put common features for multiple protocols into a single file. ProtoGen will recursively parse all external protocol files before the main protocol file; so that the main protocol file can depend on elements from the external files.
 
     <Require file="../version.xml"/>
     
@@ -178,7 +178,7 @@ The Require tag supports the following attributes:
 
 - `file` : gives the name of the file to insert, relative to the path of the file which requires it. You can include the .xml file extension, or leave it off.
 
-The external protocol file must follow the same structure requirements as the base protocol file. However, any top-level attributes specified in the file (i.e. in the `Protocol` tag) will be ignored. The Require tag is similar to including protocol support files on the command line. The only difference is that the Require tag provides fine grained control of where the external protocol elements are defined. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that ProtoGen will prevent a protocol file from being referenced more than once, so circular references are avoided.
+The external protocol file must follow the same structure requirements as the base protocol file. However, the only top-level attributes that are obeyed are the file attributes (`file`, `comparefile`, `printfile`, `verifyfile`, and `mapfile`). The Require tag is similar to including protocol support files on the command line. The Require tag can be used recursively by referencing a protocol file that itself references another protocol file. Note that ProtoGen will prevent a protocol file from being referenced more than once, so circular references are avoided.
 
 Include tag
 -----------
@@ -244,7 +244,7 @@ Enum tag attributes:
 
 - `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.
 
-- `lookupTitle` : is used to specify that this enumeration allows lookup of enum title based on enum values. If enabled, the title for a particular enum value can be returned as a string. If the enumertaion does not have a title the label text is returned.
+- `lookupTitle` : is used to specify that this enumeration allows lookup of enum title based on enum values. If enabled, the title for a particular enum value can be returned as a string. If the enumertaion does not have a title the comment text is returned. If there is no comment text the name text is returned.
 
 
 ### Enum : Value subtag attributes:

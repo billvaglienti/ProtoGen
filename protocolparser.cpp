@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.18.c";
+const QString ProtocolParser::genVersion = "2.19.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -439,6 +439,9 @@ bool ProtocolParser::parseFile(QString xmlFilename)
     QFile xmlFile( xmlFilename );
     QFileInfo fileinfo(xmlFilename);
 
+    // We allow each xml file to alter to the global filenames used, but only for the context of that xml.
+    ProtocolSupport localsupport(support);
+
     // Don't parse the same file twice
     if(filesparsed.contains(fileinfo.absoluteFilePath()))
         return false;
@@ -491,6 +494,9 @@ bool ProtocolParser::parseFile(QString xmlFilename)
     // Iterate over each top level node in the file
     QDomNodeList nodes = top.childNodes();
 
+    // Protocol file options specified in the xml
+    localsupport.parseFileNames(top.attributes());
+
     for(int i = 0; i < nodes.size(); i++)
     {
         QDomNode node = nodes.item(i);
@@ -523,7 +529,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         }
         else if( nodename == "struct" || nodename == "structure" )
         {
-            ProtocolStructureModule* module = new ProtocolStructureModule( this, support, api, version );
+            ProtocolStructureModule* module = new ProtocolStructureModule( this, localsupport, api, version );
 
             // Remember the XML
             module->setElement( node.toElement() );
@@ -532,7 +538,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         }
         else if( nodename == "enum" || nodename == "enumeration" )
         {
-            EnumCreator* Enum = new EnumCreator( this, nodename, support );
+            EnumCreator* Enum = new EnumCreator( this, nodename, localsupport );
 
             Enum->setElement( node.toElement() );
 
@@ -542,7 +548,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         // Define a packet
         else if( nodename == "packet" || nodename == "pkt" )
         {
-            ProtocolPacket* packet = new ProtocolPacket( this, support, api, version );
+            ProtocolPacket* packet = new ProtocolPacket( this, localsupport, api, version );
 
             packet->setElement( node.toElement() );
 
@@ -551,7 +557,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         }
         else if ( nodename == "doc" || nodename == "documentation" )
         {
-            ProtocolDocumentation* document = new ProtocolDocumentation( this, nodename, support );
+            ProtocolDocumentation* document = new ProtocolDocumentation( this, nodename, localsupport );
 
             document->setElement( node.toElement() );
 

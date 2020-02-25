@@ -24,10 +24,12 @@ SOURCES += main.cpp \
     Engine.c \
     base_types.c \
     compare/base_compare.cpp \
+    compare/base_print.cpp \
     fielddecode.c \
     fieldencode.c \
     floatspecial.c \
     GPS.c \
+    globaldependson.c \
     map/base_map.cpp \
     scaleddecode.c \
     scaledencode.c \
@@ -45,6 +47,8 @@ SOURCES += main.cpp \
 HEADERS += \
     base_types.h \
     compare/base_compare.h \
+    compare/base_print.h \
+    globaldependson.h \
     indices.h \
     DemolinkProtocol.h \
     Engine.h \

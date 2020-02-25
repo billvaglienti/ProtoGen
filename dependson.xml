@@ -1,4 +1,5 @@
-<Protocol comment="This is an example of a protocol description file another file depends on">
+<Protocol file="globaldependson" comment="This is an example of a protocol description file another file depends on">
+
     <Enum name="GPSConstants" file="globalenum" comment="Constants used with GPS systems">
         <Value name="GPS_BAND_L1" value="0"/>
         <Value name="GPS_BAND_L2" value="1"/>
@@ -37,9 +38,9 @@
         <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
         <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
         <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>
-    </Packet>
-	
-    <Structure name="PositionLLA" file="base_types" printfile="compare/base_compare" mapfile="map/base_map" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
+        </Packet>
+
+        <Structure name="PositionLLA" file="base_types" comparefile="compare/base_compare" printfile="compare/base_print" mapfile="map/base_map" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
         <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="pi/2" comment="The latitude of the position in radians, positive North"/>
         <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="pi" comment="The longitude of the position in radians, positive East"/>
         <Data name="altitude" inMemoryType="float64" encodedType="unsigned24" min="-1000" scaler="1000" comment="The altitude above the WGS-84 ellipsoid of the position in meters"/>
