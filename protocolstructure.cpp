@@ -1505,10 +1505,10 @@ QString ProtocolStructure::getVerifyFunctionString(bool includeChildren) const
     output += TAB_IN + "int _pg_good = 1;\n";
 
     if(needsVerifyIterator)
-        output += TAB_IN + "int _pg_i = 0;\n";
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
 
     if(needs2ndVerifyIterator)
-        output += TAB_IN + "int _pg_j = 0;\n";
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     for(int i = 0; i < encodables.length(); i++)
     {

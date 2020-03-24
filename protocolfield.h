@@ -416,6 +416,9 @@ protected:
     //! Determine if an argument should be passed to the limiting macro
     QString getLimitedArgument(QString argument) const;
 
+    //! Get the array handling code
+    QString getArrayIterationCode(const QString& spacing, bool isStructureMember) const;
+
     //! Get the next lines(s) of source coded needed to encode a bitfield field
     QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;
 
