@@ -86,6 +86,13 @@ efficiently encode data for little or big endian architectures.">
         <Data name="api" inMemoryType="unsigned16" initialValue="0" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
         <Data name="version" inMemoryType="fixedstring" array="16" constant="getDemolinkVersion()" checkConstant="true" comment="the version of the sending side"/>
         <Data name="reserved" inMemoryType="null" array="4" encodedType="unsigned8" comment="Reserved space for expansion"/>
+
+        <!--
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield11" comment="Reserved space for expansion"/>
+        <Data name="testBitfieldIntegerScaling" inMemoryType="unsigned32" encodedType="bitfield21" min="-15" scaler="2"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield5" comment="Reserved space for expansion"/>
+        <Data name="testLongBitfieldIntegerScaling" inMemoryType="unsigned64" encodedType="bitfield59" min="2000" scaler="5"/>
+        -->
     </Packet>
 
     <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>
@@ -185,7 +192,7 @@ efficiently encode data for little or big endian architectures.">
             for that throttle. The throttle to pulse width mapping can be a 
             straight line, or a linearly interpolated table with up to 10 points.">
         
-        <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" comment="Number of points in the throttle curve"/>
+        <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" limitOnEncode="true" comment="Number of points in the throttle curve"/>
         <!-- Enable this to demonstrate the bug I need to fix <Code name="CodeShouldNotInterruptBitFields" encode=";"/> -->
         <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield27"/>
         <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>

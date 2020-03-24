@@ -34,7 +34,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     attriblist()
 {
     // List of attributes understood by ProtocolStructure
-    attriblist << "name" << "title" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden";
+    attriblist << "name" << "title" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden" << "limitOnEncode";
 
 }
 
@@ -111,7 +111,6 @@ void ProtocolStructure::parse(void)
     dependsOn = ProtocolParser::getAttribute("dependsOn", map);
     dependsOnValue = ProtocolParser::getAttribute("dependsOnValue", map);
     dependsOnCompare = ProtocolParser::getAttribute("dependsOnCompare", map);
-
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
 
@@ -120,6 +119,10 @@ void ProtocolStructure::parse(void)
 
     if(title.isEmpty())
         title = name;
+
+    // This will propagate to any of the children we create
+    if(ProtocolParser::isFieldSet("limitOnEncode", map))
+        support.limitonencode = true;
 
     testAndWarnAttributes(map, attriblist);
 
@@ -821,11 +824,14 @@ QString ProtocolStructure::getPrototypeEncodeString(bool isBigEndian, bool inclu
     {
         for(int i = 0; i < encodables.length(); i++)
         {
-            if(encodables.at(i)->isPrimitive())
+            // Is this encodable a structure?
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(structure == nullptr)
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += encodables.at(i)->getPrototypeEncodeString(isBigEndian, includeChildren);
+            output += structure->getPrototypeEncodeString(isBigEndian, includeChildren);
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -855,11 +861,14 @@ QString ProtocolStructure::getFunctionEncodeString(bool isBigEndian, bool includ
     {
         for(int i = 0; i < encodables.length(); i++)
         {
-            if(encodables.at(i)->isPrimitive())
+            // Is this encodable a structure?
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(structure == nullptr)
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += encodables.at(i)->getFunctionEncodeString(isBigEndian, includeChildren);
+            output += structure->getFunctionEncodeString(isBigEndian, includeChildren);
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -948,11 +957,14 @@ QString ProtocolStructure::getPrototypeDecodeString(bool isBigEndian, bool inclu
     {
         for(int i = 0; i < encodables.length(); i++)
         {
-            if(encodables.at(i)->isPrimitive())
+            // Is this encodable a structure?
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(structure == nullptr)
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += encodables.at(i)->getPrototypeDecodeString(isBigEndian);
+            output += structure->getPrototypeDecodeString(isBigEndian);
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -981,11 +993,14 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
     {
         for(int i = 0; i < encodables.length(); i++)
         {
-            if(encodables.at(i)->isPrimitive())
+            // Is this encodable a structure?
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(structure == nullptr)
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += encodables.at(i)->getFunctionDecodeString(isBigEndian);
+            output += structure->getFunctionDecodeString(isBigEndian);
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -1049,9 +1064,8 @@ QString ProtocolStructure::getFunctionDecodeString(bool isBigEndian, bool includ
 
 /*!
  * Return the string that is used to encode this structure
- * \param isBigEndian should be true for big endian encoding.
- * \param encLength is appended for length information of this field.
- * \param bitcount points to the running count of bits in a bitfields and should persist between calls
+ * \param isBigEndian should be true for big endian encoding, ignored
+ * \param bitcount points to the running count of bits in a bitfields and should persist between calls, ignored
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to encode this structure
  */

@@ -5,11 +5,6 @@
 FieldCoding::FieldCoding(ProtocolSupport sup) :
     ProtocolScaling(sup)
 {
-    typeNames.clear();
-    typeSigNames.clear();
-    typeSizes.clear();
-    typeUnsigneds.clear();
-
     // we use 64-bit integers for floating point
     if(!support.int64)
         support.float64 = false;
@@ -109,6 +104,16 @@ bool FieldCoding::generateEncodeHeader(void)
 
     if(support.supportbool)
         header.writeIncludeDirective("stdbool.h", "", true);
+
+    header.write("\n");
+    header.write("//! Macro to limit a number to be no more than a maximum value\n");
+    header.write("#define limitMax(number, max) (((number) > (max)) ? (max) : (number))\n");
+    header.write("\n");
+    header.write("//! Macro to limit a number to be no less than a minimum value\n");
+    header.write("#define limitMin(number, min) (((number) < (min)) ? (min) : (number))\n");
+    header.write("\n");
+    header.write("//! Macro to limit a number to be no less than a minimum value and no more than a maximum value\n");
+    header.write("#define limitBoth(number, min, max) (((number) > (max)) ? (max) : (limitMin((number), (min))))\n");
 
     header.write("\n");
     header.write("//! Encode a null terminated string on a byte stream\n");

@@ -176,16 +176,16 @@ public:
     virtual QString getStructureDeclaration(bool alwaysCreate) const Q_DECL_OVERRIDE;
 
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
+    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const;
 
     //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
-    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
+    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const;
 
     //! Return the string that gives the function used to encode this encodable, may be empty
-    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
+    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const;
 
     //! Return the string that gives the function used to decode this encodable, may be empty
-    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const Q_DECL_OVERRIDE;
+    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const;
 
     //! Return the string that is used to prototype the encode routine for this encodable
     virtual QString getFunctionEncodePrototype() const;

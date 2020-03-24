@@ -31,18 +31,6 @@ public:
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const = 0;
 
-    //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
-    virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
-
-    //! Return the string that gives the prototype of the function used to decode this encodable, may be empty
-    virtual QString getPrototypeDecodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
-
-    //! Return the string that gives the function used to encode this encodable, may be empty
-    virtual QString getFunctionEncodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
-
-    //! Return the string that gives the function used to decode this encodable, may be empty
-    virtual QString getFunctionDecodeString(bool isBigEndian, bool includeChildren = true) const {Q_UNUSED(isBigEndian); Q_UNUSED(includeChildren); return QString();}
-
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
 

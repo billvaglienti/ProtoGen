@@ -68,6 +68,15 @@ protected:
     //! Generate the integer decode function
     QString integerDecodeFunction(int type, bool bigendian);
 
+    //! List of built in type names
+    QStringList typeNames;
+
+    //! List of type names in function signature
+    QStringList typeSigNames;
+
+    //! Size of built in types
+    QList<int> typeSizes;
+
     QList<bool> typeUnsigneds;
 };
 

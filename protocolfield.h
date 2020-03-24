@@ -42,6 +42,21 @@ public:
     //! Create the type string
     QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
 
+    //! Determine the signature of this field (for example uint8).
+    QString toSigString(void) const;
+
+    //! Determine the maximum floating point value this TypeData can hold
+    double getMaximumFloatValue(void) const;
+
+    //! Determine the minimum floating point value this TypeData can hold
+    double getMinimumFloatValue(void) const;
+
+    //! Determine the maximum integer value this TypeData can hold
+    uint64_t getMaximumIntegerValue(void) const;
+
+    //! Determine the minimum integer value this TypeData can hold
+    int64_t getMinimumIntegerValue(void) const;
+
 private:
     ProtocolSupport support;
 };
@@ -325,11 +340,23 @@ protected:
     //! The string used to verify the value on the low side, for documentation purposes only
     QString verifyMinStringForDisplay;
 
+    //! The numerical value of the verifyMinString (if any)
+    double verifyMinValue;
+
+    //! Flag indicating if we know the numerical value of verifyMinString
+    bool hasVerifyMinValue;
+
     //! The string used to verify the value on the high side
     QString verifyMaxString;
 
     //! The string used to verify the value on the high side, for documentation purposes only
     QString verifyMaxStringForDisplay;
+
+    //! The numerical value of the verifyMaxString (if any)
+    double verifyMaxValue;
+
+    //! Flag indicating if we know the numerical value of verifyMaxString
+    bool hasVerifyMaxValue;
 
     //! Flag to force this the decode function to verify the result against the constant value
     bool checkConstant;
@@ -382,6 +409,12 @@ protected:
 
     //! Get the ending bitcount for this fields bitfield
     int getEndingBitCount(void){return bitfieldData.startingBitCount + encodedType.bits;}
+
+    //! Get the comment that describes the encoded range
+    QString getRangeComment(bool limitonencode = false) const;
+
+    //! Determine if an argument should be passed to the limiting macro
+    QString getLimitedArgument(QString argument) const;
 
     //! Get the next lines(s) of source coded needed to encode a bitfield field
     QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;

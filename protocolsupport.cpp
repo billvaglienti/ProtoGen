@@ -14,6 +14,7 @@ ProtocolSupport::ProtocolSupport() :
     disableunrecognized(false),
     bigendian(true),
     supportbool(false),
+    limitonencode(false),
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet")
 {
@@ -42,7 +43,8 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "packetParameterSuffix"
             << "endian"
             << "pointer"
-            << "supportBool";
+            << "supportBool"
+            << "limitOnEncode";
 
     return attribs;
 }
@@ -84,6 +86,10 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     // bool support can be turned on
     if(ProtocolParser::isFieldSet("supportBool", map))
         supportbool = true;
+
+    // Limit on encode can be turned on
+    if(ProtocolParser::isFieldSet("limitOnEncode", map))
+        limitonencode = true;
 
     // The global file names
     parseFileNames(map);

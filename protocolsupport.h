@@ -28,6 +28,7 @@ public:
     bool disableunrecognized;       //!< true to disable warnings about unrecognized attributes
     bool bigendian;                 //!< Protocol bigendian flag
     bool supportbool;               //!< true if support for 'bool' is included
+    bool limitonencode;             //!< true to enforce verification limits on encode
     QString globalFileName;         //!< File name to be used if a name is not given
     QString globalVerifyName;       //!< Verify file name to be used if a name is not given
     QString globalCompareName;      //!< Comparison file name to be used if a name is not given

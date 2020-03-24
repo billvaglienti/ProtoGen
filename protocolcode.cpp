@@ -85,9 +85,9 @@ QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isSt
         return output;
 
     if(!comment.isEmpty())
-        output += "    // " + comment + "\n";
+        output += TAB_IN + "// " + comment + "\n";
 
-    output += "    " + encode + "\n";
+    output += TAB_IN + encode + "\n";
 
     return output;
 }
@@ -117,9 +117,9 @@ QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isSt
         return output;
 
     if(!comment.isEmpty())
-        output += "    // " + comment + "\n";
+        output += TAB_IN + "// " + comment + "\n";
 
-    output += "    " + decode + "\n";
+    output += TAB_IN + decode + "\n";
 
     return output;
 }

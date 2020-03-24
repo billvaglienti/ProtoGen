@@ -141,13 +141,8 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
  */
 uint64_t ProtocolBitfield::maxvalueoffield(int numbits)
 {
-    // The maximum value that can be stored in a uint64_t
-    uint64_t max = UINT64_MAX;
-
-    // The maximum value that can be stored in numbits
-    max = max >> (CHAR_BIT*sizeof(uint64_t) - numbits);
-
-    return max;
+    // Do not omit the "ull" or you will be limited to shifting the number of bits in an int
+    return (0x1ull << numbits) - 1;
 }
 
 

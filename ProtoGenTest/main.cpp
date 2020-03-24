@@ -10,6 +10,7 @@
 #include "linkcode.h"
 #include "compareDemolink.h"
 #include "printDemolink.h"
+#include "fieldencode.h"
 
 #define PI 3.141592653589793
 #define PIf 3.141592653589793f
@@ -18,6 +19,7 @@
 #define deg2radf(x) (PIf*(x)/180.0f)
 #define rad2degf(x) (180.0f*(x)/PIf)
 
+static int testLimits(void);
 static int testConstantPacket(void);
 static int testTelemetryPacket(void);
 static int verifyTelemetryData(Telemetry_t telemetry);
@@ -44,6 +46,12 @@ int main(int argc, char *argv[])
     (void)argv;
 
     int Return = 1;
+
+    if(testLimits() == 0)
+    {
+        std::cout << "Limits failed test" << std::endl;
+        Return = 0;
+    }
 
     if(testSpecialFloat() == 0)
     {
@@ -99,6 +107,34 @@ int main(int argc, char *argv[])
     return Return;
 }
 
+
+int testLimits(void)
+{
+    int32_t limittest = 513;
+
+    if(limitMax(limittest, 1000) != 513)
+        return 0;
+
+    if(limitMax(limittest, 100) != 100)
+        return 0;
+
+    if(limitMin(limittest, 1000) != 1000)
+        return 0;
+
+    if(limitMin(limittest, 100) != 513)
+        return 0;
+
+    if(limitBoth(limittest, -100, 1000) != 513)
+        return 0;
+
+    if(limitBoth(limittest, 1000, 2000) != 1000)
+        return 0;
+
+    if(limitBoth(limittest, -100, 100) != 100)
+        return 0;
+
+    return 1;
+}
 
 int testConstantPacket(void)
 {
