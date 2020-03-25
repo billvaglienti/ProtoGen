@@ -2184,10 +2184,20 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         if(!description.isEmpty() && !description.endsWith('.'))
             description += ".";
 
-        if((encodedMax > encodedMin) && (encodedType.isFloat))
-            description += "<br>Scaled by " + scalerString + ".";
-        else if(isFloatScaling() || isIntegerScaling())
+        if(support.limitonencode && (!verifyMinStringForDisplay.isEmpty() || !verifyMaxStringForDisplay.isEmpty()))
+        {
+            if(!verifyMinStringForDisplay.isEmpty() && !verifyMaxStringForDisplay.isEmpty())
+                description += "<br>Value is limited on encode from " + verifyMinStringForDisplay + " to " + verifyMaxStringForDisplay + ".";
+            else if(verifyMinStringForDisplay.isEmpty())
+                description += "<br>Value is limited on encode to be less than or equal to " + verifyMaxStringForDisplay + ".";
+            else
+                description += "<br>Value is limited on encode to be greater than or equal to " + verifyMinStringForDisplay + ".";
+        }
+
+        if(isFloatScaling() || isIntegerScaling())
             description += "<br>Scaled by " + scalerString + " from " + getDisplayNumberString(encodedMin) + " to " + getDisplayNumberString(encodedMax) + ".";
+        else if(!scalerString.isEmpty() && (encodedType.isFloat))
+            description += "<br>Scaled by " + scalerString + ".";
 
         if(!constantString.isEmpty())
             description += "<br>Data are given constant value on encode " + constantStringForDisplay + ".";
@@ -3331,42 +3341,6 @@ bool ProtocolField::usesBitfields(void) const
     return (encodedType.isBitfield && !isNotEncoded());
 }
 
-
-//! True if this field has a smaller encoded size than in memory size, which requires a size check
-bool ProtocolField::requiresSizeCheck(void) const
-{
-    // No size check needed if nothing is in memory or if not encoded
-    if(inMemoryType.isNull || encodedType.isNull)
-        return false;
-
-    // If we are encoding a constant, then it's up to the user to make sure it fits
-    if(!constantString.isEmpty())
-        return false;
-
-    // If encoding a boolean, it will fit in as little as one bit
-    if(inMemoryType.isBool)
-        return false;
-
-    // If we are applying a user specified verify on encode, then a size check should not be necessary
-    if(support.limitonencode && !verifyMaxString.isEmpty() && !verifyMinString.isEmpty())
-        return false;
-
-    // If scaling will be applied then the scaling functions will do the size check
-    if(isIntegerScaling() || isFloatScaling())
-        return false;
-
-    // Different in-memory versus encoded bit size, requires size check
-    if(inMemoryType.bits > encodedType.bits)
-        return true;
-
-    // If the in memory type is a float, and the encoded type is not then it
-    // needs a size check even if the in memory bits are less than the encoded bits
-    if(inMemoryType.isFloat && !encodedType.isFloat)
-        return true;
-
-    return false;
-
-}
 
 //! True if this bitfield crosses a byte boundary
 bool ProtocolField::bitfieldCrossesByteBoundary(void) const

@@ -242,9 +242,6 @@ public:
     //! True if this encodable has a direct child that uses bitfields
     virtual bool usesBitfields(void) const Q_DECL_OVERRIDE;
 
-    //! True if this field has a smaller encoded size than in memory size, which requires a size check
-    bool requiresSizeCheck(void) const;
-
     //! True if this bitfield crosses a byte boundary
     bool bitfieldCrossesByteBoundary(void) const;
 
