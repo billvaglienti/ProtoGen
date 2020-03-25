@@ -1586,12 +1586,24 @@ bool ProtocolParser::isFieldSet(QString value)
 /*!
  * Determine if the field contains a given label, and the value is either {'false','no','0'}
  * \param e is the element from the DOM to test
- * \param label is the name of the attribute form the element to test
+ * \param label is the name of the attribute from the element to test
  * \return true if the attribute value is "false", "no", or "0"
  */
 bool ProtocolParser::isFieldClear(const QDomElement &e, QString label)
 {
     return isFieldClear(e.attribute(label).trimmed().toLower());
+}
+
+
+/*!
+ * Determine if the value of an attribute is either {'false','no','0'}
+ * \param attribname is the name of the attribute to test
+ * \param map is the list of all attributes to search
+ * \return true if the attribute value is "false", "no", or "0"
+ */
+bool ProtocolParser::isFieldClear(QString attribname, QDomNamedNodeMap map)
+{
+    return isFieldClear(ProtocolParser::getAttribute(attribname, map));
 }
 
 

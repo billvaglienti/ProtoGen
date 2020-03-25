@@ -491,10 +491,10 @@ QString FieldCoding::floatEncodeFunction(int type, bool bigendian)
     }
     else if(typeSizes[type] == 3)
     {
-        function += "    uint24To" + endian + "Bytes(float32ToFloat24ex((float)number, sigbits), bytes, index);\n";
+        function += "    uint24To" + endian + "Bytes(float32ToFloat24ex(number, sigbits), bytes, index);\n";
     }
     else
-        function += "    uint16To" + endian + "Bytes(float32ToFloat16ex((float)number, sigbits), bytes, index);\n";
+        function += "    uint16To" + endian + "Bytes(float32ToFloat16ex(number, sigbits), bytes, index);\n";
 
     function += "}\n";
 

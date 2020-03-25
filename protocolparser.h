@@ -145,6 +145,9 @@ public:
     //! Return true if the value is set to {'false','no','0'}
     static bool isFieldClear(QString value);
 
+    //! Determine if the value of an attribute is either {'false','no','0'}
+    static bool isFieldClear(QString attribname, QDomNamedNodeMap map);
+
     //! Set the license text
     void setLicenseText(const QString text) { support.licenseText = text; }
 

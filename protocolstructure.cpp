@@ -123,6 +123,8 @@ void ProtocolStructure::parse(void)
     // This will propagate to any of the children we create
     if(ProtocolParser::isFieldSet("limitOnEncode", map))
         support.limitonencode = true;
+    else if(ProtocolParser::isFieldClear("limitOnEncode", map))
+        support.limitonencode = false;
 
     testAndWarnAttributes(map, attriblist);
 

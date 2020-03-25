@@ -317,7 +317,11 @@ int64_t TypeData::getMinimumIntegerValue(void) const
     }
     else if(isSigned)
     {
-        int64_t min = (0x1ull << (bits-1));
+        // We have to deal with the sign extension here. For example -128 for an
+        // 8-bit number is 0x80, but -128 for a 16-bit number is 0xFF80. Since we
+        // are returning a 64-bit number it is almost always bigger than the
+        // number of bits and sign extensions must be applied
+        int64_t min = (0xFFFFFFFFFFFFFFFFll << (bits-1));
         return min;
     }
     else
@@ -339,10 +343,12 @@ ProtocolField::ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupp
     encodedMin(0),
     encodedMax(0),
     scaler(1),
-    verifyMinValue(0),
     hasVerifyMinValue(false),
-    verifyMaxValue(0),
+    verifyMinValue(0),
+    limitMinValue(0),
     hasVerifyMaxValue(false),
+    verifyMaxValue(0),
+    limitMaxValue(0),
     checkConstant(false),
     overridesPrevious(false),
     isOverriden(false),
@@ -389,10 +395,14 @@ void ProtocolField::clear(void)
     initialValueStringForDisplay.clear();
     verifyMinStringForDisplay.clear();
     verifyMaxStringForDisplay.clear();
-    verifyMinValue = 0;
+    limitMinString.clear();
+    limitMinValue = 0;
     hasVerifyMinValue = false;
-    verifyMaxValue = 0;
+    verifyMinValue = 0;
+    limitMaxString.clear();
+    limitMaxValue = 0;
     hasVerifyMaxValue = false;
+    verifyMaxValue = 0;
 
 }// ProtocolField::clear
 
@@ -885,6 +895,8 @@ void ProtocolField::parse(void)
     // This will propagate to any of the children we create
     if(ProtocolParser::isFieldSet("limitOnEncode", map))
         support.limitonencode = true;
+    else if(ProtocolParser::isFieldClear("limitOnEncode", map))
+        support.limitonencode = false;
 
     for(int i = 0; i < map.count(); i++)
     {
@@ -1542,61 +1554,61 @@ void ProtocolField::parse(void)
     // Make sure no keyword conflicts
     checkAgainstKeywords();
 
-    // Check if the verify max string is "auto" and handle it
+    // Work out the limits that come from the encoding rules
+    if(isFloatScaling() || isIntegerScaling())
+    {
+        limitMinValue = encodedMin;
+        limitMaxValue = encodedMax;
+
+        if(isFloatScaling())
+        {
+            limitMaxString = getNumberString(limitMaxValue, encodedType.bits);
+            limitMinString = getNumberString(limitMinValue, encodedType.bits);
+        }
+        else
+        {
+            limitMaxString = QString::number(limitMaxValue, 'f', 0);
+            limitMinString = QString::number(limitMinValue, 'f', 0);
+        }
+    }
+    else if(encodedType.isFloat)
+    {
+        limitMinValue = encodedType.getMinimumFloatValue()/scaler;
+        limitMaxValue = encodedType.getMaximumFloatValue()/scaler;
+        limitMaxString = getNumberString(limitMaxValue, encodedType.bits);
+        limitMinString = getNumberString(limitMinValue, encodedType.bits);
+    }
+    else
+    {
+        limitMinValue = encodedType.getMinimumIntegerValue();
+        limitMaxValue = encodedType.getMaximumIntegerValue();
+        limitMaxString = QString::number(limitMaxValue, 'f', 0);
+        limitMinString = QString::number(limitMinValue, 'f', 0);
+    }
+
+    // Now handle the verify maximum value
     if(verifyMaxString.compare("auto", Qt::CaseInsensitive) == 0)
     {
-        // Automatically figure out the value of the max
-        if(encodedMin >= encodedMax)
-        {
-            // In this case we don't already have scaling information, so we need to work out the value ourselves
-            verifyMaxValue = encodedType.getMaximumFloatValue();
-            hasVerifyMaxValue = true;
+        verifyMaxString = limitMaxString;
+        hasVerifyMaxValue = true;
+    }
+    else if(!verifyMaxString.isEmpty())
+    {
+        // Compute the verify max value if we can
+        verifyMaxValue = ShuntingYard::computeInfix(verifyMaxString, &hasVerifyMaxValue);
+    }
 
-            if(scaler != 1.0)
-            {
-                // Note that it is possible to apply an in-line scaler and offset
-                verifyMaxValue /= scaler;
-                verifyMaxString = getNumberString(verifyMaxValue, encodedType.bits);
-            }
-            else
-                verifyMaxString = QString().setNum(encodedType.getMaximumIntegerValue());
-        }
-        else
-        {
-            verifyMaxValue = encodedMax;
-            verifyMaxString = maxString;
-            hasVerifyMaxValue = true;
-        }
-
-    }// if we need to automagically determine the max verify string
-
-    // Check if the verify min string is "auto" and handle it
+    // Now handle the verify minimum value
     if(verifyMinString.compare("auto", Qt::CaseInsensitive) == 0)
     {
-        // Automatically figure out the value of the min
-        if(minString.isEmpty())
-        {
-            // In this case we don't already have scaling information, so we need to work out the value ourselves
-            verifyMinValue = encodedType.getMinimumFloatValue();
-            hasVerifyMinValue = true;
-
-            if(scaler != 1.0)
-            {
-                // Note that it is possible to apply an in-line scaler
-                verifyMinValue /= scaler;
-                verifyMinString = getNumberString(verifyMinValue, encodedType.bits);
-            }
-            else
-                verifyMinString = QString().setNum(encodedType.getMinimumIntegerValue());
-        }
-        else
-        {
-            verifyMinValue = encodedMin;
-            verifyMinString = minString;
-            hasVerifyMinValue = true;
-        }
-
-    }// if we need to automagically determine the min verify string
+        verifyMinString = limitMinString;
+        hasVerifyMinValue = true;
+    }
+    else if(!verifyMinString.isEmpty())
+    {
+        // Compute the verify min value if we can
+        verifyMinValue = ShuntingYard::computeInfix(verifyMinString, &hasVerifyMinValue);
+    }
 
     // Support the case where a numeric string uses "pi" or "e".
     defaultStringForDisplay = handleNumericConstants(defaultString);
@@ -3391,10 +3403,6 @@ bool ProtocolField::usesEncodeTempBitfield(void) const
         if(getConstantString() == "0")
             return false;
 
-        // Different in-memory versus encoded bit size, requires size check
-        if(requiresSizeCheck())
-            return true;
-
         return bitfieldCrossesByteBoundary();
     }
 
@@ -3415,10 +3423,6 @@ bool ProtocolField::usesEncodeTempLongBitfield(void) const
         // If we are encoding a constant zero we don't need temporary variables, no matter how big the field is
         if(getConstantString() == "0")
             return false;
-
-        // Different in-memory versus encoded bit size, requires size check
-        if(requiresSizeCheck())
-            return true;
 
         return bitfieldCrossesByteBoundary();
     }
@@ -3501,81 +3505,19 @@ QString ProtocolField::getRangeComment(bool limitonencode) const
 {
     QString minstring, maxstring;
 
-    if(isFloatScaling() || isIntegerScaling() || encodedType.isFloat)
-    {
-        double min = -DBL_MAX;
-        double max =  DBL_MAX;
-
-        if(isFloatScaling() || isIntegerScaling())
-        {
-            // Scaling obeys whatever scaling rules the user supplied
-            min = encodedMin;
-            max = encodedMax;
-
-        }// if scaling
-        else
-        {
-            // Float encodings use float rules
-            if(encodedType.bits <= 16)
-            {
-                min = float16ToFloat32ex(float32ToFloat16ex(-FLT_MAX, encodedType.sigbits), encodedType.sigbits);
-                max = float16ToFloat32ex(float32ToFloat16ex( FLT_MAX, encodedType.sigbits), encodedType.sigbits);
-            }
-            else if(encodedType.bits <= 24)
-            {
-                min = float24ToFloat32ex(float32ToFloat24ex(-FLT_MAX, encodedType.sigbits), encodedType.sigbits);
-                max = float24ToFloat32ex(float32ToFloat24ex( FLT_MAX, encodedType.sigbits), encodedType.sigbits);
-            }
-            else if(encodedType.bits <= 32)
-            {
-                min = -FLT_MAX;
-                max =  FLT_MAX;
-            }
-
-            // If a floating point scaler is being used the min and max values of the in-memory value are scaled
-            if(scaler > 0.0)
-            {
-                min /= scaler;
-                max /= scaler;
-            }
-
-        }// else if encoding float
-
-        minstring = getNumberString(min);
-        maxstring = getNumberString(max);
-
-    }// if scaled or encoded as a float
-    else if(encodedType.isSigned)
-    {
-        int64_t max = (0x1ull << (encodedType.bits-1)) - 0x1ull;
-        int64_t min = (0x1ull << (encodedType.bits-1));
-        minstring = QString::number(min);
-        maxstring = QString::number(max);
-
-    }// else if non-scaled signed integer encoding
+    if((limitonencode == false) || verifyMaxString.isEmpty() || (hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue)))
+        maxstring = limitMaxString;
     else
-    {
-        uint64_t max = (0x1ull << (encodedType.bits)) - 0x1ull;
-        minstring = "0";
-        maxstring = QString::number(max);
+        maxstring = verifyMaxString;
 
-    }// else if non-scaled unsigned integer encoding
-
-    // Construct and return the range comment, accounting for the limitonencode rules
-    if(limitonencode && (!verifyMinString.isEmpty() || (!verifyMaxString.isEmpty())))
-    {
-        if(verifyMinString.isEmpty())
-            return "// Range of " + name + " is " + minstring + " to " + verifyMaxString +  ".\n";
-        else if(verifyMaxString.isEmpty())
-            return "// Range of " + name + " is " + verifyMinString + " to " + maxstring +  ".\n";
-        else
-            return "// Range of " + name + " is " + verifyMinString + " to " + verifyMaxString +  ".\n";
-
-    }// If applying verify rules
+    if((limitonencode == false) || verifyMinString.isEmpty() || (hasVerifyMinValue && (verifyMinValue <= limitMinValue)))
+        minstring = limitMinString;
     else
-        return "// Range of " + name + " is " + minstring + " to " + maxstring +  ".\n";
+        minstring = verifyMinString;
 
-}// ProtocolField::getEncodeRangeComment
+    return "// Range of " + name + " is " + minstring + " to " + maxstring +  ".\n";
+
+}// ProtocolField::getRangeComment
 
 
 /*!
@@ -3586,17 +3528,104 @@ QString ProtocolField::getRangeComment(bool limitonencode) const
  */
 QString ProtocolField::getLimitedArgument(QString argument) const
 {
-    // Handle limiting on encode. We do this by modifying the argument to include the limiting macro
-    if(support.limitonencode && (!verifyMinString.isEmpty() || !verifyMaxString.isEmpty()))
-    {
-        if(verifyMinString.isEmpty())
-            argument = "limitMax(" + argument + ", " + verifyMaxString + ")";
-        else if(verifyMaxString.isEmpty())
-            argument = "limitMin(" + argument + ", " + verifyMinString + ")";
-        else
-            argument = "limitBoth(" + argument + ", " + verifyMinString + ", " + verifyMaxString + ")";
+    // Boolean is handled specially, because it is only ever 1 bit (true or false), but the in-memory size is more than 1 bit
+    if(inMemoryType.isBool)
+        return argument;
 
-    }// if limiting on encode is taking place
+    // If scaling is active the scaling functions will apply encoding
+    // limits. The same thing will happen with the conversion to smaller
+    // floating point types
+    if(isFloatScaling() || isIntegerScaling() || (encodedType.isFloat && (encodedType.bits < 32)))
+    {
+        // However the user may want tighter limits
+        if(support.limitonencode && (!verifyMinString.isEmpty() || !verifyMaxString.isEmpty()))
+        {
+            bool skipmin = verifyMinString.isEmpty();
+            bool skipmax = verifyMaxString.isEmpty();
+
+            if(!skipmax && hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue))
+                skipmax = true;
+
+            if(!skipmin && hasVerifyMinValue && (verifyMinValue <= limitMinValue))
+                skipmin = true;
+
+            if(skipmin && skipmax)
+                return argument;
+
+            if(skipmin)
+                argument = "limitMax(" + argument + ", " + verifyMaxString + ")";
+            else if(skipmax)
+                argument = "limitMin(" + argument + ", " + verifyMinString + ")";
+            else
+                argument = "limitBoth(" + argument + ", " + verifyMinString + ", " + verifyMaxString + ")";
+
+        }// if user asked for specific encode limiting
+
+    }// if scaling is going on
+    else
+    {
+        QString minstring = limitMinString;
+        QString maxstring = limitMaxString;
+        double minvalue = limitMinValue;
+        double maxvalue = limitMaxValue;
+        bool skipmin = true;
+        bool skipmax = true;
+
+        // In this case we don't have the scaling functions, so we may need to apply a limit, even if the user didn't ask for it
+        if(!hasVerifyMaxValue && !verifyMaxString.isEmpty() && support.limitonencode)
+        {
+            // In this case we cannot vet the user's verify string, we just have to use it
+            maxstring = verifyMaxString;
+            skipmax = false;
+
+        }// if we cannot evaluate the verify value
+        else
+        {
+            if(hasVerifyMaxValue && support.limitonencode && (verifyMaxValue < limitMaxValue))
+            {
+                maxvalue = verifyMaxValue;
+                maxstring = verifyMaxString;
+            }
+
+            // Now check if this max value is less than the in-Memory maximum. If it is then we must apply the max limit
+            if(maxvalue < inMemoryType.getMaximumFloatValue())
+                skipmax = false;
+
+        }// else if we can evaluate the verify value
+
+        // In this case we don't have the scaling functions, so we may need to apply a limit, even if the user didn't ask for it
+        if(!hasVerifyMinValue && !verifyMinString.isEmpty() && support.limitonencode)
+        {
+            // In this case we cannot vet the user's verify string, we just have to use it
+            minstring = verifyMinString;
+            skipmin = false;
+
+        }// if we cannot evaluate the verify value
+        else
+        {
+            if(hasVerifyMinValue && support.limitonencode && (verifyMinValue > limitMinValue))
+            {
+                minvalue = verifyMinValue;
+                minstring = verifyMinString;
+            }
+
+            // Now check if this min value is more than the in-Memory minimum. If it is then we must apply the min limit
+            if(minvalue > inMemoryType.getMinimumFloatValue())
+                skipmin = false;
+
+        }// else if we can evaluate the verify value
+
+        if(skipmin && skipmax)
+            return argument;
+
+        if(skipmin)
+            argument = "limitMax(" + argument + ", " + maxstring + ")";
+        else if(skipmax)
+            argument = "limitMin(" + argument + ", " + minstring + ")";
+        else
+            argument = "limitBoth(" + argument + ", " + minstring + ", " + maxstring + ")";
+
+    }// else if not scaling
 
     return argument;
 
@@ -3625,8 +3654,8 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
         output += TAB_IN + "// " + comment + "\n";
 
     // Commenting indicating the range of the field
-    if(!inMemoryType.isNull && !inMemoryType.isBool && constantstring.isEmpty())
-        output += TAB_IN + getRangeComment();
+    if(!inMemoryType.isNull && !inMemoryType.isBool && constantstring.isEmpty() && (encodedType.bits > 1) && !inMemoryType.isEnum)
+        output += TAB_IN + getRangeComment(support.limitonencode);
 
     if(constantstring.isEmpty())
     {
@@ -3684,29 +3713,7 @@ QString ProtocolField::getEncodeStringForBitfield(int* bitcount, bool isStructur
         argument += ")";
     }
 
-    // The size check inserts a line, replacing the original argument with a temporary field
-    if(requiresSizeCheck())
-    {
-        QString maxvalue = QString().setNum(ProtocolBitfield::maxvalueoffield(encodedType.bits));
-        QString tempname;
-
-        if((encodedType.bits > 32) && (support.longbitfield))
-        {
-            maxvalue += "ULL";
-            tempname = "_pg_templongbitfield";
-        }
-        else
-        {
-            tempname = "_pg_tempbitfield";
-        }
-
-        // This block makes sure the size does not overflow the bitfield
-        output += TAB_IN + tempname + " = " + argument + ";\n";
-        output += TAB_IN + "if(" + tempname + " > " + maxvalue + ")\n";
-        output += TAB_IN + TAB_IN + tempname + " = " + maxvalue + ";\n\n";
-        argument = tempname;
-    }
-    else if(usesEncodeTempBitfield())
+    if(usesEncodeTempBitfield())
     {
         output += TAB_IN + "_pg_tempbitfield = (unsigned int)" + argument + ";\n";
         argument = "_pg_tempbitfield";
@@ -3824,7 +3831,7 @@ QString ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStructur
         output += TAB_IN + "// " + comment + "\n";
 
     // Commenting indicating the range of the field
-    if(!inMemoryType.isNull && !inMemoryType.isBool)
+    if(!inMemoryType.isNull && !inMemoryType.isBool && (encodedType.bits > 1) && !inMemoryType.isEnum)
         output += TAB_IN + getRangeComment();
 
     QString bitssource;
@@ -4667,6 +4674,10 @@ QString ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructur
  */
 bool ProtocolField::isFloatScaling(void) const
 {
+    // If the encoding is floating point then we are not scaling
+    if(encodedType.isFloat)
+        return false;
+
     if(inMemoryType.isFloat)
     {
         // If the user input a scaler string, then they want float scaling
@@ -4701,6 +4712,10 @@ bool ProtocolField::isFloatScaling(void) const
  */
 bool ProtocolField::isIntegerScaling(void) const
 {
+    // If the encoding is floating point then we are not scaling
+    if(encodedType.isFloat)
+        return false;
+
     if(!inMemoryType.isFloat)
     {
         if((scaler != 1.0) && (ceil(scaler) == floor(scaler)))
@@ -4745,16 +4760,6 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         argument = "*" + name;          // direct pointer
     else
         argument = name;                // pointer with array de-referencing
-
-    if(!comment.isEmpty())
-        output += spacing + "// " + comment + "\n";
-
-    // Commenting indicating the range of the field
-    if(!inMemoryType.isNull && !inMemoryType.isBool)
-        output += spacing + getRangeComment();
-
-    if(!inMemoryType.isNull && checkConstant)
-        output += spacing + "// Decoded value must be " + constantstring + "\n";
 
     int length = encodedType.bits / 8;
 
@@ -4820,6 +4825,16 @@ QString ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructur
         output += spacing + TAB_IN + "return 1;\n";
         output += "\n";
     }
+
+    if(!comment.isEmpty())
+        output += spacing + "// " + comment + "\n";
+
+    // Commenting indicating the range of the field
+    if(!inMemoryType.isNull && !inMemoryType.isBool)
+        output += spacing + getRangeComment();
+
+    if(!inMemoryType.isNull && checkConstant)
+        output += spacing + "// Decoded value must be " + constantstring + "\n";
 
     if(inMemoryType.isNull)
     {
@@ -5033,17 +5048,29 @@ QString ProtocolField::getNumberString(double number, int bits) const
 {
     QString string;
 
-    string.setNum(number, 'g', 16);
-
-    // Make sure we have a decimal point
-    if(!string.contains("."))
-        string += ".0";
-
-    // Float suffix
     if((bits <= 32) || !support.float64)
+    {
+        string.setNum((float)number, 'g', FLT_DECIMAL_DIG);
+
+        // Make sure we have a decimal point
+        if(!string.contains("."))
+            string += ".0";
+
+        // Floating point constant
         string += "f";
 
-    return string;
+        return string;
+    }
+    else
+    {
+        string.setNum((float)number, 'g', DBL_DECIMAL_DIG);
+
+        // Make sure we have a decimal point
+        if(!string.contains("."))
+            string += ".0";
+
+        return string;
+    }
 }
 
 
@@ -5092,15 +5119,4 @@ QString ProtocolField::getDisplayNumberString(double number)
 
         return string;
     }
-}
-
-
-/*!
- * Compute the power of 2 raised to some bits
- * \param bits is the number of bits to raise to
- * \return the power of 2 raised to bits.
- */
-uint64_t ProtocolField::pow2(uint8_t bits) const
-{
-    return (0x1ull << bits);
 }

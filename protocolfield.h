@@ -340,11 +340,17 @@ protected:
     //! The string used to verify the value on the low side, for documentation purposes only
     QString verifyMinStringForDisplay;
 
-    //! The numerical value of the verifyMinString (if any)
+    //! Flag if we know the verify min value
+    bool hasVerifyMinValue;
+
+    //! The minimum verify value
     double verifyMinValue;
 
-    //! Flag indicating if we know the numerical value of verifyMinString
-    bool hasVerifyMinValue;
+    //! The minimum value of the encoding, or the verifyMin value, whichever is min
+    double limitMinValue;
+
+    //! The string for the limit min value
+    QString limitMinString;
 
     //! The string used to verify the value on the high side
     QString verifyMaxString;
@@ -352,11 +358,17 @@ protected:
     //! The string used to verify the value on the high side, for documentation purposes only
     QString verifyMaxStringForDisplay;
 
-    //! The numerical value of the verifyMaxString (if any)
+    //! Flag if we know the verify max value
+    bool hasVerifyMaxValue;
+
+    //! The maximum verify value
     double verifyMaxValue;
 
-    //! Flag indicating if we know the numerical value of verifyMaxString
-    bool hasVerifyMaxValue;
+    //! The maximum value of the encoding, or the verifyMax value, whichever is less
+    double limitMaxValue;
+
+    //! The string for the limit max value
+    QString limitMaxString;
 
     //! Flag to force this the decode function to verify the result against the constant value
     bool checkConstant;
@@ -451,9 +463,6 @@ protected:
 
     //! Check to see if we should be doing integer scaling on this field
     bool isIntegerScaling(void) const;
-
-    //! Compute the power of 2 raised to some bits
-    uint64_t pow2(uint8_t bits) const;
 
 };
 
