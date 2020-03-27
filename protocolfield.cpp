@@ -14,6 +14,7 @@ TypeData::TypeData(ProtocolSupport sup) :
     isStruct(false),
     isSigned(false),
     isBitfield(false),
+
     isFloat(false),
     isEnum(false),
     isString(false),
@@ -396,10 +397,12 @@ void ProtocolField::clear(void)
     verifyMinStringForDisplay.clear();
     verifyMaxStringForDisplay.clear();
     limitMinString.clear();
+    limitMinStringForComment.clear();
     limitMinValue = 0;
     hasVerifyMinValue = false;
     verifyMinValue = 0;
     limitMaxString.clear();
+    limitMaxStringForComment.clear();
     limitMaxValue = 0;
     hasVerifyMaxValue = false;
     verifyMaxValue = 0;
@@ -1564,11 +1567,19 @@ void ProtocolField::parse(void)
         {
             limitMaxString = getNumberString(limitMaxValue, encodedType.bits);
             limitMinString = getNumberString(limitMinValue, encodedType.bits);
+            limitMaxStringForComment = getNumberString(limitMaxValue);
+            limitMinStringForComment = getNumberString(limitMinValue);
         }
         else
         {
-            limitMaxString = QString::number(limitMaxValue, 'f', 0);
-            limitMinString = QString::number(limitMinValue, 'f', 0);
+            // Integer scaling is interesting. Imagine the case where we encode
+            // in a signed16 number with a scaler of 8. Hence the largest value
+            // after decode will be 32767/8 = 4095.875. However if the in-Memory
+            // type is an integer then this will truncate to 4095, therefore use
+            // of the trunc() function
+
+            limitMaxStringForComment = limitMaxString = QString::number(trunc(limitMaxValue), 'f', 0);
+            limitMinStringForComment = limitMinString = QString::number(trunc(limitMinValue), 'f', 0);
         }
     }
     else if(encodedType.isFloat)
@@ -1577,13 +1588,15 @@ void ProtocolField::parse(void)
         limitMaxValue = encodedType.getMaximumFloatValue()/scaler;
         limitMaxString = getNumberString(limitMaxValue, encodedType.bits);
         limitMinString = getNumberString(limitMinValue, encodedType.bits);
+        limitMaxStringForComment = getNumberString(limitMaxValue);
+        limitMinStringForComment = getNumberString(limitMinValue);
     }
     else
     {
         limitMinValue = encodedType.getMinimumIntegerValue();
         limitMaxValue = encodedType.getMaximumIntegerValue();
-        limitMaxString = QString::number(limitMaxValue, 'f', 0);
-        limitMinString = QString::number(limitMinValue, 'f', 0);
+        limitMaxStringForComment = limitMaxString = QString::number(limitMaxValue, 'f', 0);
+        limitMinStringForComment = limitMinString = QString::number(limitMinValue, 'f', 0);
     }
 
     // Now handle the verify maximum value
@@ -3480,12 +3493,12 @@ QString ProtocolField::getRangeComment(bool limitonencode) const
     QString minstring, maxstring;
 
     if((limitonencode == false) || verifyMaxString.isEmpty() || (hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue)))
-        maxstring = limitMaxString;
+        maxstring = limitMaxStringForComment;
     else
         maxstring = verifyMaxString;
 
     if((limitonencode == false) || verifyMinString.isEmpty() || (hasVerifyMinValue && (verifyMinValue <= limitMinValue)))
-        minstring = limitMinString;
+        minstring = limitMinStringForComment;
     else
         minstring = verifyMinString;
 
@@ -5024,7 +5037,7 @@ QString ProtocolField::getNumberString(double number, int bits) const
 
     if((bits <= 32) || !support.float64)
     {
-        string.setNum((float)number, 'g', FLT_DECIMAL_DIG);
+        string.setNum(number, 'g', FLT_DECIMAL_DIG);
 
         // Make sure we have a decimal point
         if(!string.contains("."))
@@ -5037,7 +5050,10 @@ QString ProtocolField::getNumberString(double number, int bits) const
     }
     else
     {
-        string.setNum((float)number, 'g', DBL_DECIMAL_DIG);
+        // Note DBL_DECIMAL_DIG is 17 in IEE-754. This results in unsightly
+        // rounding, for example 65.534999999999997 instead of 65.535. Hence
+        // use one less (which is what we used to have).
+        string.setNum(number, 'g', DBL_DECIMAL_DIG - 1);
 
         // Make sure we have a decimal point
         if(!string.contains("."))

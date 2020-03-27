@@ -349,6 +349,9 @@ protected:
     //! The string for the limit min value
     QString limitMinString;
 
+    //! The string for the limit min value used in comments
+    QString limitMinStringForComment;
+
     //! The string used to verify the value on the high side
     QString verifyMaxString;
 
@@ -366,6 +369,9 @@ protected:
 
     //! The string for the limit max value
     QString limitMaxString;
+
+    //! The string for the limit max value used in comments
+    QString limitMaxStringForComment;
 
     //! Flag to force this the decode function to verify the result against the constant value
     bool checkConstant;
