@@ -214,6 +214,99 @@ int ProtocolScaling::typeLength(encodedtypes_t type) const
     }
 }
 
+
+/*!
+ * Create an in-memory type from discrete choices. Bitfield types not supported
+ * \param issigned should be true to create a signed type
+ * \param isfloat should be true to create a floating point type
+ * \param length is the type length in bytes.
+ * \return The in-memory type enumeration
+ */
+ProtocolScaling::inmemorytypes_t ProtocolScaling::createInMemoryType(bool issigned, bool isfloat, int length) const
+{
+    if(isfloat)
+    {
+        if((length > 4) && support.float64)
+            return float64inmemory;
+        else
+            return float32inmemory;
+    }
+    else if(issigned)
+    {
+        if((length > 4) && support.int64)
+            return int64inmemory;
+        else if(length > 3)
+            return int32inmemory;
+        else if(length == 2)
+            return int16inmemory;
+        else
+            return int8inmemory;
+    }
+    else
+    {
+        if((length > 4) && support.int64)
+            return uint64inmemory;
+        else if(length > 3)
+            return uint32inmemory;
+        else if(length == 2)
+            return uint16inmemory;
+        else
+            return uint8inmemory;
+    }
+
+}// ProtocolScaling::createInMemoryType
+
+
+/*!
+ * Create an encoded type from discrete choices. Bitfield and float types not supported
+ * \param issigned should be true to create a signed type
+ * \param length is the type length in bytes.
+ * \return The encoded type enumeration
+ */
+ProtocolScaling::encodedtypes_t ProtocolScaling::createEncodedType(bool issigned, int length) const
+{
+    if(issigned)
+    {
+        if((length >= 8) && support.int64)
+            return int64encoded;
+        if((length >= 7) && support.int64)
+            return int56encoded;
+        if((length >= 6) && support.int64)
+            return int48encoded;
+        if((length >= 5) && support.int64)
+            return int40encoded;
+        else if(length >= 4)
+            return int32encoded;
+        else if(length >= 3)
+            return int24encoded;
+        else if(length >= 2)
+            return int16encoded;
+        else
+            return int8encoded;
+    }
+    else
+    {
+        if((length >= 8) && support.int64)
+            return uint64encoded;
+        if((length >= 7) && support.int64)
+            return uint56encoded;
+        if((length >= 6) && support.int64)
+            return uint48encoded;
+        if((length >= 5) && support.int64)
+            return uint40encoded;
+        else if(length >= 4)
+            return uint32encoded;
+        else if(length >= 3)
+            return uint24encoded;
+        else if(length >= 2)
+            return uint16encoded;
+        else
+            return uint8encoded;
+    }
+
+}// ProtocolScaling::createEncodedType
+
+
 //! Return the name in code of this type
 QString ProtocolScaling::typeName(inmemorytypes_t type) const
 {
@@ -986,6 +1079,13 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
     function += "{\n";
     function += "    // scale the number\n";
 
+    // We need a local type which has the same sign as the encoding, but uses the longer length of the encoding or in-memory
+    int longestlength = typeLength(inmemory);
+    if(typeLength(encoded) > longestlength)
+        longestlength = typeLength(encoded);
+
+    inmemorytypes_t local = createInMemoryType(isTypeSigned(encoded), false, longestlength);
+
     if(isTypeSigned(encoded))
     {
         QString max;
@@ -1016,15 +1116,29 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
         case 8: min = "(-9223372036854775807ll - 1)"; break;
         }
 
-        function += "    " + typeName(encoded) + " number = (" + typeName(encoded) + ")(value*scaler);\n";
+        function += "    " + typeName(local) + " number = (" + typeName(local) + ")(value*scaler);\n";
         function += "\n";
-        function += "    // Make sure number fits in the range\n";
-        function += "    if(number > " + max + ")\n";
-        function += "        number = " + max + ";\n";
-        function += "    else if(number < " + min + ")\n";
-        function += "        number = " + min + ";\n";
-        function += "\n";
-        function += "    int" + bitCount + "To" + endian + "Bytes" + "(number, bytes, index);\n";
+
+        // We don't need to test the range of the local number if it is the
+        // same length as the encoding - by definition it cannot exceed the range
+        if(typeLength(local) > typeLength(encoded))
+        {
+            function += "    // Make sure number fits in the range\n";
+            function += "    if(number > " + max + ")\n";
+            function += "        number = " + max + ";\n";
+            if(isTypeSigned(local))
+            {
+                function += "    else if(number < " + min + ")\n";
+                function += "        number = " + min + ";\n";
+            }
+            function += "\n";
+        }
+
+        // If the local type is the same or smaller size, and the same sign, we don't need a cast
+        if((isTypeSigned(local) != isTypeSigned(encoded)) || (typeLength(local) > typeLength(encoded)))
+            function += "    int" + bitCount + "To" + endian + "Bytes" + "((" + typeName(encoded)+ ")number, bytes, index);\n";
+        else
+            function += "    int" + bitCount + "To" + endian + "Bytes" + "(number, bytes, index);\n";
     }
     else
     {
@@ -1043,15 +1157,35 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
         case 8: max = "18446744073709551615ull"; break;
         }
 
-        function += "    " + typeName(encoded) + " number = (" + typeName(encoded) + ")((value - min)*scaler);\n";
+        function += "    " + typeName(local) + " number = 0;\n";
         function += "\n";
         function += "    // Make sure number fits in the range\n";
-        function += "    if(number > " + max + ")\n";
-        function += "        number = " + max + ";\n";
-        function += "    else if(number < 0)\n";
-        function += "        number = 0;\n";
+
+        // The min value is signed, if the local value is unsigned then we need a cast to avoid the warning
+        if(isTypeSigned(local))
+            function += "    if(value > min)\n";
+        else
+            function += "    if(((" + typeName(convertTypeToSigned(local)) + ")value) > min)\n";
+
+        function += "    {\n";
+        function += "        number = (" + typeName(local) + ")((value - min)*scaler);\n";
+
+        // We don't need to test the range of the local number if it is the
+        // same length as the encoding - by definition it cannot exceed the range
+        if(typeLength(local) > typeLength(encoded))
+        {
+            function += "        if(number > " + max + ")\n";
+            function += "            number = " + max + ";\n";
+        }
+
+        function += "    }\n";
         function += "\n";
-        function += "    uint" + bitCount + "To" + endian + "Bytes" + "(number, bytes, index);\n";
+
+        // If the local type is the same or smaller size, and the same sign, we don't need a cast
+        if((isTypeSigned(local) != isTypeSigned(encoded)) || (typeLength(local) > typeLength(encoded)))
+            function += "    uint" + bitCount + "To" + endian + "Bytes" + "((" + typeName(encoded)+ ")number, bytes, index);\n";
+        else
+            function += "    uint" + bitCount + "To" + endian + "Bytes" + "(number, bytes, index);\n";
     }
 
     function += ("}\n");

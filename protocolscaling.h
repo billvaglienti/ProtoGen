@@ -104,6 +104,12 @@ protected:
     //! Determine the encoded length of type
     int typeLength(encodedtypes_t type) const;
 
+    //! Create an in-memory type
+    inmemorytypes_t createInMemoryType(bool issigned, bool isfloat, int length) const;
+
+    //! Create an encoded type
+    encodedtypes_t createEncodedType(bool issigned, int length) const;
+
     //! Return the name in code of this type
     QString typeName(inmemorytypes_t type) const;
 
