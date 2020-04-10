@@ -66,6 +66,7 @@ HEADERS += \
     bitfieldtest.h \
     definitions/verify.h \
     OtherDefinitions.h \
+    translation.h \
     verify/dateverify.h \
     compare/compareDemolink.h \
     compare/printDemolink.h \

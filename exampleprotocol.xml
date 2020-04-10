@@ -9,11 +9,12 @@ ProtoGen can handle bitfields, enumerations, arrays, and can
 efficiently encode data for little or big endian architectures.">
 
     <Include name="string.h" comment="C string manipulation function header" global="true"/>
-    <Include name="indices.h" comment="indices.h is included to for array length enumerations"/>
+    <Include name="indices.h" comment="indices.h is included for array length enumerations"/>
+    <Include name="translation.h" comment="translation.h is included to provide translation functions"/>
 
     <Documentation name="Enumerations" paragraph="1"/>
 
-    <Enum name="packetIds" title="Packet identifiers" lookup="true" lookupTitle="true" comment="The list of packet identifiers" description="even more stuff!">
+    <Enum name="packetIds" title="Packet identifiers" lookup="true" lookupTitle="true" lookupComment="true" comment="The list of packet identifiers" description="even more stuff!">
         <Value name="KEEPALIVE" title="Keep alive" comment="Zero length packet used to refresh communications timeouts."/>
         <Value name="ENGINECOMMAND" title="Engine command" value="10" comment="Engine command packet"/>
         <Value name="ENGINESETTINGS" title="Engine settings" comment="Engine settings packet"/>

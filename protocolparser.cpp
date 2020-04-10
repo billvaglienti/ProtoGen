@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.20.d";
+const QString ProtocolParser::genVersion = "2.21.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -675,7 +675,7 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
 
     header.makeLineSeparator();
 
-    // API functions
+    // API macro
     if(!api.isEmpty())
     {
         header.makeLineSeparator();
@@ -683,13 +683,20 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
         header.write("#define get" + name + "Api() " + api + "\n");
     }
 
-    // Version functions
+    // Version macro
     if(!version.isEmpty())
     {
         header.makeLineSeparator();
         header.write("//! \\return the protocol version string\n");
         header.write("#define get" + name + "Version() \""  + version + "\"\n");
     }
+
+    // Translation macro
+    header.makeLineSeparator();
+    header.write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
+    header.write("#ifndef translate" + name + "\n");
+    header.write("    #define translate" + name + "(x) x\n");
+    header.write("#endif");
 
     header.makeLineSeparator();
 

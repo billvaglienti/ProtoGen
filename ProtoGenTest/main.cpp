@@ -39,13 +39,15 @@ static int testDefaultStringsPacket(void);
 
 static int fcompare(double input1, double input2, double epsilon);
 
-
 int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
 
     int Return = 1;
+
+    std::cerr << "The next line should say: \"" << translateDemolink("") << "\"" << std::endl;
+    std::cerr << packetIds_EnumComment(ENGINESETTINGS) << std::endl << std::endl;
 
     if(testLimits() == 0)
     {

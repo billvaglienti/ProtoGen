@@ -97,6 +97,7 @@ EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport 
     hidden(false),
     lookup(false),
     lookupTitle(false),
+    lookupComment(false),
     isglobal(false)
 {
 }
@@ -124,6 +125,7 @@ void EnumCreator::clear(void)
     hidden = false;
     lookup = false;
     lookupTitle = false;
+    lookupComment = false;
     name.clear();
     comment.clear();
     description.clear();
@@ -184,6 +186,7 @@ void EnumCreator::parse(void)
                           << "hidden"
                           << "lookup"
                           << "lookupTitle"
+                          << "lookupComment"
                           << "prefix"
                           << "file");
 
@@ -195,6 +198,7 @@ void EnumCreator::parse(void)
     hidden = ProtocolParser::isFieldSet("hidden", map);
     lookup = ProtocolParser::isFieldSet("lookup", map);
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
+    lookupComment = ProtocolParser::isFieldSet("lookupComment", map);
     file = ProtocolParser::getAttribute("file", map);
 
     // The file attribute is only supported on global enumerations
@@ -341,12 +345,13 @@ void EnumCreator::parse(void)
                 continue;
 
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
-            sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getLookupName() + "\";\n";
+            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + element.getName() + "\");\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
         sourceOutput += "}\n";
-    }
+
+    }// if name lookup
 
     if (lookupTitle)
     {
@@ -362,7 +367,7 @@ void EnumCreator::parse(void)
         sourceOutput += " * \\brief Lookup title for '" + name + "' enum entry\n";
         sourceOutput += " * \n";
         sourceOutput += " * \\param value is the integer value of the enum entry\n";
-        sourceOutput += " * \\return string title of the given entry (label name if no title given)\n";
+        sourceOutput += " * \\return string title of the given entry (comment if no title given)\n";
         sourceOutput += " */\n";
 
         sourceOutput += func + "\n";
@@ -393,12 +398,66 @@ void EnumCreator::parse(void)
             if (title.isEmpty())
                 title = element.getLookupName();
 
-            sourceOutput += TAB_IN + TAB_IN + "return \"" + title + "\";\n";
+            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + title + "\");\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
         sourceOutput += "}\n";
-    }
+
+    }// if title lookup
+
+    if (lookupComment)
+    {
+        output += "\n";
+        output += "//! \\return the comment of a '" + name + "' enum entry, based on its value\n";
+
+        QString func = "const char* " + name + "_EnumComment(int value)";
+
+        output += func + ";\n";
+
+        // Add reverse-lookup code to the source file
+        sourceOutput += "\n/*!\n";
+        sourceOutput += " * \\brief Lookup comment for '" + name + "' enum entry\n";
+        sourceOutput += " * \n";
+        sourceOutput += " * \\param value is the integer value of the enum entry\n";
+        sourceOutput += " * \\return string comment of the given entry (title if no comment given)\n";
+        sourceOutput += " */\n";
+
+        sourceOutput += func + "\n";
+        sourceOutput += "{\n";
+
+        sourceOutput += TAB_IN + "switch (value)\n";
+        sourceOutput += TAB_IN + "{\n";
+        sourceOutput += TAB_IN + "default:\n";
+        sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
+
+        // Add the reverse-lookup text for each entry in the enumeration
+        for (int i=0; i<elements.size(); i++)
+        {
+            auto element = elements.at(i);
+
+            if (element.ignoresLookup)
+                continue;
+
+            sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
+
+            // Title takes first preference, if supplied
+            QString _comment = element.comment;
+
+            // Title takes second preference, if supplied
+            if (_comment.isEmpty())
+                _comment = element.title;
+
+            if (_comment.isEmpty())
+                _comment = element.getLookupName();
+
+            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + _comment + "\");\n";
+        }
+
+        sourceOutput += TAB_IN + "}\n";
+        sourceOutput += "}\n";
+
+    }// if comment lookup
 
 }// EnumCreator::parse
 
