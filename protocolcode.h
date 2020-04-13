@@ -34,6 +34,9 @@ class ProtocolCode : public Encodable
     //! Return the string that is used to declare this encodable
     virtual QString getDeclaration(void) const Q_DECL_OVERRIDE {return QString();}
 
+    //! Return the include directives that go into source code needed for this encodable
+    virtual void getSourceIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const Q_DECL_OVERRIDE {return QString();}
 
@@ -97,6 +100,7 @@ class ProtocolCode : public Encodable
 protected:
     QString encode;
     QString decode;
+    QString include;
 };
 
 #endif // PROTOCOLCODE_H

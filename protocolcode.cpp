@@ -21,6 +21,7 @@ void ProtocolCode::clear(void)
 
     encode.clear();
     decode.clear();
+    include.clear();
 }
 
 
@@ -55,6 +56,8 @@ void ProtocolCode::parse(void)
             decode = attr.value().trimmed();
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
             comment = attr.value().trimmed();
+        else if(attrname.compare("include", Qt::CaseInsensitive) == 0)
+            include = attr.value().trimmed();
         else if(support.disableunrecognized == false)
             emitWarning("Unrecognized attribute \"" + attrname + "\"");
 
@@ -123,4 +126,13 @@ QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isSt
 
     return output;
 }
+
+
+//! Return the include directives that go into source code needed for this encodable
+void ProtocolCode::getSourceIncludeDirectives(QStringList& list) const
+{
+    if(!include.isEmpty())
+        list.append(include);
+}
+
 

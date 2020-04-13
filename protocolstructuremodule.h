@@ -30,6 +30,9 @@ public:
     //! Return the include directives needed for this encodable
     virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
+    //! Return the include directives that go into source code for this encodable
+    virtual void getSourceIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+
     //! Return the include directives needed for this encodable's init and verify functions
     virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 

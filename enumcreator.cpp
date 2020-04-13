@@ -94,6 +94,7 @@ QString EnumElement::getDeclaration() const
 EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
     ProtocolDocumentation(parse, Parent, supported),
     minbitwidth(0),
+    maxvalue(0),
     hidden(false),
     lookup(false),
     lookupTitle(false),
@@ -122,6 +123,7 @@ void EnumCreator::clear(void)
     filepath.clear();
     sourceOutput.clear();
     minbitwidth = 0;
+    maxvalue = 0;
     hidden = false;
     lookup = false;
     lookupTitle = false;
@@ -482,7 +484,7 @@ void EnumCreator::checkAgainstKeywords(void)
 void EnumCreator::computeNumberList(void)
 {
     // Attempt to get a list of numbers that represents the value of each enumeration
-    int maxValue = 1;
+    maxvalue = 1;
     int value = -1;
     QString baseString;
 
@@ -524,7 +526,7 @@ void EnumCreator::computeNumberList(void)
             if (!ok)
             {
                 replaceEnumerationNameWithValue(stringValue);
-                parser->replaceEnumerationNameWithValue(stringValue);
+                stringValue = parser->replaceEnumerationNameWithValue(stringValue);
 
                 // If this string is a composite of numbers, add them together if we can
                 stringValue = EncodedLength::collapseLengthString(stringValue, true);
@@ -549,8 +551,8 @@ void EnumCreator::computeNumberList(void)
         }// if we got a string from the xml
 
         // keep track of maximum value
-        if(value > maxValue)
-            maxValue = value;
+        if(value > maxvalue)
+            maxvalue = value;
 
         // Remember the value
         element.number = stringValue;
@@ -558,10 +560,10 @@ void EnumCreator::computeNumberList(void)
     }// for the whole list of value strings
 
     // Its possible we have no idea, so go with 8 bits in that case
-    if(maxValue > 0)
+    if(maxvalue > 0)
     {
         // Figure out the number of bits needed to encode the maximum value
-        minbitwidth = (int)ceil(log2(maxValue + 1));
+        minbitwidth = (int)ceil(log2(maxvalue + 1));
     }
     else
         minbitwidth = 8;

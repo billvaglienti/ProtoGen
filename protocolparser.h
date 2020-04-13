@@ -107,7 +107,7 @@ public:
     const EnumCreator* lookUpEnumeration(const QString& enumName) const;
 
     //! Replace any text that matches an enumeration name with the value of that enumeration
-    QString& replaceEnumerationNameWithValue(QString& text) const;
+    QString replaceEnumerationNameWithValue(const QString& text) const;
 
     //! Determine if text is part of an enumeration.
     QString getEnumerationNameForEnumValue(const QString& text) const;

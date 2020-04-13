@@ -339,6 +339,7 @@ Code subtag attributes:
 - `encode` : A verbatim code snippet that is inserted in the encode function.
 - `decode` : A verbatim code snippet that is inserted in the decode function.
 - `comment` : A one line comment above the code snippet.
+- `include` : The name of a file to #include in the source code of the function that contains the structure encoding/decoding functions. This is useful to support calling external functions from the Code subtag.
 
 Packet tag
 ----------

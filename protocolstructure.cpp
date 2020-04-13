@@ -582,6 +582,22 @@ void ProtocolStructure::getIncludeDirectives(QStringList& list) const
     }
 
     list.removeDuplicates();
+
+}// ProtocolStructure::getIncludeDirectives
+
+
+/*!
+ * Append the include directives in source code for this encodable. Mostly this is empty,
+ * but code encodables may have source code includes.
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolStructure::getSourceIncludeDirectives(QStringList& list) const
+{
+    // Includes that our encodable members may need
+    for(int i = 0; i < encodables.length(); i++)
+        encodables.at(i)->getSourceIncludeDirectives(list);
+
+    list.removeDuplicates();
 }
 
 
@@ -2549,7 +2565,7 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
     QString maxEncodedLength = encodedLength.maxEncodedLength;
 
     // See if we can replace any enumeration names with values
-    parser->replaceEnumerationNameWithValue(maxEncodedLength);
+    maxEncodedLength = parser->replaceEnumerationNameWithValue(maxEncodedLength);
 
     // The byte after this one
     QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);

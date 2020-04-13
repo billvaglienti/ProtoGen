@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.21.a";
+const QString ProtocolParser::genVersion = "2.22.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1122,22 +1122,24 @@ const EnumCreator* ProtocolParser::lookUpEnumeration(const QString& enumName) co
 
 /*!
  * Replace any text that matches an enumeration name with the value of that enumeration
- * \param text is modified to replace names with numbers
- * \return a reference to text
+ * \param text is the source text to search, which won't be modified
+ * \return A new string that replaces any enumeration names with the value of the enumeration
  */
-QString& ProtocolParser::replaceEnumerationNameWithValue(QString& text) const
+QString ProtocolParser::replaceEnumerationNameWithValue(const QString& text) const
 {
+    QString replace = text;
+
     for(int i = 0; i < globalEnums.size(); i++)
     {
-        globalEnums.at(i)->replaceEnumerationNameWithValue(text);
+        globalEnums.at(i)->replaceEnumerationNameWithValue(replace);
     }
 
     for(int i = 0; i < enums.size(); i++)
     {
-        enums.at(i)->replaceEnumerationNameWithValue(text);
+        enums.at(i)->replaceEnumerationNameWithValue(replace);
     }
 
-    return text;
+    return replace;
 }
 
 

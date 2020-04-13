@@ -14,7 +14,6 @@ TypeData::TypeData(ProtocolSupport sup) :
     isStruct(false),
     isSigned(false),
     isBitfield(false),
-
     isFloat(false),
     isEnum(false),
     isString(false),
@@ -22,6 +21,7 @@ TypeData::TypeData(ProtocolSupport sup) :
     isNull(false),
     bits(8),
     sigbits(0),
+    enummax(0),
     support(sup)
 {
 }
@@ -39,6 +39,7 @@ TypeData::TypeData(const TypeData& that) :
     isNull(that.isNull),
     bits(that.bits),
     sigbits(that.sigbits),
+    enummax(that.enummax),
     support(that.support)
 {
 }
@@ -60,6 +61,7 @@ void TypeData::clear(void)
     isNull = false;
     bits = 8;
     sigbits = 0;
+    enummax = 0;
 }
 
 
@@ -218,6 +220,10 @@ double TypeData::getMaximumFloatValue(void) const
 {
     if(isString || isStruct)
         return 0;
+    else if(isEnum)
+    {
+        return enummax;
+    }
     else if(isFloat)
     {
         // Float encodings use float rules
@@ -286,6 +292,10 @@ uint64_t TypeData::getMaximumIntegerValue(void) const
 {
     if(isString || isStruct)
         return 0;
+    else if(isEnum)
+    {
+        return enummax;
+    }
     else if(isFloat)
     {
         return (uint64_t)getMaximumFloatValue();
@@ -1074,11 +1084,15 @@ void ProtocolField::parse(void)
         else
         {
             int minbits = 8;
+            inMemoryType.enummax = 255;
 
             // Figure out the minimum number of bits for the enumeration
             const EnumCreator* creator = parser->lookUpEnumeration(enumName);
             if(creator != 0)
+            {
                 minbits = creator->getMinBitWidth();
+                inMemoryType.enummax = creator->getMaximumValue();
+            }
 
             if(encodedTypeString.isEmpty())
             {
@@ -1392,7 +1406,7 @@ void ProtocolField::parse(void)
     // scaler or maxString.
     if(!minString.isEmpty())
     {
-        encodedMin = ShuntingYard::computeInfix(minString, &ok);
+        encodedMin = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(minString), &ok);
 
         if(!ok)
         {
@@ -1414,7 +1428,7 @@ void ProtocolField::parse(void)
     // is specified then one will be computed based on maxString.
     if(!maxString.isEmpty())
     {
-        encodedMax = ShuntingYard::computeInfix(maxString, &ok);
+        encodedMax = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(maxString), &ok);
         if(!ok)
         {
             emitWarning("max is not a number, 1.0 assumed");
@@ -1472,7 +1486,7 @@ void ProtocolField::parse(void)
         // produce the encoded value. Unlike minString and maxString it can
         // apply even if the encodedType is floating point. Hence it is
         // possible for encodedMax to be 0 while the scaler is not 1.0.
-        scaler = ShuntingYard::computeInfix(scalerString, &ok);
+        scaler = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(scalerString), &ok);
 
         if(!ok)
         {
@@ -1608,7 +1622,7 @@ void ProtocolField::parse(void)
     else if(!verifyMaxString.isEmpty())
     {
         // Compute the verify max value if we can
-        verifyMaxValue = ShuntingYard::computeInfix(verifyMaxString, &hasVerifyMaxValue);
+        verifyMaxValue = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(verifyMaxString), &hasVerifyMaxValue);
     }
 
     // Now handle the verify minimum value
@@ -1620,7 +1634,7 @@ void ProtocolField::parse(void)
     else if(!verifyMinString.isEmpty())
     {
         // Compute the verify min value if we can
-        verifyMinValue = ShuntingYard::computeInfix(verifyMinString, &hasVerifyMinValue);
+        verifyMinValue = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(verifyMinString), &hasVerifyMinValue);
     }
 
     // Support the case where a numeric string uses "pi" or "e".
@@ -2046,7 +2060,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
         return;
 
     // See if we can replace any enumeration names with values
-    parser->replaceEnumerationNameWithValue(maxEncodedLength);
+    maxEncodedLength = parser->replaceEnumerationNameWithValue(maxEncodedLength);
 
     // The byte after this one
     QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
@@ -3574,8 +3588,8 @@ QString ProtocolField::getLimitedArgument(QString argument) const
                 maxstring = verifyMaxString;
             }
 
-            // Now check if this max value is less than the in-Memory maximum. If it is then we must apply the max limit
-            if(maxvalue < inMemoryType.getMaximumFloatValue())
+            // Now check if this max value is less than the in-Memory maximum. If it is then we must apply the max limit. We allow one lsb of fiddle.
+            if(std::nextafter(maxvalue, DBL_MAX) < inMemoryType.getMaximumFloatValue())
                 skipmax = false;
 
         }// else if we can evaluate the verify value
@@ -3596,8 +3610,8 @@ QString ProtocolField::getLimitedArgument(QString argument) const
                 minstring = verifyMinString;
             }
 
-            // Now check if this min value is more than the in-Memory minimum. If it is then we must apply the min limit
-            if(minvalue > inMemoryType.getMinimumFloatValue())
+            // Now check if this min value is more than the in-Memory minimum. If it is then we must apply the min limit. We allow one lsb of fiddle.
+            if(std::nextafter(minvalue, -DBL_MAX) > inMemoryType.getMinimumFloatValue())
                 skipmin = false;
 
         }// else if we can evaluate the verify value

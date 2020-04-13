@@ -32,6 +32,7 @@ public:
     bool isNull;        //!< true if type is null, i.e not in memory OR not encoded
     int bits;           //!< number of bits used by type
     int sigbits;        //!< number of bits for the significand of a float16 or float24
+    int enummax;        //!< maximum value of the enumeration if isEnum is true
 
     //! Pull a positive integer value from a string
     static int extractPositiveInt(const QString& string, bool* ok = 0);

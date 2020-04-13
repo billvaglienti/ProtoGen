@@ -488,13 +488,9 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         verifyheaderfile->makeLineSeparator();
     }
 
-    if(support.specialFloat)
-        source.writeIncludeDirective("floatspecial.h");
-
-    source.writeIncludeDirective("fielddecode.h");
-    source.writeIncludeDirective("fieldencode.h");
-    source.writeIncludeDirective("scaleddecode.h");
-    source.writeIncludeDirective("scaledencode.h");
+    list.clear();
+    getSourceIncludeDirectives(list);
+    source.writeIncludeDirectives(list);
 
     // Outputs for the enumerations in source file, if any
     for(int i = 0; i < enumList.count(); i++)
@@ -539,6 +535,27 @@ void ProtocolStructureModule::getIncludeDirectives(QStringList& list) const
 
     // And any of our children's headers
     ProtocolStructure::getIncludeDirectives(list);
+
+    list.removeDuplicates();
+}
+
+
+/*!
+ * Return the include directives that go into source code for this encodable
+ * \param list is appended with any directives for source code.
+ */
+void ProtocolStructureModule::getSourceIncludeDirectives(QStringList& list) const
+{
+    if(support.specialFloat)
+        list.append("floatspecial.h");
+
+    list.append("fielddecode.h");
+    list.append("fieldencode.h");
+    list.append("scaleddecode.h");
+    list.append("scaledencode.h");
+
+    // And any of our children's headers
+    ProtocolStructure::getSourceIncludeDirectives(list);
 
     list.removeDuplicates();
 }
