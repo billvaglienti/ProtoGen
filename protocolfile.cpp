@@ -499,7 +499,7 @@ bool ProtocolFile::flush(void)
     }
 
     // The actual interesting contents
-    file.write(qPrintable(contents));
+    file.write(qUtf8Printable(contents));
 
     // And the file
     file.close();
@@ -557,10 +557,10 @@ bool ProtocolHeaderFile::flush(void)
     }
 
     // The actual interesting contents
-    file.write(qPrintable(contents));
+    file.write(qUtf8Printable(contents));
 
     // close the file out
-    file.write(qPrintable(getClosingStatement()));
+    file.write(qUtf8Printable(getClosingStatement()));
 
     // And the file
     file.close();
@@ -705,10 +705,10 @@ bool ProtocolSourceFile::flush(void)
     }
 
     // The actual interesting contents
-    file.write(qPrintable(contents));
+    file.write(qUtf8Printable(contents));
 
     // Close it out
-    file.write(qPrintable(getClosingStatement()));
+    file.write(qUtf8Printable(getClosingStatement()));
 
     // And the file
     file.close();
