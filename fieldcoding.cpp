@@ -61,7 +61,7 @@ bool FieldCoding::generate(void)
  */
 bool FieldCoding::generateEncodeHeader(void)
 {
-    header.setModuleNameAndPath("fieldencode", support.outputpath);
+    header.setModuleNameAndPath("fieldencode", support.outputpath, support.language);
 
     // Top level comment
     header.write("\
@@ -115,6 +115,9 @@ bool FieldCoding::generateEncodeHeader(void)
     header.write("//! Macro to limit a number to be no less than a minimum value and no more than a maximum value\n");
     header.write("#define limitBoth(number, min, max) (((number) > (max)) ? (max) : (limitMin((number), (min))))\n");
 
+    header.write("\n");
+    header.write("//! Copy a null terminated string\n");
+    header.write("void pgstrncpy(char* dst, const char* src, int maxLength);\n");
     header.write("\n");
     header.write("//! Encode a null terminated string on a byte stream\n");
     header.write("void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
@@ -174,7 +177,7 @@ bool FieldCoding::generateEncodeHeader(void)
  */
 bool FieldCoding::generateEncodeSource(void)
 {
-    source.setModuleNameAndPath("fieldencode", support.outputpath);
+    source.setModuleNameAndPath("fieldencode", support.outputpath, support.language);
 
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
@@ -184,17 +187,33 @@ bool FieldCoding::generateEncodeSource(void)
     // The string functions, these were hand-written and pasted in here
     source.write("\
 /*!\n\
-* Encode a null terminated string on a byte stream\n\
-* \\param string is the null termianted string to encode\n\
-* \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
-* \\param index gives the location of the first byte in the byte stream, and\n\
-*        will be incremented by the number of bytes encoded when this function\n\
-*        is complete.\n\
-* \\param maxLength is the maximum number of bytes that can be encoded. A null\n\
-*        terminator is always included in the encoding.\n\
-* \\param fixedLength should be 1 to force the number of bytes encoded to be\n\
-*        exactly equal to maxLength.\n\
-*/\n\
+ * Copy a null terminated string to a destination whose maximum length (with\n\
+ * null terminator) is `maxLength`. The destination string is guaranteed to\n\
+ * have a null terminator when this operation is complete. This is a\n\
+ * replacement for strncpy().\n\
+ * \\param dst receives the string, and is guaranteed to be null terminated.\n\
+ * \\param src is the null terminated source string to copy.\n\
+ * \\param maxLength is the size of the `dst` buffer.\n\
+ */\n\
+void pgstrncpy(char* dst, const char* src, int maxLength)\n\
+{\n\
+    int index = 0;\n\
+    stringToBytes(src, (uint8_t*)dst, &index, maxLength, 0);\n\
+}\n\
+\n\
+\n\
+/*!\n\
+ * Encode a null terminated string on a byte stream\n\
+ * \\param string is the null termianted string to encode\n\
+ * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
+ * \\param index gives the location of the first byte in the byte stream, and\n\
+ *        will be incremented by the number of bytes encoded when this function\n\
+ *        is complete.\n\
+ * \\param maxLength is the maximum number of bytes that can be encoded. A null\n\
+ *        terminator is always included in the encoding.\n\
+ * \\param fixedLength should be 1 to force the number of bytes encoded to be\n\
+ *        exactly equal to maxLength.\n\
+ */\n\
 void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
 {\n\
     int i;\n\
@@ -565,7 +584,7 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
  */
 bool FieldCoding::generateDecodeHeader(void)
 {
-    header.setModuleNameAndPath("fielddecode", support.outputpath);
+    header.setModuleNameAndPath("fielddecode", support.outputpath, support.language);
 
     // Top level comment
     header.write("\
@@ -669,7 +688,7 @@ bool FieldCoding::generateDecodeHeader(void)
  */
 bool FieldCoding::generateDecodeSource(void)
 {
-    source.setModuleNameAndPath("fielddecode", support.outputpath);
+    source.setModuleNameAndPath("fielddecode", support.outputpath, support.language);
 
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");

@@ -19,16 +19,16 @@ public:
     virtual ~ProtocolPacket(void);
 
     //! Parse a packet from the DOM
-    virtual void parse(void);
+    virtual void parse(void) Q_DECL_OVERRIDE;
 
     //! Clear out any data
-    virtual void clear(void);
+    virtual void clear(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const {return parent + ":" + name;}
+    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Return top level markdown documentation for this packet
-    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const;
+    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const Q_DECL_OVERRIDE;
 
     //! Get all the ID strings of this packet
     void appendIds(QStringList& list) const {list.append(ids);}
@@ -38,8 +38,8 @@ public:
 
 protected:
 
-    //! Create the structure definition code
-    void createStructureDefinition(void);
+    //! Get the class declaration, for this packet only (not its children) for the C++ language
+    virtual QString getClassDeclaration_CPP(void) const Q_DECL_OVERRIDE;
 
     //! Create the functions that encode and decode the structure
     void createStructurePacketFunctions(void);
@@ -53,11 +53,17 @@ protected:
     //! Create the functions that encode and decode the structure
     void createUtilityFunctions(const QDomElement& e);
 
+    //! Get the signature of the packet structure encode function
+    QString getStructurePacketEncodeSignature(bool insource) const;
+
+    //! Get the signature of the packet structure decode function
+    QString getStructurePacketDecodeSignature(bool insource) const;
+
     //! Get the packet encode signature
-    QString getPacketEncodeSignature(bool _pg_) const;
+    QString getPacketEncodeSignature(bool insource) const;
 
     //! Get the packet decode signature
-    QString getPacketDecodeSignature(bool _pg_) const;
+    QString getPacketDecodeSignature(bool insource) const;
 
     //! Get the packet encode comment
     QString getPacketEncodeBriefComment(void) const;
@@ -78,6 +84,15 @@ protected:
     QString getDataDecodeBriefComment(void) const;
 
 protected:
+
+    //! Flag to treat this packet as a structure that other structures can reference
+    bool useInOtherPackets;
+
+    //! Flag to output parameter functions
+    bool parameterFunctions;
+
+    //! Flag to output structure functions
+    bool structureFunctions;
 
     //! Packet identifier string
     QStringList ids;

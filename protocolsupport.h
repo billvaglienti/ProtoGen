@@ -18,6 +18,18 @@ public:
     //! Return the list of attributes understood by ProtocolSupport
     QStringList getAttriblist(void) const;
 
+    //! The type of language being output
+    typedef enum
+    {
+        c_language,                 //!< Standard (C99) language rules, also the default
+        cpp_language,               //!< C++ language rules
+        python_language             //!< Python language rules
+    }LanguageType;
+
+    //! Set the language override option, call this before the parse function
+    void setLanguageOverride(LanguageType lang) {enablelanguageoverride = true; language = lang;}
+
+    LanguageType language;          //!< Enumerator specifying the language type
     int maxdatasize;                //!< Maximum number of data bytes in a packet, 0 if no limit
     bool int64;                     //!< true if support for integers greater than 32 bits is included
     bool float64;                   //!< true if support for double precision is included
@@ -41,6 +53,11 @@ public:
     QString prefix;                 //!< Prefix name
     QString pointerType;            //!< Packet pointer type - default is "void*"
     QString licenseText;            //!< License text to be added to each generated file
+
+protected:
+
+    //! Set to true to enable the language override feature
+    bool enablelanguageoverride;
 };
 
 #endif // PROTOCOLSUPPORT_H

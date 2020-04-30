@@ -497,7 +497,7 @@ bool ProtocolScaling::generate(void)
  */
 bool ProtocolScaling::generateEncodeHeader(void)
 {
-    header.setModuleNameAndPath("scaledencode", support.outputpath);
+    header.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
     // Top level comment
     header.write(
@@ -631,7 +631,7 @@ bool ProtocolScaling::generateEncodeHeader(void)
  */
 bool ProtocolScaling::generateEncodeSource(void)
 {
-    source.setModuleNameAndPath("scaledencode", support.outputpath);
+    source.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
     source.writeIncludeDirective("fieldencode.h");
     source.write("\n");
@@ -1201,7 +1201,7 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
  */
 bool ProtocolScaling::generateDecodeHeader(void)
 {
-    header.setModuleNameAndPath("scaleddecode", support.outputpath);
+    header.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
     // Top level comment
     header.write(
@@ -1303,7 +1303,7 @@ bool ProtocolScaling::generateDecodeHeader(void)
  */
 bool ProtocolScaling::generateDecodeSource(void)
 {
-    source.setModuleNameAndPath("scaleddecode", support.outputpath);
+    source.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
     source.writeIncludeDirective("fielddecode.h");
     source.write("\n");

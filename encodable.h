@@ -58,9 +58,6 @@ public:
     //! Return the include directives needed for this encodable's print functions
     virtual void getPrintIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
 
-    //! Return the string that declares the whole structure
-    virtual QString getStructureDeclaration(bool alwaysCreate) const {Q_UNUSED(alwaysCreate); return QString();}
-
     //! Return the signature of this field in an encode function signature
     virtual QString getEncodeSignature(void) const;
 
@@ -75,6 +72,27 @@ public:
 
     //! Return the string that sets this encodable to its default value in code
     virtual QString getSetToDefaultsString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
+    //! Get the string which accessses this field in code for purposes of encoding the field
+    virtual QString getEncodeFieldAccess(bool isStructureMember) const;
+
+    //! Get the string which accessses this field in code for purposes of encoding the field
+    virtual QString getEncodeFieldAccess(bool isStructureMember, const QString& variable) const;
+
+    //! Get the string which accessses this field in code for purposes of decoding the field
+    virtual QString getDecodeFieldAccess(bool isStructureMember) const;
+
+    //! Get the string which accessses this field in code for purposes of decoding the field
+    virtual QString getDecodeFieldAccess(bool isStructureMember, const QString& variable) const;
+
+    //! Get a positive or negative return code string, which is language specific
+    virtual QString getReturnCode(bool positive) const;
+
+    //! Get the array handling code for encoding context
+    virtual QString getEncodeArrayIterationCode(const QString& spacing, bool isStructureMember) const;
+
+    //! Get the array handling code for decoding context
+    virtual QString getDecodeArrayIterationCode(const QString& spacing, bool isStructureMember) const;
 
     //! Get the string used for verifying this field.
     virtual QString getVerifyString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
@@ -112,8 +130,11 @@ public:
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}
 
-    //! Determine if this encodable a primitive object or a structure?
+    //! Determine if this encodable a primitive object or a structure
     virtual bool isPrimitive(void) const = 0;
+
+    //! Determine if this encodable a string object
+    virtual bool isString(void) const = 0;
 
     //! Determine if this encodable is an array
     bool isArray(void) const {return !array.isEmpty();}

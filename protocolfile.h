@@ -1,6 +1,7 @@
 #ifndef PROTOCOLFILE_H
 #define PROTOCOLFILE_H
 
+#include "protocolsupport.h"
 #include <QString>
 #include <QFile>
 
@@ -11,7 +12,7 @@ public:
     ProtocolFile(const QString& moduleName, bool temporary = true);
 
     //! Construct the protocol file
-    ProtocolFile();
+    ProtocolFile(void);
 
     //! Destructor that performs the actual file write
     virtual ~ProtocolFile();
@@ -35,16 +36,13 @@ public:
     void setLicenseText(const QString text) { license = text; }
 
     //! Set the name of the module
-    void setModuleNameAndPath(QString name, QString filepath);
+    void setModuleNameAndPath(QString name, QString filepath, ProtocolSupport::LanguageType lang);
 
     //! Set the name of the module
-    void setModuleNameAndPath(QString prefix, QString name, QString filepath);
+    void setModuleNameAndPath(QString prefix, QString name, QString filepath, ProtocolSupport::LanguageType lang);
 
-    //! Set this files c++ status
-    void setCpp(bool cpp) {iscpp = cpp;}
-
-    //! Return true if this file is part of a c++ module
-    bool isCpp(void) const {return iscpp;}
+    //! Set the language of this file
+    void setLanguage(ProtocolSupport::LanguageType lang) {language = lang;}
 
     //! Return the path
     virtual QString filePath(void) const {return path;}
@@ -112,7 +110,9 @@ protected:
     bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
     bool appending;     //!< Flag set if an append operation is in progress
     bool temporary;     //!< Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
-    bool iscpp;         //!< Flag to indicate this file belongs to a c++ module
+
+    //! The language this file is intended for
+    ProtocolSupport::LanguageType language;
 };
 
 

@@ -23,7 +23,7 @@ ProtocolFile::ProtocolFile(const QString& moduleName, bool temp) :
     dirty(false),
     appending(false),
     temporary(temp),
-    iscpp(false)
+    language(ProtocolSupport::c_language)
 {
 }
 
@@ -32,24 +32,27 @@ ProtocolFile::ProtocolFile(const QString& moduleName, bool temp) :
  * Create the file object. After this constructor you must call setModuleNameAndPath()
  * or a file will not be created
  */
-ProtocolFile::ProtocolFile() :
+ProtocolFile::ProtocolFile(void) :
     dirty(false),
     appending(false),
     temporary(true),
-    iscpp(false)
+    language(ProtocolSupport::c_language)
 {
 }
 
-void ProtocolFile::setModuleNameAndPath(QString name, QString filepath)
+void ProtocolFile::setModuleNameAndPath(QString name, QString filepath, ProtocolSupport::LanguageType lang)
 {
-    setModuleNameAndPath(QString(), name, filepath);
+    setModuleNameAndPath(QString(), name, filepath, lang);
 }
 
 
-void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString filepath)
+void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString filepath, ProtocolSupport::LanguageType lang)
 {
     // Remove any contents we currently have
     clear();
+
+    // Set our language type
+    language = lang;
 
     // Clean it all up
     separateModuleNameAndPath(name, filepath);
@@ -580,7 +583,7 @@ QString ProtocolHeaderFile::getClosingStatement(void)
 {
     QString close;
 
-    if(!iscpp)
+    if(language == ProtocolSupport::c_language)
     {
         // close the __cplusplus
         close += "#ifdef __cplusplus\n";
@@ -643,7 +646,7 @@ void ProtocolHeaderFile::prepareToAppend(void)
         write(qPrintable("#ifndef " + define + "\n"));
         write(qPrintable("#define " + define + "\n"));
 
-        if(!iscpp)
+        if(language == ProtocolSupport::c_language)
         {
             write("\n// C++ compilers: don't mangle us\n");
             write("#ifdef __cplusplus\n");
@@ -663,7 +666,7 @@ void ProtocolSourceFile::extractExtension(QString& name)
 {
     ProtocolFile::extractExtension(name);
 
-    if(iscpp)
+    if(language == ProtocolSupport::cpp_language)
         extension = ".cpp";
     else
     {

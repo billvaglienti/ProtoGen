@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
     argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
     argParser.addOption({"table-of-contents", "Generate a table of contents"});
     argParser.addOption({{"t", "titlepage"}, "Path to title page file with text that will above at the beginning of the markdown", "titlefile"});
+    argParser.addOption({"lang-c", "Force the output language to C, overriding the language specifier in the protocol file"});
+    argParser.addOption({"lang-cpp", "Force the output language to C++, overriding the language specifier in the protocol file"});
 
     argParser.process(a);
 
@@ -122,6 +124,12 @@ int main(int argc, char *argv[])
     parser.setLaTeXSupport(argParser.isSet("latex"));
     parser.disableCSS(argParser.isSet("no-css"));
     parser.enableTableOfContents(argParser.isSet("table-of-contents"));
+
+    if(argParser.isSet("lang-c"))
+        parser.setLanguageOverride(ProtocolSupport::c_language);
+    else if(argParser.isSet("lang-cpp"))
+        parser.setLanguageOverride(ProtocolSupport::cpp_language);
+
 
     QString latexLevel = argParser.value("latex-header-level");
 

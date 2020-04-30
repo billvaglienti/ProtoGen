@@ -15,29 +15,15 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     verifyheaderfile(&header),
     verifysourcefile(&source),
     api(protocolApi),
-    version(protocolVersion),
-    encode(true),
-    decode(true),
-    compare(false),
-    print(false),
-    mapEncode(false)
+    version(protocolVersion)
 {
     // These are attributes on top of the normal structure that we support
     attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine" << "map";
-
-    compareSource.setCpp(true);
-    compareHeader.setCpp(true);
-    printSource.setCpp(true);
-    printHeader.setCpp(true);
-    mapSource.setCpp(true);
-    mapHeader.setCpp(true);
-
 }
 
 
 ProtocolStructureModule::~ProtocolStructureModule(void)
 {
-    clear();
 }
 
 
@@ -249,16 +235,16 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     // The file names
     if(moduleName.isEmpty())
     {
-        header.setModuleNameAndPath(support.prefix, name, support.outputpath);
-        source.setModuleNameAndPath(support.prefix, name, support.outputpath);
+        header.setModuleNameAndPath(support.prefix, name, support.outputpath, support.language);
+        source.setModuleNameAndPath(support.prefix, name, support.outputpath, support.language);
     }
     else
     {
-        header.setModuleNameAndPath(moduleName, support.outputpath);
-        source.setModuleNameAndPath(moduleName, support.outputpath);
+        header.setModuleNameAndPath(moduleName, support.outputpath, support.language);
+        source.setModuleNameAndPath(moduleName, support.outputpath, support.language);
     }
 
-    if(support.supportbool)
+    if(support.supportbool && (support.language == ProtocolSupport::c_language))
         header.writeIncludeDirective("stdbool.h", "", true);
 
     if(verifymodulename.isEmpty())
@@ -266,8 +252,8 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 
     if(!verifymodulename.isEmpty() && (hasInit() || hasVerify()))
     {
-        verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
-        verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
+        verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath, support.language);
+        verifySource.setModuleNameAndPath(verifymodulename, support.outputpath, support.language);
 
         if(support.supportbool)
             verifyHeader.writeIncludeDirective("stdbool.h", "", true);
@@ -283,13 +269,13 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 
         if(comparemodulename.isEmpty())
         {
-            compareHeader.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath);
-            compareSource.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath);
+            compareHeader.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath, ProtocolSupport::cpp_language);
+            compareSource.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath, ProtocolSupport::cpp_language);
         }
         else
         {
-            compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath);
-            compareSource.setModuleNameAndPath(comparemodulename, support.outputpath);
+            compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
+            compareSource.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
         }
 
         compareHeader.makeLineSeparator();
@@ -313,13 +299,13 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 
         if(printmodulename.isEmpty())
         {
-            printHeader.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath);
-            printSource.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath);
+            printHeader.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath, ProtocolSupport::cpp_language);
+            printSource.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath, ProtocolSupport::cpp_language);
         }
         else
         {
-            printHeader.setModuleNameAndPath(printmodulename, support.outputpath);
-            printSource.setModuleNameAndPath(printmodulename, support.outputpath);
+            printHeader.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            printSource.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
         }
 
         printHeader.makeLineSeparator();
@@ -350,13 +336,13 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 
         if(mapmodulename.isEmpty())
         {
-            mapHeader.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath);
-            mapSource.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath);
+            mapHeader.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath, ProtocolSupport::cpp_language);
+            mapSource.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath, ProtocolSupport::cpp_language);
         }
         else
         {
-            mapHeader.setModuleNameAndPath(mapmodulename, support.outputpath);
-            mapSource.setModuleNameAndPath(mapmodulename, support.outputpath);
+            mapHeader.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            mapSource.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
         }
 
         mapHeader.makeLineSeparator();
@@ -403,7 +389,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     {
         // Handle the idea that the structure might be defined in a different file
         defheader.setLicenseText(support.licenseText);
-        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath);
+        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath, support.language);
 
         if(support.supportbool)
             defheader.writeIncludeDirective("stdbool.h", "", true);
@@ -422,38 +408,56 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         header.writeIncludeDirective(structfile->fileName());
     }
 
-    // The verify, comparison, print, and map files needs access to the struct file
-    verifyheaderfile->writeIncludeDirective(structfile->fileName());
-    compareHeader.writeIncludeDirective(structfile->fileName());
-    compareHeader.writeIncludeDirective(header.fileName());
-    compareHeader.writeIncludeDirective("QString", QString(), true, false);
-    printHeader.writeIncludeDirective(structfile->fileName());
-    printHeader.writeIncludeDirective(header.fileName());
-    printHeader.writeIncludeDirective("QString", QString(), true, false);
-    mapHeader.writeIncludeDirective(structfile->fileName());
-    mapHeader.writeIncludeDirective(header.fileName());
-    mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
-    mapHeader.writeIncludeDirective("string", QString(), true, false);
-
-    // The verification details may be spread across multiple files
     QStringList list;
-    getInitAndVerifyIncludeDirectives(list);
-    verifyheaderfile->writeIncludeDirectives(list);
+    if(hasVerify() || hasInit())
+    {
+        verifyheaderfile->writeIncludeDirective(structfile->fileName());
+
+        // The verification details may be spread across multiple files
+        list.clear();
+        getInitAndVerifyIncludeDirectives(list);
+        verifyheaderfile->writeIncludeDirectives(list);
+        verifyheaderfile->makeLineSeparator();
+        verifyheaderfile->write(getInitialAndVerifyDefines());
+        verifyheaderfile->makeLineSeparator();
+    }
 
     // The compare details may be spread across multiple files
-    list.clear();
-    getCompareIncludeDirectives(list);
-    compareHeader.writeIncludeDirectives(list);
+    if(compare)
+    {
+        compareHeader.writeIncludeDirective(structfile->fileName());
+        compareHeader.writeIncludeDirective(header.fileName());
+        compareHeader.writeIncludeDirective("QString", QString(), true, false);
+
+        list.clear();
+        getCompareIncludeDirectives(list);
+        compareHeader.writeIncludeDirectives(list);
+    }
 
     // The print details may be spread across multiple files
-    list.clear();
-    getPrintIncludeDirectives(list);
-    printHeader.writeIncludeDirectives(list);
+    if(print)
+    {
+        printHeader.writeIncludeDirective(structfile->fileName());
+        printHeader.writeIncludeDirective(header.fileName());
+        printHeader.writeIncludeDirective("QString", QString(), true, false);
+
+        list.clear();
+        getPrintIncludeDirectives(list);
+        printHeader.writeIncludeDirectives(list);
+    }
 
     // The map details may be spread across multiple files
-    list.clear();
-    getMapIncludeDirectives(list);
-    mapHeader.writeIncludeDirectives(list);
+    if(mapEncode)
+    {
+        mapHeader.writeIncludeDirective(structfile->fileName());
+        mapHeader.writeIncludeDirective(header.fileName());
+        mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
+        mapHeader.writeIncludeDirective("string", QString(), true, false);
+
+        list.clear();
+        getMapIncludeDirectives(list);
+        mapHeader.writeIncludeDirectives(list);
+    }
 
     // Add other includes specific to this structure
     parser->outputIncludes(getHierarchicalName(), *structfile, e);
@@ -480,13 +484,6 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 
     // White space is good
     source.makeLineSeparator();
-
-    if(hasVerify() || hasInit())
-    {
-        verifyheaderfile->makeLineSeparator();
-        verifyheaderfile->write(getInitialAndVerifyDefines());
-        verifyheaderfile->makeLineSeparator();
-    }
 
     list.clear();
     getSourceIncludeDirectives(list);
@@ -658,74 +655,111 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
         if(!structure)
             continue;
 
+        if(support.language == ProtocolSupport::cpp_language)
+        {
+            // In this case the initialization function is the constructor,
+            // which always exists if we have any parameters. It always goes
+            // in the source file. The constructor prototype is already in the
+            // class definition in the header file.
+            if(structure->getNumberInMemory() > 0)
+            {
+                source.makeLineSeparator();
+                source.write(structure->getSetToInitialValueFunctionString());
+            }
+        }
+        else if(hasInit())
+        {
+            verifyheaderfile->makeLineSeparator();
+            verifyheaderfile->write(structure->getSetToInitialValueFunctionPrototype());
+
+            verifysourcefile->makeLineSeparator();
+            verifysourcefile->write(structure->getSetToInitialValueFunctionString());
+        }
+
         if(encode)
         {
-            source.makeLineSeparator();
-            source.write(structure->getPrototypeEncodeString(support.bigendian));
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(structure->getPrototypeEncodeString(support.bigendian));
+            }
+
             source.makeLineSeparator();
             source.write(structure->getFunctionEncodeString(support.bigendian));
         }
 
         if(decode)
         {
-            source.makeLineSeparator();
-            source.write(structure->getPrototypeDecodeString(support.bigendian));
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(structure->getPrototypeDecodeString(support.bigendian));
+            }
+
             source.makeLineSeparator();
             source.write(structure->getFunctionDecodeString(support.bigendian));
         }
 
-        if(hasInit())
-        {
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getSetToInitialValueFunctionPrototype());
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getSetToInitialValueFunctionString());
-            verifysourcefile->makeLineSeparator();
-        }
-
         if(hasVerify())
         {
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getVerifyFunctionPrototype());
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                verifyheaderfile->makeLineSeparator();
+                verifyheaderfile->write(structure->getVerifyFunctionPrototype());
+            }
+
             verifysourcefile->makeLineSeparator();
             verifysourcefile->write(structure->getVerifyFunctionString());
-            verifysourcefile->makeLineSeparator();
         }
 
         if(compare)
         {
-            compareSource.makeLineSeparator();
-            compareSource.write(structure->getComparisonFunctionPrototype());
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                compareHeader.makeLineSeparator();
+                compareHeader.write(structure->getComparisonFunctionPrototype());
+            }
+
             compareSource.makeLineSeparator();
             compareSource.write(structure->getComparisonFunctionString());
-            compareSource.makeLineSeparator();
         }
 
         if(print)
         {
-            printSource.makeLineSeparator();
-            printSource.write(structure->getTextPrintFunctionPrototype());
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                printHeader.makeLineSeparator();
+                printHeader.write(structure->getTextPrintFunctionPrototype());
+                printHeader.makeLineSeparator();
+                printHeader.write(structure->getTextReadFunctionPrototype());
+            }
+
             printSource.makeLineSeparator();
             printSource.write(structure->getTextPrintFunctionString());
             printSource.makeLineSeparator();
-            printSource.write(structure->getTextReadFunctionPrototype());
-            printSource.makeLineSeparator();
-            printSource.write(structure->getTextReadFunctionString());
-            printSource.makeLineSeparator();
+            printSource.write(structure->getTextReadFunctionString());         
         }
 
         if(mapEncode)
         {
-            mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapEncodeFunctionPrototype());
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                mapHeader.makeLineSeparator();
+                mapHeader.write(structure->getMapEncodeFunctionPrototype());
+                mapHeader.makeLineSeparator();
+                mapHeader.write(structure->getMapDecodeFunctionPrototype());
+            }
+
             mapSource.makeLineSeparator();
             mapSource.write(structure->getMapEncodeFunctionString());
             mapSource.makeLineSeparator();
-            mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapDecodeFunctionPrototype());
-            mapSource.makeLineSeparator();
             mapSource.write(structure->getMapDecodeFunctionString());
-            mapSource.makeLineSeparator();
         }
 
     }

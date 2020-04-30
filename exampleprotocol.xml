@@ -101,7 +101,7 @@ efficiently encode data for little or big endian architectures.">
     <Packet name="GPS" file="GPS" useInOtherPackets="true" comment="Information from a GPS including the position, velocity, and quality data.
                                            This is a generic GPS description that should suffice for most GPS devices">
 		
-		<Data name="PosLLA" struct="PositionLLA" comment="Position in geographic coordinates with respect to the WGS-84 ellipsoid"/>
+        <Data name="PosLLA" struct="PositionLLA" comment="Position in geographic coordinates with respect to the WGS-84 ellipsoid"/>
 
         <Structure name="VelocityNED" comment="Velocity in North, East, Down">
             <Data name="north" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the North direction"/>

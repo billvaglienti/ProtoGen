@@ -14,7 +14,7 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     // functions in the bitfieldtest module, we just need to exercise them.
 
     // Prototype for testing bitfields, note the files have already been flushed, so we are appending
-    header.setModuleNameAndPath("bitfieldtest", support.outputpath);
+    header.setModuleNameAndPath("bitfieldtest", support.outputpath, support.language);
     header.makeLineSeparator();
     header.write("//! Test the bit fields\n");
     header.write("int testBitfield(void);\n");
@@ -22,7 +22,7 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     header.flush();
 
     // Now the source code
-    source.setModuleNameAndPath("bitfieldtest", support.outputpath);
+    source.setModuleNameAndPath("bitfieldtest", support.outputpath, support.language);
     source.makeLineSeparator();
     source.writeIncludeDirective("string.h", QString(), true);
     source.writeIncludeDirective("limits.h", QString(), true);

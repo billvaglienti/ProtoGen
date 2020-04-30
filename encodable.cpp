@@ -200,6 +200,242 @@ QString Encodable::getDecodeParameterComment(void) const
 
 
 /*!
+ * Get a positive or negative return code string, which is language specific
+ * \param positive should be true for "1" or "true", else "0", or "false"
+ * \return The string in code that is the return.
+ */
+QString Encodable::getReturnCode(bool positive) const
+{
+    if(positive)
+    {
+        if(support.language == ProtocolSupport::c_language)
+            return "1";
+        else
+            return "true";
+    }
+    else
+    {
+        if(support.language == ProtocolSupport::c_language)
+            return "0";
+        else
+            return "false";
+    }
+
+}// Encodable::getReturnCode
+
+
+/*!
+ * Get the string which accessses this field in code in a encoding context.
+ * \param isStructureMember true if this field is in the scope of a containing structure.
+ * \return The string that accesses this field in code for reading.
+ */
+QString Encodable::getEncodeFieldAccess(bool isStructureMember) const
+{
+    return getEncodeFieldAccess(isStructureMember, name);
+
+}// ProtocolField::getEncodeFieldAccess
+
+
+/*!
+ * Get the string which accessses this field in code in a encoding context.
+ * \param isStructureMember true if this field is in the scope of a containing structure.
+ * \param variable is the name of the variable to be accessed.
+ * \return The string that accesses the variable in code for reading.
+ */
+QString Encodable::getEncodeFieldAccess(bool isStructureMember, const QString& variable) const
+{
+    QString access;
+
+    // How we are going to access the field
+    if(isStructureMember)
+    {
+        if(support.language == ProtocolSupport::c_language)
+            access = "_pg_user->" + variable; // Access via structure pointer
+        else
+            access = variable;                // Access via implicit class reference
+    }
+    else
+        access = variable;                    // Access via parameter
+
+    // If the variable we are tyring to access is ourselves (i.e. not dependsOn
+    // or variableArray, etc.) then we need to apply array access rules also.
+    if(variable == name)
+    {
+        if(isArray() && !isString())
+        {
+            access += "[_pg_i]";
+            if(is2dArray())
+                access += "[_pg_j]";
+        }
+
+        // If we are a structure, and the language is C, we need the address of
+        // the structure, even for encoding. Note however that if we are a
+        // parameter we are already a pointer (because we never pass structures
+        // by value).
+        if(!isPrimitive() && (support.language == ProtocolSupport::c_language) && (isStructureMember || isArray()))
+            access = "&" + access;
+    }
+
+    return access;
+
+}// Encodable::getEncodeFieldAccess
+
+
+/*!
+ * Get the string which accessses this field in code in a decoding context.
+ * \param isStructureMember true if this field is in the scope of a containing structure.
+ * \return The string that accesses this field in code for writing.
+ */
+QString Encodable::getDecodeFieldAccess(bool isStructureMember) const
+{
+    return getDecodeFieldAccess(isStructureMember, name);
+}
+
+
+/*!
+ * Get the string which accessses this field in code in a decoding context.
+ * \param isStructureMember true if this field is in the scope of a containing structure.
+ * \param variable is the name of the variable to be accessed.
+ * \return The string that accesses this field in code for writing.
+ */
+QString Encodable::getDecodeFieldAccess(bool isStructureMember, const QString& variable) const
+{
+    QString access;
+
+    if(isStructureMember)
+    {
+        if(support.language == ProtocolSupport::c_language)
+            access = "_pg_user->" + variable; // Access via structure pointer
+        else
+            access = variable;                // Access via implicit class reference
+
+        if(variable == name)
+        {
+            // Apply array access rules also, strings are left alone, they are already pointers
+            if(isArray() && !isString())
+            {
+                access += "[_pg_i]";          // Array de-reference
+                if(is2dArray())
+                    access += "[_pg_j]";
+
+            }
+
+            // If we are a structure, and the language is C, we need the address of the structure.
+            if(!isPrimitive() && (support.language == ProtocolSupport::c_language))
+                access = "&" + access;
+        }
+    }
+    else
+    {
+        if(variable == name)
+        {
+            if(isString())
+                access = variable;                // Access via string pointer
+            else if(isArray())
+            {
+                access = variable + "[_pg_i]";    // Array de-reference
+                if(is2dArray())
+                    access += "[_pg_j]";
+
+                // If we are a structure, and the language is C, we need the address of the structure.
+                if(!isPrimitive() && (support.language == ProtocolSupport::c_language))
+                    access = "&" + access;
+            }
+            else if(!isPrimitive())
+                access = variable;
+            else
+                access = "(*" + variable + ")";   // Access via parameter pointer
+        }
+        else
+            access = "(*" + variable + ")";       // Access via parameter pointer
+    }
+
+    return access;
+
+}// Encodable::getDecodeFieldAccess
+
+
+/*!
+ * Get the code that performs array iteration, in a encode context
+ * \param spacing is the spacing that begins the first array iteration line
+ * \param isStructureMember should be true if variable array limits are members of a structure
+ * \return the code for array iteration, which may be empty
+ */
+QString Encodable::getEncodeArrayIterationCode(const QString& spacing, bool isStructureMember) const
+{
+    QString output;
+
+    if(isArray())
+    {
+        if(variableArray.isEmpty())
+        {
+            output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+        }
+        else
+        {
+            output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + getEncodeFieldAccess(isStructureMember, variableArray) + " && _pg_i < " + array + "; _pg_i++)\n";
+        }
+
+        if(is2dArray())
+        {
+            if(variable2dArray.isEmpty())
+            {
+                output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+            }
+            else
+            {
+                output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + getEncodeFieldAccess(isStructureMember, variable2dArray) + " && _pg_j < " + array2d + "; _pg_j++)\n";
+            }
+        }
+
+    }
+
+    return output;
+
+}// Encodable::getEncodeArrayIterationCode
+
+
+/*!
+ * Get the code that performs array iteration, in a decode context
+ * \param spacing is the spacing that begins the first array iteration line
+ * \param isStructureMember should be true if variable array limits are members of a structure
+ * \return the code for array iteration, which may be empty
+ */
+QString Encodable::getDecodeArrayIterationCode(const QString& spacing, bool isStructureMember) const
+{
+    QString output;
+
+    if(isArray())
+    {
+        if(variableArray.isEmpty())
+        {
+            output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
+        }
+        else
+        {
+            output += spacing + "for(_pg_i = 0; _pg_i < (unsigned)" + getDecodeFieldAccess(isStructureMember, variableArray) + " && _pg_i < " + array + "; _pg_i++)\n";
+        }
+
+        if(is2dArray())
+        {
+            if(variable2dArray.isEmpty())
+            {
+                output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
+            }
+            else
+            {
+                output += spacing + TAB_IN + "for(_pg_j = 0; _pg_j < (unsigned)" + getDecodeFieldAccess(isStructureMember, variable2dArray) + " && _pg_j < " + array2d + "; _pg_j++)\n";
+            }
+        }
+
+    }
+
+    return output;
+
+}// Encodable::getDecodeArrayIterationCode
+
+
+/*!
  * Get documentation repeat details for array or 2d arrays
  * \return The repeat details
  */

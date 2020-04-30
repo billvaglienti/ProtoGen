@@ -25,6 +25,9 @@ public:
     //! Configure a documentation path separate to the main protocol output directory
     void setDocsPath(QString path);
 
+    //! Set the language override option
+    void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
+
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 

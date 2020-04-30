@@ -139,7 +139,10 @@ public:
     virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Returns true since protocol field is a primitive type
-    virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return true;}
+    virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return !inMemoryType.isStruct;}
+
+    //! Determine if this encodable a string object
+    virtual bool isString(void) const Q_DECL_OVERRIDE {return inMemoryType.isString;}
 
     //! True if this encodable is NOT encoded
     virtual bool isNotEncoded(void) const Q_DECL_OVERRIDE {return (encodedType.isNull);}
@@ -431,9 +434,6 @@ protected:
 
     //! Determine if an argument should be passed to the limiting macro
     QString getLimitedArgument(QString argument) const;
-
-    //! Get the array handling code
-    QString getArrayIterationCode(const QString& spacing, bool isStructureMember) const;
 
     //! Get the next lines(s) of source coded needed to encode a bitfield field
     QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;

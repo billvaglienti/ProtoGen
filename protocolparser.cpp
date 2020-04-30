@@ -17,7 +17,7 @@
 #include <iostream>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "2.22.c";
+const QString ProtocolParser::genVersion = "3.0.a This is alpha code, do not use";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -207,9 +207,9 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
         module->parseGlobal();
         enumfile.setLicenseText(support.licenseText);
-        enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
+        enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath(), support.language);
 
-        if(support.supportbool)
+        if(support.supportbool && (support.language == ProtocolSupport::c_language))
             enumfile.writeIncludeDirective("stdbool.h", "", true);
 
         enumfile.write(module->getOutput());
@@ -222,7 +222,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         if(!source.isEmpty())
         {
             enumSourceFile.setLicenseText(support.licenseText);
-            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
+            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath(), support.language);
 
             enumSourceFile.write(source);
             enumSourceFile.makeLineSeparator();
@@ -619,7 +619,7 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
 
     // The file names
     header.setLicenseText(support.licenseText);
-    header.setModuleNameAndPath(nameex, support.outputpath);
+    header.setModuleNameAndPath(nameex, support.outputpath, support.language);
 
     // Comment block at the top of the header file
     header.write("/*!\n");
@@ -712,7 +712,7 @@ void ProtocolParser::finishProtocolHeader(void)
 
     // The file name, this will result in an append to the previously created file
     header.setLicenseText(support.licenseText);
-    header.setModuleNameAndPath(nameex, support.outputpath);
+    header.setModuleNameAndPath(nameex, support.outputpath, support.language);
 
     header.makeLineSeparator();
 

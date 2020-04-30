@@ -4,6 +4,7 @@
 #include <QStringList>
 
 ProtocolSupport::ProtocolSupport() :
+    language(c_language),
     maxdatasize(0),
     int64(true),
     float64(true),
@@ -16,7 +17,8 @@ ProtocolSupport::ProtocolSupport() :
     supportbool(false),
     limitonencode(false),
     packetStructureSuffix("PacketStructure"),
-    packetParameterSuffix("Packet")
+    packetParameterSuffix("Packet"),
+    enablelanguageoverride(false)
 {
 }
 
@@ -44,7 +46,9 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "endian"
             << "pointer"
             << "supportBool"
-            << "limitOnEncode";
+            << "limitOnEncode"
+            << "C"
+            << "C++";
 
     return attribs;
 }
@@ -56,6 +60,18 @@ QStringList ProtocolSupport::getAttriblist(void) const
  */
 void ProtocolSupport::parse(const QDomNamedNodeMap& map)
 {
+    if(!enablelanguageoverride)
+    {
+        // The type of language, C and C++ are the only supported options right now
+        if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("C++", map)))
+            language = cpp_language;
+        else
+            language = c_language;
+
+        // Don't let any copies of us override the language setting. We need this to be the same for all support objects.
+        enablelanguageoverride = true;
+    }
+
     // Maximum bytes of data in a packet.
     maxdatasize = ProtocolParser::getAttribute("maxSize", map, "0").toInt();
 
@@ -83,9 +99,17 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     if(ProtocolParser::isFieldSet("bitfieldTest", map))
         bitfieldtest = true;
 
-    // bool support can be turned on
+    // bool support default is based on language type
+    if(language == c_language)
+        supportbool = false;
+    else
+        supportbool = true;
+
+    // bool support can be turned on or off
     if(ProtocolParser::isFieldSet("supportBool", map))
         supportbool = true;
+    else if(ProtocolParser::isFieldClear("supportBool", map))
+        supportbool = false;
 
     // Limit on encode can be turned on
     if(ProtocolParser::isFieldSet("limitOnEncode", map))

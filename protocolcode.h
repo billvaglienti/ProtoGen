@@ -61,6 +61,9 @@ class ProtocolCode : public Encodable
     //! Returns true since protocol code is a primitive type
     virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return true;}
 
+    //! Returns false since protocol code is not a string
+    virtual bool isString(void) const Q_DECL_OVERRIDE {return false;}
+
     //! Returns true since protocol code is not in memory
     virtual bool isNotInMemory(void) const Q_DECL_OVERRIDE {return true;}
 

@@ -153,11 +153,6 @@ protected:
     ProtocolSourceFile* verifysourcefile;   //!< Reference to the file that holds the verify source code
     QString api;                    //!< The protocol API enumeration
     QString version;                //!< The version string
-    bool encode;                    //!< True if the encode function is output
-    bool decode;                    //!< True if the decode function is output
-    bool compare;                   //!< True if the comparison function is output
-    bool print;                     //!< True if the textPrint function is output
-    bool mapEncode;                 //!< True if the mapEncode function is output
 };
 
 #endif // PROTOCOLSTRUCTUREMODULE_H

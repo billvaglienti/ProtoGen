@@ -31,6 +31,9 @@ public:
     //! Determine if this encodable is a primitive, rather than a structure
     virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return false;}
 
+    //! Determine if this encodable a string object
+    virtual bool isString(void) const Q_DECL_OVERRIDE {return false;}
+
     //! Get the maximum number of temporary bytes needed for a bitfield group
     virtual void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
 
@@ -175,9 +178,6 @@ public:
     //! Get the declaration for this structure as a member of another
     virtual QString getDeclaration(void) const Q_DECL_OVERRIDE;
 
-    //! Get the declaration that goes in the header which declares this structure and all its children
-    virtual QString getStructureDeclaration(bool alwaysCreate) const Q_DECL_OVERRIDE;
-
     //! Return the string that gives the prototype of the function used to encode this encodable, may be empty
     virtual QString getPrototypeEncodeString(bool isBigEndian, bool includeChildren = true) const;
 
@@ -219,6 +219,15 @@ public:
 
 protected:
 
+    //! Get the declaration that goes in the header which declares this structure and all its children
+    QString getStructureDeclaration(bool alwaysCreate) const;
+
+    //! Get the structure declaration, for this structure only (not its children) for the C language.
+    QString getStructureDeclaration_C(void) const;
+
+    //! Get the class declaration, for this structure only (not its children) for the C++ language.
+    virtual QString getClassDeclaration_CPP(void) const;
+
     //! Make a structure output be prettily aligned
     QString alignStructureData(const QString& structure) const;
 
@@ -252,6 +261,11 @@ protected:
     bool hasverify;             //!< True if any children of this structure have verify data
     QStringList attriblist;     //!< List of all attributes that we understand
     QString structName;         //!< Name of the structure (usually the same as typeName)
+    bool encode;                //!< True if the encode function is output
+    bool decode;                //!< True if the decode function is output
+    bool compare;               //!< True if the comparison function is output
+    bool print;                 //!< True if the textPrint function is output
+    bool mapEncode;             //!< True if the mapEncode function is output
 
 };
 
