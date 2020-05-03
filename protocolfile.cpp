@@ -648,10 +648,14 @@ void ProtocolHeaderFile::prepareToAppend(void)
 
         if(language == ProtocolSupport::c_language)
         {
-            write("\n// C++ compilers: don't mangle us\n");
+            write("\n// Language target is C, C++ compilers: don't mangle us\n");
             write("#ifdef __cplusplus\n");
             write("extern \"C\" {\n");
             write("#endif\n\n");
+        }
+        else if(language == ProtocolSupport::cpp_language)
+        {
+            write("\n// Language target is C++\n");
         }
     }
 
