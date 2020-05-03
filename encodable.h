@@ -31,14 +31,41 @@ public:
     //! The hierarchical name of this object
     virtual QString getHierarchicalName(void) const = 0;
 
+    //! Return the string that is used to declare this encodable
+    virtual QString getDeclaration(void) const = 0;
+
     //! Return the string that is used to encode this encodable
     virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
 
     //! Return the string that is used to decode this encoable
     virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
 
-    //! Return the string that is used to declare this encodable
-    virtual QString getDeclaration(void) const = 0;
+    //! Get the string used for verifying this field.
+    virtual QString getVerifyString(void) const {return QString();}
+
+    //! Return the string that sets this encodable to its initial value in code
+    virtual QString getSetInitialValueString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+
+    //! Return the strings that #define initial and variable values
+    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {Q_UNUSED(includeComment); return QString();}
+
+    //! Get the string used for comparing this field.
+    virtual QString getComparisonString(void) const {return QString();}
+
+    //! Get the string used for text printing this field.
+    virtual QString getTextPrintString(void) const {return QString();}
+
+    //! Get the string used for text reading this field.
+    virtual QString getTextReadString(void) const {return QString();}
+
+    //! Get the string used to encode this field to a map
+    virtual QString getMapEncodeString(void) const {return QString();}
+
+    //! Get the string used to decode this field from a map
+    virtual QString getMapDecodeString(void) const {return QString();}
+
+    //! Return the string that sets this encodable to its default value in code
+    virtual QString getSetToDefaultsString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
     //! Return the include directives needed for this encodable
     virtual void getIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
@@ -70,9 +97,6 @@ public:
     //! Return the string that documents this field as a decode function parameter
     virtual QString getDecodeParameterComment(void) const;
 
-    //! Return the string that sets this encodable to its default value in code
-    virtual QString getSetToDefaultsString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
     //! Get the string which accessses this field in code for purposes of encoding the field
     virtual QString getEncodeFieldAccess(bool isStructureMember) const;
 
@@ -93,30 +117,6 @@ public:
 
     //! Get the array handling code for decoding context
     virtual QString getDecodeArrayIterationCode(const QString& spacing, bool isStructureMember) const;
-
-    //! Get the string used for verifying this field.
-    virtual QString getVerifyString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Return the string that sets this encodable to its initial value in code
-    virtual QString getSetInitialValueString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Return the strings that #define initial and variable values
-    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {Q_UNUSED(includeComment); return QString();}
-
-    //! Get the string used for comparing this field.
-    virtual QString getComparisonString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Get the string used for text printing this field.
-    virtual QString getTextPrintString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Get the string used for text reading this field.
-    virtual QString getTextReadString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Get the string used to encode this field to a map
-    virtual QString getMapEncodeString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
-
-    //! Get the string used to decode this field from a map
-    virtual QString getMapDecodeString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
 
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}

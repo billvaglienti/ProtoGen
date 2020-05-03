@@ -35,7 +35,7 @@ bool EncodedLength::isEmpty(void)
  * Determine if the length is zero
  * \return true if the maximum length is empty or is "0"
  */
-bool EncodedLength::isZeroLength(void)
+bool EncodedLength::isZeroLength(void) const
 {
     if(collapseLengthString(maxEncodedLength, true).compare("0") == 0)
         return true;

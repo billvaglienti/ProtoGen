@@ -112,7 +112,7 @@ public:
     ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported);
 
     //! Provide the pointer to a previous encodable in the list
-    virtual void setPreviousEncodable(Encodable* prev) Q_DECL_OVERRIDE;
+    void setPreviousEncodable(Encodable* prev) Q_DECL_OVERRIDE;
 
     //! Get overriden type information
     bool getOverriddenTypeData(ProtocolField* prev);
@@ -123,170 +123,167 @@ public:
     //! Get a properly formatted number string for a double precision number
     QString getNumberString(double number, int bits = 64) const;
 
-    //! Destroy the protocol field
-    virtual ~ProtocolField(){}
-
     //! Reset all data to defaults
-    virtual void clear(void) Q_DECL_OVERRIDE;
+    void clear(void) Q_DECL_OVERRIDE;
 
     //! Parse the DOM element
-    virtual void parse(void) Q_DECL_OVERRIDE;
+    void parse(void) Q_DECL_OVERRIDE;
 
     //! Check names against the list of C keywords
-    virtual void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
+    void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
+    QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Returns true since protocol field is a primitive type
-    virtual bool isPrimitive(void) const Q_DECL_OVERRIDE {return !inMemoryType.isStruct;}
+    bool isPrimitive(void) const Q_DECL_OVERRIDE {return !inMemoryType.isStruct;}
 
     //! Determine if this encodable a string object
-    virtual bool isString(void) const Q_DECL_OVERRIDE {return inMemoryType.isString;}
+    bool isString(void) const Q_DECL_OVERRIDE {return inMemoryType.isString;}
 
     //! True if this encodable is NOT encoded
-    virtual bool isNotEncoded(void) const Q_DECL_OVERRIDE {return (encodedType.isNull);}
+    bool isNotEncoded(void) const Q_DECL_OVERRIDE {return (encodedType.isNull);}
 
     //! True if this encodable is NOT in memory. Note how overriding a previous field means we are not in memory (because the previous one is)
-    virtual bool isNotInMemory(void) const Q_DECL_OVERRIDE {return (inMemoryType.isNull || overridesPrevious);}
+    bool isNotInMemory(void) const Q_DECL_OVERRIDE {return (inMemoryType.isNull || overridesPrevious);}
 
     //! True if this encodable is a constant. Note that protocol fields which are null in memory are constant by definition
-    virtual bool isConstant(void) const Q_DECL_OVERRIDE {return (!constantString.isEmpty() || inMemoryType.isNull);}
+    bool isConstant(void) const Q_DECL_OVERRIDE {return (!constantString.isEmpty() || inMemoryType.isNull);}
 
     //! True if this encoable is a primitive bitfield
-    virtual bool isBitfield(void) const Q_DECL_OVERRIDE {return (encodedType.isBitfield && !isNotEncoded());}
+    bool isBitfield(void) const Q_DECL_OVERRIDE {return (encodedType.isBitfield && !isNotEncoded());}
 
     //! True if this encodable has a default value
-    virtual bool isDefault(void) const Q_DECL_OVERRIDE {return !defaultString.isEmpty();}
+    bool isDefault(void) const Q_DECL_OVERRIDE {return !defaultString.isEmpty();}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    virtual void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
+    void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
 
     //! Get the declaration for this field
-    virtual QString getDeclaration(void) const Q_DECL_OVERRIDE;
+    QString getDeclaration(void) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's init and verify functions
-    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's map functions
-    virtual void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's compare functions
-    virtual void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's print functions
-    virtual void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the signature of this field in an encode function signature
-    virtual QString getEncodeSignature(void) const Q_DECL_OVERRIDE;
+    QString getEncodeSignature(void) const Q_DECL_OVERRIDE;
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const Q_DECL_OVERRIDE;
+    void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const Q_DECL_OVERRIDE;
 
     //! Return true if this field is hidden from documentation
-    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+    bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
 
     //! True if this encodable has verification data
-    virtual bool hasVerify(void) const Q_DECL_OVERRIDE;
+    bool hasVerify(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable has initialization data
-    virtual bool hasInit(void) const Q_DECL_OVERRIDE;
+    bool hasInit(void) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that is used to decode this encoable
-    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
+    QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
 
     //! Return the string that sets this encodable to its default value in code
-    virtual QString getSetToDefaultsString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getSetToDefaultsString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Get the string used for verifying this field.
-    virtual QString getVerifyString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getVerifyString(void) const Q_DECL_OVERRIDE;
 
     //! Get the string used for comparing this field.
-    virtual QString getComparisonString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getComparisonString(void) const Q_DECL_OVERRIDE;
 
     //! Get the string used for text printing this field.
-    virtual QString getTextPrintString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getTextPrintString(void) const Q_DECL_OVERRIDE;
 
     //! Get the string used for text reading this field.
-    virtual QString getTextReadString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getTextReadString(void) const Q_DECL_OVERRIDE;
 
     //! Get the string used for map encoding this field
-    virtual QString getMapEncodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getMapEncodeString(void) const Q_DECL_OVERRIDE;
 
     //! Get the string used for map decoding this field
-    virtual QString getMapDecodeString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getMapDecodeString(void) const Q_DECL_OVERRIDE;
 
     //! Return the string that sets this encodable to its initial value in code
-    virtual QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
 
     //! Return the string that sets this encodable to specific value in code
     QString getSetToValueString(bool isStructureMember, QString value) const;
 
     //! Return the strings that #define initial and variable values
-    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
+    QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
 
     //! Make this primitive not a default
-    virtual void clearDefaults(void) Q_DECL_OVERRIDE {defaultString.clear();}
+    void clearDefaults(void) Q_DECL_OVERRIDE {defaultString.clear();}
 
     //! True if this encodable overrides a previous encodable
-    virtual bool overridesPreviousEncodable(void) const Q_DECL_OVERRIDE {return overridesPrevious;}
+    bool overridesPreviousEncodable(void) const Q_DECL_OVERRIDE {return overridesPrevious;}
 
     //! Clear the override flag, its not allowed
-    virtual void clearOverridesPrevious(void) Q_DECL_OVERRIDE {overridesPrevious = false;}
+    void clearOverridesPrevious(void) Q_DECL_OVERRIDE {overridesPrevious = false;}
 
     //! True if this encodable invalidates an earlier default
-    virtual bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !inMemoryType.isNull && !usesDefaults() && !overridesPrevious;}
+    bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !inMemoryType.isNull && !usesDefaults() && !overridesPrevious;}
 
     //! True if this encodable has a direct child that uses bitfields
-    virtual bool usesBitfields(void) const Q_DECL_OVERRIDE;
+    bool usesBitfields(void) const Q_DECL_OVERRIDE;
 
     //! True if this bitfield crosses a byte boundary
     bool bitfieldCrossesByteBoundary(void) const;
 
     //! True if this encodable needs a temporary buffer for its bitfield during encode
-    virtual bool usesEncodeTempBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesEncodeTempBitfield(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable needs a temporary buffer for its long bitfield during encode
-    virtual bool usesEncodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesEncodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable needs a temporary buffer for its bitfield during decode
-    virtual bool usesDecodeTempBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesDecodeTempBitfield(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable needs a temporary buffer for its long bitfield during decode
-    virtual bool usesDecodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesDecodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    virtual bool usesEncodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
+    bool usesEncodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    virtual bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator for verifying
-    virtual bool usesVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && usesEncodeIterator();}
+    bool usesVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && usesEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an iterator for initializing
-    virtual bool usesInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && usesEncodeIterator();}
+    bool usesInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && usesEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    virtual bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
+    bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    virtual bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an second iterator for verifying
-    virtual bool uses2ndVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && uses2ndEncodeIterator();}
+    bool uses2ndVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && uses2ndEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an second iterator for initializing
-    virtual bool uses2ndInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && uses2ndEncodeIterator();}
+    bool uses2ndInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && uses2ndEncodeIterator();}
 
     //! True if this encodable has a direct child that uses defaults
-    virtual bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}
+    bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}
 
 protected:
 

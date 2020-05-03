@@ -15,20 +15,19 @@ public:
     //! Construct the packet parsing object, with details about the overall protocol
     ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
-    //! Destroy the protocol packet
-    virtual ~ProtocolPacket(void);
+    ~ProtocolPacket();
 
     //! Parse a packet from the DOM
-    virtual void parse(void) Q_DECL_OVERRIDE;
+    void parse(void) Q_DECL_OVERRIDE;
 
     //! Clear out any data
-    virtual void clear(void) Q_DECL_OVERRIDE;
+    void clear(void) Q_DECL_OVERRIDE;
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
+    QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Return top level markdown documentation for this packet
-    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const Q_DECL_OVERRIDE;
+    QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const Q_DECL_OVERRIDE;
 
     //! Get all the ID strings of this packet
     void appendIds(QStringList& list) const {list.append(ids);}
@@ -39,7 +38,7 @@ public:
 protected:
 
     //! Get the class declaration, for this packet only (not its children) for the C++ language
-    virtual QString getClassDeclaration_CPP(void) const Q_DECL_OVERRIDE;
+    QString getClassDeclaration_CPP(void) const Q_DECL_OVERRIDE;
 
     //! Create the functions that encode and decode the structure
     void createStructurePacketFunctions(void);
@@ -47,23 +46,44 @@ protected:
     //! Create the functions that encode and decode the parameters
     void createPacketFunctions(void);
 
-    //! Create the function that encodes the structure
-    void createStructureEncodeFunction(const QDomElement& e);
-
     //! Create the functions that encode and decode the structure
     void createUtilityFunctions(const QDomElement& e);
 
     //! Get the signature of the packet structure encode function
     QString getStructurePacketEncodeSignature(bool insource) const;
 
+    //! Get the prototype for the structure packet encode function
+    QString getStructurePacketEncodePrototype(const QString& spacing) const;
+
+    //! Get the prototype for the structure packet encode function
+    QString getStructurePacketEncodeBody(void) const;
+
     //! Get the signature of the packet structure decode function
     QString getStructurePacketDecodeSignature(bool insource) const;
 
+    //! Get the prototype for the structure packet decode function
+    QString getStructurePacketDecodePrototype(const QString& spacing) const;
+
+    //! Get the prototype for the structure packet decode function
+    QString getStructurePacketDecodeBody(void) const;
+
     //! Get the packet encode signature
-    QString getPacketEncodeSignature(bool insource) const;
+    QString getParameterPacketEncodeSignature(bool insource) const;
+
+    //! Get the prototype for the parameter packet encode function
+    QString getParameterPacketEncodePrototype(const QString& spacing) const;
+
+    //! Get the prototype for the parameter packet encode function
+    QString getParameterPacketEncodeBody(void) const;
 
     //! Get the packet decode signature
-    QString getPacketDecodeSignature(bool insource) const;
+    QString getParameterPacketDecodeSignature(bool insource) const;
+
+    //! Get the prototype for the parameter packet decode function
+    QString getParameterPacketDecodePrototype(const QString& spacing) const;
+
+    //! Get the prototype for the parameter packet decode function
+    QString getParameterPacketDecodeBody(void) const;
 
     //! Get the packet encode comment
     QString getPacketEncodeBriefComment(void) const;

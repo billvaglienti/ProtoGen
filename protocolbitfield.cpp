@@ -1,5 +1,4 @@
 #include "protocolbitfield.h"
-#include "protocolstructuremodule.h"
 #include <QFile>
 
 void ProtocolBitfield::generatetest(ProtocolSupport support)

@@ -43,15 +43,46 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
 
 
 /*!
- * Generate the source and header files for protocol scaling
- * \return true if both files are generated
+ * Generate the source and header files for field coding
+ * \param fileNameList is appended with the names of the generated files
+ * \param filePathList is appended with the paths of the generated files
+ * \return true if both modules are generated
  */
-bool FieldCoding::generate(void)
+bool FieldCoding::generate(QStringList& fileNameList, QStringList& filePathList)
 {
-    if(generateEncodeHeader() && generateEncodeSource() && generateDecodeHeader() && generateDecodeSource())
-        return true;
+    if(generateEncodeHeader())
+    {
+        fileNameList.append(header.fileName());
+        filePathList.append(header.filePath());
+    }
     else
         return false;
+
+    if(generateEncodeSource())
+    {
+        fileNameList.append(source.fileName());
+        filePathList.append(source.filePath());
+    }
+    else
+        return false;
+
+    if(generateDecodeHeader())
+    {
+        fileNameList.append(header.fileName());
+        filePathList.append(header.filePath());
+    }
+    else
+        return false;
+
+    if(generateDecodeSource())
+    {
+        fileNameList.append(source.fileName());
+        filePathList.append(source.filePath());
+    }
+    else
+        return false;
+
+    return true;
 }
 
 

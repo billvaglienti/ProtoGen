@@ -24,7 +24,7 @@ public:
     bool isEmpty(void);
 
     //! Determine if the length is zero
-    bool isZeroLength(void);
+    bool isZeroLength(void) const;
 
     //! The minimum encoded length
     QString minEncodedLength;

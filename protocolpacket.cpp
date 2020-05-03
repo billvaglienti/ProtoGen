@@ -76,8 +76,11 @@ void ProtocolPacket::parse(void)
     // Get any documentation for this packet
     ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
 
-    // Me and all my children, which may themselves be structures
+    // Me and all my children, which may themselves be structures, notice we
+    // are not parsing ProtocolStructureModule. This class is basically a
+    // re-implementation of ProtocolStructureModule with different rules.
     ProtocolStructure::parse();
+
     QDomNamedNodeMap map = e.attributes();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
@@ -156,7 +159,6 @@ void ProtocolPacket::parse(void)
             parameterFunctions = true;
     }
 
-    const ProtocolStructureModule* redefines = NULL;
     if(!redefinename.isEmpty())
     {
         if(redefinename == name)
@@ -165,115 +167,28 @@ void ProtocolPacket::parse(void)
         {
             redefines = parser->lookUpStructure(support.prefix + redefinename + "_t");
             if(redefines == NULL)
+            {
+                redefinename.clear();
                 emitWarning("Could not find structure to redefine");
+            }
         }
 
         if(redefines != NULL)
             structName = support.prefix + redefinename + "_t";
     }
 
-    // Most of the file setup work, note that we do not declare a structure in
-    // the event that it has only one member and we are not doing structure
-    // interfaces to the encode/decode routines
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false, redefines);
+    // Most of the file setup work. This will also declare the structure if
+    // warranted (note the details of the structure declaration will reflect
+    // back to this class via virtual functions.
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
-    createSubStructureFunctions(redefines);
+    createSubStructureFunctions();
 
-    // For referencing this packet as a structure
-    if(useInOtherPackets)
-    {
-        // Note that this call will also handle the output of top level
-        // initialize, verify, and compare functions
-        createTopLevelStructureFunctions(redefines);
-    }
-    else
-    {
-        // If we are not outputting the top level structure, we need to
-        // explicitly output the initialize, verify, and comparison functions
-        if(hasInit() && (redefines == NULL))
-        {
-            verifyheaderfile->makeLineSeparator();
-            verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
-            verifyheaderfile->makeLineSeparator();
-
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(getSetToInitialValueFunctionString(false));
-            verifysourcefile->makeLineSeparator();
-        }
-
-        if(hasVerify() && (redefines == NULL))
-        {
-            verifyheaderfile->makeLineSeparator();
-            verifyheaderfile->write(getVerifyFunctionPrototype(false));
-            verifyheaderfile->makeLineSeparator();
-
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(getVerifyFunctionString(false));
-            verifysourcefile->makeLineSeparator();
-        }
-
-        if(compare)
-        {
-            if(redefines == NULL)
-            {
-                compareHeader.makeLineSeparator();
-                compareHeader.write(getComparisonFunctionPrototype(false));
-                compareHeader.makeLineSeparator();
-
-                compareSource.makeLineSeparator();
-                compareSource.write(getComparisonFunctionString(false));
-                compareSource.makeLineSeparator();
-            }
-
-            // Must have structure functions to do comparisons
-            structureFunctions = true;
-        }
-
-        if(print)
-        {
-            if(redefines == NULL)
-            {
-                printHeader.makeLineSeparator();
-                printHeader.write(getTextPrintFunctionPrototype(false));
-                printHeader.makeLineSeparator();
-                printHeader.write(getTextReadFunctionPrototype(false));
-                printHeader.makeLineSeparator();
-
-                printSource.makeLineSeparator();
-                printSource.write(getTextPrintFunctionString(false));
-                printSource.makeLineSeparator();
-                printSource.write(getTextReadFunctionString(false));
-                printSource.makeLineSeparator();
-            }
-
-            // Must have structure functions to do printing
-            structureFunctions = true;
-        }
-
-        if(mapEncode)
-        {
-            if (redefines == NULL)
-            {
-                mapHeader.makeLineSeparator();
-                mapHeader.write(getMapEncodeFunctionPrototype(false));
-                mapHeader.makeLineSeparator();
-                mapHeader.write(getMapDecodeFunctionPrototype(false));
-                mapHeader.makeLineSeparator();
-
-                mapSource.makeLineSeparator();
-                mapSource.write(getMapEncodeFunctionString(false));
-                mapSource.makeLineSeparator();
-                mapSource.write(getMapDecodeFunctionString(false));
-                mapSource.makeLineSeparator();
-            }
-
-            // Must have structure functions to do map encode/decode
-            structureFunctions = true;
-        }
-
-    }
+    // Note that this call will also handle the output of top level
+    // initialize, verify, and compare functions
+    createTopLevelStructureFunctions(useInOtherPackets);
 
     // The functions that encode and decode the packet from a structure.
     if(structureFunctions)
@@ -328,7 +243,7 @@ void ProtocolPacket::parse(void)
 
 
 /*!
- * Get the class declaration, for this packet only (not its children) for the C++ language
+ * Get the class declaration, for this structure only (not its children) for the C++ language
  * \return The string that gives the class declaration
  */
 QString ProtocolPacket::getClassDeclaration_CPP(void) const
@@ -344,86 +259,219 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
         output += " */\n";
     }
 
-    // The opening to the class.
-    output += "class " + typeName + "\n";
-    output += "{\n";
-
-    // All members of the structure are public.
-    output += "public:\n";
-
-    // Function prototypes, in C++ these are part of the class definition
-    output += "//! Construt a " + typeName + " class\n";
-    output += TAB_IN + typeName + "(void);\n";
-
-    if(parameterFunctions)
+    if(redefines == nullptr)
     {
-        if(encode)
+        // The opening to the class.
+        output += "class " + typeName + "\n";
+        output += "{\n";
+
+        // All members of the structure are public.
+        output += "public:\n";
+
+        // Function prototypes, in C++ these are part of the class definition.
+        // Notice that if we are not outputting structure functions, and this
+        // class won't be used by others, we will not have any data members and
+        // do not need a constructor.
+        if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
         {
-            // The prototype for the packet encode function
-            output += "\n";
-            output += TAB_IN + "//! " + getPacketEncodeBriefComment() + "\n";
-            output += TAB_IN + getPacketEncodeSignature(false) + ";\n";
+            ProtocolFile::makeLineSeparator(output);
+            output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
         }
 
-        if(decode)
+        // For use in other packets we need the ability to encode to a byte
+        // stream, which is what ProtocolStructure gives us
+        if(useInOtherPackets)
         {
-            // The prototype for the packet decode function
-            output += "\n";
-            output += TAB_IN + "//! " + getPacketDecodeBriefComment() + "\n";
-            output += TAB_IN + getPacketDecodeSignature(false) + ";\n";
-        }
-    }
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getEncodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
 
-    // If this packet is accessible to other packets then it needs structure formatted encode and decode routines
-    if(useInOtherPackets || structureFunctions)
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getDecodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
+        }
+
+        // The structure functions encode members of this class directly to/from packets
+        if(structureFunctions)
+        {
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getStructurePacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getStructurePacketDecodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+        }
+
+        // The parameter functions encode parameters to/from packets
+        if(parameterFunctions)
+        {
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getParameterPacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getParameterPacketDecodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+        }
+
+        // There are cool utility functions: verify, print, read, mapencde,
+        // mapdecode, and compare. All of these have forms that come from
+        // ProtocolStructure. In addition there are packet specific forms
+        // for the compare and print functions
+        if(useInOtherPackets || structureFunctions)
+        {
+            if(hasVerify())
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getVerifyFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(print)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getTextPrintFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getTextReadFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+
+                output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
+                output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(mapEncode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getMapEncodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getMapDecodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(compare)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getComparisonFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+
+                output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
+                output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
+                ProtocolFile::makeLineSeparator(output);
+            }
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+
+        if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
+        {
+            // Now declare the members of this class
+            for(int i = 0; i < encodables.length(); i++)
+                structure += encodables[i]->getDeclaration();
+
+            // Make classes pretty with alignment goodness
+            output += alignStructureData(structure);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+
+    }// if not redefining
+    else
     {
-        if(encode)
+        // In the context of C++ redefining means inheriting from a base class,
+        // and adding a new encode or decode function. All the other members and
+        // methods come from the base class
+
+        // The opening to the class.
+        output += "class " + typeName + "public: " + redefines->typeName + "\n";
+        output += "{\n";
+
+        // All members of the structure are public.
+        output += "public:\n";
+
+        // For use in other packets we need the ability to encode to a byte
+        // stream, which is what ProtocolStructure gives us
+        if(useInOtherPackets)
         {
-            // The prototype for the packet encode function
-            output += "\n";
-            output += TAB_IN + "//! " + getPacketEncodeBriefComment() + "\n";
-            output += TAB_IN + getStructurePacketEncodeSignature(false) + ";\n";
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getEncodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += ProtocolStructure::getDecodeFunctionPrototype(TAB_IN, false);
+                ProtocolFile::makeLineSeparator(output);
+            }
         }
 
-        if(decode)
+        // The structure functions encode members of this class directly to/from packets
+        if(structureFunctions)
         {
-            // The prototype for the packet decode function
-            output += "\n";
-            output += TAB_IN + "//! " + getPacketDecodeBriefComment() + "\n";
-            output += TAB_IN + getStructurePacketDecodeSignature(false) + ";\n";
-        }
-    }
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getStructurePacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
 
-    if(structureFunctions)
-    {
-        if(compare)
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getStructurePacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+        }
+
+        // The parameter functions encode parameters to/from packets
+        if(parameterFunctions)
         {
-            output += "\n";
-            output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
-            output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
+            if(encode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getParameterPacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
+
+            if(decode)
+            {
+                ProtocolFile::makeLineSeparator(output);
+                output += getParameterPacketEncodePrototype(TAB_IN);
+                ProtocolFile::makeLineSeparator(output);
+            }
         }
 
-        if(print)
-        {
-            output += "\n";
-            output += TAB_IN + "//! Generate a string that describes the contents of a " + support.prefix + name + " packet\n";
-            output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
-        }
-    }
-
-    // Now declare the members of this class
-    for(int i = 0; i < encodables.length(); i++)
-        structure += encodables[i]->getDeclaration();
-
-    // Make classes pretty with alignment goodness
-    output += alignStructureData(structure);
+    }// else if redefining another class
 
     // Close out the class
-    output += "};\n";
+    output += "}; // " + typeName + "\n";
 
     return output;
 
-}// ProtocolPacket::getClassDeclaration_CPP
+}// ProtocolStructure::getClassDeclaration_CPP
 
 
 /*!
@@ -482,7 +530,6 @@ void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
  */
 void ProtocolPacket::createStructurePacketFunctions(void)
 {
-    int numEncodes = getNumberOfEncodeParameters();
     int numDecodes = getNumberOfDecodeParameters();
 
     // The prototypes in the header file are only needed for C,
@@ -493,16 +540,14 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             // The prototype for the structure packet encode function
             header.makeLineSeparator();
-            header.write("//! " + getPacketEncodeBriefComment() + "\n");
-            header.write(getStructurePacketEncodeSignature(false) + ";\n");
+            header.write(getStructurePacketEncodePrototype(QString()));
         }
 
         if(decode)
         {
             // The prototype for the structure packet decode function
             header.makeLineSeparator();
-            header.write("//! " + getPacketDecodeBriefComment() + "\n");
-            header.write(getStructurePacketDecodeSignature(false) + ";\n");
+            header.write(getStructurePacketDecodePrototype(QString()));
         }
 
         if(compare)
@@ -527,209 +572,14 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         // The source function for the encode function
         source.makeLineSeparator();
-        source.write("/*!\n");
-        source.write(" * \\brief " + getPacketEncodeBriefComment() + "\n");
-        source.write(" *\n");
-        source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-        source.write(" * \\param _pg_pkt points to the packet which will be created by this function\n");
-
-        if((numEncodes > 0) && (support.language == ProtocolSupport::c_language))
-            source.write(" * \\param _pg_user points to the user data that will be encoded in _pg_pkt\n");
-        if(ids.count() > 1)
-            source.write(" * \\param _pg_id is the packet identifier for _pg_pkt\n");
-
-        source.write(" */\n");
-        source.write(getStructurePacketEncodeSignature(true) + "\n");
-        source.write("{\n");
-
-        if(getNumberOfEncodes() > 0)
-            source.write(TAB_IN + "uint8_t* _pg_data = get" + support.protoName + "PacketData(_pg_pkt);\n");
-
-        source.write(TAB_IN + "int _pg_byteindex = 0;\n");
-
-        if(usestempencodebitfields)
-            source.write(TAB_IN + "unsigned int _pg_tempbitfield = 0;\n");
-
-        if(usestempencodelongbitfields)
-            source.write(TAB_IN + "uint64_t _pg_templongbitfield = 0;\n");
-
-        if(numbitfieldgroupbytes > 0)
-        {
-            source.write(TAB_IN + "int _pg_bitfieldindex = 0;\n");
-            source.write(TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
-        }
-
-        if(needsEncodeIterator)
-            source.write(TAB_IN + "unsigned _pg_i = 0;\n");
-
-        if(needs2ndEncodeIterator)
-            source.write(TAB_IN + "unsigned _pg_j = 0;\n");
-
-        int bitcount = 0;
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            source.makeLineSeparator();
-            source.write(encodables[i]->getEncodeString(support.bigendian, &bitcount, true));
-        }
-
-        source.makeLineSeparator();
-        source.write(TAB_IN + "// complete the process of creating the packet\n");
-
-        if(ids.count() <= 1)
-            source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
-        else
-            source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n");
-
-        source.write("}\n");
+        source.write(getStructurePacketEncodeBody());
     }
 
     if(decode)
     {
-        // Check if there is anything that is encoded, if not, we use a different form of the function
-        if(getNumberOfEncodes() > 0)
-        {
-            // The source function for the decode function. The decode function is
-            // much more complex because we support default fields here
-            source.makeLineSeparator();
-            source.write("/*!\n");
-            source.write(" * \\brief " + getPacketDecodeBriefComment() + "\n");
-            source.write(" *\n");
-            source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-            source.write(" * \\param _pg_pkt points to the packet being decoded by this function\n");
-            if((numDecodes > 0) && (support.language == ProtocolSupport::c_language))
-                source.write(" * \\param _pg_user receives the data decoded from the packet\n");
-            source.write(" * \\return " + getReturnCode(false) + " is returned if the packet ID or size is wrong, else " + getReturnCode(true) + "\n");
-            source.write(" */\n");
-            source.write(getStructurePacketDecodeSignature(true) + "\n");
-            source.write("{\n");
-            source.write(TAB_IN + "int _pg_numbytes;\n");
-            source.write(TAB_IN + "int _pg_byteindex = 0;\n");
-            source.write(TAB_IN + "const uint8_t* _pg_data;\n");
-
-            if(usestempdecodebitfields)
-                source.write(TAB_IN + "unsigned int _pg_tempbitfield = 0;\n");
-
-            if(usestempdecodelongbitfields)
-                source.write(TAB_IN + "uint64_t _pg_templongbitfield = 0;\n");
-
-            if(numbitfieldgroupbytes > 0)
-            {
-                source.write(TAB_IN + "int _pg_bitfieldindex = 0;\n");
-                source.write(TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
-            }
-
-            if(needsDecodeIterator)
-                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
-            if(needs2ndDecodeIterator)
-                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
-            source.write("\n");
-
-            if(ids.count() <= 1)
-            {
-                source.write(TAB_IN + "// Verify the packet identifier\n");
-                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
-            }
-            else
-            {
-                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
-                source.write(TAB_IN + "uint32_t _pg_packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n");
-                source.write(TAB_IN + "if( _pg_packetid != " + ids.at(0));
-                for(int i = 1; i < ids.count(); i++)
-                    source.write(" &&\n" + TAB_IN + TAB_IN + "_pg_packetid != " + ids.at(i));
-                source.write(" )\n");
-            }
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-
-            source.write("\n");
-            source.write(TAB_IN + "// Verify the packet size\n");
-            source.write(TAB_IN + "_pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n");
-            source.write(TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n");
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-            source.write("\n");
-            source.write(TAB_IN + "// The raw data from the packet\n");
-            source.write(TAB_IN + "_pg_data = get" + support.protoName + "PacketDataConst(_pg_pkt);\n");
-            source.makeLineSeparator();
-            if(defaults)
-            {
-                source.write(TAB_IN + "// this packet has default fields, make sure they are set\n");
-
-                for(int i = 0; i < encodables.size(); i++)
-                    source.write(encodables[i]->getSetToDefaultsString(true));
-
-            }// if defaults are used in this packet
-
-            source.makeLineSeparator();
-
-            // Keep our own track of the bitcount so we know what to do when we close the bitfield
-            int bitcount = 0;
-            int i;
-            for(i = 0; i < encodables.length(); i++)
-            {
-                source.makeLineSeparator();
-
-                // Encode just the nondefaults here
-                if(encodables[i]->isDefault())
-                    break;
-
-                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true));
-            }
-
-            // Before we write out the decodes for default fields we need to check
-            // packet size in the event that we were using variable length arrays
-            // or dependent fields
-            if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
-            {
-                source.makeLineSeparator();
-                source.write(TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n");
-                source.write(TAB_IN + "if(_pg_numbytes < _pg_byteindex)\n");
-                source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-            }
-
-            // Now finish the fields (if any defaults)
-            for(; i < encodables.length(); i++)
-            {
-                source.makeLineSeparator();
-                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true));
-            }
-
-            source.makeLineSeparator();
-            source.write(TAB_IN + "return " + getReturnCode(true) + ";\n");
-            source.write("}\n");
-
-        }// if fields to decode
-        else
-        {
-            source.makeLineSeparator();
-            source.write("/*!\n");
-            source.write(" * \\brief " + getPacketDecodeBriefComment() + "\n");
-            source.write(" *\n");
-            source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-            source.write(" * \\param _pg_pkt points to the packet being decoded by this function\n");
-            source.write(" * \\return " + getReturnCode(false) + " is returned if the packet ID is wrong, else " + getReturnCode(true) + "\n");
-            source.write(" */\n");
-            source.write(getStructurePacketDecodeSignature(true) + "\n");
-            source.write("{\n");
-            if(ids.count() <= 1)
-            {
-                source.write(TAB_IN + "// Verify the packet identifier\n");
-                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
-            }
-            else
-            {
-                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
-                source.write(TAB_IN + "uint32_t _pg_packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n");
-                source.write(TAB_IN + "if( _pg_packetid != " + ids.at(0));
-                for(int i = 1; i < ids.count(); i++)
-                    source.write(" &&\n" + TAB_IN + TAB_IN + "_pg_packetid != " + ids.at(i));
-                source.write(" )\n");
-            }
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-            source.write(TAB_IN + "else\n");
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n");
-            source.write("}\n");
-
-        }// else if no fields to decode
-
+        // The source function for the decode function
+        source.makeLineSeparator();
+        source.write(getStructurePacketDecodeBody());
     }// if decode function enabled
 
     if(compare)
@@ -812,7 +662,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(support.language == ProtocolSupport::c_language)
                 compareSource.write(TAB_IN + "_pg_report += compare" + structName + "(_pg_prename, &_pg_struct1, &_pg_struct2);\n");
             else
-                compareSource.write(TAB_IN + "_pg_report += " + structName + "::compare(_pg_prename, &_pg_struct1, &_pg_struct2);\n");
+                compareSource.write(TAB_IN + "_pg_report += _pg_struct1.compare(_pg_prename, &_pg_struct2);\n");
         }
 
         compareSource.makeLineSeparator();
@@ -822,7 +672,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         if(support.language == ProtocolSupport::c_language)
             compareSource.write("}// compare" + support.prefix + name + support.packetParameterSuffix + "\n");
         else
-            compareSource.write("}// " + structName + "::compare\n");
+            compareSource.write("}// " + typeName + "::compare\n");
 
     }// if we need to generate compare functions
 
@@ -950,7 +800,7 @@ QString ProtocolPacket::getStructurePacketEncodeSignature(bool insource) const
         if(!insource && (numEncodes <= 0))
             output += "static ";
 
-        output += "void";
+        output += "void ";
 
         // In the source the function needs the class scope
         if(insource)
@@ -970,6 +820,96 @@ QString ProtocolPacket::getStructurePacketEncodeSignature(bool insource) const
     return output;
 
 }// ProtocolPacket::getStructurePacketEncodeSignature
+
+
+/*!
+ * Get the prototype for the structure packet encode function
+ * \param spacing is the offset for each line
+ * \return the prototype including semicolon and line fees
+ */
+QString ProtocolPacket::getStructurePacketEncodePrototype(const QString& spacing) const
+{
+    QString output;
+
+    if(!encode)
+        return output;
+
+    output += spacing + "//! " + getPacketEncodeBriefComment() + "\n";
+    output += spacing + getStructurePacketEncodeSignature(false) + ";\n";;
+
+    return output;
+}
+
+
+/*!
+ * Get the body for the structure packet encode function
+ * \return The body of the function that encodes this packet from a structure or class.
+ */
+QString ProtocolPacket::getStructurePacketEncodeBody(void) const
+{
+    QString output;
+
+    if(!encode)
+        return output;
+
+    int numEncodes = getNumberOfEncodeParameters();
+
+    // The source function for the encode function
+    output += "/*!\n";
+    output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
+    output += " *\n";
+    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += " * \\param _pg_pkt points to the packet which will be created by this function\n";
+    if((numEncodes > 0) && (support.language == ProtocolSupport::c_language))
+        output += " * \\param _pg_user points to the user data that will be encoded in _pg_pkt\n";
+    if(ids.count() > 1)
+        output += " * \\param _pg_id is the packet identifier for _pg_pkt\n";
+    output += " */\n";
+    output += getStructurePacketEncodeSignature(true) + "\n";
+    output += "{\n";
+
+    if(getNumberOfEncodes() > 0)
+        output += TAB_IN + "uint8_t* _pg_data = get" + support.protoName + "PacketData(_pg_pkt);\n";
+
+    output += TAB_IN + "int _pg_byteindex = 0;\n";
+
+    if(usestempencodebitfields)
+        output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
+
+    if(usestempencodelongbitfields)
+        output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
+
+    if(numbitfieldgroupbytes > 0)
+    {
+        output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+    }
+
+    if(needsEncodeIterator)
+        output += TAB_IN + "unsigned _pg_i = 0;\n";
+
+    if(needs2ndEncodeIterator)
+        output += TAB_IN + "unsigned _pg_j = 0;\n";
+
+    int bitcount = 0;
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        output += "\n";
+        output += encodables[i]->getEncodeString(support.bigendian, &bitcount, true);
+    }
+
+    output += TAB_IN + "// complete the process of creating the packet\n";
+
+    if(ids.count() <= 1)
+        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
+    else
+        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n";
+
+    output += "}\n";
+
+    return output;
+
+}// ProtocolPacket::getStructurePacketEncodeBody
 
 
 /*!
@@ -1021,6 +961,181 @@ QString ProtocolPacket::getStructurePacketDecodeSignature(bool insource) const
 
 
 /*!
+ * Get the prototype for the structure packet decode function
+ * \param spacing is the offset for each line
+ * \return the prototype including semicolon and line fees
+ */
+QString ProtocolPacket::getStructurePacketDecodePrototype(const QString& spacing) const
+{
+    QString output;
+
+    if(!encode)
+        return output;
+
+    output += spacing + "//! " + getPacketDecodeBriefComment() + "\n";
+    output += spacing + getStructurePacketDecodeSignature(false) + ";\n";;
+
+    return output;
+}
+
+
+/*!
+ * Get the body for the structure packet decode function
+ * \return The body of the function that decodes this packet from a structure or class.
+ */
+QString ProtocolPacket::getStructurePacketDecodeBody(void) const
+{
+    QString output;
+
+    if(!decode)
+        return output;
+
+    // Check if there is anything that is encoded, if not, we use a different form of the function
+    if(getNumberOfEncodes() > 0)
+    {
+        output += "/*!\n";
+        output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
+        output += " *\n";
+        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
+        if((getNumberOfDecodeParameters() > 0) && (support.language == ProtocolSupport::c_language))
+            output += " * \\param _pg_user receives the data decoded from the packet\n";
+        output += " * \\return " + getReturnCode(false) + " is returned if the packet ID or size is wrong, else " + getReturnCode(true) + "\n";
+        output += " */\n";
+        output += getStructurePacketDecodeSignature(true) + "\n";
+        output += "{\n";
+        output += TAB_IN + "int _pg_numbytes;\n";
+        output += TAB_IN + "int _pg_byteindex = 0;\n";
+        output += TAB_IN + "const uint8_t* _pg_data;\n";
+
+        if(usestempdecodebitfields)
+            output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
+
+        if(usestempdecodelongbitfields)
+            output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
+
+        if(numbitfieldgroupbytes > 0)
+        {
+            output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+            output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        }
+
+        if(needsDecodeIterator)
+            output += TAB_IN + "unsigned _pg_i = 0;\n";
+        if(needs2ndDecodeIterator)
+            output += TAB_IN + "unsigned _pg_j = 0;\n";
+        output += "\n";
+
+        if(ids.count() <= 1)
+        {
+            output += TAB_IN + "// Verify the packet identifier\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+        }
+        else
+        {
+            output += TAB_IN + "// Verify the packet identifier, multiple options exist\n";
+            output += TAB_IN + "uint32_t _pg_packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n";
+            output += TAB_IN + "if( _pg_packetid != " + ids.at(0);
+            for(int i = 1; i < ids.count(); i++)
+                output += " &&\n" + TAB_IN + TAB_IN + "_pg_packetid != " + ids.at(i);
+            output += " )\n";
+        }
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        output += "\n";
+        output += TAB_IN + "// Verify the packet size\n";
+        output += TAB_IN + "_pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n";
+        output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        output += "\n";
+        output += TAB_IN + "// The raw data from the packet\n";
+        output += TAB_IN + "_pg_data = get" + support.protoName + "PacketDataConst(_pg_pkt);\n";
+        output += "\n";
+        if(defaults)
+        {
+            output += TAB_IN + "// this packet has default fields, make sure they are set\n";
+
+            for(int i = 0; i < encodables.size(); i++)
+                output += encodables[i]->getSetToDefaultsString(true);
+
+        }// if defaults are used in this packet
+
+        ProtocolFile::makeLineSeparator(output);
+
+        // Keep our own track of the bitcount so we know what to do when we close the bitfield
+        int bitcount = 0;
+        int i;
+        for(i = 0; i < encodables.length(); i++)
+        {
+            ProtocolFile::makeLineSeparator(output);
+
+            // Encode just the nondefaults here
+            if(encodables[i]->isDefault())
+                break;
+
+            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true);
+        }
+
+        // Before we write out the decodes for default fields we need to check
+        // packet size in the event that we were using variable length arrays
+        // or dependent fields
+        if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n";
+            output += TAB_IN + "if(_pg_numbytes < _pg_byteindex)\n";
+            output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        }
+
+        // Now finish the fields (if any defaults)
+        for(; i < encodables.length(); i++)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+        output += TAB_IN + "return " + getReturnCode(true) + ";\n";
+        output += "}\n";
+
+    }// if fields to decode
+    else
+    {
+        output += "/*!\n";
+        output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
+        output += " *\n";
+        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
+        output += " * \\return " + getReturnCode(false) + " is returned if the packet ID is wrong, else " + getReturnCode(true) + "\n";
+        output += " */\n";
+        output += getStructurePacketDecodeSignature(true) + "\n";
+        output += "{\n";
+        if(ids.count() <= 1)
+        {
+            output += TAB_IN + "// Verify the packet identifier\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+        }
+        else
+        {
+            output += TAB_IN + "// Verify the packet identifier, multiple options exist\n";
+            output += TAB_IN + "uint32_t _pg_packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n";
+            output += TAB_IN + "if( _pg_packetid != " + ids.at(0);
+            for(int i = 1; i < ids.count(); i++)
+                output += " &&\n" + TAB_IN + TAB_IN + "_pg_packetid != " + ids.at(i);
+            output += " )\n";
+        }
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        output += TAB_IN + "else\n";
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n";
+        output += "}\n";
+
+    }// else if no fields to decode
+
+    return output;
+
+}// ProtocolPacket::getStructurePacketDecodeBody
+
+
+/*!
  * Create the functions for encoding and decoding the packet to/from parameters
  */
 void ProtocolPacket::createPacketFunctions(void)
@@ -1033,220 +1148,27 @@ void ProtocolPacket::createPacketFunctions(void)
         {
             // The prototype for the packet encode function
             header.makeLineSeparator();
-            header.write("//! " + getPacketEncodeBriefComment() + "\n");
-            header.write(getPacketEncodeSignature(false) + ";\n");
+            header.write(getParameterPacketEncodePrototype(QString()));
         }
 
         if(decode)
         {
             // The prototype for the packet decode function
             header.makeLineSeparator();
-            header.write("//! " + getPacketDecodeBriefComment() + "\n");
-            header.write(getPacketDecodeSignature(false) + ";\n");
+            header.write(getParameterPacketDecodePrototype(QString()));
         }
     }
-
-    int i;
-    int bitcount = 0;
 
     if(encode)
     {
         source.makeLineSeparator();
-        source.write("/*!\n");
-        source.write(" * \\brief " + getPacketEncodeBriefComment() + "\n");
-        source.write(" *\n");
-        source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-        source.write(" * \\param _pg_pkt points to the packet which will be created by this function\n");
-        for(i = 0; i < encodables.length(); i++)
-            source.write(encodables.at(i)->getEncodeParameterComment());
-
-        if(ids.count() > 1)
-            source.write(" * \\param id is the packet identifier for _pg_pkt\n");
-
-        source.write(" */\n");
-        source.write(getPacketEncodeSignature(true) + "\n");
-        source.write("{\n");
-
-        if(!encodedLength.isZeroLength())
-        {
-            source.write(TAB_IN + "uint8_t* _pg_data = get"+ support.protoName + "PacketData(_pg_pkt);\n");
-            source.write(TAB_IN + "int _pg_byteindex = 0;\n");
-
-            if(usestempencodebitfields)
-                source.write(TAB_IN + "unsigned int _pg_tempbitfield = 0;\n");
-
-            if(usestempencodelongbitfields)
-                source.write(TAB_IN + "uint64_t _pg_templongbitfield = 0;\n");
-
-            if(numbitfieldgroupbytes > 0)
-            {
-                source.write(TAB_IN + "int _pg_bitfieldindex = 0;\n");
-                source.write(TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
-            }
-
-            if(needsEncodeIterator)
-                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
-
-            if(needs2ndEncodeIterator)
-                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
-
-            // Keep our own track of the bitcount so we know what to do when we close the bitfield
-            for(i = 0; i < encodables.length(); i++)
-            {
-                source.makeLineSeparator();
-                source.write(encodables[i]->getEncodeString(support.bigendian, &bitcount, false));
-            }
-
-            source.makeLineSeparator();
-            source.write(TAB_IN + "// complete the process of creating the packet\n");
-            if(ids.count() <= 1)
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
-            else
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n");
-        }
-        else
-        {
-            source.write(TAB_IN + "// Zero length packet, no data encoded\n");
-            if(ids.count() <= 1)
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n");
-            else
-                source.write(TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, _pg_id);\n");
-        }
-
-        source.write("}\n");
+        source.write(getParameterPacketEncodeBody());
     }
 
     if(decode)
     {
-        // Now the decode function
-        source.write("\n");
-        source.write("/*!\n");
-        source.write(" * \\brief " + getPacketDecodeBriefComment() + "\n");
-        source.write(" *\n");
-        source.write(ProtocolParser::outputLongComment(" *", comment) + "\n");
-        source.write(" * \\param _pg_pkt points to the packet being decoded by this function\n");
-        for(i = 0; i < encodables.length(); i++)
-            source.write(encodables.at(i)->getDecodeParameterComment());
-
-        if(support.language == ProtocolSupport::c_language)
-            source.write(" * \\return 0 is returned if the packet ID or size is wrong, else 1\n");
-        else
-            source.write(" * \\return false is returned if the packet ID or size is wrong, else true\n");
-
-        source.write(" */\n");
-        source.write(getPacketDecodeSignature(true) + "\n");
-        source.write("{\n");
-
-        if(!encodedLength.isZeroLength())
-        {
-            if(usestempdecodebitfields)
-                source.write(TAB_IN + "unsigned int _pg_tempbitfield = 0;\n");
-
-            if(usestempdecodelongbitfields)
-                source.write(TAB_IN + "uint64_t _pg_templongbitfield = 0;\n");
-
-            if(numbitfieldgroupbytes > 0)
-            {
-                source.write(TAB_IN + "int _pg_bitfieldindex = 0;\n");
-                source.write(TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n");
-            }
-
-            if(needsDecodeIterator)
-                source.write(TAB_IN + "unsigned _pg_i = 0;\n");
-            if(needs2ndDecodeIterator)
-                source.write(TAB_IN + "unsigned _pg_j = 0;\n");
-            source.write(TAB_IN + "int _pg_byteindex = 0;\n");
-            source.write(TAB_IN + "const uint8_t* _pg_data = get" + support.protoName + "PacketDataConst(_pg_pkt);\n");
-            source.write(TAB_IN + "int _pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n");
-            source.write("\n");
-
-            if(ids.count() <= 1)
-            {
-                source.write(TAB_IN + "// Verify the packet identifier\n");
-                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
-            }
-            else
-            {
-                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
-                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n");
-                source.write(TAB_IN + "if( packetid != " + ids.at(0));
-                for(int i = 1; i < ids.count(); i++)
-                    source.write(" &&\n        packetid != " + ids.at(i));
-                source.write(" )\n");
-            }
-            source.write(TAB_IN + TAB_IN + "return 0;\n");
-
-            source.write("\n");
-            source.write(TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n");
-            source.write(TAB_IN + TAB_IN + "return 0;\n");
-            if(defaults)
-            {
-                source.write("\n");
-                source.write(TAB_IN + "// this packet has default fields, make sure they are set\n");
-
-                for(int i = 0; i < encodables.size(); i++)
-                    source.write(encodables[i]->getSetToDefaultsString(false));
-
-            }// if defaults are used in this packet
-
-            // Keep our own track of the bitcount so we know what to do when we close the bitfield
-            bitcount = 0;
-            for(i = 0; i < encodables.length(); i++)
-            {
-                source.makeLineSeparator();
-
-                // Encode just the nondefaults here
-                if(encodables[i]->isDefault())
-                    break;
-
-                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true));
-            }
-
-            // Before we write out the decodes for default fields we need to check
-            // packet size in the event that we were using variable length arrays
-            // or dependent fields
-            if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
-            {
-                source.makeLineSeparator();
-                source.write(TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n");
-                source.write(TAB_IN + "if(_pg_numbytes < _pg_byteindex)\n");
-                source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-            }
-
-            // Now finish the fields (if any defaults)
-            for(; i < encodables.length(); i++)
-            {
-                source.makeLineSeparator();
-                source.write(encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true));
-            }
-
-            source.makeLineSeparator();
-            source.write(TAB_IN + "return 1;\n");
-
-        }// if some fields to decode
-        else
-        {
-            if(ids.count() <= 1)
-            {
-                source.write(TAB_IN + "// Verify the packet identifier\n");
-                source.write(TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
-            }
-            else
-            {
-                source.write(TAB_IN + "// Verify the packet identifier, multiple options exist\n");
-                source.write(TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n");
-                source.write(TAB_IN + "if( packetid != " + ids.at(0));
-                for(int i = 1; i < ids.count(); i++)
-                    source.write(" &&\n        packetid != " + ids.at(i));
-                source.write(" )\n");
-            }
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n");
-            source.write(TAB_IN + "else\n");
-            source.write(TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n");
-
-        }// If no fields to decode
-
-        source.write("}\n");
+        source.makeLineSeparator();
+        source.write(getParameterPacketDecodeBody());
 
     }// if decode function enabled
 
@@ -1261,7 +1183,7 @@ void ProtocolPacket::createPacketFunctions(void)
  *        used as well as c++ access specifiers.
  * \return the encode signature
  */
-QString ProtocolPacket::getPacketEncodeSignature(bool insource) const
+QString ProtocolPacket::getParameterPacketEncodeSignature(bool insource) const
 {
     QString output;
     QString pg;
@@ -1300,6 +1222,104 @@ QString ProtocolPacket::getPacketEncodeSignature(bool insource) const
 
 
 /*!
+ * Get the prototype for the parameter packet encode function
+ * \param spacing is the offset for each line
+ * \return the prototype including semicolon and line fees
+ */
+QString ProtocolPacket::getParameterPacketEncodePrototype(const QString& spacing) const
+{
+    QString output;
+
+    if(!encode)
+        return output;
+
+    output += spacing + "//! " + getDataEncodeBriefComment() + "\n";
+    output += spacing + getParameterPacketEncodeSignature(false) + ";\n";
+
+    return output;
+}
+
+
+//! Get the prototype for the parameter packet encode function
+QString ProtocolPacket::getParameterPacketEncodeBody(void) const
+{
+    QString output;
+
+    int i;
+    int bitcount = 0;
+
+    if(!encode)
+        return output;
+
+    output += "/*!\n";
+    output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
+    output += " *\n";
+    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += " * \\param _pg_pkt points to the packet which will be created by this function\n";
+    for(i = 0; i < encodables.length(); i++)
+        output += encodables.at(i)->getEncodeParameterComment();
+
+    if(ids.count() > 1)
+        output += " * \\param id is the packet identifier for _pg_pkt\n";
+
+    output += " */\n";
+    output += getParameterPacketEncodeSignature(true) + "\n";
+    output += "{\n";
+
+    if(!encodedLength.isZeroLength())
+    {
+        output += TAB_IN + "uint8_t* _pg_data = get"+ support.protoName + "PacketData(_pg_pkt);\n";
+        output += TAB_IN + "int _pg_byteindex = 0;\n";
+
+        if(usestempencodebitfields)
+            output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
+
+        if(usestempencodelongbitfields)
+            output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
+
+        if(numbitfieldgroupbytes > 0)
+        {
+            output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+            output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        }
+
+        if(needsEncodeIterator)
+            output += TAB_IN + "unsigned _pg_i = 0;\n";
+
+        if(needs2ndEncodeIterator)
+            output += TAB_IN + "unsigned _pg_j = 0;\n";
+
+        // Keep our own track of the bitcount so we know what to do when we close the bitfield
+        for(i = 0; i < encodables.length(); i++)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables[i]->getEncodeString(support.bigendian, &bitcount, false);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+        output += TAB_IN + "// complete the process of creating the packet\n";
+        if(ids.count() <= 1)
+            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
+        else
+            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n";
+    }
+    else
+    {
+        output += TAB_IN + "// Zero length packet, no data encoded\n";
+        if(ids.count() <= 1)
+            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
+        else
+            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, _pg_id;)\n";
+    }
+
+    output += "}\n";
+
+    return output;
+
+}// ProtocolPacket::getParameterPacketEncodeBody
+
+
+/*!
  * Get the signature of the packet decode function, without semicolon or
  * comments or line feed, for the prototype or actual function.
  * \param insource should be true to indicate this signature is in source code
@@ -1307,7 +1327,7 @@ QString ProtocolPacket::getPacketEncodeSignature(bool insource) const
  *        used as well as c++ access specifiers.
  * \return the decode signature
  */
-QString ProtocolPacket::getPacketDecodeSignature(bool insource) const
+QString ProtocolPacket::getParameterPacketDecodeSignature(bool insource) const
 {
     QString output;
     QString pg;
@@ -1337,7 +1357,171 @@ QString ProtocolPacket::getPacketDecodeSignature(bool insource) const
     output += getDataDecodeParameterList() + ")";
 
     return output;
+
+}// ProtocolPacket::getParameterPacketDecodeSignature
+
+
+/*!
+ * Get the prototype for the parameter packet decode function
+ * \param spacing is the offset for each line
+ * \return the prototype including semicolon and line fees
+ */
+QString ProtocolPacket::getParameterPacketDecodePrototype(const QString& spacing) const
+{
+    QString output;
+
+    if(!decode)
+        return output;
+
+    output += spacing + "//! " + getDataDecodeBriefComment() + "\n";
+    output += spacing + getParameterPacketDecodeSignature(false) + ";\n";
+
+    return output;
 }
+
+
+//! Get the prototype for the parameter packet decode function
+QString ProtocolPacket::getParameterPacketDecodeBody(void) const
+{
+    QString output;
+
+    int i;
+    int bitcount = 0;
+
+    if(!decode)
+        return output;
+
+    output += "/*!\n";
+    output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
+    output += " *\n";
+    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
+    for(i = 0; i < encodables.length(); i++)
+        output += encodables.at(i)->getDecodeParameterComment();
+
+    if(support.language == ProtocolSupport::c_language)
+        output += " * \\return 0 is returned if the packet ID or size is wrong, else 1\n";
+    else
+        output += " * \\return false is returned if the packet ID or size is wrong, else true\n";
+
+    output += " */\n";
+    output += getParameterPacketDecodeSignature(true) + "\n";
+    output += "{\n";
+
+    if(!encodedLength.isZeroLength())
+    {
+        if(usestempdecodebitfields)
+            output += TAB_IN + "unsigned int _pg_tempbitfield = 0;\n";
+
+        if(usestempdecodelongbitfields)
+            output += TAB_IN + "uint64_t _pg_templongbitfield = 0;\n";
+
+        if(numbitfieldgroupbytes > 0)
+        {
+            output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
+            output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        }
+
+        if(needsDecodeIterator)
+            output += TAB_IN + "unsigned _pg_i = 0;\n";
+        if(needs2ndDecodeIterator)
+            output += TAB_IN + "unsigned _pg_j = 0;\n";
+        output += TAB_IN + "int _pg_byteindex = 0;\n";
+        output += TAB_IN + "const uint8_t* _pg_data = get" + support.protoName + "PacketDataConst(_pg_pkt);\n";
+        output += TAB_IN + "int _pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n";
+        output += "\n";
+
+        if(ids.count() <= 1)
+        {
+            output += TAB_IN + "// Verify the packet identifier\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+        }
+        else
+        {
+            output += TAB_IN + "// Verify the packet identifier, multiple options exist\n";
+            output += TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n";
+            output += TAB_IN + "if( packetid != " + ids.at(0);
+            for(int i = 1; i < ids.count(); i++)
+                output += " &&\n        packetid != " + ids.at(i);
+            output += " )\n";
+        }
+        output += TAB_IN + TAB_IN + "return 0;\n";
+
+        output += "\n";
+        output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        output += TAB_IN + TAB_IN + "return 0;\n";
+        if(defaults)
+        {
+            output += "\n";
+            output += TAB_IN + "// this packet has default fields, make sure they are set\n";
+
+            for(int i = 0; i < encodables.size(); i++)
+                output += encodables[i]->getSetToDefaultsString(false);
+
+        }// if defaults are used in this packet
+
+        // Keep our own track of the bitcount so we know what to do when we close the bitfield
+        bitcount = 0;
+        for(i = 0; i < encodables.length(); i++)
+        {
+            ProtocolFile::makeLineSeparator(output);
+
+            // Encode just the nondefaults here
+            if(encodables[i]->isDefault())
+                break;
+
+            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true);
+        }
+
+        // Before we write out the decodes for default fields we need to check
+        // packet size in the event that we were using variable length arrays
+        // or dependent fields
+        if((encodedLength.minEncodedLength != encodedLength.nonDefaultEncodedLength) && (i > 0))
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += TAB_IN + "// Used variable length arrays or dependent fields, check actual length\n";
+            output += TAB_IN + "if(_pg_numbytes < _pg_byteindex)\n";
+            output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        }
+
+        // Now finish the fields (if any defaults)
+        for(; i < encodables.length(); i++)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
+        output += TAB_IN + "return 1;\n";
+
+    }// if some fields to decode
+    else
+    {
+        if(ids.count() <= 1)
+        {
+            output += TAB_IN + "// Verify the packet identifier\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+        }
+        else
+        {
+            output += TAB_IN + "// Verify the packet identifier, multiple options exist\n";
+            output += TAB_IN + "uint32_t packetid = get"+ support.protoName + "PacketID(_pg_pkt);\n";
+            output += TAB_IN + "if( packetid != " + ids.at(0);
+            for(int i = 1; i < ids.count(); i++)
+                output += " &&\n        packetid != " + ids.at(i);
+            output += " )\n";
+        }
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
+        output += TAB_IN + "else\n";
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n";
+
+    }// If no fields to decode
+
+    output += "}\n";
+
+    return output;
+
+}// ProtocolPacket::getParameterPacketDecodeBody
 
 
 /*!

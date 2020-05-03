@@ -2373,11 +2373,10 @@ bool ProtocolField::hasInit(void) const
 
 
 /*!
- * Get the string used for verifying this field. If there is no verification data the string will be empty
- * \param isStructureMember should be true if this member is referenced by structure
+ * Get the string used for verifying this field. If there is no verification data the string will be empty.
  * \return the string used for verifying this field, which may be blank
  */
-QString ProtocolField::getVerifyString(bool isStructureMember) const
+QString ProtocolField::getVerifyString(void) const
 {
     if(!hasVerify())
         return QString();
@@ -2394,11 +2393,11 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
     if(!comment.isEmpty())
         output += spacing + "// " + comment + "\n";
 
-    output += getEncodeArrayIterationCode(spacing, isStructureMember);
+    output += getEncodeArrayIterationCode(spacing, true);
 
     if(inMemoryType.isStruct)
     {
-        if(isStructureMember && (support.language == ProtocolSupport::c_language))
+        if(support.language == ProtocolSupport::c_language)
             access = "&_pg_user->" + name;
         else
             access = name;  // in this case, name is already pointer, so we don't need "&"
@@ -2408,12 +2407,7 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
             arrayspacing += TAB_IN;
 
             if(support.language == ProtocolSupport::c_language)
-            {
-                if(isStructureMember)
-                    access = "&_pg_user->" + name + "[_pg_i]";
-                else
-                    access = "&" + name + "[_pg_i]";
-            }
+                access = "&_pg_user->" + name + "[_pg_i]";
             else
                 access = name + "[_pg_i]";
 
@@ -2444,16 +2438,16 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
         if(support.language == ProtocolSupport::c_language)
             failedvalue = "0";
 
-        if(isStructureMember && (support.language == ProtocolSupport::c_language))
+        if(support.language == ProtocolSupport::c_language)
             access = "_pg_user->" + name;
         else
-            access = "*" + name;
+            access = name;
 
         if(isArray())
         {
             arrayspacing += TAB_IN;
 
-            if(isStructureMember && (support.language == ProtocolSupport::c_language))
+            if(support.language == ProtocolSupport::c_language)
                 access = "_pg_user->" + name + "[_pg_i]";
             else
                 access = name + "[_pg_i]";
@@ -2496,11 +2490,10 @@ QString ProtocolField::getVerifyString(bool isStructureMember) const
 
 
 /*!
-* Get the string used for coparing this field.
-* \param isStructureMember should be true to indicate this field is accessed as a member structure
+* Get the string used for comparing this field.
 * \return the string used to compare this field, which may be empty
 */
-QString ProtocolField::getComparisonString(bool isStructureMember) const
+QString ProtocolField::getComparisonString(void) const
 {
     QString output;
 
@@ -2508,22 +2501,13 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
 
-    QString access1, access2;
-
-    if(isStructureMember)
-    {
-        access1 = "_pg_user1->" + name;
-        access2 = "_pg_user2->" + name;
-    }
-    else
-    {
-        access1 = name + "_1";
-        access2 = name + "_2";
-    }
-
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "if(QString::compare(" + access1 + ", " + access2 + ") != 0)\n";
+        if(support.language == ProtocolSupport::c_language)
+            output += TAB_IN + "if(QString::compare(_pg_user1->" + name + ", _pg_user2->" + name + ") != 0)\n";
+        else
+            output += TAB_IN + "if(QString::compare(" + name + ", _pg_user->" + name + ") != 0)\n";
+
         output += TAB_IN + TAB_IN + "_pg_report += _pg_prename + \":" + name + " strings differ\\n\";\n";
     }
     else
@@ -2534,16 +2518,37 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
         bool closeforloop = false;
         bool closeforloop2 = false;
 
+        QString access1, access2;
+        if(support.language == ProtocolSupport::c_language)
+        {
+            access1 = "_pg_user1->" + name;
+            access2 = "_pg_user2->" + name;
+        }
+        else
+        {
+            access1 = name;
+            access2 = "_pg_user->" + name;
+        }
+
+
         if(isArray())
         {
-            if(!variableArray.isEmpty() && isStructureMember)
+            if(!variableArray.isEmpty())
             {
-                output += spacing + "if(_pg_user1->" + variableArray + " == _pg_user2->" + variableArray + ")\n";
+                if(support.language == ProtocolSupport::c_language)
+                    output += spacing + "if(_pg_user1->" + variableArray + " == _pg_user2->" + variableArray + ")\n";
+                else
+                    output += spacing + "if(" + variableArray + " == _pg_user2->" + variableArray + ")\n";
+
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closearraytest = true;
 
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user1->" + variableArray + "); _pg_i++)\n";
+                if(support.language == ProtocolSupport::c_language)
+                    output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user1->" + variableArray + "); _pg_i++)\n";
+                else
+                    output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)" + variableArray + "); _pg_i++)\n";
+
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop = true;
@@ -2554,20 +2559,28 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
                 spacing += TAB_IN;
             }
 
-            access1 = access1 + "[_pg_i]";
-            access2 = access2 + "[_pg_i]";
+            access1 += "[_pg_i]";
+            access2 += "[_pg_i]";
         }
 
         if(is2dArray())
         {
-            if(!variable2dArray.isEmpty() && isStructureMember)
+            if(!variable2dArray.isEmpty())
             {
-                output += spacing + "if(_pg_user1->" + variable2dArray + " == _pg_user2->" + variable2dArray + ")\n";
+                if(support.language == ProtocolSupport::c_language)
+                    output += spacing + "if(_pg_user1->" + variable2dArray + " == _pg_user2->" + variable2dArray + ")\n";
+                else
+                    output += spacing + "if(" + variable2dArray + " == _pg_user->" + variable2dArray + ")\n";
+
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closearraytest2 = true;
 
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user1->" + variable2dArray + "); _pg_j++)\n";
+                if(support.language == ProtocolSupport::c_language)
+                    output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user1->" + variable2dArray + "); _pg_j++)\n";
+                else
+                    output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)" + variable2dArray + "); _pg_j++)\n";
+
                 output += spacing + "{\n";
                 spacing += TAB_IN;
                 closeforloop2 = true;
@@ -2578,13 +2591,16 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
                 spacing += TAB_IN;
             }
 
-            access1 = access1 + "[_pg_j]";
-            access2 = access2 + "[_pg_j]";
+            access1 += "[_pg_j]";
+            access2 += "[_pg_j]";
         }
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "_pg_report += compare" + typeName + "(_pg_prename + \":" + name + "\"";
+            if(support.language == ProtocolSupport::c_language)
+                output += spacing + "_pg_report += compare" + typeName + "(_pg_prename + \":" + name + "\"";
+            else
+                output += spacing + "_pg_report += " + access1 + ".compare(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2593,7 +2609,10 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
             // Structure compare we need to pass the address of the structure, not the object
-            output += ", &" + access1 + ", &" + access2 + ");\n";
+            if(support.language == ProtocolSupport::c_language)
+                output += ", &" + access1 + ", &" + access2 + ");\n";
+            else
+                output += ", &" + access2 + ");\n";
         }
         else
         {
@@ -2655,10 +2674,9 @@ QString ProtocolField::getComparisonString(bool isStructureMember) const
 
 /*!
  * Get the string used for text printing this field.
- * \param isStructureMember should be true to indicate this field is accessed as a member structure
  * \return the string used to print this field as text, which may be empty
  */
-QString ProtocolField::getTextPrintString(bool isStructureMember) const
+QString ProtocolField::getTextPrintString(void) const
 {
     QString output;
 
@@ -2666,62 +2684,28 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
 
-    QString access;
-
-    if(isStructureMember)
-        access = "_pg_user->" + name;
-    else
-        access = name;
-
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "_pg_report += _pg_prename + \":" + name + " '\" + QString(" + access + ") + \"'\\n\";\n";
+        output += TAB_IN + "_pg_report += _pg_prename + \":" + name + " '\" + QString(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
     }
     else
     {
         QString spacing = TAB_IN;
-        bool closeforloop = false;
-        bool closeforloop2 = false;
 
+        output += getEncodeArrayIterationCode(spacing, true);
         if(isArray())
         {
-            if(!variableArray.isEmpty() && isStructureMember)
-            {
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
-                output += spacing + "{\n";
+            spacing += TAB_IN;
+            if(is2dArray())
                 spacing += TAB_IN;
-                closeforloop = true;
-            }
-            else
-            {
-                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
-                spacing += TAB_IN;
-            }
-
-            access = access + "[_pg_i]";
-        }
-
-        if(is2dArray())
-        {
-            if(!variable2dArray.isEmpty() && isStructureMember)
-            {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
-                output += spacing + "{\n";
-                spacing += TAB_IN;
-                closeforloop2 = true;
-            }
-            else
-            {
-                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
-                spacing += TAB_IN;
-            }
-
-            access = access + "[_pg_j]";
         }
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "_pg_report += textPrint" + typeName + "(_pg_prename + \":" + name + "\"";
+            if(support.language == ProtocolSupport::c_language)
+                output += spacing + "_pg_report += textPrint" + typeName + "(_pg_prename + \":" + name + "\"";
+            else
+                output += spacing + "_pg_report += " + getEncodeFieldAccess(true) + ".textPrint(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2729,8 +2713,10 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
             if(is2dArray())
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
-            // Structure print we need to pass the address of the structure, not the object
-            output += ", &" + access + ");\n";
+            if(support.language == ProtocolSupport::c_language)
+                output += ", " + getEncodeFieldAccess(true);
+
+            output += ");\n";
         }
         else
         {
@@ -2746,23 +2732,11 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
 
             // And finally the values go into the _pg_report
             if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += " + \" '\" + QString::number(" + access + printScalerString + ", 'g', 16) + \"'\\n\";\n";
+                output += " + \" '\" + QString::number(" + getEncodeFieldAccess(true) + printScalerString + ", 'g', 16) + \"'\\n\";\n";
             else
-                output += " + \" '\" + QString::number(" + access + ") + \"'\\n\";\n";
+                output += " + \" '\" + QString::number(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
 
         }// else not a struct
-
-        if(closeforloop2)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
-
-        if(closeforloop)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
 
     }// else numeric output
 
@@ -2773,10 +2747,9 @@ QString ProtocolField::getTextPrintString(bool isStructureMember) const
 
 /*!
  * Get the string used for text reading this field.
- * \param isStructureMember should be true to indicate this field is accessed as a member structure
  * \return the string used to read this field as text, which may be empty
  */
-QString ProtocolField::getTextReadString(bool isStructureMember) const
+QString ProtocolField::getTextReadString(void) const
 {
     QString output;
 
@@ -2784,60 +2757,28 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
 
-    QString access;
-
-    if(isStructureMember)
-        access = "_pg_user->" + name;
-    else
-        access = name;
-
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "qstrncpy(" + access + ", extractText(_pg_prename + \":" + name + "\", _pg_source, &_pg_fieldcount).toLatin1().constData(), " + array + ");\n";
+        output += TAB_IN + "qstrncpy(" + getDecodeFieldAccess(true) + ", extractText(_pg_prename + \":" + name + "\", _pg_source, &_pg_fieldcount).toLatin1().constData(), " + array + ");\n";
     }
     else
     {
         QString spacing = TAB_IN;
-        bool closeforloop = false;
-        bool closeforloop2 = false;
 
+        output += getDecodeArrayIterationCode(spacing, true);
         if(isArray())
         {
-            closeforloop = true;
-
-            if(!variableArray.isEmpty() && isStructureMember)
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
-            else
-                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
-
-            output += spacing + "{\n";
             spacing += TAB_IN;
-            access = access + "[_pg_i]";
-        }
-
-        if(is2dArray())
-        {
-            closeforloop2 = true;
-
-            if(!variable2dArray.isEmpty() && isStructureMember)
-            {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
-                output += spacing + "{\n";
+            if(is2dArray())
                 spacing += TAB_IN;
-            }
-            else
-            {
-                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
-                output += spacing + "{\n";
-                spacing += TAB_IN;
-            }
-
-            access = access + "[_pg_j]";
         }
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "_pg_fieldcount += textRead" + typeName + "(_pg_prename + \":" + name + "\"";
+            if(support.language == ProtocolSupport::c_language)
+                output += spacing + "_pg_fieldcount += textRead" + typeName + "(_pg_prename + \":" + name + "\"";
+            else
+                output += spacing + "_pg_fieldcount += " + getDecodeFieldAccess(true) + ".textRead(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -2845,8 +2786,11 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
             if(is2dArray())
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
-            // Structure read, we need to pass the address of the structure, not the object
-            output += ", _pg_source, &" + access + ");\n";
+            // Structure read, we need to pass the address of the structure, not the object        
+            if(support.language == ProtocolSupport::c_language)
+                output += ", _pg_source, " + getDecodeFieldAccess(true) + ");\n";
+            else
+                output += ", _pg_source);\n";
         }
         else
         {
@@ -2866,35 +2810,23 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
             output += spacing + "if(!_pg_text.isEmpty())\n";
 
             if(inMemoryType.isFloat || !readScalerString.isEmpty())
-                output += spacing + TAB_IN + access + " = (" + typeName + ")(_pg_text.toDouble()" + readScalerString + ");\n";
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toDouble()" + readScalerString + ");\n";
             else if(inMemoryType.isSigned)
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + access + " = (" + typeName + ")(_pg_text.toLongLong());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toLongLong());\n";
                 else
-                    output += spacing + TAB_IN + access + " = (" + typeName + ")(_pg_text.toInt());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toInt());\n";
             }
             else
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + access + " = (" + typeName + ")(_pg_text.toULongLong());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toULongLong());\n";
                 else
-                    output += spacing + TAB_IN + access + " = (" + typeName + ")(_pg_text.toUInt());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toUInt());\n";
             }
 
         }// else not a struct
-
-        if(closeforloop2)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
-
-        if(closeforloop)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
 
     }// else numeric output
 
@@ -2905,10 +2837,9 @@ QString ProtocolField::getTextReadString(bool isStructureMember) const
 
 /*!
  * Get the string used for storing this field in a map.
- * \param isStructureMember should be true to indicate this field is accessed as a member structure
  * \return the string used to read this field as text, which may be empty
  */
-QString ProtocolField::getMapEncodeString(bool isStructureMember) const
+QString ProtocolField::getMapEncodeString(void) const
 {  
     QString output;
 
@@ -2923,70 +2854,42 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
     if(inMemoryType.isNull || encodedType.isNull)
         return output;
 
-    QString access;
-
-    if(isStructureMember)
-        access = "_pg_user->" + name;
-    else
-        access = name;
-
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "_pg_map[_pg_prename + \":" + name + "\"] = QString(" + access + ");\n";
+        output += TAB_IN + "_pg_map[_pg_prename + \":" + name + "\"] = QString(" + getEncodeFieldAccess(true) + ");\n";
     }
     else
     {
         QString spacing = TAB_IN;
-        bool closeforloop = false;
-        bool closeforloop2 = false;
 
+        output += getEncodeArrayIterationCode(spacing, true);
         if(isArray())
         {
-            closeforloop = true;
-
-            if(!variableArray.isEmpty() && isStructureMember)
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
-            else
-                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
-
-            output += spacing + "{\n";
             spacing += TAB_IN;
-            access = access + "[_pg_i]";
-        }
-
-        if(is2dArray())
-        {
-            closeforloop2 = true;
-
-            if(!variable2dArray.isEmpty() && isStructureMember)
-            {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
-                output += spacing + "{\n";
+            if(is2dArray())
                 spacing += TAB_IN;
-            }
-            else
-            {
-                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
-                output += spacing + "{\n";
-                spacing += TAB_IN;
-            }
-
-            access = access + "[_pg_j]";
         }
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "mapEncode" + typeName + "(_pg_prename + \":" + name + "\"";
+            if(support.language == ProtocolSupport::c_language)
+                output += spacing + "mapEncode" + typeName + "(_pg_prename + \":" + name + "\"";
+            else
+                output += spacing + getEncodeFieldAccess(true) + ".mapEncode(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
             if(is2dArray())
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
-            output += ", _pg_map, &" + access + ");\n";
+            if(support.language == ProtocolSupport::c_language)
+                output += ", _pg_map, " + getEncodeFieldAccess(true) + ");\n";
+            else
+                output += ", _pg_map);\n";
+
         }// data type is a struct
         else
         {
@@ -3001,37 +2904,26 @@ QString ProtocolField::getMapEncodeString(bool isStructureMember) const
 
             // Numeric values are automatically converted to correct QVariant types
             if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += access + printScalerString;
+                output += getEncodeFieldAccess(true) + printScalerString;
             else
-                output += access;
+                output += getEncodeFieldAccess(true);
 
             output += ";\n";
 
         }// else not a struct
 
-        if(closeforloop2)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
-
-        if(closeforloop)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
     }// else numeric output
 
     return output;
+
 }// ProtocolField::getMapEncodeString
 
 
 /*!
  * Get the string used for extracting this field from a map.
- * \param isStructureMember should be true to indicate this field is accessed as a member structure
  * \return the string used to read this field as text, which may be empty
  */
-QString ProtocolField::getMapDecodeString(bool isStructureMember) const
+QString ProtocolField::getMapDecodeString(void) const
 {
     QString key;
     QString output;
@@ -3045,13 +2937,6 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
     if((mapOptions & MAP_DECODE) == 0)
         return output;
 
-    QString access;
-
-    if(isStructureMember)
-        access = "_pg_user->" + name;
-    else
-        access = name;
-
     if(!comment.isEmpty())
         output += TAB_IN + "// " + comment + "\n";
 
@@ -3059,61 +2944,39 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
     {
         key = "_pg_prename + \":" + name + "\"";
 
-        output += TAB_IN + "key = " + key + ";\n\n";
-
+        output += TAB_IN + "key = " + key + ";\n";
+        output += "\n";
         output += TAB_IN + "if (_pg_map.contains(key))\n";
-        output += TAB_IN + TAB_IN + "qstrncpy(" + access + ", _pg_map[key].toString().toLatin1().constData(), " + array + ");\n";
+        output += TAB_IN + TAB_IN + "qstrncpy(" + getDecodeFieldAccess(true) + ", _pg_map[key].toString().toLatin1().constData(), " + array + ");\n";
     }
     else
     {
         QString spacing = TAB_IN;
-        bool closeforloop = false;
-        bool closeforloop2 = false;
 
+        output += getEncodeArrayIterationCode(spacing, true);
         if(isArray())
         {
-            closeforloop = true;
-
-            if(!variableArray.isEmpty() && isStructureMember)
-                output += spacing + "for(_pg_i = 0; (_pg_i < " + array + ") && (_pg_i < (unsigned)_pg_user->" + variableArray + "); _pg_i++)\n";
-            else
-                output += spacing + "for(_pg_i = 0; _pg_i < " + array + "; _pg_i++)\n";
-
-            output += spacing + "{\n";
             spacing += TAB_IN;
-            access = access + "[_pg_i]";
-        }
-
-        if(is2dArray())
-        {
-            closeforloop2 = true;
-
-            if(!variable2dArray.isEmpty() && isStructureMember)
-            {
-                output += spacing + "for(_pg_j = 0; (_pg_j < " + array2d + ") && (_pg_j < (unsigned)_pg_user->" + variable2dArray + "); _pg_j++)\n";
-                output += spacing + "{\n";
+            if(is2dArray())
                 spacing += TAB_IN;
-            }
-            else
-            {
-                output += spacing + "for(_pg_j = 0; _pg_j < " + array2d + "; _pg_j++)\n";
-                output += spacing + "{\n";
-                spacing += TAB_IN;
-            }
-
-            access = access + "[_pg_j]";
         }
 
         if(inMemoryType.isStruct)
         {
-            output += spacing + "mapDecode" + typeName + "(_pg_prename + \":" + name + "\"";
+            if(support.language == ProtocolSupport::c_language)
+                output += spacing + "mapDecode" + typeName + "(_pg_prename + \":" + name + "\"";
+            else
+                output += spacing + getDecodeFieldAccess(true) + ".mapDecode(_pg_prename + \":" + name + "\"";
 
             if(isArray())
                 output += " + \"[\" + QString::number(_pg_i) + \"]\"";
             if(is2dArray())
                 output += " + \"[\" + QString::number(_pg_j) + \"]\"";
 
-            output += ", _pg_map, &" + access + ");\n";
+            if(support.language == ProtocolSupport::c_language)
+                output += ", _pg_map, " + getDecodeFieldAccess(true) + ");\n";
+            else
+                output += ", _pg_map);\n";
 
         }// data type is a struct
         else
@@ -3156,25 +3019,13 @@ QString ProtocolField::getMapDecodeString(bool isStructureMember) const
             output += spacing + "{\n";
             output += spacing + TAB_IN + decode + "(&ok);\n";
             output += spacing + TAB_IN + "if(ok)\n";
-            output += spacing + TAB_IN + TAB_IN + access + " = (" + typeName + ")" + decode + "()";
+            output += spacing + TAB_IN + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")" + decode + "()";
             if(inMemoryType.isFloat && !printScalerString.isEmpty())
                 output += readScalerString;
             output += ";\n";
             output += spacing + "}\n";
 
         }// else not a struct
-
-        if(closeforloop2)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
-
-        if(closeforloop)
-        {
-            spacing.remove(spacing.lastIndexOf(TAB_IN), TAB_IN.count());
-            output += spacing + "}\n";
-        }
 
     }// else numeric output
 
@@ -3211,8 +3062,6 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
 
     if(inMemoryType.isStruct)
     {
-        QString access;
-
         // In C++ the constructor is the initializer
         if(support.language == ProtocolSupport::c_language)
         {
@@ -3221,31 +3070,17 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
             if(!comment.isEmpty())
                 output += spacing + "// " + comment + "\n";
 
-            if(isStructureMember)
-                access = "&_pg_user->" + name;
-            else
-                access = name;  // in this case, name is already pointer, so we don't need "&"
 
             getEncodeArrayIterationCode(spacing, isStructureMember);
 
             if(isArray())
             {
                 spacing += TAB_IN;
-
-                if(isStructureMember)
-                    access = "&_pg_user->" + name + "[_pg_i]";
-                else
-                    access = "&" + name + "[_pg_i]";
-
                 if(is2dArray())
-                {
                     spacing += TAB_IN;
-                    access += "[_pg_j]";
-                }
+            }
 
-            }// if array of structures
-
-            output += spacing + "init" + typeName + "(" + access + ");\n";
+            output += spacing + "init" + typeName + "(" + getDecodeFieldAccess(isStructureMember) + ");\n";
 
         }// If C language
 
@@ -3306,21 +3141,17 @@ QString ProtocolField::getSetToValueString(bool isStructureMember, QString value
 {
     QString output;
 
-    QString access = getDecodeFieldAccess(isStructureMember);
-
     if(inMemoryType.isStruct)
         return output;
 
     if(value.isEmpty())
-        return QString();
+        return output;
+
+    QString access = getDecodeFieldAccess(isStructureMember);
 
     // Write out the defaults code
     if(inMemoryType.isString)
     {
-        // In C++ outputs the member is accessed through the implicit this pointer
-        if(isStructureMember && (support.language == ProtocolSupport::cpp_language))
-            access = "_pg_user->";
-
         if(value.isEmpty() || value.compare("null", Qt::CaseInsensitive) == 0)
             output += TAB_IN + access + "[0] = 0;\n";
         else
@@ -3357,7 +3188,6 @@ QString ProtocolField::getSetToValueString(bool isStructureMember, QString value
         }
         else
         {
-            // Direct pointer access
             output += TAB_IN + access + " = " + value + ";\n";
         }
 

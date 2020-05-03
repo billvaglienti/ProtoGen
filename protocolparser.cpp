@@ -362,25 +362,8 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     if(!nohelperfiles)
     {
         // Auto-generated files for coding
-        ProtocolScaling(support).generate();
-        FieldCoding(support).generate();
-
-        fileNameList.append("scaledencode.h");
-        filePathList.append(support.outputpath);
-        fileNameList.append("scaledencode.c");
-        filePathList.append(support.outputpath);
-        fileNameList.append("scaleddecode.h");
-        filePathList.append(support.outputpath);
-        fileNameList.append("scaleddecode.c");
-        filePathList.append(support.outputpath);
-        fileNameList.append("fieldencode.h");
-        filePathList.append(support.outputpath);
-        fileNameList.append("fieldencode.c");
-        filePathList.append(support.outputpath);
-        fileNameList.append("fielddecode.h");
-        filePathList.append(support.outputpath);
-        fileNameList.append("fielddecode.c");
-        filePathList.append(support.outputpath);
+        ProtocolScaling(support).generate(fileNameList, filePathList);
+        FieldCoding(support).generate(fileNameList, filePathList);
 
         // Copy the resource files
         // This is where the files are stored in the resources
@@ -622,6 +605,7 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
     header.setModuleNameAndPath(nameex, support.outputpath, support.language);
 
     // Comment block at the top of the header file
+    header.makeLineSeparator();
     header.write("/*!\n");
     header.write(" * \\file\n");
     header.write(" * \\mainpage " + name + " protocol stack\n");

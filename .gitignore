@@ -4,6 +4,7 @@
 *.user
 *.exe
 ProtoGenTest/
+ProtoGenTestCPP/
 ProtoGenInstall/
 *.zip
 *.ilk

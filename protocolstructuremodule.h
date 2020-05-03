@@ -10,40 +10,37 @@
 
 class ProtocolStructureModule : public ProtocolStructure
 {
-    // We allow ProtocolBitfield to access our protected members
-    friend class ProtocolBitfield;
-
 public:
 
     //! Construct the structure parsing object, with details about the overall protocol
     ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
 
     //! Parse a packet from the DOM
-    virtual void parse(void) Q_DECL_OVERRIDE;
+    void parse(void) Q_DECL_OVERRIDE;
 
     //! Reset our data contents
-    virtual void clear(void) Q_DECL_OVERRIDE;
+    void clear(void) Q_DECL_OVERRIDE;
 
     //! Destroy the protocol packet
     ~ProtocolStructureModule(void);
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives that go into source code for this encodable
-    virtual void getSourceIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getSourceIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's init and verify functions
-    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's map functions
-    virtual void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's compare functions
-    virtual void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Return the include directives needed for this encodable's print functions
-    virtual void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Get the name of the header file that encompasses this structure definition
     QString getDefinitionFileName(void) const {return structfile->fileName();}
@@ -120,19 +117,19 @@ protected:
                     QString comparemodulename,
                     QString printmodulename,
                     QString mapmodulename,
-                    bool forceStructureDeclaration = true, bool outputUtilities = true, const ProtocolStructureModule* redefines = NULL);
+                    bool forceStructureDeclaration = true, bool outputUtilities = true);
 
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
 
     //! Write data to the source and header files to encode and decode this structure and all its children
-    void createStructureFunctions(const ProtocolStructureModule* redefines = NULL);
+    void createStructureFunctions(void);
 
     //! Create the functions that encode/decode sub stuctures.
-    void createSubStructureFunctions(const ProtocolStructureModule* redefines = NULL);
+    void createSubStructureFunctions(void);
 
     //! Write data to the source and header files to encode and decode this structure but not its children
-    void createTopLevelStructureFunctions(const ProtocolStructureModule* redefines = NULL);
+    void createTopLevelStructureFunctions(bool suppressEncodeAndDecode = true);
 
     //! Get the text used to extract text for text read functions
     static QString getExtractTextFunction(void);

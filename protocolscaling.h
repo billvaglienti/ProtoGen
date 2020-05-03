@@ -24,7 +24,7 @@ public:
     ProtocolScaling(ProtocolSupport sup);
 
     //! Perform the generation, writing out the files
-    bool generate(void);
+    bool generate(QStringList& fileNameList, QStringList& filePathList);
 
 protected:
 

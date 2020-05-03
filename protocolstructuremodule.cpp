@@ -116,7 +116,6 @@ void ProtocolStructureModule::parse(void)
     // Warnings for users
     issueWarnings(map);
 
-    const ProtocolStructureModule* redefines = NULL;
     if(!redefinename.isEmpty())
     {
         if(redefinename == name)
@@ -133,7 +132,7 @@ void ProtocolStructureModule::parse(void)
     }
 
     // Do the bulk of the file creation and setup
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, true, true, redefines);
+    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, true, true);
 
     // The functions to encoding and ecoding
     createStructureFunctions();
@@ -195,7 +194,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
                                          QString comparemodulename,
                                          QString printmodulename,
                                          QString mapmodulename,
-                                         bool forceStructureDeclaration, bool outputUtilities, const ProtocolStructureModule* redefines)
+                                         bool forceStructureDeclaration, bool outputUtilities)
 {
     // User can provide compare flag, or the file name
     if(!comparemodulename.isEmpty() || !support.globalCompareName.isEmpty())
@@ -211,6 +210,25 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     // In order to do compare, print, map, verify or init we must actually have some parameters
     if((getNumberOfEncodeParameters() <= 0) && (getNumberOfDecodeParameters() <= 0))
         compare = print = mapEncode = hasverify = hasinit = false;
+
+    // We need to reflect the compare, print, and mapEncode flags to our child structures
+    for(int i = 0; i < encodables.length(); i++)
+    {
+        // Is this encodable a structure?
+        ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+        if(structure == nullptr)
+            continue;
+
+        if(compare)
+            structure->setCompare(true);
+
+        if(print)
+            structure->setPrint(true);
+
+        if(mapEncode)
+            structure->setMapEncode(true);
+    }
 
     // Must have a structure definition to do any of these operations
     if(compare || print || mapEncode || hasverify || hasinit)
@@ -361,12 +379,10 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         }
     }
 
+    header.makeLineSeparator();
+
     // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
-    if(header.isAppending())
-    {
-        header.makeLineSeparator();
-    }
-    else
+    if(!header.isAppending())
     {
         // Comment block at the top of the header file needed so doxygen will document the file
         header.write("/*!\n");
@@ -470,17 +486,16 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         for(int i = 0; i < encodables.length(); i++)
             encodables[i]->getIncludeDirectives(list);
         structfile->writeIncludeDirectives(list);
-
-        // White space is good
-        structfile->makeLineSeparator();
-
-        // Create the structure definition in the header.
-        // This includes any sub-structures as well
-        structfile->write(getStructureDeclaration(forceStructureDeclaration));
-
-        // White space is good
-        structfile->makeLineSeparator();
     }
+
+    // White space is good
+    structfile->makeLineSeparator();
+
+    // Create the structure/class definition, this includes any sub-structures as well
+    structfile->write(getStructureDeclaration(forceStructureDeclaration));
+
+    // White space is good
+    structfile->makeLineSeparator();
 
     // White space is good
     source.makeLineSeparator();
@@ -624,16 +639,16 @@ void ProtocolStructureModule::getPrintIncludeDirectives(QStringList& list) const
 
 /*!
  * Write data to the source and header files to encode and decode this structure
- * and all its children. This will reset the length strings.
+ * and all its children.
  */
-void ProtocolStructureModule::createStructureFunctions(const ProtocolStructureModule* redefines)
+void ProtocolStructureModule::createStructureFunctions(void)
 {
     // The encoding and decoding prototypes of my children, if any.
     // I want these to appear before me, because I'm going to call them
-    createSubStructureFunctions(redefines);
+    createSubStructureFunctions();
 
     // Now build the top level function
-    createTopLevelStructureFunctions(redefines);
+    createTopLevelStructureFunctions();
 
 }// ProtocolStructureModule::createStructureFunctions
 
@@ -642,9 +657,10 @@ void ProtocolStructureModule::createStructureFunctions(const ProtocolStructureMo
  * Create the functions that encode/decode sub stuctures.
  * These functions are local to the source module
  */
-void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructureModule* redefines)
+void ProtocolStructureModule::createSubStructureFunctions()
 {
-    if(redefines != NULL)
+    // If we are redefining someone else, then their children are already defined
+    if(redefines != nullptr)
         return;
 
     // The embedded structures functions
@@ -664,7 +680,7 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             if(structure->getNumberInMemory() > 0)
             {
                 source.makeLineSeparator();
-                source.write(structure->getSetToInitialValueFunctionString());
+                source.write(structure->getSetToInitialValueFunctionBody());
             }
         }
         else if(hasInit())
@@ -673,7 +689,7 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             verifyheaderfile->write(structure->getSetToInitialValueFunctionPrototype());
 
             verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getSetToInitialValueFunctionString());
+            verifysourcefile->write(structure->getSetToInitialValueFunctionBody());
         }
 
         if(encode)
@@ -682,11 +698,11 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             if(support.language == ProtocolSupport::c_language)
             {
                 header.makeLineSeparator();
-                header.write(structure->getPrototypeEncodeString(support.bigendian));
+                header.write(structure->getEncodeFunctionPrototype());
             }
 
             source.makeLineSeparator();
-            source.write(structure->getFunctionEncodeString(support.bigendian));
+            source.write(structure->getEncodeFunctionBody(support.bigendian));
         }
 
         if(decode)
@@ -695,11 +711,11 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             if(support.language == ProtocolSupport::c_language)
             {
                 header.makeLineSeparator();
-                header.write(structure->getPrototypeDecodeString(support.bigendian));
+                header.write(structure->getDecodeFunctionPrototype());
             }
 
             source.makeLineSeparator();
-            source.write(structure->getFunctionDecodeString(support.bigendian));
+            source.write(structure->getDecodeFunctionBody(support.bigendian));
         }
 
         if(hasVerify())
@@ -712,7 +728,7 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             }
 
             verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getVerifyFunctionString());
+            verifysourcefile->write(structure->getVerifyFunctionBody());
         }
 
         if(compare)
@@ -725,7 +741,7 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             }
 
             compareSource.makeLineSeparator();
-            compareSource.write(structure->getComparisonFunctionString());
+            compareSource.write(structure->getComparisonFunctionBody());
         }
 
         if(print)
@@ -740,9 +756,9 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             }
 
             printSource.makeLineSeparator();
-            printSource.write(structure->getTextPrintFunctionString());
+            printSource.write(structure->getTextPrintFunctionBody());
             printSource.makeLineSeparator();
-            printSource.write(structure->getTextReadFunctionString());         
+            printSource.write(structure->getTextReadFunctionBody());
         }
 
         if(mapEncode)
@@ -757,12 +773,12 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
             }
 
             mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapEncodeFunctionString());
+            mapSource.write(structure->getMapEncodeFunctionBody());
             mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapDecodeFunctionString());
+            mapSource.write(structure->getMapDecodeFunctionBody());
         }
 
-    }
+    }// for all of our structure children
 
     source.makeLineSeparator();
 
@@ -771,94 +787,130 @@ void ProtocolStructureModule::createSubStructureFunctions(const ProtocolStructur
 
 /*!
  * Write data to the source and header files to encode and decode this structure
- * but not its children. This will add to the length strings, but not reset them
+ * but not its children.
+ * \param includeEncodeAndDecode allows the output of the top level encode
+ *        and decode structure functions.
  */
-void ProtocolStructureModule::createTopLevelStructureFunctions(const ProtocolStructureModule* redefines)
+void ProtocolStructureModule::createTopLevelStructureFunctions(bool includeEncodeAndDecode)
 {
-    if(encode)
+    if(includeEncodeAndDecode)
     {
+        if(encode)
+        {
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(getEncodeFunctionPrototype(QString(), false));
+            }
+
+            source.makeLineSeparator();
+            source.write(getEncodeFunctionBody(support.bigendian, false));
+        }
+
+        if(decode)
+        {
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(getDecodeFunctionPrototype(QString(), false));
+            }
+
+            source.makeLineSeparator();
+            source.write(getDecodeFunctionBody(support.bigendian, false));
+        }
+
         header.makeLineSeparator();
-        header.write(getPrototypeEncodeString(support.bigendian, false));
         source.makeLineSeparator();
-        source.write(getFunctionEncodeString(support.bigendian, false));
-    }
 
-    if(decode)
-    {
-        header.makeLineSeparator();
-        header.write(getPrototypeDecodeString(support.bigendian, false));
-        source.makeLineSeparator();
-        source.write(getFunctionDecodeString(support.bigendian, false));
-    }
+    }// if we are not suppressing the encode and decode functions
 
-    header.makeLineSeparator();
-    source.makeLineSeparator();
-
-    if(redefines != NULL)
+    if(redefines != nullptr)
         return;
 
     if(hasInit())
     {
-        verifyheaderfile->makeLineSeparator();
-        verifyheaderfile->write(getSetToInitialValueFunctionPrototype(false));
-        verifyheaderfile->makeLineSeparator();
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            verifyheaderfile->makeLineSeparator();
+            verifyheaderfile->write(getSetToInitialValueFunctionPrototype(QString(), false));
+            verifyheaderfile->makeLineSeparator();
+        }
 
         verifysourcefile->makeLineSeparator();
-        verifysourcefile->write(getSetToInitialValueFunctionString(false));
+        verifysourcefile->write(getSetToInitialValueFunctionBody(false));
         verifysourcefile->makeLineSeparator();
     }
 
     if(hasVerify())
     {
-        verifyheaderfile->makeLineSeparator();
-        verifyheaderfile->write(getVerifyFunctionPrototype(false));
-        verifyheaderfile->makeLineSeparator();
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            verifyheaderfile->makeLineSeparator();
+            verifyheaderfile->write(getVerifyFunctionPrototype(QString(), false));
+            verifyheaderfile->makeLineSeparator();
+        }
 
         verifysourcefile->makeLineSeparator();
-        verifysourcefile->write(getVerifyFunctionString(false));
+        verifysourcefile->write(getVerifyFunctionBody(false));
         verifysourcefile->makeLineSeparator();
     }
 
 
     if(compare)
     {
-        compareHeader.makeLineSeparator();
-        compareHeader.write(getComparisonFunctionPrototype(false));
-        compareHeader.makeLineSeparator();
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            compareHeader.makeLineSeparator();
+            compareHeader.write(getComparisonFunctionPrototype(QString(), false));
+            compareHeader.makeLineSeparator();
+        }
 
         compareSource.makeLineSeparator();
-        compareSource.write(getComparisonFunctionString(false));
+        compareSource.write(getComparisonFunctionBody(false));
         compareSource.makeLineSeparator();
     }
 
 
     if(print)
     {
-        printHeader.makeLineSeparator();
-        printHeader.write(getTextPrintFunctionPrototype(false));
-        printHeader.makeLineSeparator();
-        printHeader.write(getTextReadFunctionPrototype(false));
-        printHeader.makeLineSeparator();
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            printHeader.makeLineSeparator();
+            printHeader.write(getTextPrintFunctionPrototype(QString(), false));
+            printHeader.makeLineSeparator();
+            printHeader.write(getTextReadFunctionPrototype(QString(), false));
+            printHeader.makeLineSeparator();
+        }
 
         printSource.makeLineSeparator();
-        printSource.write(getTextPrintFunctionString(false));
+        printSource.write(getTextPrintFunctionBody(false));
         printSource.makeLineSeparator();
-        printSource.write(getTextReadFunctionString(false));
+        printSource.write(getTextReadFunctionBody(false));
         printSource.makeLineSeparator();
     }
 
     if (mapEncode)
     {
-        mapHeader.makeLineSeparator();
-        mapHeader.write(getMapEncodeFunctionPrototype(false));
-        mapHeader.makeLineSeparator();
-        mapHeader.write(getMapDecodeFunctionPrototype(false));
-        mapHeader.makeLineSeparator();
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            mapHeader.makeLineSeparator();
+            mapHeader.write(getMapEncodeFunctionPrototype(QString(), false));
+            mapHeader.makeLineSeparator();
+            mapHeader.write(getMapDecodeFunctionPrototype(QString(), false));
+            mapHeader.makeLineSeparator();
+        }
 
         mapSource.makeLineSeparator();
-        mapSource.write(getMapEncodeFunctionString(false));
+        mapSource.write(getMapEncodeFunctionBody(false));
         mapSource.makeLineSeparator();
-        mapSource.write(getMapDecodeFunctionString(false));
+        mapSource.write(getMapDecodeFunctionBody(false));
         mapSource.makeLineSeparator();
     }
 
