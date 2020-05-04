@@ -21,6 +21,10 @@ void ProtocolCode::clear(void)
 
     encode.clear();
     decode.clear();
+    encodecpp.clear();
+    decodecpp.clear();
+    encodepython.clear();
+    decodepython.clear();
     include.clear();
 }
 
@@ -50,10 +54,18 @@ void ProtocolCode::parse(void)
 
         if(attrname.compare("name", Qt::CaseInsensitive) == 0)
             name = attr.value().trimmed();
-        else if(attrname.compare("encode", Qt::CaseInsensitive) == 0)
+        else if((attrname.compare("encode", Qt::CaseInsensitive) == 0) || (attrname.compare("encode_c", Qt::CaseInsensitive) == 0))
             encode = attr.value().trimmed();
-        else if(attrname.compare("decode", Qt::CaseInsensitive) == 0)
+        else if((attrname.compare("decode", Qt::CaseInsensitive) == 0) || (attrname.compare("decode_c", Qt::CaseInsensitive) == 0))
             decode = attr.value().trimmed();
+        else if(attrname.compare("encode_cpp", Qt::CaseInsensitive) == 0)
+            encodecpp = attr.value().trimmed();
+        else if(attrname.compare("decode_cpp", Qt::CaseInsensitive) == 0)
+            decodecpp = attr.value().trimmed();
+        else if(attrname.compare("encode_python", Qt::CaseInsensitive) == 0)
+            encodepython = attr.value().trimmed();
+        else if(attrname.compare("decode_python", Qt::CaseInsensitive) == 0)
+            decodepython = attr.value().trimmed();
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
             comment = attr.value().trimmed();
         else if(attrname.compare("include", Qt::CaseInsensitive) == 0)
@@ -84,15 +96,23 @@ QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isSt
 
     QString output;
 
-    if(encode.isEmpty())
-        return output;
+    if((support.language == ProtocolSupport::c_language) && !encode.isEmpty())
+    {
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
 
-    if(!comment.isEmpty())
-        output += TAB_IN + "// " + comment + "\n";
+        output += TAB_IN + encode + "\n";
+    }
+    else if((support.language == ProtocolSupport::cpp_language) && !encodecpp.isEmpty())
+    {
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
 
-    output += TAB_IN + encode + "\n";
+        output += TAB_IN + encodecpp + "\n";
+    }
 
     return output;
+
 }
 
 
@@ -116,13 +136,20 @@ QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isSt
 
     QString output;
 
-    if(decode.isEmpty())
-        return output;
+    if((support.language == ProtocolSupport::c_language) && !decode.isEmpty())
+    {
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
 
-    if(!comment.isEmpty())
-        output += TAB_IN + "// " + comment + "\n";
+        output += TAB_IN + decode + "\n";
+    }
+    else if((support.language == ProtocolSupport::cpp_language) && !decodecpp.isEmpty())
+    {
+        if(!comment.isEmpty())
+            output += TAB_IN + "// " + comment + "\n";
 
-    output += TAB_IN + decode + "\n";
+        output += TAB_IN + decodecpp + "\n";
+    }
 
     return output;
 }

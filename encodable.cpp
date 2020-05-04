@@ -5,10 +5,6 @@
 #include "protocoldocumentation.h"
 #include "protocolparser.h"
 
-// Initialize convenience strings
-const QString Encodable::VOID_ENCODE = "void encode";
-const QString Encodable::INT_DECODE = "int decode";
-
 /*!
  * Constructor for encodable
  */

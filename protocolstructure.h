@@ -299,8 +299,8 @@ protected:
     bool defaults;                      //!< True if this structure uses default values
     bool strings;                       //!< True if this structure uses strings
     bool hidden;                        //!< True if this structure is to be hidden from the documentation
-    bool hasinit;                       //!< True if any children of this structure have initialization data
-    bool hasverify;                     //!< True if any children of this structure have verify data
+    bool hasinit;                       //!< True if this structure or its children have initialization data
+    bool hasverify;                     //!< True if this structure or its children have verify data
     QStringList attriblist;             //!< List of all attributes that we understand
     QString structName;                 //!< Name of the structure (usually the same as typeName)
     bool encode;                        //!< True if the encode function is output

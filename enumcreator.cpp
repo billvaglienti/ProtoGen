@@ -825,6 +825,19 @@ bool EnumCreator::isMathOperator(QChar op) const
 }// EnumCreator::isMathOperator
 
 
+//! Return the name of the first enumeration in the list (used for initial value)
+QString EnumCreator::getFirstEnumerationName(void) const
+{
+    if(elements.count() <= 0)
+    {
+        // In this case just return zero, cast to the enumeration name
+        return "(" + name + ")0";
+    }
+    else
+        return elements.first().getName();
+}
+
+
 /*!
  * Find the enumeration value with this name and return its comment, or an empty string
  * \param name is the name of the enumeration value to find

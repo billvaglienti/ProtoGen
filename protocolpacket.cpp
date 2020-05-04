@@ -259,104 +259,136 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
         output += " */\n";
     }
 
+    // The opening to the class.
+    // In the context of C++ redefining means inheriting from a base class,
+    // and adding a new encode or decode function. All the other members and
+    // methods come from the base class
     if(redefines == nullptr)
-    {
-        // The opening to the class.
         output += "class " + typeName + "\n";
+    else
+        output += "class " + typeName + " : public " + redefines->typeName + "\n";
+
         output += "{\n";
 
-        // All members of the structure are public.
-        output += "public:\n";
+    // All members of the structure are public.
+    output += "public:\n";
 
-        // Function prototypes, in C++ these are part of the class definition.
-        // Notice that if we are not outputting structure functions, and this
-        // class won't be used by others, we will not have any data members and
-        // do not need a constructor.
-        if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
+    // Function prototypes, in C++ these are part of the class definition.
+    // Notice that if we are not outputting structure functions, and this
+    // class won't be used by others, we will not have any data members and
+    // do not need a constructor.
+    if((redefines == nullptr) && (getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // The parameter functions encode parameters to/from packets
+    if(parameterFunctions)
+    {
+        if(encode)
         {
             ProtocolFile::makeLineSeparator(output);
-            output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+            output += getParameterPacketEncodePrototype(TAB_IN);
             ProtocolFile::makeLineSeparator(output);
         }
 
-        // For use in other packets we need the ability to encode to a byte
-        // stream, which is what ProtocolStructure gives us
-        if(useInOtherPackets)
+        if(decode)
         {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getEncodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getDecodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
+            ProtocolFile::makeLineSeparator(output);
+            output += getParameterPacketDecodePrototype(TAB_IN);
+            ProtocolFile::makeLineSeparator(output);
         }
 
-        // The structure functions encode members of this class directly to/from packets
-        if(structureFunctions)
-        {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getStructurePacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
+    }// if parameter packet functions
 
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getStructurePacketDecodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
+    // The structure functions encode members of this class directly to/from packets
+    if(structureFunctions)
+    {
+        // In the event that there are no parameters, the parameter function
+        // is the same as the structure function - so don't output both
+        if(encode && ((getNumberOfEncodeParameters() > 0) || !parameterFunctions))
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += getStructurePacketEncodePrototype(TAB_IN);
+            ProtocolFile::makeLineSeparator(output);
         }
 
-        // The parameter functions encode parameters to/from packets
-        if(parameterFunctions)
+        // In the event that there are no parameters, the parameter function
+        // is the same as the structure function - so don't output both
+        if(decode && ((getNumberOfDecodeParameters() > 0) || !parameterFunctions))
         {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getParameterPacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getParameterPacketDecodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
+            ProtocolFile::makeLineSeparator(output);
+            output += getStructurePacketDecodePrototype(TAB_IN);
+            ProtocolFile::makeLineSeparator(output);
         }
 
-        // There are cool utility functions: verify, print, read, mapencde,
-        // mapdecode, and compare. All of these have forms that come from
-        // ProtocolStructure. In addition there are packet specific forms
-        // for the compare and print functions
-        if(useInOtherPackets || structureFunctions)
+    }// if structure packet functions
+
+    // For use in other packets we need the ability to encode to a byte
+    // stream, which is what ProtocolStructure gives us
+    if(useInOtherPackets)
+    {
+        if(encode)
         {
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getEncodeFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+        }
+
+        if(decode)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getDecodeFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+        }
+
+    }// If structure functions that will be accessed by others
+
+    // There are cool utility functions: verify, print, read, mapencde,
+    // mapdecode, and compare. All of these have forms that come from
+    // ProtocolStructure. In addition there are packet specific forms
+    // for the compare and print functions. Thse functions are only
+    // output for the base class, inherited (redefined) classes do not
+    // output them, because they would be the same
+    if(useInOtherPackets || structureFunctions)
+    {
+        if(compare)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getComparisonFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+
+            output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
+            output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
+            ProtocolFile::makeLineSeparator(output);
+        }
+
+        if(print)
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getTextPrintFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getTextReadFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+
+            output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
+            output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
+            ProtocolFile::makeLineSeparator(output);
+        }
+
+        if(redefines == nullptr)
+        {
+            // The verify and mapEncode functions are simply using the structure
+            // form of these functions, therefore if we are redefining an
+            // encoding for an existing structure we do not need to output these
+            // functions again.
+
             if(hasVerify())
             {
                 ProtocolFile::makeLineSeparator(output);
                 output += ProtocolStructure::getVerifyFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-            if(print)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getTextPrintFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getTextReadFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-
-                output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
-                output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
                 ProtocolFile::makeLineSeparator(output);
             }
 
@@ -369,102 +401,27 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
                 ProtocolFile::makeLineSeparator(output);
             }
 
-            if(compare)
+            ProtocolFile::makeLineSeparator(output);
+
+            // Finally the local members of this class. Notice that if we only have
+            // parameter functions then we do not output these (and the class is
+            // esentially static). The same is true if we are redefining another class,
+            // in which case we use the members from the base class
+            if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
             {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getComparisonFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
+                // Now declare the members of this class
+                for(int i = 0; i < encodables.length(); i++)
+                    structure += encodables[i]->getDeclaration();
 
-                output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
-                output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
-                ProtocolFile::makeLineSeparator(output);
-            }
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-
-        if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
-        {
-            // Now declare the members of this class
-            for(int i = 0; i < encodables.length(); i++)
-                structure += encodables[i]->getDeclaration();
-
-            // Make classes pretty with alignment goodness
-            output += alignStructureData(structure);
-        }
-
-        ProtocolFile::makeLineSeparator(output);
-
-    }// if not redefining
-    else
-    {
-        // In the context of C++ redefining means inheriting from a base class,
-        // and adding a new encode or decode function. All the other members and
-        // methods come from the base class
-
-        // The opening to the class.
-        output += "class " + typeName + "public: " + redefines->typeName + "\n";
-        output += "{\n";
-
-        // All members of the structure are public.
-        output += "public:\n";
-
-        // For use in other packets we need the ability to encode to a byte
-        // stream, which is what ProtocolStructure gives us
-        if(useInOtherPackets)
-        {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getEncodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
+                // Make classes pretty with alignment goodness
+                output += alignStructureData(structure);
             }
 
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getDecodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
-        }
+            ProtocolFile::makeLineSeparator(output);
 
-        // The structure functions encode members of this class directly to/from packets
-        if(structureFunctions)
-        {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getStructurePacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
+        }// if not redefining
 
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getStructurePacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
-        }
-
-        // The parameter functions encode parameters to/from packets
-        if(parameterFunctions)
-        {
-            if(encode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getParameterPacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-            if(decode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += getParameterPacketEncodePrototype(TAB_IN);
-                ProtocolFile::makeLineSeparator(output);
-            }
-        }
-
-    }// else if redefining another class
+    }// If outputting structure functions
 
     // Close out the class
     output += "}; // " + typeName + "\n";
@@ -536,14 +493,18 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     // in C++ these prototypes are part of the class declaration.
     if(support.language == ProtocolSupport::c_language)
     {
-        if(encode)
+        // In the event that there are no parameters, the parameter function
+        // is the same as the structure function - so don't output both
+        if(encode && ((getNumberOfEncodeParameters() > 0) || !parameterFunctions))
         {
             // The prototype for the structure packet encode function
             header.makeLineSeparator();
             header.write(getStructurePacketEncodePrototype(QString()));
         }
 
-        if(decode)
+        // In the event that there are no parameters, the parameter function
+        // is the same as the structure function - so don't output both
+        if(decode && ((numDecodes > 0) || !parameterFunctions))
         {
             // The prototype for the structure packet decode function
             header.makeLineSeparator();
@@ -568,19 +529,23 @@ void ProtocolPacket::createStructurePacketFunctions(void)
 
     }// If C language
 
-    if(encode)
+    // In the event that there are no parameters, the parameter function
+    // is the same as the structure function - so don't output both
+    if(encode && ((getNumberOfEncodeParameters() > 0) || !parameterFunctions))
     {
         // The source function for the encode function
         source.makeLineSeparator();
         source.write(getStructurePacketEncodeBody());
     }
 
-    if(decode)
+    // In the event that there are no parameters, the parameter function
+    // is the same as the structure function - so don't output both
+    if(decode && ((numDecodes > 0) || !parameterFunctions))
     {
         // The source function for the decode function
         source.makeLineSeparator();
         source.write(getStructurePacketDecodeBody());
-    }// if decode function enabled
+    }
 
     if(compare)
     {
@@ -717,7 +682,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             {
                 printSource.makeLineSeparator();
                 printSource.write(TAB_IN + "// Decode packet\n");
-                printSource.write(TAB_IN + "if(!_pg_user.decode(_pg_pkt1))\n");
+                printSource.write(TAB_IN + "if(!_pg_user.decode(_pg_pkt))\n");
 
             }
 
@@ -752,7 +717,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             if(support.language == ProtocolSupport::c_language)
                 printSource.write(TAB_IN + "_pg_report += textPrint" + structName + "(_pg_prename, &_pg_user);\n");
             else
-                printSource.write(TAB_IN + "_pg_report += _pug_user.textPrint(_pg_prename);\n");
+                printSource.write(TAB_IN + "_pg_report += _pg_user.textPrint(_pg_prename);\n");
         }
 
         printSource.makeLineSeparator();
@@ -898,8 +863,8 @@ QString ProtocolPacket::getStructurePacketEncodeBody(void) const
         output += encodables[i]->getEncodeString(support.bigendian, &bitcount, true);
     }
 
+    ProtocolFile::makeLineSeparator(output);
     output += TAB_IN + "// complete the process of creating the packet\n";
-
     if(ids.count() <= 1)
         output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
     else
@@ -950,7 +915,7 @@ QString ProtocolPacket::getStructurePacketDecodeSignature(bool insource) const
         if(insource)
             output += typeName + "::";
 
-        output += "decode(" + support.pointerType + " " + pg + "pkt";
+        output += "decode(const " + support.pointerType + " " + pg + "pkt";
     }
 
     output += + ")";

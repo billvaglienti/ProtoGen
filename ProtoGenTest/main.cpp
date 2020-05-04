@@ -759,7 +759,7 @@ int testKeepAlivePacket(void)
         return 0;
     }
 
-    encodeKeepAlivePacketStructure(&pkt);
+    encodeKeepAlivePacket(&pkt);
 
     if(pkt.length != (22))
     {

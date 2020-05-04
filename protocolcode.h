@@ -100,6 +100,10 @@ class ProtocolCode : public Encodable
 protected:
     QString encode;
     QString decode;
+    QString encodecpp;
+    QString decodecpp;
+    QString encodepython;
+    QString decodepython;
     QString include;
 };
 

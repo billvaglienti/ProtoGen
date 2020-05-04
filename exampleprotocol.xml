@@ -182,7 +182,7 @@ efficiently encode data for little or big endian architectures.">
         <Data name="mode" enum="engineModes" encodedType="unsigned8" comment="Engine control mode of operation"/>
         <Data name="gain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
         <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
-        <Code name="codeexample" include="translation.h" decode="if(_pg_user->maxRPM &lt;= 0) return 0;" comment="Packet is not valid if maximum RPM is zero"/>
+        <Code name="codeexample" include="translation.h" decode_cpp="if(maxRPM &lt;= 0) return false;" decode_c="if(_pg_user->maxRPM &lt;= 0) return 0;" comment="Packet is not valid if maximum RPM is zero"/>
 
     </Packet>
 
@@ -213,13 +213,13 @@ efficiently encode data for little or big endian architectures.">
         
     </Packet>
             
-    <Structure name="Date" deffile="../ProtoGenTest/OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
+    <Structure name="Date" deffile="OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" verifyMinValue="2000" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" verifyMaxValue="12" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" verifyMaxValue="31" comment="day of the month, from 1 to 31"/>
     </Structure>
     
-    <Structure name="smallDate" redefine="Date" deffile="../ProtoGenTest/OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
+    <Structure name="smallDate" redefine="Date" deffile="OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" encodedType="bitfield4" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" encodedType="bitfield5" comment="day of the month, from 1 to 31"/>

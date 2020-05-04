@@ -95,6 +95,7 @@ public:
     //! Return the header file output string
     QString getOutput(void) const {return output;}
 
+    //! Get the prefix applied to each enumeration element
     QString getPrefix() const { return prefix; }
 
     //! Return the source file output string
@@ -105,6 +106,9 @@ public:
 
     //! Find the enumeration value with this name and return its comment, or an empty string
     QString getEnumerationValueComment(const QString& name) const;
+
+    //! Return the name of the first enumeration in the list (used for initial value)
+    QString getFirstEnumerationName(void) const;
 
     //! Determine if text is an enumeration name
     bool isEnumerationValue(const QString& text) const;

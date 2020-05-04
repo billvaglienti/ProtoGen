@@ -592,7 +592,7 @@ QString ProtocolHeaderFile::getClosingStatement(void)
     }
 
     // close the opening #ifdef
-    close += "#endif\n";
+    close += "#endif // _" + module.toUpper() + "_H\n";
 
     return close;
 }

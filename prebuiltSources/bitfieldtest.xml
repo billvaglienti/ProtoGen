@@ -1,35 +1,35 @@
 <Protocol name="bitfieldtest" comment="Test structure for bitfields">
 
     <Structure name="bitfieldtest" file="bitfieldtest" comment="A bitfield structure used for testing bitfields in Protogen">
-        <Data name="test1" inMemoryType="bitfield1" comment="A bitfield of length 1"/>
-        <Data name="test2" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
-        <Data name="test3" inMemoryType="unsigned8" encodedType="bitfield3" comment="A bitfield of length 3, whose size must be checked"/>
-        <Data name="test12" inMemoryType="bitfield12" comment="A bitfield of length 12 which crosses a byte boundary"/>
-        <Data name="testa" inMemoryType="bitfield1" comment="A bitfield of length 1"/>
-        <Data name="testb" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
-        <Data name="testc" inMemoryType="bitfield4" comment="A bitfield of length 4"/>
-        <Data name="testd" inMemoryType="bitfield36" comment="A long bitfield that crosses byte boundaries"/>
+        <Data name="test1" inMemoryType="bitfield1"   initialValue="1"              comment="A bitfield of length 1"/>
+        <Data name="test2" inMemoryType="bitfield2"   initialValue="2"              comment="A bitfield of length 2"/>
+        <Data name="test3" inMemoryType="unsigned8"   initialValue="12"             encodedType="bitfield3" comment="A bitfield of length 3, whose size must be checked"/>
+        <Data name="test12" inMemoryType="bitfield12" initialValue="0xABC"          comment="A bitfield of length 12 which crosses a byte boundary"/>
+        <Data name="testa" inMemoryType="bitfield1"   initialValue="0"              comment="A bitfield of length 1"/>
+        <Data name="testb" inMemoryType="bitfield2"   initialValue="3"              comment="A bitfield of length 2"/>
+        <Data name="testc" inMemoryType="bitfield4"   initialValue="4"              comment="A bitfield of length 4"/>
+        <Data name="testd" inMemoryType="bitfield36"  initialValue="0xC87654321ull" comment="A long bitfield that crosses byte boundaries"/>
     </Structure>
 
     <Structure name="bitfieldtest2" file="bitfieldtest" comment="A bitfield structure used for testing bitfields in Protogen">
-        <Data name="test1" inMemoryType="bitfield1" bitfieldgroup="true" comment="A bitfield of length 1"/>
-        <Data name="test2" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
-        <Data name="test3" inMemoryType="unsigned8" encodedType="bitfield3" comment="A bitfield of length 3, whose size must be checked"/>
-        <Data name="test12" inMemoryType="bitfield12" comment="A bitfield of length 12 which crosses a byte boundary"/>
-        <Data name="testa" inMemoryType="bitfield1" bitfieldgroup="true" comment="A bitfield of length 1"/>
-        <Data name="testb" inMemoryType="bitfield2" comment="A bitfield of length 2"/>
-        <Data name="testc" inMemoryType="bitfield4" comment="A bitfield of length 4"/>
-        <Data name="testd" inMemoryType="bitfield36" comment="A long bitfield that crosses byte boundaries"/>
+        <Data name="test1" inMemoryType="bitfield1"   initialValue="1"              bitfieldgroup="true" comment="A bitfield of length 1"/>
+        <Data name="test2" inMemoryType="bitfield2"   initialValue="2"              comment="A bitfield of length 2"/>
+        <Data name="test3" inMemoryType="unsigned8"   initialValue="12"             encodedType="bitfield3" comment="A bitfield of length 3, whose size must be checked"/>
+        <Data name="test12" inMemoryType="bitfield12" initialValue="0xABC"          comment="A bitfield of length 12 which crosses a byte boundary"/>
+        <Data name="testa" inMemoryType="bitfield1"   initialValue="0"              bitfieldgroup="true" comment="A bitfield of length 1"/>
+        <Data name="testb" inMemoryType="bitfield2"   initialValue="3"              comment="A bitfield of length 2"/>
+        <Data name="testc" inMemoryType="bitfield4"   initialValue="4"              comment="A bitfield of length 4"/>
+        <Data name="testd" inMemoryType="bitfield36"  initialValue="0xC87654321ull" comment="A long bitfield that crosses byte boundaries"/>
     </Structure>
 
     <Structure name="bitfieldtest3" file="bitfieldtest" comment="A bitfield structure used for testing bitfields in Protogen">
-        <Data name="test1" inMemoryType="float32" encodedType="bitfield11" scaler="200" min="25"/>
-        <Data name="test2" inMemoryType="float32" encodedType="bitfield11" scaler="100"/>
-        <Data name="test12" inMemoryType="float64" encodedType="bitfield36" scaler="1024"/>
-        <Data name="testa" inMemoryType="bitfield1" constant="1" checkConstant="true"/>
-        <Data name="testb" inMemoryType="null" encodedType="bitfield2" constant="2" checkConstant="true"/>
-        <Data name="testc" inMemoryType="float32" encodedType="bitfield12" constant="pi" scaler="200"/>
-        <Data name="testd" inMemoryType="bitfield11" constant="0"/>
+        <Data name="test1" inMemoryType="float32"     initialValue="12.5"           encodedType="bitfield11" scaler="200" min="25"/>
+        <Data name="test2" inMemoryType="float32"     initialValue="12.5"           encodedType="bitfield11" scaler="100"/>
+        <Data name="test12" inMemoryType="float64"    initialValue="3.14159"        encodedType="bitfield36" scaler="1024"/>
+        <Data name="testa" inMemoryType="bitfield1"   initialValue="0"              constant="1" checkConstant="true"/>
+        <Data name="testb" inMemoryType="null"        initialValue="0"              encodedType="bitfield2" constant="2" checkConstant="true"/>
+        <Data name="testc" inMemoryType="float32"     initialValue="50"             encodedType="bitfield12" constant="pi" scaler="200"/>
+        <Data name="testd" inMemoryType="bitfield11"  initialValue="0"              constant="0"/>
     </Structure>
 
 </Protocol>

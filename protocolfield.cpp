@@ -2538,7 +2538,7 @@ QString ProtocolField::getComparisonString(void) const
                 if(support.language == ProtocolSupport::c_language)
                     output += spacing + "if(_pg_user1->" + variableArray + " == _pg_user2->" + variableArray + ")\n";
                 else
-                    output += spacing + "if(" + variableArray + " == _pg_user2->" + variableArray + ")\n";
+                    output += spacing + "if(" + variableArray + " == _pg_user->" + variableArray + ")\n";
 
                 output += spacing + "{\n";
                 spacing += TAB_IN;
@@ -3054,9 +3054,6 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
 {
     QString output;
 
-    if(!hasInit())
-        return output;
-
     if(inMemoryType.isNull)
         return output;
 
@@ -3065,11 +3062,13 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
         // In C++ the constructor is the initializer
         if(support.language == ProtocolSupport::c_language)
         {
+            if(!hasInit())
+                return output;
+
             QString spacing = TAB_IN;
 
             if(!comment.isEmpty())
                 output += spacing + "// " + comment + "\n";
-
 
             getEncodeArrayIterationCode(spacing, isStructureMember);
 
@@ -3088,7 +3087,7 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
     else if(!isNotInMemory())
     {
         if(support.language == ProtocolSupport::c_language)
-        {
+        {            
             if(!initialValueString.isEmpty())
             {
                 if(!comment.isEmpty())
@@ -3106,7 +3105,18 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
             if(initial.isEmpty())
             {
                 if(!inMemoryType.isString)
-                    initial = "0";
+                {
+                    if(inMemoryType.isEnum)
+                    {
+                        const EnumCreator* creator = parser->lookUpEnumeration(enumName);
+                        if(creator == nullptr)
+                            initial = "(" + enumName + ")0";
+                        else
+                            initial = creator->getFirstEnumerationName();
+                    }
+                    else
+                        initial = "0";
+                }
             }
 
             // In C++ there are two ways we initialize variables: either the
@@ -4066,7 +4076,12 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
     if(support.language == ProtocolSupport::c_language)
         output += spacing + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     else
-        output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
+    {
+        if(isStructureMember)
+            output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
+        else
+            output += spacing + access + "->encode(_pg_data, &_pg_byteindex);\n";
+    }
 
     if(!dependsOn.isEmpty())
         output += TAB_IN + "}\n";
@@ -4126,7 +4141,11 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
     }
     else
     {
-        output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
+        if(isStructureMember)
+            output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
+        else
+            output += spacing + "if(" + access + "->decode(_pg_data, &_pg_byteindex) == false)\n";
+
         output += spacing + TAB_IN + "return false;\n";
     }
 

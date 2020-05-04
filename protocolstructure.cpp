@@ -30,7 +30,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     needs2ndVerifyIterator(false),
     defaults(false),
     hidden(false),
-    hasinit(false),
+    hasinit(supported.language == ProtocolSupport::cpp_language),
     hasverify(false),
     encode(true),
     decode(true),
@@ -85,7 +85,7 @@ void ProtocolStructure::clear(void)
     needs2ndVerifyIterator = false;
     defaults = false;
     hidden = false;
-    hasinit = false;
+    hasinit = (support.language == ProtocolSupport::cpp_language);
     hasverify = false;
     encode = decode = true;
     print = compare = mapEncode = false;
@@ -254,7 +254,12 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     if(support.language == ProtocolSupport::c_language)
         output += spacing + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     else
-        output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
+    {
+        if(isStructureMember)
+            output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
+        else
+            output += spacing + access + "->encode(_pg_data, &_pg_byteindex);\n";
+    }
 
     // Close the depends on block
     if(!dependsOn.isEmpty())
@@ -314,7 +319,11 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
     }
     else
     {
-        output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
+        if(isStructureMember)
+            output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
+        else
+            output += spacing + "if(" + access + "->decode(_pg_data, &_pg_byteindex) == false)\n";
+
         output += spacing + TAB_IN + "return false;\n";
     }
 
@@ -458,6 +467,7 @@ QString ProtocolStructure::getComparisonString(void) const
     }
     else
     {
+        access1 = name;
         access2 = "&_pg_user->" + name;
     }
 
@@ -483,7 +493,7 @@ QString ProtocolStructure::getComparisonString(void) const
     if(support.language == ProtocolSupport::c_language)
         output += spacing + "_pg_report += compare" + typeName + "(_pg_prename + \":" + name + "\"";
     else
-        output += spacing + "_pg_report += " + typeName + "::compare(_pg_prename + \":" + name + "\"";
+        output += spacing + "_pg_report += " + access1 + ".compare(_pg_prename + \":" + name + "\"";
 
     if(isArray())
         output += " + \"[\" + QString::number(_pg_i) + \"]\"";
@@ -1398,7 +1408,7 @@ QString ProtocolStructure::getClassDeclaration_CPP(void) const
         // and adding a new encode or decode function. All the other members and
         // methods come from the base class
         // The opening to the class.
-        output += "class " + typeName + "public: " + redefines->typeName + "\n";
+        output += "class " + typeName + " : public " + redefines->typeName + "\n";
         output += "{\n";
 
         // All members of the structure are public.
@@ -1646,7 +1656,11 @@ QString ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeC
     ProtocolFile::makeLineSeparator(output);
     output += TAB_IN + "*_pg_bytecount = _pg_byteindex;\n";
     output += "\n";
-    output += "}// encode" + typeName + "\n";
+
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// encode" + typeName + "\n";
+    else
+        output += "}// " + typeName + "::encode\n";
 
     return output;
 
@@ -1801,7 +1815,11 @@ QString ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeC
     output += TAB_IN + "*_pg_bytecount = _pg_byteindex;\n\n";
     output += TAB_IN + "return " + getReturnCode(true) + ";\n";
     output += "\n";
-    output += "}// decode" + typeName + "\n";
+
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// decode" + typeName + "\n";
+    else
+        output += "}// " + typeName + "::decode\n";
 
     return output;
 
@@ -1962,11 +1980,11 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         for(int i = 0; i < encodables.length(); i++)
         {
             // Structures (classes really) take care of themselves
-            if(!encodables.at(i)->isPrimitive())
+            if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
                 continue;
 
-            // Arrays are done later
-            if(encodables.at(i)->isArray())
+            // Arrays are done later, less they are strings
+            if(encodables.at(i)->isArray() && !encodables.at(i)->isString())
             {
                 hasarray1d = true;
                 if(encodables.at(i)->is2dArray())
@@ -1988,7 +2006,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
             initializerlist = " :\n" + initializerlist;
 
         output += "/*!\n";
-        output += " * Construct a " + typeName + ".\n";
+        output += " * Construct a " + typeName + "\n";
         output += " */\n";
         output += getSetToInitialValueFunctionSignature(true) + initializerlist;
         output += "{\n";
@@ -2003,14 +2021,15 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         for(int i = 0; i < encodables.length(); i++)
         {
             // Structures (classes really) take care of themselves
-            if(!encodables.at(i)->isPrimitive())
+            if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
                 continue;
 
             // Arrays are done here
-            if(!encodables.at(i)->isArray())
+            if(!encodables.at(i)->isArray() || encodables.at(i)->isString())
                 continue;
 
-            /// TODO: in C++ we should be able to do array initialization like this: myarray = {0};
+            /// TODO: This bites, I would like to do something better using modern C++
+
             ProtocolFile::makeLineSeparator(output);
             output += encodables[i]->getSetInitialValueString(true);
         }

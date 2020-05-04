@@ -445,6 +445,12 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         compareHeader.writeIncludeDirective(header.fileName());
         compareHeader.writeIncludeDirective("QString", QString(), true, false);
 
+        if(support.language == ProtocolSupport::cpp_language)
+        {
+            // In C++ these function declarations are in the class declaration
+            structfile->writeIncludeDirective("QString", QString(), true, false);
+        }
+
         list.clear();
         getCompareIncludeDirectives(list);
         compareHeader.writeIncludeDirectives(list);
@@ -457,6 +463,12 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         printHeader.writeIncludeDirective(header.fileName());
         printHeader.writeIncludeDirective("QString", QString(), true, false);
 
+        if(support.language == ProtocolSupport::cpp_language)
+        {
+            // In C++ these function declarations are in the class declaration
+            structfile->writeIncludeDirective("QString", QString(), true, false);
+        }
+
         list.clear();
         getPrintIncludeDirectives(list);
         printHeader.writeIncludeDirectives(list);
@@ -468,7 +480,14 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         mapHeader.writeIncludeDirective(structfile->fileName());
         mapHeader.writeIncludeDirective(header.fileName());
         mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
-        mapHeader.writeIncludeDirective("string", QString(), true, false);
+        mapHeader.writeIncludeDirective("QString", QString(), true, false);
+
+        if(support.language == ProtocolSupport::cpp_language)
+        {
+            // In C++ these function declarations are in the class declaration
+            structfile->writeIncludeDirective("QVariant", QString(), true, false);
+            structfile->writeIncludeDirective("QString", QString(), true, false);
+        }
 
         list.clear();
         getMapIncludeDirectives(list);
