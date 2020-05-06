@@ -2504,9 +2504,9 @@ QString ProtocolField::getComparisonString(void) const
     if(inMemoryType.isString)
     {
         if(support.language == ProtocolSupport::c_language)
-            output += TAB_IN + "if(QString::compare(_pg_user1->" + name + ", _pg_user2->" + name + ") != 0)\n";
+            output += TAB_IN + "if(std::string(_pg_user1->" + name + ").compare(_pg_user2->" + name + ") != 0)\n";
         else
-            output += TAB_IN + "if(QString::compare(" + name + ", _pg_user->" + name + ") != 0)\n";
+            output += TAB_IN + "if(std::string(" + name + ").compare(_pg_user->" + name + ") != 0)\n";
 
         output += TAB_IN + TAB_IN + "_pg_report += _pg_prename + \":" + name + " strings differ\\n\";\n";
     }
@@ -2603,10 +2603,10 @@ QString ProtocolField::getComparisonString(void) const
                 output += spacing + "_pg_report += " + access1 + ".compare(_pg_prename + \":" + name + "\"";
 
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
             // Structure compare we need to pass the address of the structure, not the object
             if(support.language == ProtocolSupport::c_language)
@@ -2624,16 +2624,20 @@ QString ProtocolField::getComparisonString(void) const
 
             // The _pg_report needs to include the array indices
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
-            // And finally the values that go into the _pg_report
-            if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += " + \" '\" + QString::number(" + access1 + printScalerString + ", 'g', 16) + \"' '\" + QString::number(" + access2 + printScalerString + ", 'g', 16) + \"'\\n\";\n";
+            // And finally the values go into the _pg_report
+            if(!printScalerString.isEmpty())
+                output += " + \" '\" + (std::stringstream() << std::setprecision(16) << " + access1 + printScalerString + ").str() + \"' '\" + (std::stringstream() << std::setprecision(16) << " + access2 + printScalerString + ").str() + \"'\\n\";\n";
+            else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
+                output += " + \" '\" + (std::stringstream() << std::setprecision(16) << " + access1 + ").str() + \"' '\" + (std::stringstream() << std::setprecision(16) << " + access2 + ").str() + \"'\\n\";\n";
+            else if(inMemoryType.isFloat)
+                output += " + \" '\" + (std::stringstream() << std::setprecision(7) << " + access1 + ").str() + \"' '\" + (std::stringstream() << std::setprecision(7) << " + access2 + ").str() + \"'\\n\";\n";
             else
-                output += " + \" '\" + QString::number(" + access1 + ") + \"' '\" + QString::number(" + access2 + ") + \"'\\n\";\n";
+                output += " + \" '\" + std::to_string(" + access1 + ") + \"' '\" + std::to_string(" + access2 + ") + \"'\\n\";\n";
 
         }// else not a struct
 
@@ -2686,7 +2690,7 @@ QString ProtocolField::getTextPrintString(void) const
 
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "_pg_report += _pg_prename + \":" + name + " '\" + QString(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
+        output += TAB_IN + "_pg_report += _pg_prename + \":" + name + " '\" + std::string(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
     }
     else
     {
@@ -2708,10 +2712,10 @@ QString ProtocolField::getTextPrintString(void) const
                 output += spacing + "_pg_report += " + getEncodeFieldAccess(true) + ".textPrint(_pg_prename + \":" + name + "\"";
 
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
             if(support.language == ProtocolSupport::c_language)
                 output += ", " + getEncodeFieldAccess(true);
@@ -2725,16 +2729,20 @@ QString ProtocolField::getTextPrintString(void) const
 
             // The _pg_report needs to include the array indices
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
             // And finally the values go into the _pg_report
-            if(inMemoryType.isFloat || !printScalerString.isEmpty())
-                output += " + \" '\" + QString::number(" + getEncodeFieldAccess(true) + printScalerString + ", 'g', 16) + \"'\\n\";\n";
+            if(!printScalerString.isEmpty())
+                output += " + \" '\" +  (std::stringstream() << std::setprecision(16) << " + getEncodeFieldAccess(true) + printScalerString + ").str() + \"'\\n\";\n";
+            else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
+                output += " + \" '\" +  (std::stringstream() << std::setprecision(16) << " + getEncodeFieldAccess(true) + ").str() + \"'\\n\";\n";
+            else if(inMemoryType.isFloat)
+                output += " + \" '\" +  (std::stringstream() << std::setprecision(7) << " + getEncodeFieldAccess(true) + ").str() + \"'\\n\";\n";
             else
-                output += " + \" '\" + QString::number(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
+                output += " + \" '\" + std::to_string(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
 
         }// else not a struct
 
@@ -2759,7 +2767,8 @@ QString ProtocolField::getTextReadString(void) const
 
     if(inMemoryType.isString)
     {
-        output += TAB_IN + "qstrncpy(" + getDecodeFieldAccess(true) + ", extractText(_pg_prename + \":" + name + "\", _pg_source, &_pg_fieldcount).toLatin1().constData(), " + array + ");\n";
+        // Notice the use of the "pg" copy function, which is just like strncpy but without the security vulnerabilities
+        output += TAB_IN + "pgstrncpy(" + getDecodeFieldAccess(true) + ", extractText(_pg_prename + \":" + name + "\", _pg_source, &_pg_fieldcount).c_str(), " + array + ");\n";
     }
     else
     {
@@ -2781,10 +2790,10 @@ QString ProtocolField::getTextReadString(void) const
                 output += spacing + "_pg_fieldcount += " + getDecodeFieldAccess(true) + ".textRead(_pg_prename + \":" + name + "\"";
 
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
             // Structure read, we need to pass the address of the structure, not the object        
             if(support.language == ProtocolSupport::c_language)
@@ -2799,31 +2808,37 @@ QString ProtocolField::getTextReadString(void) const
 
             // The array indices are part of the key text
             if(isArray())
-                output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
             if(is2dArray())
-                output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
             output += ", _pg_source, &_pg_fieldcount);\n";
 
             // Check the text and get a result if it is not empty
-            output += spacing + "if(!_pg_text.isEmpty())\n";
+            output += spacing + "if(!_pg_text.empty())\n";
 
-            if(inMemoryType.isFloat || !readScalerString.isEmpty())
-                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toDouble()" + readScalerString + ");\n";
+            if(!readScalerString.isEmpty())
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stod(_pg_text)" + readScalerString + ");\n";
+            else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::stod(_pg_text);\n";
+            else if(inMemoryType.isFloat)
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::stof(_pg_text);\n";
             else if(inMemoryType.isSigned)
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toLongLong());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoll(_pg_text));\n";
+                if(inMemoryType.bits > 16)
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stol(_pg_text));\n";
                 else
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toInt());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoi(_pg_text));\n";
             }
             else
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toULongLong());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoull(_pg_text));\n";
                 else
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(_pg_text.toUInt());\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoul(_pg_text));\n";
             }
 
         }// else not a struct

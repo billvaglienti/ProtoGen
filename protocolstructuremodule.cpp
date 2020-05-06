@@ -440,12 +440,14 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     {
         compareHeader->writeIncludeDirective(structHeader->fileName());
         compareHeader->writeIncludeDirective(header.fileName());
-        compareHeader->writeIncludeDirective("QString", QString(), true, false);
+        compareHeader->writeIncludeDirective("string", QString(), true, false);
+        compareSource->writeIncludeDirective("sstream", QString(), true, false);
+        compareSource->writeIncludeDirective("iomanip", QString(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
             // In C++ these function declarations are in the class declaration
-            structHeader->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("string", QString(), true, false);
         }
 
         list.clear();
@@ -458,13 +460,15 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(print)
     {
         printHeader->writeIncludeDirective(structHeader->fileName());
-        printHeader->writeIncludeDirective(header.fileName());
-        printHeader->writeIncludeDirective("QString", QString(), true, false);
+        printHeader->writeIncludeDirective(header.fileName());        
+        printHeader->writeIncludeDirective("string", QString(), true, false);
+        printSource->writeIncludeDirective("sstream", QString(), true, false);
+        printSource->writeIncludeDirective("iomanip", QString(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
             // In C++ these function declarations are in the class declaration
-            structHeader->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("string", QString(), true, false);
         }
 
         list.clear();
@@ -953,9 +957,9 @@ void ProtocolStructureModule::createTopLevelStructureHelperFunctions(void)
 //! Get the text used to extract text for text read functions
 QString ProtocolStructureModule::getExtractTextFunction(void)
 {
-    return QString("\
+    std::string output = "\
 //! Extract text that is identified by a key\n\
-static QString extractText(const QString& key, const QString& source, int* fieldcount);\n\
+static std::string extractText(const std::string& key, const std::string& source, int* fieldcount);\n\
 \n\
 /*!\n\
  * Extract text that is identified by a key\n\
@@ -964,40 +968,46 @@ static QString extractText(const QString& key, const QString& source, int* field
  * \\param fieldcount is incremented whenever the key is found in the source\n\
  * \\return the extracted text, which may be empty\n\
  */\n\
-QString extractText(const QString& key, const QString& source, int* fieldcount)\n\
+std::string extractText(const std::string& key, const std::string& source, int* fieldcount)\n\
 {\n\
-    QString text;\n\
+    std::string text;\n\
 \n\
-    int index = source.indexOf(key);\n\
+    std::string::size_type index = source.find(key);\n\
 \n\
-    if(index >= 0)\n\
+    if(index < source.length())\n\
     {\n\
         // This is the location of the first character after the key\n\
-        int first = index + key.length();\n\
+        std::string::size_type first = index + key.length();\n\
+\n\
+        // The location of the linefeed\n\
+        std::string::size_type linefeed = source.rfind(\"\\n\", first);\n\
 \n\
         // This is how many characters until we get to the linefeed\n\
-        int length = source.indexOf(\"\\n\", first) - first;\n\
-\n\
-        if(length > 0)\n\
+        if((linefeed > first) && (linefeed < source.length()))\n\
         {\n\
+            // This is the number of characters to remove\n\
+            std::string::size_type length = linefeed - first;\n\
+\n\
             // Increment our field count\n\
             (*fieldcount)++;\n\
 \n\
             // Extract the text between the key and the linefeed\n\
-            text = source.mid(first, length);\n\
+            text = source.substr(first, length);\n\
 \n\
             // Remove the first \" '\" from the string\n\
-            if((text.length() > 1) && (text.at(0) == QChar(' ')) && (text.at(1) == QChar('\\'')))\n\
-                text.remove(0, 2);\n\
+            if((text.length() > 1) && (text.at(0) == ' ') && (text.at(1) == '\\''))\n\
+                text.erase(0, 2);\n\
 \n\
             // Remove the last \"'\" from the string\n\
-            if((text.length() > 0) && (text.at(text.length()-1) == QChar('\\'')))\n\
-                text.remove(text.length()-1, 1);\n\
+            if((text.length() > 0) && (text.back() == '\\''))\n\
+                text.erase(text.length()-1, 1);\n\
         }\n\
     }\n\
 \n\
     return text;\n\
 \n\
-}// extractText\n\n");
+}// extractText\n";
+
+    return QString::fromStdString(output);
 
 }// ProtocolStructureModule::getExtractTextFunction

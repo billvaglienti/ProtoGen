@@ -371,7 +371,7 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
     {
         ProtocolFile::makeLineSeparator(output);
         output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
-        output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
+        output += TAB_IN + "static std::string compare(std::string prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
         ProtocolFile::makeLineSeparator(output);
     }
 
@@ -380,7 +380,7 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
     {
         ProtocolFile::makeLineSeparator(output);
         output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
-        output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
+        output += TAB_IN + "static std::string textPrint(std::string prename, const " + support.pointerType + " pkt);\n";
         ProtocolFile::makeLineSeparator(output);
     }
 
@@ -645,7 +645,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             compareHeader->makeLineSeparator();
             compareHeader->write("//! Compare two " + support.prefix + name + " packets and generate a report\n");
-            compareHeader->write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
+            compareHeader->write("std::string compare" + support.prefix + name + support.packetParameterSuffix + "(std::string prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
             compareHeader->makeLineSeparator();
         }
 
@@ -653,7 +653,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             printHeader->makeLineSeparator();
             printHeader->write("//! Generate a string that describes the contents of a " + name + " packet\n");
-            printHeader->write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString prename, const " + support.pointerType + " pkt);\n");
+            printHeader->write("std::string textPrint" + support.prefix + name + support.packetParameterSuffix + "(std::string prename, const " + support.pointerType + " pkt);\n");
             printHeader->makeLineSeparator();
         }
 
@@ -689,12 +689,12 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         compareSource->write(" */\n");
 
         if(support.language == ProtocolSupport::c_language)
-            compareSource->write("QString compare" + support.prefix + name + support.packetParameterSuffix + "(QString _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
+            compareSource->write("std::string compare" + support.prefix + name + support.packetParameterSuffix + "(std::string _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
         else
-            compareSource->write("QString " + typeName + "::compare(QString _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
+            compareSource->write("std::string " + typeName + "::compare(std::string _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
 
         compareSource->write("{\n");
-        compareSource->write(TAB_IN + "QString _pg_report;\n");
+        compareSource->write(TAB_IN + "std::string _pg_report;\n");
 
         if(numDecodes > 0)
         {
@@ -703,7 +703,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             compareSource->write(TAB_IN + structName + " _pg_struct1, _pg_struct2;\n");
 
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "if(_pg_prename.isEmpty())\n");
+            compareSource->write(TAB_IN + "if(_pg_prename.empty())\n");
             compareSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
 
             if(support.language == ProtocolSupport::c_language)
@@ -733,7 +733,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         else
         {
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "if(_pg_prename.isEmpty())\n");
+            compareSource->write(TAB_IN + "if(_pg_prename.empty())\n");
             compareSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
 
             compareSource->makeLineSeparator();
@@ -781,11 +781,11 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         printSource->write(" * \\return a string describing the contents of _pg_pkt\n");
         printSource->write(" */\n");
         if(support.language == ProtocolSupport::c_language)
-            printSource->write("QString textPrint" + support.prefix + name + support.packetParameterSuffix + "(QString _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
+            printSource->write("std::string textPrint" + support.prefix + name + support.packetParameterSuffix + "(std::string _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
         else
-            printSource->write("QString " + typeName + "::textPrint(QString _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
+            printSource->write("std::string " + typeName + "::textPrint(std::string _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
         printSource->write("{\n");
-        printSource->write(TAB_IN + "QString _pg_report;\n");
+        printSource->write(TAB_IN + "std::string _pg_report;\n");
 
         if(numDecodes > 0)
         {
@@ -794,7 +794,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
             printSource->write(TAB_IN + structName + " _pg_user;\n");
 
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "if(_pg_prename.isEmpty())\n");
+            printSource->write(TAB_IN + "if(_pg_prename.empty())\n");
             printSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
 
             if(support.language == ProtocolSupport::c_language)
@@ -824,7 +824,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         else
         {
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "if(_pg_prename.isEmpty())\n");
+            printSource->write(TAB_IN + "if(_pg_prename.empty())\n");
             printSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
 
             printSource->makeLineSeparator();
@@ -838,7 +838,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
 
         printSource->makeLineSeparator();
         printSource->write(TAB_IN + "// Print the packet size\n");
-        printSource->write(TAB_IN + "_pg_report += _pg_prename + \" packet size is \" + QString::number(get" + support.protoName + "PacketSize(_pg_pkt)) + \"\\n\";\n");
+        printSource->write(TAB_IN + "_pg_report += _pg_prename + \" packet size is \" + std::to_string(get" + support.protoName + "PacketSize(_pg_pkt)) + \"\\n\";\n");
 
         if(numDecodes > 0)
         {

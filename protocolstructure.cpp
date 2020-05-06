@@ -496,10 +496,10 @@ QString ProtocolStructure::getComparisonString(void) const
         output += spacing + "_pg_report += " + access1 + ".compare(_pg_prename + \":" + name + "\"";
 
     if(isArray())
-        output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
     if(is2dArray())
-        output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
     if(support.language == ProtocolSupport::c_language)
         output += ", " + access1 + ", " + access2 + ");\n";
@@ -542,10 +542,10 @@ QString ProtocolStructure::getTextPrintString(void) const
         output += spacing + "_pg_report += " + getEncodeFieldAccess(true) + ".textPrint(_pg_prename + \":" + name + "\"";
 
     if(isArray())
-        output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
     if(is2dArray())
-        output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
     if(support.language == ProtocolSupport::c_language)
         output += ", " + getEncodeFieldAccess(true);
@@ -588,10 +588,10 @@ QString ProtocolStructure::getTextReadString(void) const
         output += spacing + "_pg_fieldcount += " + getEncodeFieldAccess(true) + ".textRead(_pg_prename + \":" + name + "\"";
 
     if(isArray())
-        output += " + \"[\" + QString::number(_pg_i) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
     if(is2dArray())
-        output += " + \"[\" + QString::number(_pg_j) + \"]\"";
+        output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
     output += ", _pg_source";
 
@@ -2201,16 +2201,16 @@ QString ProtocolStructure::getComparisonFunctionSignature(bool insource) const
     if(support.language == ProtocolSupport::c_language)
     {
         if(insource)
-            return "QString compare" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user1, const " + structName + "* _pg_user2)";
+            return "std::string compare" + typeName + "(const std::string& _pg_prename, const " + structName + "* _pg_user1, const " + structName + "* _pg_user2)";
         else
-            return "QString compare" + typeName + "(const QString& prename, const " + structName + "* user1, const " + structName + "* user2)";
+            return "std::string compare" + typeName + "(const std::string& prename, const " + structName + "* user1, const " + structName + "* user2)";
     }
     else
     {
         if(insource)
-            return "QString " + typeName + "::compare(const QString& _pg_prename, const " + structName + "* _pg_user) const";
+            return "std::string " + typeName + "::compare(const std::string& _pg_prename, const " + structName + "* _pg_user) const";
         else
-            return "QString compare(const QString& prename, const " + structName + "* user) const";
+            return "std::string compare(const std::string& prename, const " + structName + "* user) const";
     }
 
 }// ProtocolStructure::getComparisonFunctionSignature
@@ -2307,7 +2307,7 @@ QString ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
     output += " */\n";
     output += getComparisonFunctionSignature(true) + "\n";
     output += "{\n";
-    output += TAB_IN + "QString _pg_report;\n";
+    output += TAB_IN + "std::string _pg_report;\n";
 
     if(needsDecodeIterator)
         output += TAB_IN + "unsigned _pg_i = 0;\n";
@@ -2344,16 +2344,16 @@ QString ProtocolStructure::getTextPrintFunctionSignature(bool insource) const
     if(support.language == ProtocolSupport::c_language)
     {
         if(insource)
-            return "QString textPrint" + typeName + "(const QString& _pg_prename, const " + structName + "* _pg_user)";
+            return "std::string textPrint" + typeName + "(const std::string& _pg_prename, const " + structName + "* _pg_user)";
         else
-            return "QString textPrint" + typeName + "(const QString& prename, const " + structName + "* user)";
+            return "std::string textPrint" + typeName + "(const std::string& prename, const " + structName + "* user)";
     }
     else
     {
         if(insource)
-            return "QString " + typeName + "::textPrint(const QString& _pg_prename) const";
+            return "std::string " + typeName + "::textPrint(const std::string& _pg_prename) const";
         else
-            return "QString textPrint(const QString& prename) const";
+            return "std::string textPrint(const std::string& prename) const";
     }
 
 }// ProtocolStructure::getTextPrintFunctionSignature
@@ -2438,7 +2438,7 @@ QString ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
     output += " */\n";
     output += getTextPrintFunctionSignature(true) + "\n";
     output += "{\n";
-    output += TAB_IN + "QString _pg_report;\n";
+    output += TAB_IN + "std::string _pg_report;\n";
 
     if(needsDecodeIterator)
         output += TAB_IN + "unsigned _pg_i = 0;\n";
@@ -2475,16 +2475,16 @@ QString ProtocolStructure::getTextReadFunctionSignature(bool insource) const
     if(support.language == ProtocolSupport::c_language)
     {
         if(insource)
-            return "int textRead" + typeName + "(const QString& _pg_prename, const QString& _pg_source, " + structName + "* _pg_user)";
+            return "int textRead" + typeName + "(const std::string& _pg_prename, const std::string& _pg_source, " + structName + "* _pg_user)";
         else
-            return "int textRead" + typeName + "(const QString& prename, const QString& source, " + structName + "* user)";
+            return "int textRead" + typeName + "(const std::string& prename, const std::string& source, " + structName + "* user)";
     }
     else
     {
         if(insource)
-            return "int " + typeName + "::textRead(const QString& _pg_prename, const QString& _pg_source)";
+            return "int " + typeName + "::textRead(const std::string& _pg_prename, const std::string& _pg_source)";
         else
-            return "int textRead(const QString& prename, const QString& source)";
+            return "int textRead(const std::string& prename, const std::string& source)";
     }
 
 }// ProtocolStructure::getTextReadFunctionSignature
@@ -2572,7 +2572,7 @@ QString ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
     output += " */\n";
     output += getTextReadFunctionSignature(true) + "\n";
     output += "{\n";
-    output += TAB_IN + "QString _pg_text;\n";
+    output += TAB_IN + "std::string _pg_text;\n";
     output += TAB_IN + "int _pg_fieldcount = 0;\n";
 
     if(needsDecodeIterator)
@@ -2721,7 +2721,6 @@ QString ProtocolStructure::getMapEncodeFunctionBody(bool includeChildren) const
 
     ProtocolFile::makeLineSeparator(output);
 
-    output += "\n";
     if(support.language == ProtocolSupport::c_language)
         output += "}// mapEncode" + typeName + "\n";
     else
@@ -2854,7 +2853,6 @@ QString ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) const
 
     ProtocolFile::makeLineSeparator(output);
 
-    output += "\n";
     if(support.language == ProtocolSupport::c_language)
         output += "}// mapDecode" + typeName + "\n";
     else
