@@ -6,8 +6,8 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     if(!support.bitfieldtest)
         return;
 
-    ProtocolHeaderFile header;
-    ProtocolSourceFile source;
+    ProtocolHeaderFile header(support);
+    ProtocolSourceFile source(support);
 
     // We assume that the ProtocolParser has already generated the encode/decode
     // functions in the bitfieldtest module, we just need to exercise them.

@@ -9,10 +9,10 @@ class ProtocolFile
 {
 public:
     //! Construct the protocol file
-    ProtocolFile(const QString& moduleName, bool temporary = true);
+    ProtocolFile(const QString& moduleName, ProtocolSupport supported, bool temporary = true);
 
     //! Construct the protocol file
-    ProtocolFile(void);
+    ProtocolFile(ProtocolSupport supported);
 
     //! Destructor that performs the actual file write
     virtual ~ProtocolFile();
@@ -26,23 +26,26 @@ public:
     //! Append to the current contents of the file
     void write(const QString& text);
 
+    //! Append to the current contents of the file, if text is not already in the file
+    void writeOnce(const QString& text);
+
     //! Output a list of include directives
     void writeIncludeDirectives(const QStringList& list);
 
     //! Output an include directive
     void writeIncludeDirective(const QString& include, const QString& comment = QString(), bool global = false, bool autoextension = true);
 
-    //! Set the license text for the file
-    void setLicenseText(const QString text) { license = text; }
+    //! Set the name of the module
+    void setModuleNameAndPath(QString name, QString filepath);
 
     //! Set the name of the module
-    void setModuleNameAndPath(QString name, QString filepath, ProtocolSupport::LanguageType lang);
+    void setModuleNameAndPath(QString name, QString filepath, ProtocolSupport::LanguageType languageoverride);
 
     //! Set the name of the module
-    void setModuleNameAndPath(QString prefix, QString name, QString filepath, ProtocolSupport::LanguageType lang);
+    void setModuleNameAndPath(QString prefix, QString name, QString filepath);
 
-    //! Set the language of this file
-    void setLanguage(ProtocolSupport::LanguageType lang) {language = lang;}
+    //! Set the name of the module
+    void setModuleNameAndPath(QString prefix, QString name, QString filepath, ProtocolSupport::LanguageType languageoverride);
 
     //! Return the path
     virtual QString filePath(void) const {return path;}
@@ -100,19 +103,15 @@ protected:
     //! Return the correct on disk name
     QString fileNameAndPathOnDisk(void) const;
 
-    QString extension;  //!< The file extension
-    QString path;       //!< Output path for the file
-    QString module;     //!< The module name, not including the file extension
-    QString contents;   //!< The contents, not including the prologue or epilogue
+    ProtocolSupport support;//!< Protocol wide support details
+    QString extension;      //!< The file extension
+    QString path;           //!< Output path for the file
+    QString module;         //!< The module name, not including the file extension
+    QString contents;       //!< The contents, not including the prologue or epilogue
 
-    QString license;    //!< License text
-
-    bool dirty;         //!< Flag set to indicate that the file contents are dirty and need to be flushed
-    bool appending;     //!< Flag set if an append operation is in progress
-    bool temporary;     //!< Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
-
-    //! The language this file is intended for
-    ProtocolSupport::LanguageType language;
+    bool dirty;             //!< Flag set to indicate that the file contents are dirty and need to be flushed
+    bool appending;         //!< Flag set if an append operation is in progress
+    bool temporary;         //!< Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
 };
 
 
@@ -120,8 +119,14 @@ class ProtocolHeaderFile : public ProtocolFile
 {
 public:
 
+    //! Construct the protocol header file
+    ProtocolHeaderFile(ProtocolSupport supported) : ProtocolFile(supported){}
+
     //! Write the file to disc, including any prologue/epilogue
     virtual bool flush(void) Q_DECL_OVERRIDE;
+
+    //! Write a comment for the entire file in the \file block
+    void setFileComment(const QString& comment);
 
 protected:
 
@@ -139,6 +144,9 @@ protected:
 class ProtocolSourceFile : public ProtocolFile
 {
 public:
+
+    //! Construct the protocol header file
+    ProtocolSourceFile(ProtocolSupport supported) : ProtocolFile(supported){}
 
     //! Write the file to disc, including any prologue/epilogue
     bool flush(void) Q_DECL_OVERRIDE;

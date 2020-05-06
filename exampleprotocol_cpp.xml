@@ -1,0 +1,312 @@
+<?xml version="1.0"?>
+
+<Protocol name="Demolink" title="Demonstration of protogen" prefix="" file="linkcode" cpp="true" compare="true" print="true" map="true" pointer="testPacket_t" maxSize="1000" api="1" version="1.0.0.a" endian="little" supportLongBitfield="true" bitfieldTest="true" comment=
+"This is an demonstration protocol definition. This file demonstrates most things
+that the ProtoGen application can do regarding automatic protocol packing/upacking
+code generation.
+
+ProtoGen can handle bitfields, enumerations, arrays, and can
+efficiently encode data for little or big endian architectures.">
+
+    <Include name="string.h" comment="C string manipulation function header" global="true"/>
+    <Include name="indices.h" comment="indices.h is included for array length enumerations"/>
+    <Include name="translation.h" comment="translation.h is included to provide translation functions"/>
+
+    <Documentation name="Enumerations" paragraph="1"/>
+
+    <Enum name="packetIds" title="Packet identifiers" lookup="true" lookupTitle="true" lookupComment="true" comment="The list of packet identifiers" description="even more stuff!">
+        <Value name="KEEPALIVE" title="Keep alive" comment="Zero length packet used to refresh communications timeouts."/>
+        <Value name="ENGINECOMMAND" title="Engine command" value="10" comment="Engine command packet"/>
+        <Value name="ENGINESETTINGS" title="Engine settings" comment="Engine settings packet"/>
+        <Value name="THROTTLESETTINGS" title="Throttle settings" comment="Throttle settings packet"/>
+        <Value name="VERSION" value="20" title="Version information" comment="Version reporting packet"/>
+        <Value name="TELEMETRY" title="Telemetry" comment="Regular elemetry packet"/>
+        <Value name="GPS" title="GPS telemetry" comment="Data for a single GPS"/>
+        <Value name="CONSTANT" comment="This packet just tests constant values"/>
+        <Value name="ZEROLENGTH" comment="This packet tests a zero length packet"/>
+        <Value name="MULTIDIMENSIONTABLE" comment="This packet tests variable length multi-dimensional arrays"/>
+        <Value name="LOWPREC_MULTIDIMENSIONTABLE" comment="This packet tests low precision variable length multi-dimensional arrays"/>
+        <Value name="BITFIELDTEST" comment="This packet tests bitfield groups"/>
+        <Value name="ORION_PKT_KLV_USER_DATA1"/>
+        <Value name="ORION_PKT_KLV_USER_DATA2"/>
+        <Value name="ORION_PKT_KLV_USER_DATA3"/>
+        <Value name="ORION_PKT_KLV_USER_DATA4" value="0x01 + ORION_PKT_KLV_USER_DATA3"/>
+        <Value name="ORION_PKT_KLV_USER_DATA5"/>
+        <Value name="ORION_PKT_KLV_USER_DATA6" value="5 + ORION_PKT_KLV_USER_DATA1" comment="Demonstrating that protogen can resolve simple math here"/>
+    </Enum>
+
+    <Enum name="ThreeD" file="globalenum" comment="3D axis enumeration">
+        <Value name="X" title="X-RAY"/>
+        <Value name="Y" title="Y-RAY"/>
+        <Value name="Z"/>
+        <Value name="N3D"/>
+    </Enum>
+
+    <Require file="dependson_cpp.xml"/>
+
+    <!-- This is now part of the dependon.xml file
+    <Enum name="GPSConstants" file="globalenum" comment="Constants used with GPS systems">
+        <Value name="GPS_BAND_L1" value="0"/>
+        <Value name="GPS_BAND_L2" value="1"/>
+        <Value name="GPS_BAND_L5" value="2"/>
+        <Value name="NUM_GPS_BANDS" value="3"/>
+        <Value name="NUM_GPS_SATS" value="36"/>
+    </Enum>
+
+    <Documentation name="Added documentation" paragraph="1" comment="You can add more documentation in between packets. Each Documentation tag is includes an optional paragraph label, with controllable outline level
+
+    You can have multiple paragraphs in a documentation tag by placing two line feeds in the xml"/>
+
+    <Documentation name="Packets" paragraph="1"/>
+
+    <Structure name="testPacket" encode="false" decode="false" file="DemolinkProtocol.h" comment="A simple packet structure demonstrating that you can output basic structures without encodings">
+        <Enum name="testPktIds" comment="Values used in the definition of the generic packet">
+            <Value name="TEST_PKT_SYNC_BYTE0" value="0x55" comment="First synchronization byte"/>
+            <Value name="TEST_PKT_SYNC_BYTE1" value="0xAA" comment="Second synchronization byte"/>
+            <Value name="TEST_PKT_MAX_DATA" value="255" comment="Maximum number of data bytes in a test packet"/>
+            <Value name="TEST_PKT_OVERHEAD" value="6" comment="Overhead of a packet beyond the number of data bytes"/>
+
+        </Enum>
+        <Data name="sync0" inMemoryType="unsigned8" comment="First synchronization byte to indicate a packet may be forthcoming"/>
+        <Data name="sync1" inMemoryType="unsigned8" comment="Second synchronization byte to indicate a packet may be forthcoming"/>
+        <Data name="length" inMemoryType="unsigned8" comment="Number of data bytes in the packet"/>
+        <Data name="pkttype" inMemoryType="unsigned8" comment="Packet type identifier"/>
+        <Data name="data" inMemoryType="unsigned8" array="TEST_PKT_MAX_DATA+2" comment="Packet data space, plus 2 bytes checksum"/>
+        <Data name="rxstate" inMemoryType="unsigned16" hidden="true" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
+    </Structure>
+
+    <Packet name="KlvUserData" structureInterface="true" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags"
+        ID="ORION_PKT_KLV_USER_DATA1, ORION_PKT_KLV_USER_DATA2;ORION_PKT_KLV_USER_DATA3 ORION_PKT_KLV_USER_DATA4    ORION_PKT_KLV_USER_DATA5 ORION_PKT_KLV_USER_DATA6">
+        <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
+        <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
+        <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>
+    </Packet>
+    -->
+
+    <Packet name="KeepAlive" ID="KEEPALIVE" structureInterface="true" parameterInterface="true" comment="Send this packet to inform the receiver that the communications link is still active.">
+        <Data name="api" inMemoryType="unsigned16" initialValue="0" constant="getDemolinkApi()" checkConstant="true" comment="the API of the sending side"/>
+        <Data name="version" inMemoryType="fixedstring" array="16" constant="getDemolinkVersion()" checkConstant="true" comment="the version of the sending side"/>
+        <Data name="reserved" inMemoryType="null" array="4" encodedType="unsigned8" comment="Reserved space for expansion"/>
+
+        <!--
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield11" comment="Reserved space for expansion"/>
+        <Data name="testBitfieldIntegerScaling" inMemoryType="unsigned32" encodedType="bitfield21" min="-15" scaler="2"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield5" comment="Reserved space for expansion"/>
+        <Data name="testLongBitfieldIntegerScaling" inMemoryType="unsigned64" encodedType="bitfield59" min="2000" scaler="5"/>
+        -->
+    </Packet>
+
+    <Documentation name="More documentation" comment="Even more documentation can be added as you want" file="moredocsfile.txt"/>
+
+    <Packet name="GPS" file="GPS" useInOtherPackets="true" comment="Information from a GPS including the position, velocity, and quality data.
+                                           This is a generic GPS description that should suffice for most GPS devices">
+		
+        <Data name="PosLLA" struct="PositionLLA" comment="Position in geographic coordinates with respect to the WGS-84 ellipsoid"/>
+
+        <Structure name="VelocityNED" comment="Velocity in North, East, Down">
+            <Data name="north" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the North direction"/>
+            <Data name="east" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the East direction"/>
+            <Data name="down" inMemoryType="float32" encodedType="signed16" scaler="100" comment="velocity in the Down direction"/>
+        </Structure>
+
+        <Data name="ITOW" title="Time of week" inMemoryType="unsigned32" comment="GPS time of week in milliseconds"/>
+        <Data name="Week" inMemoryType="unsigned16" comment="GPS week number"/>
+        <Data name="PDOP" inMemoryType="float32" encodedType="unsigned 8" min = "0" max="25.5" comment="Position dilution of precision"/>
+        <Data name="numSvInfo" inMemoryType="unsigned8" comment="The number of space vehicles for which there is data in this structure"/>
+        <Structure name="svInfo" array="NUM_GPS_SATS" variableArray="numSvInfo" comment="details about individual space vehicles">
+            <Data name="PRN" inMemoryType="unsigned8" comment="Satellite psuedo-random-number identifier"/>
+            <Data name="elevation" inMemoryType="float32" encodedType="signed8" max="pi" printscaler="180/pi" comment="elevation angle of the satellite in radians"/>
+            <Data name="azimuth" inMemoryType="float32" encodedType="signed8" max="pi" printscaler="180/pi" comment="azimuth angle of the satellite in radians"/>
+            <Data name="CNo" inMemoryType="unsigned8" array="NUM_GPS_BANDS" comment="Carrier to noise ratio in dB-Hz for each GPS frequency"/>
+            <Data name="visible" inMemoryType="bool" encodedType="bitfield1" comment="Set if the satellite should be visible"/>
+            <Data name="tracked" inMemoryType="bool" encodedType="bitfield1" comment="Set if the satellite is tracked"/>
+            <Data name="healthy" inMemoryType="bool" encodedType="bitfield1" comment="Set if the satellite is reporting itself as health"/>
+            <Data name="used" inMemoryType="bool" encodedType="bitfield1" comment="Set if the satellite is used in the current PVT solution"/>
+        </Structure>
+
+    </Packet>
+
+    <Packet name="EngineCommand" file="Engine" ID="ENGINECOMMAND"
+            comment="Engine command packet. Send this packet to change the engines operating point. The command can be
+            either a throttle or an RPM. The interpretation of the command is a function of the engine operating mode,
+            see the EngineSettings packet.">
+
+        <Documentation name="Engine command details" comment="You can have documentation specific to a packet if you like."/>
+	
+        <Data name="command" inMemoryType="float32" comment="The engine command, which is a throttle or an RPM depending on the engine control mode"/>
+        <Data name="field0" inMemoryType="bitfield1" default="1" comment="An extra bitfield to do whatever you want"/>
+        <Data name="field1" inMemoryType="bitfield1" default="0" comment="An extra bitfield to do whatever you want"/>
+
+    </Packet>
+   
+    <Packet name="TestWeirdStuff" ID="100">
+        <Data name="Field0" inMemoryType="unsigned32"/>
+        <Data name="Field1" inMemoryType="bitfield1" default="0"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield15" default="0"/>
+        <Data name="Field2" inMemoryType="float32" default="0" encodedType="signed16" max="pi"/>
+        <Data name="Field3" inMemoryType="fixedstring" array="32" default="test"/>
+        <Data name="Field4" inMemoryType="string" array="32" default="secondtest"/>
+        <Data name="Field5" inMemoryType="bool" array="4" array2d="3" encodedType="unsigned16" default="false"/>
+    </Packet>
+
+    <Packet name="MultiDimensionTable" ID="MULTIDIMENSIONTABLE">
+        <Data name="numRows" inMemoryType="unsigned8"/>
+        <Data name="numCols" inMemoryType="unsigned8"/>
+        <Data name="floatData" inMemoryType="float32" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
+        <Data name="scaledData" inMemoryType="float32" encodedType="signed16" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed16" scaler="3" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="dates" struct="Date" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
+    </Packet>
+
+    <Packet name="lowPrecisionMultiTable" redefine="MultiDimensionTable" ID="LOWPREC_MULTIDIMENSIONTABLE">
+        <Data name="numRows" inMemoryType="unsigned8"/>
+        <Data name="numCols" inMemoryType="unsigned8"/>
+        <Data name="floatData" inMemoryType="float32" encodedType="float16" array="N3D" variableArray="numRows" array2d="20" variable2dArray="numCols"/>
+        <Data name="scaledData" inMemoryType="float32" encodedType="signed8" max="pi" array="20" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="intData" inMemoryType="signed16" encodedType="signed8" array="N3D" variableArray="numRows" array2d="N3D" variable2dArray="numCols"/>
+        <Data name="dates" struct="smallDate" array="10" variableArray="numRows" array2d="10" variable2dArray="numCols"/>
+    </Packet>
+
+    <Packet name="EngineSettings" file="Engine" ID="ENGINESETTINGS"
+            comment="Change the engine control settings, including the operating
+            mode and feedback gains. Engine settings are stored non-volatilely each
+            time this packet is received. Send this packet with zero length to
+            request the current engine settings.">
+    
+        <Enum name="engineModes" comment="Modes of operation for the engine">
+            <Value name="openLoop" comment="Engine control using direct throttle command with no feedback"/>
+            <Value name="throttleToRPM" comment="Throttle command is mapped to an RPM command"/>
+            <Value name="directRPM" comment="RPM is commanded directly by the user"/>
+        </Enum>
+            
+        <Data name="mode" enum="engineModes" encodedType="unsigned8" comment="Engine control mode of operation"/>
+        <Data name="gain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
+        <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
+        <Code name="codeexample" include="translation.h" decode_cpp="if(maxRPM &lt;= 0) return false;" decode_c="if(_pg_user->maxRPM &lt;= 0) return 0;" comment="Packet is not valid if maximum RPM is zero"/>
+
+    </Packet>
+
+    <Packet name="ThrottleSettings" file="Engine" deffile="EngineDefinitions.hpp" ID="THROTTLESETTINGS"
+            comment="Change the throttle control settings. The engine control
+            laws output a throttle command signal from 0 to 1. The data in this
+            packet are used to determine what pulse width to send to the servo 
+            for that throttle. The throttle to pulse width mapping can be a 
+            straight line, or a linearly interpolated table with up to 10 points.">
+        
+        <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" limitOnEncode="true" comment="Number of points in the throttle curve"/>
+        <!-- Enable this to demonstrate the bug I need to fix <Code name="CodeShouldNotInterruptBitFields" encode=";"/> -->
+        <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield27"/>
+        <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>
+        
+        <Structure name="curvePoint" array="10" variableArray="numCurvePoints" comment="table for throttle calibration">
+            <Data name="throttle" inMemoryType="float32" encodedType="unsigned8" initialValue="0" verifyMinValue="auto" verifyMaxValue="auto" min="0.0" max="1.0"
+                  comment="Throttle for this curve point, from 0.0 to 1.0"/>
+            <Data name="PWM" inMemoryType="unsigned16" initialValue="1500" verifyMinValue="900" verifyMaxValue="2100"
+                  comment="PWM in microseconds for this curve point"/>
+        </Structure>
+
+        <Data name="lowPWM" inMemoryType="unsigned16" default="1100" initialValue="1100" verifyMinValue="900" verifyMaxValue="2100"
+              comment="PWM in microseconds for 0% throttle"/>
+        <Data name="highPWM" inMemoryType="unsigned16" default="1900" initialValue="1900" verifyMinValue="900" verifyMaxValue="2100"
+              comment="PWM in microseconds for 100% throttle"/>
+        <Data name="defaultBitfield" inMemoryType="bitfield5" default="0" comment="A demonstration of a default bitfield"/>
+        
+    </Packet>
+            
+    <Structure name="Date" deffile="OtherDefinitions" comment="Calendar date information">
+        <Data name="year" inMemoryType="unsigned16" verifyMinValue="2000" min="2000" comment="year of the date"/>
+        <Data name="month" inMemoryType="unsigned8" verifyMaxValue="12" comment="month of the year, from 1 to 12"/>
+        <Data name="day" inMemoryType="unsigned8" verifyMaxValue="31" comment="day of the month, from 1 to 31"/>
+    </Structure>
+    
+    <Structure name="smallDate" redefine="Date" deffile="OtherDefinitions" comment="Calendar date information">
+        <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" comment="year of the date"/>
+        <Data name="month" inMemoryType="unsigned8" encodedType="bitfield4" comment="month of the year, from 1 to 12"/>
+        <Data name="day" inMemoryType="unsigned8" encodedType="bitfield5" comment="day of the month, from 1 to 31"/>
+    </Structure>
+
+    <Structure name="Board" comment="Manufacturing and calibration details about the board hardware">
+        <Data name="manufactureDate" struct="Date" comment="The date this board was manufactured"/>
+        <Data name="calibratedDate" struct="Date" comment="The date this board was calibrated and tested"/>
+        <Data name="serialNumber" inMemoryType="unsigned32" comment="serial number of the board"/>
+        <Data name="assemblyNumber" inMemoryType="bitfield31" comment="serial number of the assembly"/>
+        <Data name="isCalibrated" inMemoryType="bitfield1" comment="set if the board has been calibrated"/>        
+        <Data name="description" inMemoryType="string" array="32" comment="The board description"/>
+    </Structure>
+
+    <Packet name="Version" parameterInterface="true" structureInterface="true"
+            comment="Version information for the software and hardware. Send
+            this packet with zero length to request the version information.">
+        
+        <Data name="board" struct="Board" comment="details about this boards provenance"/>
+        <Data name="major" inMemoryType="unsigned8" comment="major version of the software"/>
+        <Data name="minor" inMemoryType="unsigned8" comment="minor version of the software"/>
+        <Data name="sub" inMemoryType="unsigned8" comment="sub version of the software"/>
+        <Data name="patch" inMemoryType="unsigned8" comment="patch version of the software"/>
+        <Data name="date" struct="Date" comment="the release date of the software"/>
+        <Data name="description" inMemoryType="string" array = "64" comment="description of the software version"/>
+        
+    </Packet>
+    
+    <Packet name="Telemetry" comment="GPS and other position telemetry. This packet is transmitted spontaneously 4 times a second.">
+        
+        <Enum name="insMode_t" comment="Enumeration for the inertial navigation operational mode">
+            <Value name="insModeInit1" comment="Awaiting first IMU measurement"/>
+            <Value name="insModeInit2" comment="Awaiting IMU stabilization"/>
+            <Value name="insModeAHRS" comment="Running without GPS inputs"/>
+            <Value name="insModeRunHard" comment="Running with forced GPS inputs"/>
+            <Value name="insModeRun" comment="Normal mode of operation"/>
+        </Enum>
+
+        <Data inMemoryType="null" encodedType="unsigned64"
+              comment="Reserve 8 bytes of space for future expansion"/>
+        <Data inMemoryType="null" array="N3D" encodedType="unsigned8"
+              comment="Reserve an array for future expansion"/>
+        <Data name="magIncluded" inMemoryType="bitfield1" comment="set if magnetometer data are included in this packet"/>
+        <Data name="laserStatus" inMemoryType="bitfield3" comment="set if laser range finder data are included in this packet"/>
+        <Data name="airDataIncluded" inMemoryType="bitfield1" comment="set if air data are included in this packet"/>
+        <Data name="insMode" enum="insMode_t" encodedType="bitfield3" comment="The operational mode of the INS"/>
+        <Data name="numGPSs" inMemoryType="uint8_t" comment="number of GPS sources"/>
+        <Data name="gpsData" struct="GPS" array="3" variableArray="numGPSs" comment="Information from all possible GPS systems"/>
+        <Data name="ECEF" inMemoryType="double" array="N3D" encodedType="null"
+              comment="Position in Earth-centered, Earth-fixed meters; not part of the packet"/>
+        <Data name="numControls" inMemoryType="unsigned8" comment="number of control signals"/>
+        <Data name="controls" inMemoryType="float" array="16" variableArray="numControls" encodedType="int16_t" max="1.5" comment="control signals in radians or -1.0 to 1.0 for dimensionless controls"/>
+        <Data name="numFueltanks" inMemoryType="uint8_t" comment="number of fuel tanks intalled"/>
+        <Data name="fuel" inMemoryType="float" array="8" variableArray="numFueltanks" encodedType="float16:8" comment="kilograms of fuel remaining in each tank"/>
+        <Data name="dynamicP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" min="-200" max="16000" comment="Dynamic pressure in Pascals"/>
+        <Data name="staticP" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint16_t" max="115000" comment="Static pressure in Pascals"/>
+        <Data name="OAT" inMemoryType="float" dependsOn="airDataIncluded" encodedType="uint8_t" min="200" max="400" comment="Outside air temperature in Kelvin"/>
+        <Data name="mag" inMemoryType="float" array="N3D" dependsOn="magIncluded" encodedType="int16_t" max="100000" comment="magnetic field in nanoTesla in body X, Y, Z"/>
+        <Data name="compassHeading" inMemoryType="float" dependsOn="magIncluded" dependsOnValue="1" encodedType="int16_t" max="3.15" default="pi/2" comment="True heading computed by magnetic field in radians"/>
+        <Data name="laserAGL" inMemoryType="float" dependsOn="laserStatus" dependsOnValue="3" dependsOnCompare="&lt;=" encodedType="uint16_t" min="-5" max="145" default="10" comment="Altitude above ground in meters as measured by the laser altimeter"/>
+        <Data name="dynamicP" inMemoryType="override" encodedType="float32"/>
+        <Data name="fuel" inMemoryType="override" encodedType="float24"/>
+
+    </Packet>
+    
+    <Packet name="Constant" file="TelemetryPacket" comment="This packet demonstrates all the different ways that a constant value can be used." structureInterface="true" parameterInterface="true">
+        <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t" checkConstant="true"/>
+        <Data name="constant2" inMemoryType="string" array="24" constant="To be or not to be" comment="encoding a string constant"/>
+        <Data name="cos45" inMemoryType="float32" constant="0.70710678118654752440084436210485" comment="directly encoding floating point constant"/>
+        <Data name="sin45" inMemoryType="float32" array="3" constant="0.70710678118654752440084436210485" encodedType="signed8" max ="1" comment="scaling a floating point constant"/>
+        <Data name="constant3" inMemoryType="unsigned32" constant="327612" comment="encoding an integer constant"/>
+        <Data name="constant4" inMemoryType="null" encodedType="bitfield4" constant="12" checkConstant="true" comment="encoding an integer constant"/>
+        <Data name="constant5" inMemoryType="bitfield4" constant="13" checkConstant="true" comment="encoding an integer constant"/>
+        <Data name="token" inMemoryType="float32" encodedType="bitfield7" default="0" max="127" comment="A value that the user provides"/>
+    </Packet>
+
+    <Packet name="Zero" ID="ZEROLENGTH" comment="This demonstrates a zero length packet"/>
+
+    <Packet name="BitfieldTester" ID="BITFIELDTEST" comment="This packet demonstrates using bitfield groups">
+        <Data name="field1" inMemoryType="bitfield11" bitfieldGroup="true" comment="first field in the first group"/>
+        <Data name="field2" inMemoryType="bitfield2" comment="second field in the first group"/>
+        <Data name="field3" inMemoryType="bitfield5" comment="third field in the first group"/>
+        <Data name="field4" inMemoryType="bitfield27" bitfieldGroup="true" comment="first field in the second group"/>
+        <Data name="field5" inMemoryType="bitfield1" comment="second field in the second group"/>
+        <Data name="field6" inMemoryType="bitfield45" comment="third field in the second group"/>
+        <Data name="reserved" inMemoryType="null" encodedType="bitfield7" comment="reserved space in the second group"/>
+
+    </Packet>
+
+</Protocol>

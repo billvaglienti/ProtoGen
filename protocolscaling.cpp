@@ -467,6 +467,8 @@ bool ProtocolScaling::areTypesSupported(inmemorytypes_t inmemory, encodedtypes_t
  * Construct the protocol scaling object
  */
 ProtocolScaling::ProtocolScaling(ProtocolSupport sup) :
+    header(sup),
+    source(sup),
     support(sup)
 {
     /*

@@ -16,6 +16,9 @@ ProtocolSupport::ProtocolSupport() :
     bigendian(true),
     supportbool(false),
     limitonencode(false),
+    compare(false),
+    print(false),
+    mapEncode(false),
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet"),
     enablelanguageoverride(false)
@@ -48,7 +51,10 @@ QStringList ProtocolSupport::getAttriblist(void) const
             << "supportBool"
             << "limitOnEncode"
             << "C"
-            << "C++";
+            << "CPP"
+            << "compare"
+            << "print"
+            << "map";
 
     return attribs;
 }
@@ -63,7 +69,7 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     if(!enablelanguageoverride)
     {
         // The type of language, C and C++ are the only supported options right now
-        if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("C++", map)))
+        if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("CPP", map)))
             language = cpp_language;
         else
             language = c_language;
@@ -114,6 +120,11 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
     // Limit on encode can be turned on
     if(ProtocolParser::isFieldSet("limitOnEncode", map))
         limitonencode = true;
+
+    // Global flags to force output for compare, print, and map functions
+    compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
+    print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
+    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
 
     // The global file names
     parseFileNames(map);

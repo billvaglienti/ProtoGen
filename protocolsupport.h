@@ -41,6 +41,9 @@ public:
     bool bigendian;                 //!< Protocol bigendian flag
     bool supportbool;               //!< true if support for 'bool' is included
     bool limitonencode;             //!< true to enforce verification limits on encode
+    bool compare;                   //!< True if the compare function is output for all structures
+    bool print;                     //!< True if the textPrint and textRead function is output for all structures
+    bool mapEncode;                 //!< True if the mapEncode and mapDecode function is output for all structures
     QString globalFileName;         //!< File name to be used if a name is not given
     QString globalVerifyName;       //!< Verify file name to be used if a name is not given
     QString globalCompareName;      //!< Comparison file name to be used if a name is not given

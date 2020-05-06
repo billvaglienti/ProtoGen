@@ -21,23 +21,15 @@ SOURCES += \
         TelemetryPacket.cpp \
         base_types.cpp \
         bitfieldtest.cpp \
-        compare/base_compare.cpp \
-        compare/base_print.cpp \
-        compare/compareDemolink.cpp \
-        compare/printDemolink.cpp \
-        definitions/verify.cpp \
         fielddecode.cpp \
         fieldencode.cpp \
         floatspecial.c \
         globaldependson.cpp \
         linkcode.cpp \
         main.cpp \
-        map/base_map.cpp \
-        map/mapDemolink.cpp \
         packetinterface.cpp \
         scaleddecode.cpp \
-        scaledencode.cpp \
-        verify/dateverify.cpp
+        scaledencode.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -47,32 +39,21 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     DemolinkProtocol.h \
     Engine.h \
+    EngineDefinitions.hpp \
     GPS.h \
     OtherDefinitions.h \
     TelemetryPacket.h \
     base_types.h \
     bitfieldtest.h \
-    compare/base_compare.h \
-    compare/base_print.h \
-    compare/compareDemolink.h \
-    compare/printDemolink.h \
-    definitions/EngineDefinitions.hpp \
-    definitions/verify.h \
     fielddecode.h \
     fieldencode.h \
     floatspecial.h \
     globaldependson.h \
     globalenum.h \
+    indices.h \
     linkcode.h \
-    map/base_map.h \
-    map/mapDemolink.h \
     packetinterface.h \
     scaleddecode.h \
     scaledencode.h \
-    verify/dateverify.h
+    translation.h
 
-INCLUDEPATH += \
-    verify \
-    compare \
-    map \
-    definitions

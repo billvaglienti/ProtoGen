@@ -176,7 +176,9 @@ protected:
     //! Protocol support information
     ProtocolSupport support;
 
-    ProtocolHeaderFile header;   //!< The header file (*.h)
+    //! The protocol header file (*.h)
+    ProtocolHeaderFile* header;
+
     QString name;   //!< Base name of the protocol
     QString title;  //!< Title name of the protocol used in documentation
     QString comment;//!< Comment description of the protocol

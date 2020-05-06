@@ -11,14 +11,43 @@
  */
 ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion) :
     ProtocolStructure(parse, supported.protoName, supported),
-    structfile(&header),
-    verifyheaderfile(&header),
-    verifysourcefile(&source),
+    source(supported),
+    header(supported),
+    _structHeader(supported),
+    _verifySource(supported),
+    _verifyHeader(supported),
+    _compareSource(supported),
+    _compareHeader(supported),
+    _printSource(supported),
+    _printHeader(supported),
+    _mapSource(supported),
+    _mapHeader(supported),
+    structHeader(&header),
+    verifySource(&source),
+    verifyHeader(&header),
+    compareSource(nullptr),
+    compareHeader(nullptr),
+    printSource(nullptr),
+    printHeader(nullptr),
+    mapSource(nullptr),
+    mapHeader(nullptr),
     api(protocolApi),
     version(protocolVersion)
 {
+    // In the C language these files must have their modules, because they use
+    // c++ features, in c++ they can output to the source and header files
+    if(support.language != ProtocolSupport::c_language)
+    {
+        compareSource = &source;
+        compareHeader = &header;
+        printSource = &source;
+        printHeader = &header;
+        mapSource = &source;
+        mapHeader = &header;
+    }
+
     // These are attributes on top of the normal structure that we support
-    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine" << "map";
+    attriblist << "encode" << "decode" << "file" << "deffile" << "verifyfile" << "comparefile" << "printfile" << "mapfile" << "redefine" << "compare" << "print" << "map";
 }
 
 
@@ -35,20 +64,38 @@ void ProtocolStructureModule::clear(void)
     ProtocolStructure::clear();
     source.clear();
     header.clear();
-    defheader.clear();
-    compareHeader.clear();
-    compareSource.clear();
-    printHeader.clear();
-    printSource.clear();
-    mapSource.clear();
-    mapHeader.clear();
-    encode = decode = true;
-    print = compare = mapEncode = false;
-    structfile = &header;
-    verifyheaderfile = &header;
-    verifysourcefile = &source;
+    _structHeader.clear();
+    _compareHeader.clear();
+    _compareSource.clear();
+    _printHeader.clear();
+    _printSource.clear();
+    _mapSource.clear();
+    _mapHeader.clear();
+    structHeader = &header;
+    verifyHeader = &header;
+    verifySource = &source;
 
-    // Note that data set during constructor are not changed
+    // In the C language these files must have their modules, because they use .cpp features
+    if(support.language == ProtocolSupport::c_language)
+    {
+        compareSource = nullptr;
+        compareHeader = nullptr;
+        printSource = nullptr;
+        printHeader = nullptr;
+        mapSource = nullptr;
+        mapHeader = nullptr;
+    }
+    else
+    {
+        compareSource = &source;
+        compareHeader = &header;
+        printSource = &source;
+        printHeader = &header;
+        mapSource = &source;
+        mapHeader = &header;
+    }
+
+    // Note that api, version, and support are not changed
 
 }
 
@@ -139,7 +186,7 @@ void ProtocolStructureModule::parse(void)
 
     // Write to disk, note that duplicate flush() calls are OK
     header.flush();    
-    structfile->flush();
+    structHeader->flush();
 
     // We don't write the source to disk if we are not encoding or decoding anything
     if(encode || decode)
@@ -150,29 +197,29 @@ void ProtocolStructureModule::parse(void)
     // Only write the compare if we have compare functions to output
     if(compare)
     {
-        compareSource.flush();
-        compareHeader.flush();
+        compareSource->flush();
+        compareHeader->flush();
     }
 
     // Only write the print if we have print functions to output
     if(print)
     {
-        printSource.flush();
-        printHeader.flush();
+        printSource->flush();
+        printHeader->flush();
     }
 
     // Only write the map functions if we have map functions to support
     if(mapEncode)
     {
-        mapSource.flush();
-        mapHeader.flush();
+        mapSource->flush();
+        mapHeader->flush();
     }
 
     // We don't write the verify files to disk if we are not initializing or verifying anything
     if(hasInit() || hasVerify())
     {
-        verifyheaderfile->flush();
-        verifysourcefile->flush();
+        verifyHeader->flush();
+        verifySource->flush();
     }
 
 }// ProtocolStructureModule::parse
@@ -196,15 +243,16 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
                                          QString mapmodulename,
                                          bool forceStructureDeclaration, bool outputUtilities)
 {
-    // User can provide compare flag, or the file name
-    if(!comparemodulename.isEmpty() || !support.globalCompareName.isEmpty())
+    // User can provide compare flag, or the file name, or set the global flag
+    if(!comparemodulename.isEmpty() || !support.globalCompareName.isEmpty() || support.compare)
         compare = true;
 
-    // User can provide print flag, or the file name
-    if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty())
+    // User can provide print flag, or the file name, or set the global flag
+    if(!printmodulename.isEmpty() || !support.globalPrintName.isEmpty() || support.print)
         print = true;
 
-    if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty())
+    // User can provide map flag, or the file name, or set the global flag
+    if(!mapmodulename.isEmpty() || !support.globalMapName.isEmpty() || support.mapEncode)
         mapEncode = true;
 
     // In order to do compare, print, map, verify or init we must actually have some parameters
@@ -238,28 +286,16 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(moduleName.isEmpty())
         moduleName = support.globalFileName;
 
-    header.setLicenseText(support.licenseText);
-    source.setLicenseText(support.licenseText);
-
-    verifyHeader.setLicenseText(support.licenseText);
-    verifySource.setLicenseText(support.licenseText);
-
-    compareHeader.setLicenseText(support.licenseText);
-    compareSource.setLicenseText(support.licenseText);
-
-    mapHeader.setLicenseText(support.licenseText);
-    mapSource.setLicenseText(support.licenseText);
-
     // The file names
     if(moduleName.isEmpty())
     {
-        header.setModuleNameAndPath(support.prefix, name, support.outputpath, support.language);
-        source.setModuleNameAndPath(support.prefix, name, support.outputpath, support.language);
+        header.setModuleNameAndPath(support.prefix, name, support.outputpath);
+        source.setModuleNameAndPath(support.prefix, name, support.outputpath);
     }
     else
     {
-        header.setModuleNameAndPath(moduleName, support.outputpath, support.language);
-        source.setModuleNameAndPath(moduleName, support.outputpath, support.language);
+        header.setModuleNameAndPath(moduleName, support.outputpath);
+        source.setModuleNameAndPath(moduleName, support.outputpath);
     }
 
     if(support.supportbool && (support.language == ProtocolSupport::c_language))
@@ -268,16 +304,18 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     if(verifymodulename.isEmpty())
         verifymodulename = support.globalVerifyName;
 
-    if(!verifymodulename.isEmpty() && (hasInit() || hasVerify()))
+    if(verifymodulename.isEmpty())
     {
-        verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath, support.language);
-        verifySource.setModuleNameAndPath(verifymodulename, support.outputpath, support.language);
-
-        if(support.supportbool)
-            verifyHeader.writeIncludeDirective("stdbool.h", "", true);
-
-        verifyheaderfile = &verifyHeader;
-        verifysourcefile = &verifySource;
+        // We can do this in C or C++ because the verify and init functions are all C-based
+        verifyHeader = &header;
+        verifySource = &source;
+    }
+    else if(hasInit() || hasVerify())
+    {
+        _verifyHeader.setModuleNameAndPath(verifymodulename, support.outputpath);
+        _verifySource.setModuleNameAndPath(verifymodulename, support.outputpath);
+        verifyHeader = &_verifyHeader;
+        verifySource = &_verifySource;
     }
 
     if(compare)
@@ -285,65 +323,20 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         if(comparemodulename.isEmpty())
             comparemodulename = support.globalCompareName;
 
+        if(comparemodulename.isEmpty() && (support.language == ProtocolSupport::c_language))
+            comparemodulename = support.prefix + name + "_compare";
+
         if(comparemodulename.isEmpty())
         {
-            compareHeader.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath, ProtocolSupport::cpp_language);
-            compareSource.setModuleNameAndPath(support.prefix, name + "_compare", support.outputpath, ProtocolSupport::cpp_language);
+            compareHeader = &header;
+            compareSource = &source;
         }
         else
         {
-            compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
-            compareSource.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
-        }
-
-        compareHeader.makeLineSeparator();
-
-        // We may be appending an a-priori existing file, or we may be starting one fresh.
-        if(!compareHeader.isAppending())
-        {
-            // Comment block at the top of the header file needed so doxygen will document the file
-            compareHeader.write("/*!\n");
-            compareHeader.write(" * \\file\n");
-            compareHeader.write(" */\n");
-            compareHeader.write("\n");
-        }
-
-    }
-
-    if(print)
-    {
-        if(printmodulename.isEmpty())
-            printmodulename = support.globalPrintName;
-
-        if(printmodulename.isEmpty())
-        {
-            printHeader.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath, ProtocolSupport::cpp_language);
-            printSource.setModuleNameAndPath(support.prefix, name + "_print", support.outputpath, ProtocolSupport::cpp_language);
-        }
-        else
-        {
-            printHeader.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
-            printSource.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
-        }
-
-        printHeader.makeLineSeparator();
-
-        // We may be appending an a-priori existing file, or we may be starting one fresh.
-        if(!printHeader.isAppending())
-        {
-            // Comment block at the top of the header file needed so doxygen will document the file
-            printHeader.write("/*!\n");
-            printHeader.write(" * \\file\n");
-            printHeader.write(" */\n");
-            printHeader.write("\n");
-        }
-
-        if(!printSource.isAppending())
-        {
-            // Make sure to provide the extractText function
-            printSource.makeLineSeparator();
-            printSource.write(getExtractTextFunction());
-            printSource.makeLineSeparator();
+            _compareHeader.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
+            _compareSource.setModuleNameAndPath(comparemodulename, support.outputpath, ProtocolSupport::cpp_language);
+            compareHeader = &_compareHeader;
+            compareSource = &_compareSource;
         }
     }
 
@@ -352,43 +345,51 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         if(mapmodulename.isEmpty())
             mapmodulename = support.globalMapName;
 
+        // In C the map outputs cannot be in the main code files, because they are c++
+        if(mapmodulename.isEmpty() && (support.language == ProtocolSupport::c_language))
+            mapmodulename = support.prefix + name + "_map";
+
         if(mapmodulename.isEmpty())
         {
-            mapHeader.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath, ProtocolSupport::cpp_language);
-            mapSource.setModuleNameAndPath(support.prefix, name + "_map", support.outputpath, ProtocolSupport::cpp_language);
+            mapHeader = &header;
+            mapSource = &source;
         }
         else
         {
-            mapHeader.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
-            mapSource.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
-        }
-
-        mapHeader.makeLineSeparator();
-
-        if(!mapHeader.isAppending())
-        {
-            mapHeader.write("/*!\n");
-            mapHeader.write(" * \\file\n");
-            mapHeader.write(" */\n");
-            mapHeader.write("\n");
-        }
-
-        if(!printSource.isAppending())
-        {
-            mapSource.makeLineSeparator();
+            _mapHeader.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            _mapSource.setModuleNameAndPath(mapmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            mapHeader = &_mapHeader;
+            mapSource = &_mapSource;
         }
     }
 
-    header.makeLineSeparator();
-
-    // Two options here: we may be appending an a-priori existing file, or we may be starting one fresh.
-    if(!header.isAppending())
+    if(print)
     {
-        // Comment block at the top of the header file needed so doxygen will document the file
-        header.write("/*!\n");
-        header.write(" * \\file\n");
-        header.write(" */\n");
-        header.write("\n");
+        if(printmodulename.isEmpty())
+            printmodulename = support.globalPrintName;
+
+        // In C the print outputs cannot be in the main code files, because they are c++
+        if(printmodulename.isEmpty() && (support.language == ProtocolSupport::c_language))
+            printmodulename = support.prefix + name + "_print";
+
+        if(printmodulename.isEmpty())
+        {
+            printHeader = &header;
+            printSource = &source;
+        }
+        else
+        {
+            _printHeader.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            _printSource.setModuleNameAndPath(printmodulename, support.outputpath, ProtocolSupport::cpp_language);
+            printHeader = &_printHeader;
+            printSource = &_printSource;
+        }
+
+        // Make sure to provide the extractText function
+        printSource->makeLineSeparator();
+        printSource->writeOnce(getExtractTextFunction());
+        printSource->makeLineSeparator();
+
     }
 
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
@@ -404,98 +405,97 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     else if(!defheadermodulename.isEmpty())
     {
         // Handle the idea that the structure might be defined in a different file
-        defheader.setLicenseText(support.licenseText);
-        defheader.setModuleNameAndPath(defheadermodulename, support.outputpath, support.language);
+        _structHeader.setModuleNameAndPath(defheadermodulename, support.outputpath, support.language);
+        structHeader = &_structHeader;
 
-        if(support.supportbool)
-            defheader.writeIncludeDirective("stdbool.h", "", true);
+        if(support.supportbool && (support.language == ProtocolSupport::c_language))
+            structHeader->writeIncludeDirective("stdbool.h", "", true);
 
-        if(defheader.isAppending())
-            defheader.makeLineSeparator();
-
-        structfile = &defheader;
-
-        // The structfile might need stdint.h. It's an open question if this is
+        // The structHeader might need stdint.h. It's an open question if this is
         // the best answer, or if we should just include the main protocol file
-        structfile->writeIncludeDirective("stdint.h", QString(), true);
+        structHeader->writeIncludeDirective("stdint.h", QString(), true);
 
         // In this instance we know that the normal header file needs to include
         // the file with the structure definition
-        header.writeIncludeDirective(structfile->fileName());
+        header.writeIncludeDirective(structHeader->fileName());
     }
 
     QStringList list;
     if(hasVerify() || hasInit())
     {
-        verifyheaderfile->writeIncludeDirective(structfile->fileName());
+        verifyHeader->writeIncludeDirective(structHeader->fileName());
+        verifyHeader->writeIncludeDirective(header.fileName());
 
         // The verification details may be spread across multiple files
         list.clear();
         getInitAndVerifyIncludeDirectives(list);
-        verifyheaderfile->writeIncludeDirectives(list);
-        verifyheaderfile->makeLineSeparator();
-        verifyheaderfile->write(getInitialAndVerifyDefines());
-        verifyheaderfile->makeLineSeparator();
+        verifyHeader->writeIncludeDirectives(list);
+        verifyHeader->makeLineSeparator();
+        verifyHeader->write(getInitialAndVerifyDefines());
+        verifyHeader->makeLineSeparator();
     }
 
     // The compare details may be spread across multiple files
     if(compare)
     {
-        compareHeader.writeIncludeDirective(structfile->fileName());
-        compareHeader.writeIncludeDirective(header.fileName());
-        compareHeader.writeIncludeDirective("QString", QString(), true, false);
+        compareHeader->writeIncludeDirective(structHeader->fileName());
+        compareHeader->writeIncludeDirective(header.fileName());
+        compareHeader->writeIncludeDirective("QString", QString(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
             // In C++ these function declarations are in the class declaration
-            structfile->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("QString", QString(), true, false);
         }
 
         list.clear();
         getCompareIncludeDirectives(list);
-        compareHeader.writeIncludeDirectives(list);
+        compareHeader->writeIncludeDirectives(list);
+        compareHeader->makeLineSeparator();
     }
 
     // The print details may be spread across multiple files
     if(print)
     {
-        printHeader.writeIncludeDirective(structfile->fileName());
-        printHeader.writeIncludeDirective(header.fileName());
-        printHeader.writeIncludeDirective("QString", QString(), true, false);
+        printHeader->writeIncludeDirective(structHeader->fileName());
+        printHeader->writeIncludeDirective(header.fileName());
+        printHeader->writeIncludeDirective("QString", QString(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
             // In C++ these function declarations are in the class declaration
-            structfile->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("QString", QString(), true, false);
         }
 
         list.clear();
         getPrintIncludeDirectives(list);
-        printHeader.writeIncludeDirectives(list);
+        printHeader->writeIncludeDirectives(list);
+        printHeader->makeLineSeparator();
     }
 
     // The map details may be spread across multiple files
     if(mapEncode)
     {
-        mapHeader.writeIncludeDirective(structfile->fileName());
-        mapHeader.writeIncludeDirective(header.fileName());
-        mapHeader.writeIncludeDirective("QVariant", QString(), true, false);
-        mapHeader.writeIncludeDirective("QString", QString(), true, false);
+        mapHeader->writeIncludeDirective(structHeader->fileName());
+        mapHeader->writeIncludeDirective(header.fileName());
+        mapHeader->writeIncludeDirective("QVariant", QString(), true, false);
+        mapHeader->writeIncludeDirective("QString", QString(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
             // In C++ these function declarations are in the class declaration
-            structfile->writeIncludeDirective("QVariant", QString(), true, false);
-            structfile->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("QString", QString(), true, false);
+            structHeader->writeIncludeDirective("QVariant", QString(), true, false);
         }
 
         list.clear();
         getMapIncludeDirectives(list);
-        mapHeader.writeIncludeDirectives(list);
+        mapHeader->writeIncludeDirectives(list);
+        mapHeader->makeLineSeparator();
     }
 
     // Add other includes specific to this structure
-    parser->outputIncludes(getHierarchicalName(), *structfile, e);
+    parser->outputIncludes(getHierarchicalName(), *structHeader, e);
 
     // If we are using someones elses definition we don't need to output our structure or add any of its includes
     if(redefines == NULL)
@@ -504,17 +504,18 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         list.clear();
         for(int i = 0; i < encodables.length(); i++)
             encodables[i]->getIncludeDirectives(list);
-        structfile->writeIncludeDirectives(list);
+
+        structHeader->writeIncludeDirectives(list);
     }
 
     // White space is good
-    structfile->makeLineSeparator();
+    structHeader->makeLineSeparator();
 
     // Create the structure/class definition, this includes any sub-structures as well
-    structfile->write(getStructureDeclaration(forceStructureDeclaration));
+    structHeader->write(getStructureDeclaration(forceStructureDeclaration));
 
     // White space is good
-    structfile->makeLineSeparator();
+    structHeader->makeLineSeparator();
 
     // White space is good
     source.makeLineSeparator();
@@ -561,7 +562,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
 void ProtocolStructureModule::getIncludeDirectives(QStringList& list) const
 {
     // Our header
-    list.append(structfile->fileName());
+    list.append(structHeader->fileName());
     list.append(header.fileName());
 
     // And any of our children's headers
@@ -598,8 +599,9 @@ void ProtocolStructureModule::getSourceIncludeDirectives(QStringList& list) cons
  */
 void ProtocolStructureModule::getInitAndVerifyIncludeDirectives(QStringList& list) const
 {
-    // Our verify header
-    list.append(verifyheaderfile->fileName());
+    // Our header
+    if(verifyHeader != nullptr)
+        list.append(verifyHeader->fileName());
 
     // And any of our children's headers
     ProtocolStructure::getInitAndVerifyIncludeDirectives(list);
@@ -614,8 +616,9 @@ void ProtocolStructureModule::getInitAndVerifyIncludeDirectives(QStringList& lis
  */
 void ProtocolStructureModule::getMapIncludeDirectives(QStringList& list) const
 {
-    // Our verify header
-    list.append(mapHeader.fileName());
+    // Our header
+    if(mapHeader != nullptr)
+        list.append(mapHeader->fileName());
 
     // And any of our children's headers
     ProtocolStructure::getMapIncludeDirectives(list);
@@ -630,8 +633,9 @@ void ProtocolStructureModule::getMapIncludeDirectives(QStringList& list) const
  */
 void ProtocolStructureModule::getCompareIncludeDirectives(QStringList& list) const
 {
-    // Our verify header
-    list.append(compareHeader.fileName());
+    // Our header
+    if(compareHeader != nullptr)
+        list.append(compareHeader->fileName());
 
     // And any of our children's headers
     ProtocolStructure::getCompareIncludeDirectives(list);
@@ -646,8 +650,9 @@ void ProtocolStructureModule::getCompareIncludeDirectives(QStringList& list) con
  */
 void ProtocolStructureModule::getPrintIncludeDirectives(QStringList& list) const
 {
-    // Our verify header
-    list.append(printHeader.fileName());
+    // Our header
+    if(printHeader != nullptr)
+        list.append(printHeader->fileName());
 
     // And any of our children's headers
     ProtocolStructure::getPrintIncludeDirectives(list);
@@ -702,13 +707,13 @@ void ProtocolStructureModule::createSubStructureFunctions()
                 source.write(structure->getSetToInitialValueFunctionBody());
             }
         }
-        else if(hasInit())
+        else if(hasInit() && (verifyHeader != nullptr) && (verifySource != nullptr))
         {
-            verifyheaderfile->makeLineSeparator();
-            verifyheaderfile->write(structure->getSetToInitialValueFunctionPrototype());
+            verifyHeader->makeLineSeparator();
+            verifyHeader->write(structure->getSetToInitialValueFunctionPrototype());
 
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getSetToInitialValueFunctionBody());
+            verifySource->makeLineSeparator();
+            verifySource->write(structure->getSetToInitialValueFunctionBody());
         }
 
         if(encode)
@@ -737,64 +742,64 @@ void ProtocolStructureModule::createSubStructureFunctions()
             source.write(structure->getDecodeFunctionBody(support.bigendian));
         }
 
-        if(hasVerify())
+        if(hasVerify() && (verifyHeader != nullptr) && (verifySource != nullptr))
         {
             // In C++ this is part of the class declaration
             if(support.language == ProtocolSupport::c_language)
             {
-                verifyheaderfile->makeLineSeparator();
-                verifyheaderfile->write(structure->getVerifyFunctionPrototype());
+                verifyHeader->makeLineSeparator();
+                verifyHeader->write(structure->getVerifyFunctionPrototype());
             }
 
-            verifysourcefile->makeLineSeparator();
-            verifysourcefile->write(structure->getVerifyFunctionBody());
+            verifySource->makeLineSeparator();
+            verifySource->write(structure->getVerifyFunctionBody());
         }
 
-        if(compare)
+        if(compare && (compareSource != nullptr))
         {
             // In C++ this is part of the class declaration
-            if(support.language == ProtocolSupport::c_language)
+            if((support.language == ProtocolSupport::c_language) && (compareHeader != nullptr))
             {
-                compareHeader.makeLineSeparator();
-                compareHeader.write(structure->getComparisonFunctionPrototype());
+                compareHeader->makeLineSeparator();
+                compareHeader->write(structure->getComparisonFunctionPrototype());
             }
 
-            compareSource.makeLineSeparator();
-            compareSource.write(structure->getComparisonFunctionBody());
+            compareSource->makeLineSeparator();
+            compareSource->write(structure->getComparisonFunctionBody());
         }
 
-        if(print)
+        if(print && (printSource != nullptr))
         {
             // In C++ this is part of the class declaration
-            if(support.language == ProtocolSupport::c_language)
+            if((support.language == ProtocolSupport::c_language) && (printHeader != nullptr))
             {
-                printHeader.makeLineSeparator();
-                printHeader.write(structure->getTextPrintFunctionPrototype());
-                printHeader.makeLineSeparator();
-                printHeader.write(structure->getTextReadFunctionPrototype());
+                printHeader->makeLineSeparator();
+                printHeader->write(structure->getTextPrintFunctionPrototype());
+                printHeader->makeLineSeparator();
+                printHeader->write(structure->getTextReadFunctionPrototype());
             }
 
-            printSource.makeLineSeparator();
-            printSource.write(structure->getTextPrintFunctionBody());
-            printSource.makeLineSeparator();
-            printSource.write(structure->getTextReadFunctionBody());
+            printSource->makeLineSeparator();
+            printSource->write(structure->getTextPrintFunctionBody());
+            printSource->makeLineSeparator();
+            printSource->write(structure->getTextReadFunctionBody());
         }
 
-        if(mapEncode)
+        if(mapEncode && (mapSource != nullptr))
         {
             // In C++ this is part of the class declaration
-            if(support.language == ProtocolSupport::c_language)
+            if((support.language == ProtocolSupport::c_language) && (mapHeader != nullptr))
             {
-                mapHeader.makeLineSeparator();
-                mapHeader.write(structure->getMapEncodeFunctionPrototype());
-                mapHeader.makeLineSeparator();
-                mapHeader.write(structure->getMapDecodeFunctionPrototype());
+                mapHeader->makeLineSeparator();
+                mapHeader->write(structure->getMapEncodeFunctionPrototype());
+                mapHeader->makeLineSeparator();
+                mapHeader->write(structure->getMapDecodeFunctionPrototype());
             }
 
-            mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapEncodeFunctionBody());
-            mapSource.makeLineSeparator();
-            mapSource.write(structure->getMapDecodeFunctionBody());
+            mapSource->makeLineSeparator();
+            mapSource->write(structure->getMapEncodeFunctionBody());
+            mapSource->makeLineSeparator();
+            mapSource->write(structure->getMapDecodeFunctionBody());
         }
 
     }// for all of our structure children
@@ -848,89 +853,89 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(bool includeEncod
     if(redefines != nullptr)
         return;
 
-    if(hasInit())
+    if(hasInit() && (verifySource != nullptr))
     {
         // In C++ this is part of the class declaration
-        if(support.language == ProtocolSupport::c_language)
+        if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
         {
-            verifyheaderfile->makeLineSeparator();
-            verifyheaderfile->write(getSetToInitialValueFunctionPrototype(QString(), false));
-            verifyheaderfile->makeLineSeparator();
+            verifyHeader->makeLineSeparator();
+            verifyHeader->write(getSetToInitialValueFunctionPrototype(QString(), false));
+            verifyHeader->makeLineSeparator();
         }
 
-        verifysourcefile->makeLineSeparator();
-        verifysourcefile->write(getSetToInitialValueFunctionBody(false));
-        verifysourcefile->makeLineSeparator();
+        verifySource->makeLineSeparator();
+        verifySource->write(getSetToInitialValueFunctionBody(false));
+        verifySource->makeLineSeparator();
     }
 
-    if(hasVerify())
+    if(hasVerify() && (verifySource != nullptr))
     {
         // In C++ this is part of the class declaration
-        if(support.language == ProtocolSupport::c_language)
+        if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
         {
-            verifyheaderfile->makeLineSeparator();
-            verifyheaderfile->write(getVerifyFunctionPrototype(QString(), false));
-            verifyheaderfile->makeLineSeparator();
+            verifyHeader->makeLineSeparator();
+            verifyHeader->write(getVerifyFunctionPrototype(QString(), false));
+            verifyHeader->makeLineSeparator();
         }
 
-        verifysourcefile->makeLineSeparator();
-        verifysourcefile->write(getVerifyFunctionBody(false));
-        verifysourcefile->makeLineSeparator();
-    }
-
-
-    if(compare)
-    {
-        // In C++ this is part of the class declaration
-        if(support.language == ProtocolSupport::c_language)
-        {
-            compareHeader.makeLineSeparator();
-            compareHeader.write(getComparisonFunctionPrototype(QString(), false));
-            compareHeader.makeLineSeparator();
-        }
-
-        compareSource.makeLineSeparator();
-        compareSource.write(getComparisonFunctionBody(false));
-        compareSource.makeLineSeparator();
+        verifySource->makeLineSeparator();
+        verifySource->write(getVerifyFunctionBody(false));
+        verifySource->makeLineSeparator();
     }
 
 
-    if(print)
+    if(compare && (compareSource != nullptr))
     {
         // In C++ this is part of the class declaration
-        if(support.language == ProtocolSupport::c_language)
+        if((support.language == ProtocolSupport::c_language) && (compareHeader != nullptr))
         {
-            printHeader.makeLineSeparator();
-            printHeader.write(getTextPrintFunctionPrototype(QString(), false));
-            printHeader.makeLineSeparator();
-            printHeader.write(getTextReadFunctionPrototype(QString(), false));
-            printHeader.makeLineSeparator();
+            compareHeader->makeLineSeparator();
+            compareHeader->write(getComparisonFunctionPrototype(QString(), false));
+            compareHeader->makeLineSeparator();
         }
 
-        printSource.makeLineSeparator();
-        printSource.write(getTextPrintFunctionBody(false));
-        printSource.makeLineSeparator();
-        printSource.write(getTextReadFunctionBody(false));
-        printSource.makeLineSeparator();
+        compareSource->makeLineSeparator();
+        compareSource->write(getComparisonFunctionBody(false));
+        compareSource->makeLineSeparator();
     }
 
-    if (mapEncode)
+
+    if(print && (printSource != nullptr))
     {
         // In C++ this is part of the class declaration
-        if(support.language == ProtocolSupport::c_language)
+        if((support.language == ProtocolSupport::c_language) && (printHeader != nullptr))
         {
-            mapHeader.makeLineSeparator();
-            mapHeader.write(getMapEncodeFunctionPrototype(QString(), false));
-            mapHeader.makeLineSeparator();
-            mapHeader.write(getMapDecodeFunctionPrototype(QString(), false));
-            mapHeader.makeLineSeparator();
+            printHeader->makeLineSeparator();
+            printHeader->write(getTextPrintFunctionPrototype(QString(), false));
+            printHeader->makeLineSeparator();
+            printHeader->write(getTextReadFunctionPrototype(QString(), false));
+            printHeader->makeLineSeparator();
         }
 
-        mapSource.makeLineSeparator();
-        mapSource.write(getMapEncodeFunctionBody(false));
-        mapSource.makeLineSeparator();
-        mapSource.write(getMapDecodeFunctionBody(false));
-        mapSource.makeLineSeparator();
+        printSource->makeLineSeparator();
+        printSource->write(getTextPrintFunctionBody(false));
+        printSource->makeLineSeparator();
+        printSource->write(getTextReadFunctionBody(false));
+        printSource->makeLineSeparator();
+    }
+
+    if(mapEncode && (mapSource != nullptr))
+    {
+        // In C++ this is part of the class declaration
+        if((support.language == ProtocolSupport::c_language) && (mapHeader != nullptr))
+        {
+            mapHeader->makeLineSeparator();
+            mapHeader->write(getMapEncodeFunctionPrototype(QString(), false));
+            mapHeader->makeLineSeparator();
+            mapHeader->write(getMapDecodeFunctionPrototype(QString(), false));
+            mapHeader->makeLineSeparator();
+        }
+
+        mapSource->makeLineSeparator();
+        mapSource->write(getMapEncodeFunctionBody(false));
+        mapSource->makeLineSeparator();
+        mapSource->write(getMapDecodeFunctionBody(false));
+        mapSource->makeLineSeparator();
     }
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions

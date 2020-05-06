@@ -181,8 +181,8 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     createProtocolHeader(docElem);
 
     // And record its file name
-    fileNameList.append(header.fileName());
-    filePathList.append(header.filePath());
+    fileNameList.append(header->fileName());
+    filePathList.append(header->filePath());
 
     // Now parse the contents of all the files. We do other files first since
     // we expect them to be helpers that the main file may depend on.
@@ -198,16 +198,15 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
     // Output the global enumerations first, they will go in the main
     // header file by default, unless the enum specifies otherwise
-    ProtocolHeaderFile enumfile;
-    ProtocolSourceFile enumSourceFile;
+    ProtocolHeaderFile enumfile(support);
+    ProtocolSourceFile enumSourceFile(support);
 
     for(int i = 0; i < globalEnums.size(); i++)
     {
         EnumCreator* module = globalEnums.at(i);
 
         module->parseGlobal();
-        enumfile.setLicenseText(support.licenseText);
-        enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath(), support.language);
+        enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
 
         if(support.supportbool && (support.language == ProtocolSupport::c_language))
             enumfile.writeIncludeDirective("stdbool.h", "", true);
@@ -221,8 +220,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
         if(!source.isEmpty())
         {
-            enumSourceFile.setLicenseText(support.licenseText);
-            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath(), support.language);
+            enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
 
             enumSourceFile.write(source);
             enumSourceFile.makeLineSeparator();
@@ -597,22 +595,14 @@ void ProtocolParser::emitWarning(QString hierarchicalName, QString warning) cons
  */
 void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
 {
-    // If the name is "coollink" then make everything "coollinkProtocol"
-    QString nameex = name + "Protocol";
+    // Build the header file
+    header = new ProtocolHeaderFile(support);
 
-    // The file names
-    header.setLicenseText(support.licenseText);
-    header.setModuleNameAndPath(nameex, support.outputpath, support.language);
+    // The file name
+    header->setModuleNameAndPath(name + "Protocol", support.outputpath);
 
-    // Comment block at the top of the header file
-    header.makeLineSeparator();
-    header.write("/*!\n");
-    header.write(" * \\file\n");
-    header.write(" * \\mainpage " + name + " protocol stack\n");
-    header.write(" *\n");
-
-    // A long comment that should be wrapped at 80 characters
-    outputLongComment(header, " *", comment);
+    // Construct the file comment that goes in the \file block
+    QString filecomment = "\\mainpage " + name + " protocol stack\n\n" + comment + "\n\n";
 
     // The protocol enumeration API, which can be empty
     if(!api.isEmpty())
@@ -625,8 +615,7 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
             // Turn it back into a string
             api = QString(api);
 
-            header.write("\n *\n");
-            outputLongComment(header, " *", "The protocol API enumeration is incremented anytime the protocol is changed in a way that affects compatibility with earlier versions of the protocol. The protocol enumeration for this version is: " + api);
+            filecomment + "The protocol API enumeration is incremented anytime the protocol is changed in a way that affects compatibility with earlier versions of the protocol. The protocol enumeration for this version is: " + api + "\n\n";
         }
         else
             api.clear();
@@ -635,94 +624,86 @@ void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
 
     // The protocol version string, which can be empty
     if(!version.isEmpty())
-    {
-        header.write("\n *\n");
-        outputLongComment(header, " *", "The protocol version is " + version);
-        header.write("\n");
-    }
+        filecomment += "The protocol version is " + version + "\n\n";
 
-    if(version.isEmpty() && api.isEmpty())
-        header.write("\n");
+    // A long comment that should be wrapped at 80 characters in the \file block
+    header->setFileComment(filecomment);
 
-    header.write(" */\n");
-
-    header.makeLineSeparator();
+    header->makeLineSeparator();
 
     // Includes
     if(support.supportbool)
-        header.writeIncludeDirective("stdbool.h", "", true);
+        header->writeIncludeDirective("stdbool.h", "", true);
 
-    header.writeIncludeDirective("stdint.h", QString(), true);
+    header->writeIncludeDirective("stdint.h", QString(), true);
 
     // Add other includes
-    outputIncludes(name, header, docElem);
+    outputIncludes(name, *header, docElem);
 
-    header.makeLineSeparator();
+    header->makeLineSeparator();
 
     // API macro
     if(!api.isEmpty())
     {
-        header.makeLineSeparator();
-        header.write("//! \\return the protocol API enumeration\n");
-        header.write("#define get" + name + "Api() " + api + "\n");
+        header->makeLineSeparator();
+        header->write("//! \\return the protocol API enumeration\n");
+        header->write("#define get" + name + "Api() " + api + "\n");
     }
 
     // Version macro
     if(!version.isEmpty())
     {
-        header.makeLineSeparator();
-        header.write("//! \\return the protocol version string\n");
-        header.write("#define get" + name + "Version() \""  + version + "\"\n");
+        header->makeLineSeparator();
+        header->write("//! \\return the protocol version string\n");
+        header->write("#define get" + name + "Version() \""  + version + "\"\n");
     }
 
     // Translation macro
-    header.makeLineSeparator();
-    header.write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
-    header.write("#ifndef translate" + name + "\n");
-    header.write("    #define translate" + name + "(x) x\n");
-    header.write("#endif");
+    header->makeLineSeparator();
+    header->write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
+    header->write("#ifndef translate" + name + "\n");
+    header->write("    #define translate" + name + "(x) x\n");
+    header->write("#endif");
 
-    header.makeLineSeparator();
+    header->makeLineSeparator();
 
-    header.flush();
+    // We need to flush this to disk now, because others may try to open this file and append it
+    header->flush();
 
-}// ProtocolParser::createProtocolFiles
+}// ProtocolParser::createProtocolHeader
 
 
 void ProtocolParser::finishProtocolHeader(void)
 {
-    // If the name is "coollink" then make everything "coollinkProtocol"
-    QString nameex = name + "Protocol";
+    // We need to re-open this file because others may have written to it and
+    // we want to append after their write (This is the whole reaons that
+    // finishProtocolHeader() is separate from createProtocolHeader()
+    header->setModuleNameAndPath(name + "Protocol", support.outputpath);
 
-    // The file name, this will result in an append to the previously created file
-    header.setLicenseText(support.licenseText);
-    header.setModuleNameAndPath(nameex, support.outputpath, support.language);
-
-    header.makeLineSeparator();
+    header->makeLineSeparator();
 
     // We want these prototypes to be the last things written to the file, because support.pointerType may be defined above
-    header.write("\n");
-    header.write("// The prototypes below provide an interface to the packets.\n");
-    header.write("// They are not auto-generated functions, but must be hand-written\n");
-    header.write("\n");
-    header.write("//! \\return the packet data pointer from the packet\n");
-    header.write("uint8_t* get" + name + "PacketData(" + support.pointerType + " pkt);\n");
-    header.write("\n");
-    header.write("//! \\return the packet data pointer from the packet, const\n");
-    header.write("const uint8_t* get" + name + "PacketDataConst(const " + support.pointerType + " pkt);\n");
-    header.write("\n");
-    header.write("//! Complete a packet after the data have been encoded\n");
-    header.write("void finish" + name + "Packet(" + support.pointerType + " pkt, int size, uint32_t packetID);\n");
-    header.write("\n");
-    header.write("//! \\return the size of a packet from the packet header\n");
-    header.write("int get" + name + "PacketSize(const " + support.pointerType + " pkt);\n");
-    header.write("\n");
-    header.write("//! \\return the ID of a packet from the packet header\n");
-    header.write("uint32_t get" + name + "PacketID(const " + support.pointerType + " pkt);\n");
-    header.write("\n");
+    header->write("\n");
+    header->write("// The prototypes below provide an interface to the packets.\n");
+    header->write("// They are not auto-generated functions, but must be hand-written\n");
+    header->write("\n");
+    header->write("//! \\return the packet data pointer from the packet\n");
+    header->write("uint8_t* get" + name + "PacketData(" + support.pointerType + " pkt);\n");
+    header->write("\n");
+    header->write("//! \\return the packet data pointer from the packet, const\n");
+    header->write("const uint8_t* get" + name + "PacketDataConst(const " + support.pointerType + " pkt);\n");
+    header->write("\n");
+    header->write("//! Complete a packet after the data have been encoded\n");
+    header->write("void finish" + name + "Packet(" + support.pointerType + " pkt, int size, uint32_t packetID);\n");
+    header->write("\n");
+    header->write("//! \\return the size of a packet from the packet header\n");
+    header->write("int get" + name + "PacketSize(const " + support.pointerType + " pkt);\n");
+    header->write("\n");
+    header->write("//! \\return the ID of a packet from the packet header\n");
+    header->write("uint32_t get" + name + "PacketID(const " + support.pointerType + " pkt);\n");
+    header->write("\n");
 
-    header.flush();
-
+    header->flush();
 }
 
 
@@ -1230,7 +1211,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     QString filename = basepath + name + ".markdown";
     QString filecontents = "\n\n";
-    ProtocolFile file(filename, false);
+    ProtocolFile file(filename, support, false);
 
     QStringList packetids;
     for(int i = 0; i < packets.size(); i++)
