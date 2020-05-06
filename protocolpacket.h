@@ -40,14 +40,20 @@ protected:
     //! Get the class declaration, for this packet only (not its children) for the C++ language
     QString getClassDeclaration_CPP(void) const Q_DECL_OVERRIDE;
 
+    //! Create the helper functions for the packet
+    QString createUtilityFunctions(const QString& spacing) const;
+
+    //! Write the top level initialize / constructor function.
+    void createTopLevelInitializeFunction(void);
+
+    //! Write data to the source and header for structure functions that do not use a packet.
+    void createTopLevelStructureFunctions(void);
+
     //! Create the functions that encode and decode the structure
     void createStructurePacketFunctions(void);
 
     //! Create the functions that encode and decode the parameters
     void createPacketFunctions(void);
-
-    //! Create the functions that encode and decode the structure
-    void createUtilityFunctions(const QDomElement& e);
 
     //! Get the signature of the packet structure encode function
     QString getStructurePacketEncodeSignature(bool insource) const;

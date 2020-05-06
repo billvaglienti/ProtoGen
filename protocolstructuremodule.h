@@ -129,7 +129,10 @@ protected:
     void createSubStructureFunctions(void);
 
     //! Write data to the source and header files to encode and decode this structure but not its children
-    void createTopLevelStructureFunctions(bool suppressEncodeAndDecode = true);
+    void createTopLevelStructureFunctions(void);
+
+    //! Write data to the source and header files for helper functions for this structure but not its children
+    void createTopLevelStructureHelperFunctions(void);
 
     //! Get the text used to extract text for text read functions
     static QString getExtractTextFunction(void);

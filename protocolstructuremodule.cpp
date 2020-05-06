@@ -811,49 +811,13 @@ void ProtocolStructureModule::createSubStructureFunctions()
 
 /*!
  * Write data to the source and header files to encode and decode this structure
- * but not its children.
- * \param includeEncodeAndDecode allows the output of the top level encode
- *        and decode structure functions.
+ * but not its children. This is all functions for the structure, including
+ * constructor, encode, decode, verify, print, and map functions.
  */
-void ProtocolStructureModule::createTopLevelStructureFunctions(bool includeEncodeAndDecode)
+void ProtocolStructureModule::createTopLevelStructureFunctions()
 {
-    if(includeEncodeAndDecode)
-    {
-        if(encode)
-        {
-            // In C++ this is part of the class declaration
-            if(support.language == ProtocolSupport::c_language)
-            {
-                header.makeLineSeparator();
-                header.write(getEncodeFunctionPrototype(QString(), false));
-            }
-
-            source.makeLineSeparator();
-            source.write(getEncodeFunctionBody(support.bigendian, false));
-        }
-
-        if(decode)
-        {
-            // In C++ this is part of the class declaration
-            if(support.language == ProtocolSupport::c_language)
-            {
-                header.makeLineSeparator();
-                header.write(getDecodeFunctionPrototype(QString(), false));
-            }
-
-            source.makeLineSeparator();
-            source.write(getDecodeFunctionBody(support.bigendian, false));
-        }
-
-        header.makeLineSeparator();
-        source.makeLineSeparator();
-
-    }// if we are not suppressing the encode and decode functions
-
-    if(redefines != nullptr)
-        return;
-
-    if(hasInit() && (verifySource != nullptr))
+    // Output the constructor first
+    if(hasInit() && (verifySource != nullptr) && (redefines == nullptr))
     {
         // In C++ this is part of the class declaration
         if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
@@ -867,6 +831,51 @@ void ProtocolStructureModule::createTopLevelStructureFunctions(bool includeEncod
         verifySource->write(getSetToInitialValueFunctionBody(false));
         verifySource->makeLineSeparator();
     }
+
+    if(encode)
+    {
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            header.makeLineSeparator();
+            header.write(getEncodeFunctionPrototype(QString(), false));
+        }
+
+        source.makeLineSeparator();
+        source.write(getEncodeFunctionBody(support.bigendian, false));
+    }
+
+    if(decode)
+    {
+        // In C++ this is part of the class declaration
+        if(support.language == ProtocolSupport::c_language)
+        {
+            header.makeLineSeparator();
+            header.write(getDecodeFunctionPrototype(QString(), false));
+        }
+
+        source.makeLineSeparator();
+        source.write(getDecodeFunctionBody(support.bigendian, false));
+    }
+
+    header.makeLineSeparator();
+    source.makeLineSeparator();
+
+    // The helper functions, which are verify, print, and map
+    createTopLevelStructureHelperFunctions();
+
+}// ProtocolStructureModule::createTopLevelStructureFunctions
+
+
+/*!
+ * Write data to the source and header files to the helper functions for this
+ * structure, but not its children. This is for verify, print, and map functions.
+ */
+void ProtocolStructureModule::createTopLevelStructureHelperFunctions(void)
+{
+    // The rest of the functions are not output if we are redefining another class
+    if(redefines != nullptr)
+        return;
 
     if(hasVerify() && (verifySource != nullptr))
     {

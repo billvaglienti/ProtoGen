@@ -177,18 +177,30 @@ void ProtocolPacket::parse(void)
             structName = support.prefix + redefinename + "_t";
     }
 
+    // If no ID is supplied use the packet name in upper case,
+    // assuming that the user will define it elsewhere
+    if(ids.count() <= 0)
+        ids.append(name.toUpper());
+
     // Most of the file setup work. This will also declare the structure if
     // warranted (note the details of the structure declaration will reflect
-    // back to this class via virtual functions.
+    // back to this class via virtual functions).
     setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
     createSubStructureFunctions();
 
-    // Note that this call will also handle the output of top level
-    // initialize, verify, and compare functions
-    createTopLevelStructureFunctions(useInOtherPackets);
+    // This is the constructor output, we want it to be the first function for this packet
+    createTopLevelInitializeFunction();
+
+    for(int i = 0; i < ids.count(); i++)
+    {
+        // The ID may be a value defined somewhere else
+        QString include = parser->lookUpIncludeName(ids.at(i));
+        if(!include.isEmpty())
+            header.writeIncludeDirective(include);
+    }
 
     // The functions that encode and decode the packet from a structure.
     if(structureFunctions)
@@ -198,8 +210,18 @@ void ProtocolPacket::parse(void)
     if(parameterFunctions)
         createPacketFunctions();
 
-    // Utility functions for ID, length, etc.
-    createUtilityFunctions(e);
+    // Now that the packet functions are out, do the non-packet functions
+    createTopLevelStructureFunctions();
+
+    // In the C language the utility functions are macros, defined just below the functions.
+    if(support.language == ProtocolSupport::c_language)
+    {
+        // White space is good
+        header.makeLineSeparator();
+
+        // Utility functions for ID, length, etc.
+        header.write(createUtilityFunctions(QString()));
+    }
 
     // White space is good
     header.makeLineSeparator();
@@ -297,6 +319,11 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
         ProtocolFile::makeLineSeparator(output);
     }
 
+    // Utility functions for ID, length, etc.
+    ProtocolFile::makeLineSeparator(output);
+    output += createUtilityFunctions(TAB_IN);
+    ProtocolFile::makeLineSeparator(output);
+
     // The parameter functions encode parameters to/from packets
     if(parameterFunctions)
     {
@@ -339,6 +366,24 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
 
     }// if structure packet functions
 
+    // Packet version of compare function
+    if(compare)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
+        output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    // Packet version of print function
+    if(print)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
+        output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
+        ProtocolFile::makeLineSeparator(output);
+    }
+
     // For use in other packets we need the ability to encode to a byte
     // stream, which is what ProtocolStructure gives us
     if(useInOtherPackets)
@@ -361,20 +406,16 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
 
     // There are cool utility functions: verify, print, read, mapencde,
     // mapdecode, and compare. All of these have forms that come from
-    // ProtocolStructure. In addition there are packet specific forms
-    // for the compare and print functions. Thse functions are only
-    // output for the base class, inherited (redefined) classes do not
-    // output them, because they would be the same
-    if(useInOtherPackets || structureFunctions)
+    // ProtocolStructure. Thse functions are only output for the base class,
+    // inherited (redefined) classes do not output them, because they would be
+    // the same. We also do not output data members for redefined classes,
+    // they come from the base class
+    if((useInOtherPackets || structureFunctions) && (redefines == nullptr))
     {
         if(compare)
         {
             ProtocolFile::makeLineSeparator(output);
             output += ProtocolStructure::getComparisonFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-
-            output += TAB_IN + "//! Compare two " + support.prefix + name + " packets and generate a report\n";
-            output += TAB_IN + "static QString compare(QString prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n";
             ProtocolFile::makeLineSeparator(output);
         }
 
@@ -385,54 +426,41 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
             ProtocolFile::makeLineSeparator(output);
             output += ProtocolStructure::getTextReadFunctionPrototype(TAB_IN, false);
             ProtocolFile::makeLineSeparator(output);
+        }
 
-            output += TAB_IN + "//! Generate a string that describes the contents of a " + name + " packet\n";
-            output += TAB_IN + "static QString textPrint(QString prename, const " + support.pointerType + " pkt);\n";
+        if(hasVerify())
+        {
+            ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getVerifyFunctionPrototype(TAB_IN, false);
             ProtocolFile::makeLineSeparator(output);
         }
 
-        if(redefines == nullptr)
+        if(mapEncode)
         {
-            // The verify and mapEncode functions are simply using the structure
-            // form of these functions, therefore if we are redefining an
-            // encoding for an existing structure we do not need to output these
-            // functions again.
-
-            if(hasVerify())
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getVerifyFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
-            if(mapEncode)
-            {
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getMapEncodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-                output += ProtocolStructure::getMapDecodeFunctionPrototype(TAB_IN, false);
-                ProtocolFile::makeLineSeparator(output);
-            }
-
             ProtocolFile::makeLineSeparator(output);
-
-            // Finally the local members of this class. Notice that if we only have
-            // parameter functions then we do not output these (and the class is
-            // esentially static). The same is true if we are redefining another class,
-            // in which case we use the members from the base class
-            if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
-            {
-                // Now declare the members of this class
-                for(int i = 0; i < encodables.length(); i++)
-                    structure += encodables[i]->getDeclaration();
-
-                // Make classes pretty with alignment goodness
-                output += alignStructureData(structure);
-            }
-
+            output += ProtocolStructure::getMapEncodeFunctionPrototype(TAB_IN, false);
             ProtocolFile::makeLineSeparator(output);
+            output += ProtocolStructure::getMapDecodeFunctionPrototype(TAB_IN, false);
+            ProtocolFile::makeLineSeparator(output);
+        }
 
-        }// if not redefining
+        ProtocolFile::makeLineSeparator(output);
+
+        // Finally the local members of this class. Notice that if we only have
+        // parameter functions then we do not output these (and the class is
+        // esentially static). The same is true if we are redefining another class,
+        // in which case we use the members from the base class
+        if(getNumberInMemory() > 0)
+        {
+            // Now declare the members of this class
+            for(int i = 0; i < encodables.length(); i++)
+                structure += encodables[i]->getDeclaration();
+
+            // Make classes pretty with alignment goodness
+            output += alignStructureData(structure);
+        }
+
+        ProtocolFile::makeLineSeparator(output);
 
     }// If outputting structure functions
 
@@ -446,53 +474,142 @@ QString ProtocolPacket::getClassDeclaration_CPP(void) const
 
 /*!
  * Create utility functions for packet ID and lengths. The structure must
- * already have been parsed to give the lengths
- * \param e is the top level DOM element that represents the packet.
+ * already have been parsed to give the lengths.
+ * \param spacing sets the amount of space to put before each line.
+ * \return the string which goes in the header or class definition, depending
+ *         on the language being output
  */
-void ProtocolPacket::createUtilityFunctions(const QDomElement& e)
+QString ProtocolPacket::createUtilityFunctions(const QString& spacing) const
 {
-    Q_UNUSED(e);
+    QString output;
 
-    // If no ID is supplied then use the packet name in upper case,
-    // assuming that the user will define it elsewhere
-    if(ids.count() <= 0)
-        ids.append(name.toUpper());
-
-    for(int i = 0; i < ids.count(); i++)
+    if(support.language == ProtocolSupport::c_language)
     {
-        // The ID may be a value defined somewhere else
-        QString include = parser->lookUpIncludeName(ids.at(i));
-        if(!include.isEmpty())
-            header.writeIncludeDirective(include);
+        // The macro for the packet ID, we only emit this if the packet has a single ID, which is the normal case
+        if(ids.count() == 1)
+        {
+            output += spacing + "//! return the packet ID for the " + support.prefix + name + " packet\n";
+            output += spacing + "#define get" + support.prefix + name + support.packetParameterSuffix + "ID() (" + ids.at(0) + ")\n";
+            output += "\n";
+        }
+
+        // The macro for the minimum packet length
+        output += spacing + "//! return the minimum encoded length for the " + support.prefix + name + " packet\n";
+        output += spacing + "#define get" + support.prefix + name + "MinDataLength() ";
+        if(encodedLength.minEncodedLength.isEmpty())
+            output += "0\n";
+        else
+            output += "("+encodedLength.minEncodedLength + ")\n";
+
+        // The macro for the maximum packet length
+        output += "\n";
+        output += spacing + "//! return the maximum encoded length for the " + support.prefix + name + " packet\n";
+        output += spacing + "#define get" + support.prefix + name + "MaxDataLength() ";
+        if(encodedLength.maxEncodedLength.isEmpty())
+            output += "0\n";
+        else
+            output += "("+encodedLength.maxEncodedLength + ")\n";
+    }
+    else
+    {
+        if(ids.count() == 1)
+        {
+            output += spacing + "//! \\return the packet ID for the packet\n";
+            output += spacing + "static uint32_t getID(void) { return " + ids.at(0) + ";}\n";
+            output += "\n";
+        }
+
+        // The minimum packet length
+        output += spacing + "//! \\return the minimum encoded length for the packet\n";
+        output += spacing + "static int getMinDataLength(void) { return ";
+        if(encodedLength.minEncodedLength.isEmpty())
+            output += "0;}\n";
+        else
+            output += "("+encodedLength.minEncodedLength + ");}\n";
+
+        // The maximum packet length
+        output += "\n";
+        output += spacing + "//! \\return the maximum encoded length for the packet\n";
+        output += spacing + "static int getMaxDataLength(void) { return ";
+        if(encodedLength.maxEncodedLength.isEmpty())
+            output += "0;}\n";
+        else
+            output += "("+encodedLength.maxEncodedLength + ");}\n";
     }
 
-    // The macro for the packet ID, we only emit this if the packet has a single ID, which is the normal case
-    if(ids.count() == 1)
-    {
-        header.makeLineSeparator();
-        header.write("//! return the packet ID for the " + support.prefix + name + " packet\n");
-        header.write("#define get" + support.prefix + name + support.packetParameterSuffix + "ID() (" + ids.at(0) + ")\n");
-    }
-
-    // The macro for the minimum packet length
-    header.makeLineSeparator();
-    header.write("//! return the minimum encoded length for the " + support.prefix + name + " packet\n");
-    header.write("#define get" + support.prefix + name + "MinDataLength() ");
-    if(encodedLength.minEncodedLength.isEmpty())
-        header.write("0\n");
-    else
-        header.write("("+encodedLength.minEncodedLength + ")\n");
-
-    // The macro for the maximum packet length
-    header.makeLineSeparator();
-    header.write("//! return the maximum encoded length for the " + support.prefix + name + " packet\n");
-    header.write("#define get" + support.prefix + name + "MaxDataLength() ");
-    if(encodedLength.maxEncodedLength.isEmpty())
-        header.write("0\n");
-    else
-        header.write("("+encodedLength.maxEncodedLength + ")\n");
+    return output;
 
 }// ProtocolPacket::createUtilityFunctions
+
+
+/*!
+ * Write the initializer / constructor function for this packet only
+ */
+void ProtocolPacket::createTopLevelInitializeFunction(void)
+{
+    // Output the constructor first
+    if(hasInit() && (verifySource != nullptr) && (redefines == nullptr))
+    {
+        // In C++ this is part of the class declaration
+        if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
+        {
+            verifyHeader->makeLineSeparator();
+            verifyHeader->write(getSetToInitialValueFunctionPrototype(QString(), false));
+            verifyHeader->makeLineSeparator();
+        }
+
+        verifySource->makeLineSeparator();
+        verifySource->write(getSetToInitialValueFunctionBody(false));
+        verifySource->makeLineSeparator();
+    }
+
+}// ProtocolPacket::createTopLevelInitializeFunction
+
+
+/*!
+ * Write data to the source and header files to encode and decode structure
+ * functions that do not use a packet. For this structure only, not its children
+ */
+void ProtocolPacket::createTopLevelStructureFunctions(void)
+{
+    // If we are using this structure in other packets, we need the structure
+    // functions that come from ProtocolStructureModule
+    if(useInOtherPackets)
+    {
+        if(encode)
+        {
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(getEncodeFunctionPrototype(QString(), false));
+            }
+
+            source.makeLineSeparator();
+            source.write(getEncodeFunctionBody(support.bigendian, false));
+        }
+
+        if(decode)
+        {
+            // In C++ this is part of the class declaration
+            if(support.language == ProtocolSupport::c_language)
+            {
+                header.makeLineSeparator();
+                header.write(getDecodeFunctionPrototype(QString(), false));
+            }
+
+            source.makeLineSeparator();
+            source.write(getDecodeFunctionBody(support.bigendian, false));
+        }
+
+        header.makeLineSeparator();
+        source.makeLineSeparator();
+
+    }// if we are not suppressing the encode and decode functions
+
+    createTopLevelStructureHelperFunctions();
+
+}// ProtocolPacket::createTopLevelStructureFunctions
 
 
 /*!
@@ -876,13 +993,17 @@ QString ProtocolPacket::getStructurePacketEncodeBody(void) const
         output += encodables[i]->getEncodeString(support.bigendian, &bitcount, true);
     }
 
+    QString id;
+    if(ids.count() > 1)
+        id = "_pg_id";
+    else if(support.language == ProtocolSupport::c_language)
+        id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
+    else
+        id = "getID()";
+
     ProtocolFile::makeLineSeparator(output);
     output += TAB_IN + "// complete the process of creating the packet\n";
-    if(ids.count() <= 1)
-        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
-    else
-        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n";
-
+    output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, " + id + ");\n";
     output += "}\n";
 
     return output;
@@ -968,6 +1089,16 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
     if(!decode)
         return output;
 
+    // The string that gets the identifier for the packet, if there is only one
+    QString id;
+    if(ids.count() <= 1)
+    {
+        if(support.language == ProtocolSupport::c_language)
+            id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
+        else
+            id = "getID()";
+    }
+
     // Check if there is anything that is encoded, if not, we use a different form of the function
     if(getNumberOfEncodes() > 0)
     {
@@ -1007,7 +1138,7 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         if(ids.count() <= 1)
         {
             output += TAB_IN + "// Verify the packet identifier\n";
-            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != " + id + ")\n";
         }
         else
         {
@@ -1022,7 +1153,10 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         output += "\n";
         output += TAB_IN + "// Verify the packet size\n";
         output += TAB_IN + "_pg_numbytes = get" + support.protoName + "PacketSize(_pg_pkt);\n";
-        output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        if(support.language == ProtocolSupport::c_language)
+            output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        else
+            output += TAB_IN + "if(_pg_numbytes < getMinDataLength())\n";
         output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
         output += "\n";
         output += TAB_IN + "// The raw data from the packet\n";
@@ -1090,7 +1224,7 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         if(ids.count() <= 1)
         {
             output += TAB_IN + "// Verify the packet identifier\n";
-            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != " + id + ")\n";
         }
         else
         {
@@ -1229,6 +1363,15 @@ QString ProtocolPacket::getParameterPacketEncodeBody(void) const
     if(!encode)
         return output;
 
+    // The string that gets the identifier for the packet
+    QString id;
+    if(ids.count() > 1)
+        id = "_pg_id";
+    else if(support.language == ProtocolSupport::c_language)
+        id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
+    else
+        id = "getID()";
+
     output += "/*!\n";
     output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
     output += " *\n";
@@ -1276,18 +1419,13 @@ QString ProtocolPacket::getParameterPacketEncodeBody(void) const
 
         ProtocolFile::makeLineSeparator(output);
         output += TAB_IN + "// complete the process of creating the packet\n";
-        if(ids.count() <= 1)
-            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
-        else
-            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, _pg_id);\n";
+        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, " + id + ");\n";
     }
     else
     {
+        ProtocolFile::makeLineSeparator(output);
         output += TAB_IN + "// Zero length packet, no data encoded\n";
-        if(ids.count() <= 1)
-            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, get" + support.prefix + name + support.packetParameterSuffix + "ID());\n";
-        else
-            output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, _pg_id;)\n";
+        output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, " + id + ");\n";
     }
 
     output += "}\n";
@@ -1369,6 +1507,16 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
     if(!decode)
         return output;
 
+    // The string that gets the identifier for the packet, if there is only one
+    QString id;
+    if(ids.count() <= 1)
+    {
+        if(support.language == ProtocolSupport::c_language)
+            id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
+        else
+            id = "getID()";
+    }
+
     output += "/*!\n";
     output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
     output += " *\n";
@@ -1412,7 +1560,7 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         if(ids.count() <= 1)
         {
             output += TAB_IN + "// Verify the packet identifier\n";
-            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != " + id + ")\n";
         }
         else
         {
@@ -1426,7 +1574,10 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         output += TAB_IN + TAB_IN + "return 0;\n";
 
         output += "\n";
-        output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        if(support.language == ProtocolSupport::c_language)
+            output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
+        else
+            output += TAB_IN + "if(_pg_numbytes < getMinDataLength())\n";
         output += TAB_IN + TAB_IN + "return 0;\n";
         if(defaults)
         {
@@ -1478,7 +1629,7 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         if(ids.count() <= 1)
         {
             output += TAB_IN + "// Verify the packet identifier\n";
-            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n";
+            output += TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != " + id + ")\n";
         }
         else
         {
