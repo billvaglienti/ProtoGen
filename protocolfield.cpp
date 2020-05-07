@@ -40,6 +40,7 @@ TypeData::TypeData(const TypeData& that) :
     bits(that.bits),
     sigbits(that.sigbits),
     enummax(that.enummax),
+    enumName(that.enumName),
     support(that.support)
 {
 }
@@ -62,6 +63,7 @@ void TypeData::clear(void)
     bits = 8;
     sigbits = 0;
     enummax = 0;
+    enumName.clear();
 }
 
 
@@ -75,7 +77,13 @@ int TypeData::extractPositiveInt(const QString& string, bool* ok)
 {
     QString number = string;
 
-    if(number.contains("0x", Qt::CaseInsensitive))
+    if(number.contains("0b", Qt::CaseInsensitive))
+    {
+        QRegExp rx("[^01]");
+        number.replace(rx, "");
+        return number.toInt(ok, 2);
+    }
+    else if(number.contains("0x", Qt::CaseInsensitive))
     {
         QRegExp rx("[^0123456789AaBbCcDdEeFf]");
         number.replace(rx, "");
@@ -101,7 +109,13 @@ double TypeData::extractDouble(const QString& string, bool* ok)
 {
     QString number = string;
 
-    if(number.contains("0x", Qt::CaseInsensitive) && !number.contains("."))
+    if(number.contains("0b", Qt::CaseInsensitive) && !number.contains("."))
+    {
+        QRegExp rx("[^01]");
+        number.replace(rx, "");
+        return number.toInt(ok, 2);
+    }
+    else if(number.contains("0x", Qt::CaseInsensitive) && !number.contains("."))
     {
         QRegExp rx("[^0123456789AaBbCcDdEeFf]");
         number.replace(rx, "");
@@ -118,11 +132,10 @@ double TypeData::extractDouble(const QString& string, bool* ok)
 
 /*!
  * Determine the typename of this field (for example uint8_t).
- * \param enumName is the enumeration name, if this is an enumeration.
  * \param structName is the structure name, if this is a structure.
  * \return the type name that should appear in code.
  */
-QString TypeData::toTypeString(QString enumName, QString structName) const
+QString TypeData::toTypeString(const QString& structName) const
 {
     QString typeName;
 
@@ -344,6 +357,97 @@ int64_t TypeData::getMinimumIntegerValue(void) const
 
 
 /*!
+ * Given a constant string (like default value) apply the type correct suffix
+ * for the type, or apply a cast if a suffix cannot be used.
+ * \param number is the input number whose type must be set.
+ * \return The correctly typed number, using either a constant suffix or a cast.
+ */
+QString TypeData::applyTypeToConstant(const QString& number) const
+{
+    if(isString || isStruct)
+        return number;
+
+    QString output = number.trimmed();
+
+    if(output.isEmpty())
+    {
+        if(isEnum && !enumName.isEmpty())
+            return "(" + enumName + ")0";
+        else
+            return "0";
+    }
+
+    // Remove the existing suffix
+    if(number.startsWith("0b", Qt::CaseInsensitive))
+    {
+        while(!output.isEmpty() && !ShuntingYard::isNumber(output.back(), false, true))
+            output.chop(1);
+    }
+    else if(number.startsWith("0x", Qt::CaseInsensitive))
+    {
+        while(!output.isEmpty() && !ShuntingYard::isNumber(output.back(), true, false))
+            output.chop(1);
+    }
+    else
+    {
+        while(!output.isEmpty() && !ShuntingYard::isNumber(output.back(), false, false))
+            output.chop(1);
+    }
+
+
+    // Is the result still a number? It might not be if the input was an
+    // enumeration or defined constant or some such. In that case we just
+    // apply a cast and hope for the best.
+    bool ok;
+    double value = ShuntingYard::toNumber(output, &ok);
+    if(!ok)
+        return "(" + toTypeString() + ")" + number;
+
+    // Add the correct suffix for the numeric type
+    if(isFloat)
+    {
+        // Make sure we have a decimal point. If we already have one, but its
+        // the last character, add the 0. So "10" -> "10.0", or "10." -> "10.0"
+        if(!output.contains("."))
+            output += ".0";
+        else if(output.back() == '.')
+            output += "0";
+
+        // Finally put the 'f' at the end if this is a float
+        if(bits <= 32)
+            output += "f";
+    }
+    else
+    {
+        QString suffix;
+
+        // In this case we only need the suffix if the integer constant will is large enough
+        value = fabs(value);
+
+        if(value >= 4294967295.0)
+            suffix = "ll";
+        else if((value >= 2147483647.0) && isSigned)
+            suffix = "ll";
+        else if(value >= 65535.0)
+            suffix = "l";
+        else if((value >= 32767.0) && isSigned)
+            suffix = "l";
+
+        if(!suffix.isEmpty())
+        {
+            if(!isSigned)
+                output += "u";
+
+            output += suffix;
+        }
+    }
+
+    return output;
+
+}// TypeData::applyTypeToConstant
+
+
+/*!
  * Construct a blank protocol field
  * \param parse points to the global protocol parser that owns everything
  * \param parent is the hierarchical name of the parent object
@@ -379,7 +483,6 @@ void ProtocolField::clear(void)
 {
     Encodable::clear();
 
-    enumName.clear();
     encodedMin = encodedMax = 0;
     scaler = 1;
     defaultString.clear();
@@ -510,9 +613,10 @@ bool ProtocolField::getOverriddenTypeData(ProtocolField* prev)
     // If we get here, then this is our baby. Update the data being overriden.
     inMemoryType = prev->inMemoryType;
 
-    if(!enumName.isEmpty())
+    if(!inMemoryType.enumName.isEmpty())
         emitWarning("Enumeration name ignored for overridden field");
-    enumName = prev->enumName;
+
+    inMemoryType.enumName = prev->inMemoryType.enumName;
 
     if(!array.isEmpty())
         emitWarning("Array information ignored for overridden field");
@@ -561,13 +665,11 @@ void ProtocolField::getBitfieldGroupNumBytes(int* num) const
  * Extract the type information from the type string, for in memory types
  * \param data holds the extracted type
  * \param type is the type string
- * \param name is the name of this field, used for warnings
  * \param inMemory is true if this is an in-memory type string, else encoded
+ * \param _enumName is the name of the enumeration, if this is an enumerated type.
  */
-void ProtocolField::extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory)
+void ProtocolField::extractType(TypeData& data, const QString& typeString, bool inMemory, const QString& _enumName)
 {
-    Q_UNUSED(name);
-
     QString type(typeString);
 
     data.clear();
@@ -662,6 +764,7 @@ void ProtocolField::extractType(TypeData& data, const QString& typeString, const
         if(inMemory)
         {
             data.isEnum = true;
+            data.enumName = _enumName;
         }
         else
         {
@@ -864,6 +967,7 @@ void ProtocolField::parse(void)
     QString memoryTypeString;
     QString encodedTypeString;
     QString structName;
+    QString enumName;
 
     clear();
 
@@ -1026,7 +1130,7 @@ void ProtocolField::parse(void)
     }
 
     // Extract the in memory type
-    extractType(inMemoryType, memoryTypeString, name, true);
+    extractType(inMemoryType, memoryTypeString, true, enumName);
 
     // The encoded type string, this can be empty which implies encoded is same as memory
     if(encodedTypeString.isEmpty())
@@ -1042,7 +1146,7 @@ void ProtocolField::parse(void)
     }
     else
     {
-        extractType(encodedType, encodedTypeString, name, false);
+        extractType(encodedType, encodedTypeString, false);
 
         // This is just a warning pacifier, we won't learn until later what the
         // in memory type is
@@ -1076,7 +1180,7 @@ void ProtocolField::parse(void)
 
     if(inMemoryType.isEnum)
     {
-        if(enumName.isEmpty())
+        if(inMemoryType.enumName.isEmpty())
         {
             emitWarning("enumeration name is missing, type changed to unsigned");
             inMemoryType.isEnum = encodedType.isEnum = false;
@@ -1087,7 +1191,7 @@ void ProtocolField::parse(void)
             inMemoryType.enummax = 255;
 
             // Figure out the minimum number of bits for the enumeration
-            const EnumCreator* creator = parser->lookUpEnumeration(enumName);
+            const EnumCreator* creator = parser->lookUpEnumeration(inMemoryType.enumName);
             if(creator != 0)
             {
                 minbits = creator->getMinBitWidth();
@@ -1557,7 +1661,7 @@ void ProtocolField::parse(void)
     }
 
     // Just the type data
-    typeName = inMemoryType.toTypeString(enumName, support.prefix + structName);
+    typeName = inMemoryType.toTypeString(support.prefix + structName);
 
     if(!constantString.isEmpty())
     {
@@ -1824,10 +1928,10 @@ void ProtocolField::checkAgainstKeywords(void)
 {
     Encodable::checkAgainstKeywords();
 
-    if(keywords.contains(enumName))
+    if(keywords.contains(inMemoryType.enumName))
     {
         emitWarning("enum name matches C keyword, changed to _name");
-        enumName = "_" + enumName;
+        inMemoryType.enumName = "_" + inMemoryType.enumName;
     }
 
     if(keywords.contains(maxString))
@@ -2114,7 +2218,7 @@ void ProtocolField::getDocumentationDetails(QList<int>& outline, QString& startB
     if(inMemoryType.isEnum)
     {
         // Link to the enumeration
-        outlineString += ")[" + title +"](#" + enumName + ")";
+        outlineString += ")[" + title +"](#" + inMemoryType.enumName + ")";
     }
     else
         outlineString += ")" + title;
@@ -3114,18 +3218,27 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
         }
         else
         {
+            // Try the user's value first
             QString initial = initialValueString;
 
-            // In C++ we explicitly initialize all members
+            // If there isn't one, use the default value
+            if(initial.isEmpty())
+                initial = defaultString;
+
+            // If there isn't one, use the constant value
+            if(initial.isEmpty())
+                initial = constantString;
+
+            // In C++ we explicitly initialize all members.
             if(initial.isEmpty())
             {
                 if(!inMemoryType.isString)
                 {
                     if(inMemoryType.isEnum)
                     {
-                        const EnumCreator* creator = parser->lookUpEnumeration(enumName);
+                        const EnumCreator* creator = parser->lookUpEnumeration(inMemoryType.enumName);
                         if(creator == nullptr)
-                            initial = "(" + enumName + ")0";
+                            initial = "(" + inMemoryType.enumName + ")0";
                         else
                             initial = creator->getFirstEnumerationName();
                     }
@@ -3134,18 +3247,25 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
                 }
             }
 
-            // In C++ there are two ways we initialize variables: either the
-            // initializer list in the constructor, or for arrays, we use the
-            // old C method in the constructor body
+            initial = inMemoryType.applyTypeToConstant(initial);
+
+            // C++ initializer list
             if(inMemoryType.isString)
-                output += TAB_IN + name + "(\"" + initial + "\"),\n";
-            else if(!isArray())
-                output += TAB_IN + name + "(" + initial + "),\n";
-            else
             {
-                // This has the array handling built in
-                output += getSetToValueString(isStructureMember, initial);
+                // initial is a string literal, so include the quotes. Except for
+                // a special case. If initial ends in "()" then we assume its a
+                // function or macro call
+                if(!(initial.contains("(") && initial.contains(")")))
+                    initial = "\"" + initial + "\"";
+
+                output += TAB_IN + name + "(" + initial + "),\n";
             }
+            else if(is2dArray())
+                output += TAB_IN + name + "{{" + initial + "}},\n";
+            else if(isArray())
+                output += TAB_IN + name + "{" + initial + "},\n";
+            else
+                output += TAB_IN + name + "(" + initial + "),\n";
         }
     }
 
@@ -4092,7 +4212,22 @@ QString ProtocolField::getEncodeStringForStructure(bool isStructureMember) const
         output += spacing + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     else
     {
-        if(isStructureMember)
+        const ProtocolStructure* struc = parser->lookUpStructure(typeName);
+
+        if((struc != nullptr) && (typeName != struc->getStructName()))
+        {
+            // We have an interesting case to handle here. This struct is
+            // redefining another struct. In which case we need to call the
+            // redefined encode function, and we do that by casting a pointer.
+            // This is a downcast, which is only valid if there are no virtual
+            // interfaces between here and the data we are going to touch.
+            /// TODO: is there a better way? A very complex topic...
+            if(isStructureMember || isArray())
+                output += spacing + "(static_cast<const " + typeName + "*>(&" + access + "))->encode(_pg_data, &_pg_byteindex);\n";
+            else
+                output += spacing + "(static_cast<const " + typeName + "*>(" + access + "))->encode(_pg_data, &_pg_byteindex);\n";
+        }
+        else if(isStructureMember)
             output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
         else
             output += spacing + access + "->encode(_pg_data, &_pg_byteindex);\n";
@@ -4156,7 +4291,22 @@ QString ProtocolField::getDecodeStringForStructure(bool isStructureMember) const
     }
     else
     {
-        if(isStructureMember)
+        const ProtocolStructure* struc = parser->lookUpStructure(typeName);
+
+        if((struc != nullptr) && (typeName != struc->getStructName()))
+        {
+            // We have an interesting case to handle here. This struct is
+            // redefining another struct. In which case we need to call the
+            // redefined encode function, and we do that by casting a pointer.
+            // This is a downcast, which is only valid if there are no virtual
+            // interfaces between here and the data we are going to touch.
+            /// TODO: is there a better way? A very complex topic...
+            if(isStructureMember || isArray())
+                output += spacing + "if((static_cast<" + typeName + "*>(&" + access + "))->decode(_pg_data, &_pg_byteindex) == false)\n";
+            else
+                output += spacing + "if((static_cast<" + typeName + "*>(" + access + "))->decode(_pg_data, &_pg_byteindex) == false)\n";
+        }
+        else if(isStructureMember)
             output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
         else
             output += spacing + "if(" + access + "->decode(_pg_data, &_pg_byteindex) == false)\n";

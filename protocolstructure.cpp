@@ -318,7 +318,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         output += spacing + TAB_IN + "return 0;\n";
     }
     else
-    {
+    {       
         if(isStructureMember)
             output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
         else
@@ -1974,24 +1974,12 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         // Set to initial values is just the constructor. We initialize every
         // member that is not itself another class (they take care of themselves).
         QString initializerlist;
-        bool hasarray1d = false;
-        bool hasarray2d = false;
 
         for(int i = 0; i < encodables.length(); i++)
         {
             // Structures (classes really) take care of themselves
             if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
                 continue;
-
-            // Arrays are done later, less they are strings
-            if(encodables.at(i)->isArray() && !encodables.at(i)->isString())
-            {
-                hasarray1d = true;
-                if(encodables.at(i)->is2dArray())
-                    hasarray2d = true;
-
-                continue;
-            }
 
             initializerlist += encodables.at(i)->getSetInitialValueString(true);
         }
@@ -2010,31 +1998,6 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         output += " */\n";
         output += getSetToInitialValueFunctionSignature(true) + initializerlist;
         output += "{\n";
-
-        // We have our own version of `needsInitIterator` because arrays of classes do not need to be handed here.
-        if(hasarray1d)
-            output += TAB_IN + "int _pg_i = 0;\n";
-
-        if(hasarray2d)
-            output += TAB_IN + "int _pg_j = 0;\n";
-
-        for(int i = 0; i < encodables.length(); i++)
-        {
-            // Structures (classes really) take care of themselves
-            if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
-                continue;
-
-            // Arrays are done here
-            if(!encodables.at(i)->isArray() || encodables.at(i)->isString())
-                continue;
-
-            /// TODO: This bites, I would like to do something better using modern C++
-
-            ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getSetInitialValueString(true);
-        }
-
-        ProtocolFile::makeLineSeparator(output);
         output += "}// " + typeName + "::" + typeName + "\n";
 
     }// else if C++ language

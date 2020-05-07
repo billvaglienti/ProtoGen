@@ -39,7 +39,7 @@ public:
     static double computePostfix(const QString& postfix, bool* ok = 0);
 
     //! Convert an input string to an integer
-    static int toInt(QString input, bool* ok);
+    static int64_t toInt(QString input, bool* ok);
 
     //! Test if input string is an integer
     static bool isInt(const QString& input);
@@ -51,7 +51,7 @@ public:
     static bool isNumber(const QString& input);
 
     //! Test if input character is a number
-    static bool isNumber(const QChar& input);
+    static bool isNumber(const QChar& input, bool hex = false, bool binary = false);
 
     //! Replace "pi" or "e" in the string with the numeric values
     static QString& replacePie(QString& input);

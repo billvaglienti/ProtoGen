@@ -22,6 +22,9 @@ public:
     //! Parse the DOM data for this structure
     void parse(void) Q_DECL_OVERRIDE;
 
+    //! Return the struct name, which may be different from typeName
+    const QString& getStructName(void) const {return structName;}
+
     //! The hierarchical name of this object
     QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 

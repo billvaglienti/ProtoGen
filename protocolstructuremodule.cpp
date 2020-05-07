@@ -154,9 +154,36 @@ void ProtocolStructureModule::parse(void)
 
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
-    compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
-    print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
-    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
+
+    // It is possible to suppress the globally specified compare output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("compare", map)))
+    {
+        support.compare = compare = false;
+        comparemodulename.clear();
+        support.globalCompareName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map)))
+        compare = true;
+
+    // It is possible to suppress the globally specified print output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("print", map)))
+    {
+        support.print = print = false;
+        printmodulename.clear();
+        support.globalPrintName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map)))
+        print = true;
+
+    // It is possible to suppress the globally specified map output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("map", map)))
+    {
+        support.mapEncode = mapEncode = false;
+        mapmodulename.clear();
+        support.globalMapName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map)))
+        mapEncode = true;
 
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
 
@@ -191,8 +218,6 @@ void ProtocolStructureModule::parse(void)
     // We don't write the source to disk if we are not encoding or decoding anything
     if(encode || decode)
         source.flush();
-    else
-        source.clear();
 
     // Only write the compare if we have compare functions to output
     if(compare)
@@ -979,8 +1004,8 @@ std::string extractText(const std::string& key, const std::string& source, int* 
         // This is the location of the first character after the key\n\
         std::string::size_type first = index + key.length();\n\
 \n\
-        // The location of the linefeed\n\
-        std::string::size_type linefeed = source.rfind(\"\\n\", first);\n\
+        // The location of the next linefeed after the key\n\
+        std::string::size_type linefeed = source.find(\"\\n\", first);\n\
 \n\
         // This is how many characters until we get to the linefeed\n\
         if((linefeed > first) && (linefeed < source.length()))\n\

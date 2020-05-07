@@ -33,6 +33,7 @@ public:
     int bits;           //!< number of bits used by type
     int sigbits;        //!< number of bits for the significand of a float16 or float24
     int enummax;        //!< maximum value of the enumeration if isEnum is true
+    QString enumName;   //! Name of the enumerated type, empty if not enumerated type
 
     //! Pull a positive integer value from a string
     static int extractPositiveInt(const QString& string, bool* ok = 0);
@@ -41,7 +42,7 @@ public:
     static double extractDouble(const QString& string, bool* ok = 0);
 
     //! Create the type string
-    QString toTypeString(QString enumName = QString(), QString structName = QString()) const;
+    QString toTypeString(const QString& structName = QString()) const;
 
     //! Determine the signature of this field (for example uint8).
     QString toSigString(void) const;
@@ -58,7 +59,11 @@ public:
     //! Determine the minimum integer value this TypeData can hold
     int64_t getMinimumIntegerValue(void) const;
 
+    //! Given a constant string (like default value) apply the type correct suffix
+    QString applyTypeToConstant(const QString& number) const;
+
 private:
+
     ProtocolSupport support;
 };
 
@@ -287,9 +292,6 @@ public:
 
 protected:
 
-    //! Name of the enumerated type for this field, empty if not enumerated type
-    QString enumName;
-
     //! Minimum encoded value (as a number), used by scaling routines for unsigned encodings
     double encodedMin;
 
@@ -406,7 +408,7 @@ protected:
     int mapOptions;
 
     //! Extract the type information from the type string
-    void extractType(TypeData& data, const QString& typeString, const QString& name, bool inMemory);
+    void extractType(TypeData& data, const QString& typeString, bool inMemory, const QString& enumName = QString());
 
     //! Return the constant value string, sourced from either constantValue, encodeConstantValue, decodeConstantValue
     QString getConstantString() const;

@@ -132,6 +132,8 @@ OTHER_FILES += \
     LICENSE.txt
 
 DISTFILES += \
+    dependson_cpp.xml \
+    exampleprotocol_cpp.xml \
     moredocsfile.txt \
     dependson.xml \
     licensetest.txt

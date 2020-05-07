@@ -17,7 +17,7 @@
     <Documentation comment="------------"/>
     <Documentation name="Packets" paragraph="1"/>
 
-    <Structure name="testPacket" encode="false" decode="false" file="DemolinkProtocol.h" comment="A simple packet structure demonstrating that you can output basic structures without encodings">
+    <Structure name="testPacket" encode="false" decode="false" map="false" print="false" compare="false" file="DemolinkProtocol" comment="A simple packet structure demonstrating that you can output basic structures without encodings">
         <Enum name="testPktIds" comment="Values used in the definition of the generic packet">
             <Value name="TEST_PKT_SYNC_BYTE0" value="0x55" comment="First synchronization byte"/>
             <Value name="TEST_PKT_SYNC_BYTE1" value="0xAA" comment="Second synchronization byte"/>

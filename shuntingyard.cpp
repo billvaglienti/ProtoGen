@@ -293,14 +293,14 @@ bool ShuntingYard::isLeftAssociative(const QString& op)
  *         be set to false
  * \return the converted value, or 0 if the conversion fails
  */
-int ShuntingYard::toInt(QString input, bool* ok)
+int64_t ShuntingYard::toInt(QString input, bool* ok)
 {
     if(input.startsWith("0b", Qt::CaseInsensitive))
-        return input.remove(0, 2).toUInt(ok, 2);
+        return (int64_t)input.remove(0, 2).toULongLong(ok, 2);
     else if(input.startsWith("0x", Qt::CaseInsensitive))
-        return input.remove(0, 2).toUInt(ok, 16);
+        return (int64_t)input.remove(0, 2).toULongLong(ok, 16);
     else
-        return input.toInt(ok);
+        return input.toLongLong(ok);
 
 }
 
@@ -331,9 +331,9 @@ bool ShuntingYard::isInt(const QString& input)
 double ShuntingYard::toNumber(QString input, bool* ok)
 {
     if(input.startsWith("0b", Qt::CaseInsensitive))
-        return input.remove(0, 2).toUInt(ok, 2);
+        return (double)input.remove(0, 2).toULongLong(ok, 2);
     else if(input.startsWith("0x", Qt::CaseInsensitive))
-        return input.remove(0, 2).toUInt(ok, 16);
+        return (double)input.remove(0, 2).toULongLong(ok, 16);
     else
         return input.toDouble(ok);
 
@@ -357,16 +357,23 @@ bool ShuntingYard::isNumber(const QString& input)
 
 /*!
  * \param input is the character to test
- * \return true if the input is in the set ".0123456789"
+ * \param hex should be true to look for hexadecimal characters oly (not counting 'x')
+ * \param binary should be true to look for binary characters only (not counting 'b')
+ * \return true if the input is in the set ".0123456789" for decimal or "01"
+ *         for binary or "0123456789aAbBcCdDeEfF" for hexadecimal.
  */
-bool ShuntingYard::isNumber(const QChar& input)
+bool ShuntingYard::isNumber(const QChar& input, bool hex, bool binary)
 {
-    if(input.isDigit())
-        return true;
-    else if(input == '.')
-        return true;
+    QString set;
+
+    if(binary)
+        set = "01";
+    else if(hex)
+        set = "0123456789aAbBcCdDeEfF";
     else
-        return false;
+        set = ".0123456789";
+
+    return set.contains(input);
 }
 
 
@@ -436,6 +443,10 @@ QString ShuntingYard::tokenize(const QString& raw)
     tokentypes lasttoken = operation;
     QChar lastcharacter = ' ';
 
+    // These flags track if we are parsing a binary or hex number, they can only be set by seeing the 0x or 0b prefix
+    bool binary = false;
+    bool hex = false;
+
     // Handle special numbers. There are enough characters here to exceed the
     // double precision representation
     replacePie(input);
@@ -444,8 +455,8 @@ QString ShuntingYard::tokenize(const QString& raw)
     {
         QChar character = input.at(i);
 
-        // this first case is hard, some numbers contain leading negative signs.
-        if(isNumber(character) || ((character == '-') && (lasttoken == operation)))
+        // this first case is hard, some numbers contain leading negative signs, but not hex or binary numbers.
+        if(isNumber(character, hex, binary) || ((character == '-') && (lasttoken == operation) && !hex && !binary))
         {
             // Add a separator if the previous value was an operator. The goal is to keep numerals together
             if(lasttoken == operation)
@@ -462,11 +473,22 @@ QString ShuntingYard::tokenize(const QString& raw)
             // Another hard case, we want to support hexadecimal and binary numbers,
             // but we need to preserve the "0x" or "0b" prefix
 
-            // Treat this as a number, and note that lastcharacter must also have been a number
+            // Treat this as a number, and note that last character must also have been a number
             lasttoken = number;
 
             // Output the character, no separator
             output += character;
+
+            if((character == 'x') || (character == 'X'))
+            {
+                binary = false;
+                hex = true;
+            }
+            else
+            {
+                binary = true;
+                hex = false;
+            }
         }
         else if(isOperator(character) || isParen(character))
         {
@@ -478,6 +500,10 @@ QString ShuntingYard::tokenize(const QString& raw)
 
             // And output the character
             output += character;
+
+            // Clear the binary and hex flags
+            binary = false;
+            hex = false;
         }
         else
         {
@@ -486,6 +512,10 @@ QString ShuntingYard::tokenize(const QString& raw)
 
             // And output the character, this is going to be a failure
             output += character;
+
+            // Clear the binary and hex flags
+            binary = false;
+            hex = false;
         }
 
         // Remember this for next pass

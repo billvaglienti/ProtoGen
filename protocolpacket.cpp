@@ -92,9 +92,36 @@ void ProtocolPacket::parse(void)
 
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
-    compare = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map));
-    print = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map));
-    mapEncode = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map));
+
+    // It is possible to suppress the globally specified compare output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("compare", map)))
+    {
+        support.compare = compare = false;
+        comparemodulename.clear();
+        support.globalCompareName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("compare", map)))
+        compare = true;
+
+    // It is possible to suppress the globally specified print output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("print", map)))
+    {
+        support.print = print = false;
+        printmodulename.clear();
+        support.globalPrintName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("print", map)))
+        print = true;
+
+    // It is possible to suppress the globally specified map output
+    if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("map", map)))
+    {
+        support.mapEncode = mapEncode = false;
+        mapmodulename.clear();
+        support.globalMapName.clear();
+    }
+    else if(ProtocolParser::isFieldSet(ProtocolParser::getAttribute("map", map)))
+        mapEncode = true;
 
     useInOtherPackets = ProtocolParser::isFieldSet("useInOtherPackets", map);
     QString redefinename = ProtocolParser::getAttribute("redefine", map);
