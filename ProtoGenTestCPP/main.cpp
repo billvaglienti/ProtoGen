@@ -369,7 +369,7 @@ int testThrottleSettingsPacket(void)
     testPacket_t pkt;
     ThrottleSettings_t settings;
 
-    if(settings.getMinDataLength() != 4)
+    if(settings.minDataLength() != 4)
     {
         std::cout << "Throttle Settings minimum data length is wrong" << std::endl;
         return 0;
@@ -471,7 +471,7 @@ int testEngineSettingsPacket(void)
     testPacket_t pkt;
     EngineSettings_t settings;
 
-    if(settings.getMinDataLength() != 1)
+    if(settings.minDataLength() != 1)
     {
         std::cout << "Engine Settings minimum data length is wrong" << std::endl;
         return 0;
@@ -550,7 +550,7 @@ int testEngineCommandPacket(void)
 
     eng.command = 0.5678f;
 
-    if(eng.getMinDataLength() != 4)
+    if(eng.minDataLength() != 4)
     {
         std::cout << "Engine Command minimum data length is wrong" << std::endl;
         return 0;
@@ -597,7 +597,7 @@ int testGPSPacket(void)
 
     memset(&gps, 0, sizeof(gps));
 
-    if(GPS_t::getMinDataLength() != 25)
+    if(GPS_t::minDataLength() != 25)
     {
         std::cout << "GPS minimum data length is wrong" << std::endl;
         return 0;
@@ -749,7 +749,7 @@ int testKeepAlivePacket(void)
     testPacket_t pkt;
     KeepAlive_t keepalive;
 
-    if(keepalive.getMinDataLength() != 22)
+    if(keepalive.minDataLength() != 22)
     {
         std::cout << "KeepAlive packet minimum data length is wrong" << std::endl;
         return 0;
@@ -800,7 +800,7 @@ int testVersionPacket(void)
     testPacket_t pkt, pkt2;
     Version_t version;
 
-    if(Version_t::getMinDataLength() != 26)
+    if(Version_t::minDataLength() != 26)
     {
         std::cout << "Version packet minimum data length is wrong" << std::endl;
         return 0;
@@ -933,7 +933,7 @@ int testZeroLengthPacket(void)
     testPacket_t pkt;
 
 
-    if(Zero_t::getMinDataLength() != 0)
+    if(Zero_t::minDataLength() != 0)
     {
         std::cout << "Zero length packet minimum data length is wrong" << std::endl;
         return 0;

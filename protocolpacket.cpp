@@ -541,14 +541,14 @@ QString ProtocolPacket::createUtilityFunctions(const QString& spacing) const
     {
         if(ids.count() == 1)
         {
-            output += spacing + "//! \\return the packet ID for the packet\n";
-            output += spacing + "static uint32_t getID(void) { return " + ids.at(0) + ";}\n";
+            output += spacing + "//! \\return the identifier for the packet\n";
+            output += spacing + "static uint32_t id(void) { return " + ids.at(0) + ";}\n";
             output += "\n";
         }
 
         // The minimum packet length
         output += spacing + "//! \\return the minimum encoded length for the packet\n";
-        output += spacing + "static int getMinDataLength(void) { return ";
+        output += spacing + "static int minDataLength(void) { return ";
         if(encodedLength.minEncodedLength.isEmpty())
             output += "0;}\n";
         else
@@ -557,7 +557,7 @@ QString ProtocolPacket::createUtilityFunctions(const QString& spacing) const
         // The maximum packet length
         output += "\n";
         output += spacing + "//! \\return the maximum encoded length for the packet\n";
-        output += spacing + "static int getMaxDataLength(void) { return ";
+        output += spacing + "static int maxDataLength(void) { return ";
         if(encodedLength.maxEncodedLength.isEmpty())
             output += "0;}\n";
         else
@@ -1026,7 +1026,7 @@ QString ProtocolPacket::getStructurePacketEncodeBody(void) const
     else if(support.language == ProtocolSupport::c_language)
         id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
     else
-        id = "getID()";
+        id = "id()";
 
     ProtocolFile::makeLineSeparator(output);
     output += TAB_IN + "// complete the process of creating the packet\n";
@@ -1123,7 +1123,7 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
         else
-            id = "getID()";
+            id = "id()";
     }
 
     // Check if there is anything that is encoded, if not, we use a different form of the function
@@ -1183,7 +1183,7 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
         else
-            output += TAB_IN + "if(_pg_numbytes < getMinDataLength())\n";
+            output += TAB_IN + "if(_pg_numbytes < minDataLength())\n";
         output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
         output += "\n";
         output += TAB_IN + "// The raw data from the packet\n";
@@ -1397,7 +1397,7 @@ QString ProtocolPacket::getParameterPacketEncodeBody(void) const
     else if(support.language == ProtocolSupport::c_language)
         id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
     else
-        id = "getID()";
+        id = "id()";
 
     output += "/*!\n";
     output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
@@ -1541,7 +1541,7 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             id = "get" + support.prefix + name + support.packetParameterSuffix + "ID()";
         else
-            id = "getID()";
+            id = "id()";
     }
 
     output += "/*!\n";
@@ -1604,7 +1604,7 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
         else
-            output += TAB_IN + "if(_pg_numbytes < getMinDataLength())\n";
+            output += TAB_IN + "if(_pg_numbytes < minDataLength())\n";
         output += TAB_IN + TAB_IN + "return 0;\n";
         if(defaults)
         {

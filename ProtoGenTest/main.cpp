@@ -814,7 +814,7 @@ int testVersionPacket(void)
     version.minor = 2;
     version.sub = 3;
     version.patch = 4;
-    strcpy(version.description, "special testing version");
+    pgstrncpy(version.description, "special testing version", sizeof(version.description));
     version.date.day = QDate::currentDate().day();
     version.date.month = QDate::currentDate().month();
     version.date.year = QDate::currentDate().year();
@@ -827,7 +827,7 @@ int testVersionPacket(void)
     version.board.calibratedDate.year = 2069;
     version.board.calibratedDate.month = 7;
     version.board.calibratedDate.day = 20;
-    strcpy(version.board.description, "special testing version");
+    pgstrncpy(version.board.description, "special testing version", sizeof(version.board.description));
 
     // Two different interfaces the encoding
     encodeVersionPacketStructure(&pkt, &version);
@@ -845,10 +845,10 @@ int testVersionPacket(void)
         return 0;
     }
 
-    QString diff = compareVersionPacket("Version", &pkt, &pkt2);
-    if(!diff.isEmpty())
+    std::string diff = compareVersionPacket("Version", &pkt, &pkt2);
+    if(!diff.empty())
     {
-        std::cout << "Structure encoded version packet is different than parameter encoded version packet: " << diff.toStdString() << std::endl;
+        std::cout << "Structure encoded version packet is different than parameter encoded version packet: " << diff << std::endl;
         return 0;
     }
 
@@ -883,7 +883,7 @@ int testVersionPacket(void)
     }
 
     // Encode to and from text using structures
-    QString textversion = textPrintVersion_t("Version", &version);
+    std::string textversion = textPrintVersion_t("Version", &version);
     memset(&version, 0, sizeof(version));
 
     if((textReadVersion_t("Version", textversion, &version) != 18) || !verifyVersionData(version))
@@ -1116,7 +1116,7 @@ int testMultiDimensionPacket(void)
 
 int testDefaultStringsPacket(void)
 {
-    TestWeirdStuff_t test = {0x12345678, 0, 0, "Field3", "Field4"};
+    TestWeirdStuff_t test = {0x12345678, 0, 0, "Field3", "Field4", {{false}}};
     testPacket_t pkt;
 
     encodeTestWeirdStuffPacketStructure(&pkt, &test);

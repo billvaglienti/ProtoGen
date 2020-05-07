@@ -487,6 +487,7 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
         printHeader->writeIncludeDirective(structHeader->fileName());
         printHeader->writeIncludeDirective(header.fileName());        
         printHeader->writeIncludeDirective("string", QString(), true, false);
+        printSource->writeIncludeDirective("fieldencode.h", QString(), false, false);
         printSource->writeIncludeDirective("sstream", QString(), true, false);
         printSource->writeIncludeDirective("iomanip", QString(), true, false);
 
