@@ -41,7 +41,7 @@ protected:
     QString getClassDeclaration_CPP(void) const Q_DECL_OVERRIDE;
 
     //! Create the helper functions for the packet
-    QString createUtilityFunctions(const QString& spacing) const;
+    QString createUtilityFunctions(const QString& spacing) const Q_DECL_OVERRIDE;
 
     //! Write the top level initialize / constructor function.
     void createTopLevelInitializeFunction(void);

@@ -119,6 +119,9 @@ protected:
                     QString mapmodulename,
                     bool forceStructureDeclaration = true, bool outputUtilities = true);
 
+    //! Create utility functions for structure lengths
+    QString createUtilityFunctions(const QString& spacing) const Q_DECL_OVERRIDE;
+
     //! Issue warnings for the structure module.
     void issueWarnings(const QDomNamedNodeMap& map);
 

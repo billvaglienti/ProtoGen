@@ -56,6 +56,8 @@ ProtocolParser::~ProtocolParser()
 
     qDeleteAll(lines.begin(), lines.end());
     lines.clear();
+
+    delete header;
 }
 
 

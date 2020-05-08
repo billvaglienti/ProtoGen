@@ -123,7 +123,7 @@ public:
     ProtocolHeaderFile(ProtocolSupport supported) : ProtocolFile(supported){}
 
     //! Write the file to disc, including any prologue/epilogue
-    virtual bool flush(void) Q_DECL_OVERRIDE;
+    bool flush(void) Q_DECL_OVERRIDE;
 
     //! Write a comment for the entire file in the \file block
     void setFileComment(const QString& comment);
@@ -131,10 +131,10 @@ public:
 protected:
 
     //! Prepare to do an append operation
-    virtual void prepareToAppend(void) Q_DECL_OVERRIDE;
+    void prepareToAppend(void) Q_DECL_OVERRIDE;
 
     //! Get the extension information for this name
-    virtual void extractExtension(QString& name) Q_DECL_OVERRIDE;
+    void extractExtension(QString& name) Q_DECL_OVERRIDE;
 
     //! \return the text that is appended to close a header file
     QString getClosingStatement(void);
@@ -154,10 +154,10 @@ public:
 protected:
 
     //! Prepare to do an append operation
-    virtual void prepareToAppend(void) Q_DECL_OVERRIDE;
+    void prepareToAppend(void) Q_DECL_OVERRIDE;
 
     //! Get the extension information for this name
-    virtual void extractExtension(QString& name) Q_DECL_OVERRIDE;
+    void extractExtension(QString& name) Q_DECL_OVERRIDE;
 
     //! \return the text that is appended to close a source file
     QString getClosingStatement(void);

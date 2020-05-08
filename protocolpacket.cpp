@@ -548,7 +548,7 @@ QString ProtocolPacket::createUtilityFunctions(const QString& spacing) const
 
         // The minimum packet length
         output += spacing + "//! \\return the minimum encoded length for the packet\n";
-        output += spacing + "static int minDataLength(void) { return ";
+        output += spacing + "static int minLength(void) { return ";
         if(encodedLength.minEncodedLength.isEmpty())
             output += "0;}\n";
         else
@@ -557,7 +557,7 @@ QString ProtocolPacket::createUtilityFunctions(const QString& spacing) const
         // The maximum packet length
         output += "\n";
         output += spacing + "//! \\return the maximum encoded length for the packet\n";
-        output += spacing + "static int maxDataLength(void) { return ";
+        output += spacing + "static int maxLength(void) { return ";
         if(encodedLength.maxEncodedLength.isEmpty())
             output += "0;}\n";
         else
@@ -1183,7 +1183,7 @@ QString ProtocolPacket::getStructurePacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
         else
-            output += TAB_IN + "if(_pg_numbytes < minDataLength())\n";
+            output += TAB_IN + "if(_pg_numbytes < minLength())\n";
         output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
         output += "\n";
         output += TAB_IN + "// The raw data from the packet\n";
@@ -1604,7 +1604,7 @@ QString ProtocolPacket::getParameterPacketDecodeBody(void) const
         if(support.language == ProtocolSupport::c_language)
             output += TAB_IN + "if(_pg_numbytes < get" + support.prefix + name + "MinDataLength())\n";
         else
-            output += TAB_IN + "if(_pg_numbytes < minDataLength())\n";
+            output += TAB_IN + "if(_pg_numbytes < minLength())\n";
         output += TAB_IN + TAB_IN + "return 0;\n";
         if(defaults)
         {
@@ -1731,7 +1731,7 @@ QString ProtocolPacket::getDataDecodeParameterList(void) const
  */
 QString ProtocolPacket::getDataEncodeBriefComment(void) const
 {
-    return QString("Encode the data from the " + support.protoName + " " + name + " structure");
+    return QString("Create the " + support.prefix + name + " packet from parameters");
 }
 
 
@@ -1740,7 +1740,7 @@ QString ProtocolPacket::getDataEncodeBriefComment(void) const
  */
 QString ProtocolPacket::getDataDecodeBriefComment(void) const
 {
-    return QString("Decode the data from the " + support.protoName + " " + name + " structure");
+    return QString("Decode the " + support.prefix + name + " packet to parameters");
 }
 
 

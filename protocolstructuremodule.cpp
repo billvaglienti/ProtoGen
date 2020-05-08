@@ -214,10 +214,7 @@ void ProtocolStructureModule::parse(void)
     // Write to disk, note that duplicate flush() calls are OK
     header.flush();    
     structHeader->flush();
-
-    // We don't write the source to disk if we are not encoding or decoding anything
-    if(encode || decode)
-        source.flush();
+    source.flush();
 
     // Only write the compare if we have compare functions to output
     if(compare)
@@ -569,20 +566,74 @@ void ProtocolStructureModule::setupFiles(QString moduleName,
     header.makeLineSeparator();
 
     // The encoded size of this structure as a macro that others can access
-    if(((encode != false) || (decode != false)) && outputUtilities)
-    {
-        header.write("//! return the minimum encoded length for the " + typeName + " structure\n");
-        header.write("#define getMinLengthOf" + typeName + "() ");
-        if(encodedLength.minEncodedLength.isEmpty())
-            header.write("(0)\n");
-        else
-            header.write("(" + encodedLength.minEncodedLength + ")\n");
+    if(((encode != false) || (decode != false)) && outputUtilities && (support.language == ProtocolSupport::c_language))
+    {        
+        // White space is good
+        header.makeLineSeparator();
+
+        // The utility functions
+        header.write(createUtilityFunctions(QString()));
 
         // White space is good
         header.makeLineSeparator();
     }
 
 }// ProtocolStructureModule::setupFiles
+
+
+/*!
+ * Create utility functions for structure lengths. The structure must
+ * already have been parsed to give the lengths.
+ * \param spacing sets the amount of space to put before each line.
+ * \return the string which goes in the header or class definition, depending
+ *         on the language being output
+ */
+QString ProtocolStructureModule::createUtilityFunctions(const QString& spacing) const
+{
+    QString output;
+
+    if(support.language == ProtocolSupport::c_language)
+    {
+        // The macro for the minimum packet length
+        output += spacing + "//! return the minimum encoded length for the " + typeName + " structure\n";
+        output += spacing + "#define getMinLengthOf" + typeName + "() ";
+        if(encodedLength.minEncodedLength.isEmpty())
+            output += "0\n";
+        else
+            output += "("+encodedLength.minEncodedLength + ")\n";
+
+        // The macro for the maximum packet length
+        output += "\n";
+        output += spacing + "//! return the maximum encoded length for the " + typeName + " structure\n";
+        output += spacing + "#define getMaxLengthOf" + typeName + "() ";
+        if(encodedLength.maxEncodedLength.isEmpty())
+            output += "0\n";
+        else
+            output += "("+encodedLength.maxEncodedLength + ")\n";
+    }
+    else
+    {
+        // The minimum encoded length
+        output += spacing + "//! \\return the minimum encoded length for the structure\n";
+        output += spacing + "static int minLength(void) { return ";
+        if(encodedLength.minEncodedLength.isEmpty())
+            output += "0;}\n";
+        else
+            output += "("+encodedLength.minEncodedLength + ");}\n";
+
+        // The maximum encoded length
+        output += "\n";
+        output += spacing + "//! \\return the maximum encoded length for the structure\n";
+        output += spacing + "static int maxLength(void) { return ";
+        if(encodedLength.maxEncodedLength.isEmpty())
+            output += "0;}\n";
+        else
+            output += "("+encodedLength.maxEncodedLength + ");}\n";
+    }
+
+    return output;
+
+}// ProtocolStructureModule::createUtilityFunctions
 
 
 /*!

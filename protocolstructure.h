@@ -273,6 +273,9 @@ protected:
     //! Get the class declaration, for this structure only (not its children) for the C++ language.
     virtual QString getClassDeclaration_CPP(void) const;
 
+    //! Create utility functions for structure lengths
+    virtual QString createUtilityFunctions(const QString& spacing) const {(void)spacing; return QString();}
+
     //! Make a structure output be prettily aligned
     QString alignStructureData(const QString& structure) const;
 

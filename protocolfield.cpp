@@ -3229,6 +3229,10 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
             if(initial.isEmpty())
                 initial = constantString;
 
+            // If there isn't one, use the verify min value
+            if(initial.isEmpty())
+                initial = verifyMinString;
+
             // In C++ we explicitly initialize all members.
             if(initial.isEmpty())
             {
@@ -3243,9 +3247,23 @@ QString ProtocolField::getSetInitialValueString(bool isStructureMember) const
                             initial = creator->getFirstEnumerationName();
                     }
                     else
-                        initial = "0";
-                }
-            }
+                    {
+                        // Zero seems like the best choice, but we can do a
+                        // little better, if for example we have a minimum
+                        // encoded value we should initialize to
+                        // respect those values
+                        if(limitMaxValue < 0)
+                            initial = limitMaxString;
+                        else if(limitMinValue > 0)
+                            initial = limitMinString;
+                        else
+                            initial = "0";
+
+                    }// else if we are not an enumeration
+
+                }// If we are not a string
+
+            }// If we have no user provided initial value
 
             initial = inMemoryType.applyTypeToConstant(initial);
 

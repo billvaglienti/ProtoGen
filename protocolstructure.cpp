@@ -1329,37 +1329,54 @@ QString ProtocolStructure::getClassDeclaration_CPP(void) const
         output += " */\n";
     }
 
+    // The opening to the class.
+    if(redefines == nullptr)
+        output += "class " + typeName + "\n";
+    else
+    {
+        // In the context of C++ redefining means inheriting from a base class,
+        // and adding a new encode or decode function. All the other members and
+        // methods come from the base class
+        // The opening to the class.
+        output += "class " + typeName + " : public " + redefines->typeName + "\n";
+    }
+
+    output += "{\n";
+
+    // All members of the structure are public.
+    output += "public:\n";
+
+    // Function prototypes, in C++ these are part of the class definition
+    if((getNumberInMemory() > 0) && (redefines == nullptr))
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    if(encode)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += getEncodeFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    if(decode)
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += getDecodeFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+    }
+
+    if((encode != false) || (decode != false))
+    {
+        ProtocolFile::makeLineSeparator(output);
+        output += createUtilityFunctions(TAB_IN);
+        ProtocolFile::makeLineSeparator(output);
+    }
+
     if(redefines == nullptr)
     {
-        // The opening to the class.
-        output += "class " + typeName + "\n";
-        output += "{\n";
-
-        // All members of the structure are public.
-        output += "public:\n";
-
-        // Function prototypes, in C++ these are part of the class definition
-        if(getNumberInMemory() > 0)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-        }
-
-        if(encode)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += getEncodeFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-        }
-
-        if(decode)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += getDecodeFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-        }
-
         if(hasVerify())
         {
             ProtocolFile::makeLineSeparator(output);
@@ -1402,33 +1419,6 @@ QString ProtocolStructure::getClassDeclaration_CPP(void) const
         ProtocolFile::makeLineSeparator(output);
 
     }// if not redefining
-    else
-    {
-        // In the context of C++ redefining means inheriting from a base class,
-        // and adding a new encode or decode function. All the other members and
-        // methods come from the base class
-        // The opening to the class.
-        output += "class " + typeName + " : public " + redefines->typeName + "\n";
-        output += "{\n";
-
-        // All members of the structure are public.
-        output += "public:\n";
-
-        if(encode)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += getEncodeFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-        }
-
-        if(decode)
-        {
-            ProtocolFile::makeLineSeparator(output);
-            output += getDecodeFunctionPrototype(TAB_IN, false);
-            ProtocolFile::makeLineSeparator(output);
-        }
-
-    }// else if redefining another class
 
     // Close out the class
     output += "}; // " + typeName + "\n";

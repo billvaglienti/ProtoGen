@@ -369,7 +369,7 @@ int testThrottleSettingsPacket(void)
     testPacket_t pkt;
     ThrottleSettings_t settings;
 
-    if(settings.minDataLength() != 4)
+    if(settings.minLength() != 4)
     {
         std::cout << "Throttle Settings minimum data length is wrong" << std::endl;
         return 0;
@@ -471,7 +471,7 @@ int testEngineSettingsPacket(void)
     testPacket_t pkt;
     EngineSettings_t settings;
 
-    if(settings.minDataLength() != 1)
+    if(settings.minLength() != 1)
     {
         std::cout << "Engine Settings minimum data length is wrong" << std::endl;
         return 0;
@@ -550,7 +550,7 @@ int testEngineCommandPacket(void)
 
     eng.command = 0.5678f;
 
-    if(eng.minDataLength() != 4)
+    if(eng.minLength() != 4)
     {
         std::cout << "Engine Command minimum data length is wrong" << std::endl;
         return 0;
@@ -597,7 +597,7 @@ int testGPSPacket(void)
 
     memset(&gps, 0, sizeof(gps));
 
-    if(GPS_t::minDataLength() != 25)
+    if(GPS_t::minLength() != 25)
     {
         std::cout << "GPS minimum data length is wrong" << std::endl;
         return 0;
@@ -749,7 +749,7 @@ int testKeepAlivePacket(void)
     testPacket_t pkt;
     KeepAlive_t keepalive;
 
-    if(keepalive.minDataLength() != 22)
+    if(keepalive.minLength() != 22)
     {
         std::cout << "KeepAlive packet minimum data length is wrong" << std::endl;
         return 0;
@@ -800,7 +800,7 @@ int testVersionPacket(void)
     testPacket_t pkt, pkt2;
     Version_t version;
 
-    if(Version_t::minDataLength() != 26)
+    if(Version_t::minLength() != 26)
     {
         std::cout << "Version packet minimum data length is wrong" << std::endl;
         return 0;
@@ -933,7 +933,7 @@ int testZeroLengthPacket(void)
     testPacket_t pkt;
 
 
-    if(Zero_t::minDataLength() != 0)
+    if(Zero_t::minLength() != 0)
     {
         std::cout << "Zero length packet minimum data length is wrong" << std::endl;
         return 0;
@@ -1032,13 +1032,13 @@ int testMultiDimensionPacket(void)
         return 0;
     }
 
-    if(highpkt.length != (2 + table.numCols*table.numRows*(4 + 2 + 2 + getMinLengthOfDate_t())))
+    if(highpkt.length != (2 + table.numCols*table.numRows*(4 + 2 + 2 + Date_t::minLength())))
     {
         std::cout << "Multi-dimensional packet size is wrong" << std::endl;
         return 0;
     }
 
-    if(lowpkt.length != (2 + table.numCols*table.numRows*(2 + 1 + 1 + getMinLengthOfsmallDate_t())))
+    if(lowpkt.length != (2 + table.numCols*table.numRows*(2 + 1 + 1 + smallDate_t::minLength())))
     {
         std::cout << "Low precision multi-dimensional packet size is wrong" << std::endl;
         return 0;
