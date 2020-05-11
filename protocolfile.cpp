@@ -532,9 +532,6 @@ bool ProtocolFile::flush(void)
     // The actual interesting contents
     file.write(qUtf8Printable(contents));
 
-    // We need to get this to disk before we try to reopen it
-    file.flush();
-
     // And the file
     file.close();
 
@@ -621,9 +618,6 @@ bool ProtocolHeaderFile::flush(void)
 
     // close the file out
     file.write(qUtf8Printable(getClosingStatement()));
-
-    // We need to get this to disk before we try to reopen it
-    file.flush();
 
     // And the file
     file.close();
@@ -782,9 +776,6 @@ bool ProtocolSourceFile::flush(void)
 
     // Close it out
     file.write(qUtf8Printable(getClosingStatement()));
-
-    // We need to get this to disk before we try to reopen it
-    file.flush();
 
     // And the file
     file.close();

@@ -3,7 +3,6 @@
 
 #include <QString>
 #include <QStringList>
-#include <QDomElement>
 #include "protocolsupport.h"
 #include "protocoldocumentation.h"
 

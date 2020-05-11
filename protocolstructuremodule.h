@@ -6,7 +6,6 @@
 #include "enumcreator.h"
 #include "protocolbitfield.h"
 #include <QString>
-#include <QDomElement>
 
 class ProtocolStructureModule : public ProtocolStructure
 {
@@ -123,7 +122,7 @@ protected:
     QString createUtilityFunctions(const QString& spacing) const Q_DECL_OVERRIDE;
 
     //! Issue warnings for the structure module.
-    void issueWarnings(const QDomNamedNodeMap& map);
+    void issueWarnings(const XMLAttribute* map);
 
     //! Write data to the source and header files to encode and decode this structure and all its children
     void createStructureFunctions(void);

@@ -64,7 +64,7 @@ QStringList ProtocolSupport::getAttriblist(void) const
  * Parse the attributes for this support object from the DOM map
  * \param map is the DOM map
  */
-void ProtocolSupport::parse(const QDomNamedNodeMap& map)
+void ProtocolSupport::parse(const XMLAttribute* map)
 {
     if(!enablelanguageoverride)
     {
@@ -153,7 +153,7 @@ void ProtocolSupport::parse(const QDomNamedNodeMap& map)
  * Parse the global file names used for this support object from the DOM map
  * \param map is the DOM map
  */
-void ProtocolSupport::parseFileNames(const QDomNamedNodeMap& map)
+void ProtocolSupport::parseFileNames(const XMLAttribute* map)
 {
     // Global file names can be specified, but cannot have a "." in it
     globalFileName = ProtocolParser::getAttribute("file", map);

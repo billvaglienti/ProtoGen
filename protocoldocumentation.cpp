@@ -17,6 +17,7 @@ ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, QString Pare
     support(supported),
     parser(parse),
     parent(Parent),
+    e(nullptr),
     outlineLevel(0)
 {
 }
@@ -25,9 +26,12 @@ ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, QString Pare
 //! Parse the document from the DOM
 void ProtocolDocumentation::parse(void)
 {
+    if(e == nullptr)
+        return;
+
     // We have two features we care about in the documentation, "name" which
     // gives the paragraph, and "comment" which gives the documentation to add
-    QDomNamedNodeMap map = e.attributes();
+    const XMLAttribute* map = e->FirstAttribute();
 
     name = ProtocolParser::getAttribute("name", map);
     title = ProtocolParser::getAttribute("title", map);
@@ -119,7 +123,7 @@ void ProtocolDocumentation::emitWarning(QString warning, const QString& subname)
  * \param attriblist is the list of attributes that are recognized
  * \param subname is the optional name of a sub-element for which this test is done
  */
-void ProtocolDocumentation::testAndWarnAttributes(const QDomNamedNodeMap& map, const QStringList& attriblist, const QString& subname) const
+void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map, const QStringList& attriblist, const QString& subname) const
 {
     // The only thing we check for is unrecognized attributes
     if(support.disableunrecognized)
@@ -128,15 +132,11 @@ void ProtocolDocumentation::testAndWarnAttributes(const QDomNamedNodeMap& map, c
     // Note: I would like to test for repeated attributes,
     // but Qt doesn't make them available (they should be an XML error)
 
-    for(int i = 0; i < map.count(); i++)
+    for(const XMLAttribute* a = map; a != nullptr; a = a->Next())
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
         // Check to see if the attribute is not in the list of known attributes
-        if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-            emitWarning("Unrecognized attribute \"" + attr.name() + "\"", subname);
+        if((attriblist.contains(a->Name(), Qt::CaseInsensitive) == false))
+            emitWarning("Unrecognized attribute \"" + QString(a->Name()) + "\"", subname);
 
     }// for all attributes
 
@@ -151,10 +151,10 @@ void ProtocolDocumentation::testAndWarnAttributes(const QDomNamedNodeMap& map, c
  * \param e is the DOM element which may have documentation children
  * \param list receives the list of allocated objects.
  */
-void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, QString Parent, ProtocolSupport support, const QDomElement& e, QList<ProtocolDocumentation*>& list)
+void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, QString Parent, ProtocolSupport support, const XMLElement* e, QList<ProtocolDocumentation*>& list)
 {
     // The list of documentation that goes inside this packet
-    QList<QDomNode> documents = ProtocolParser::childElementsByTagName(e, "Documentation");
+    QList<const XMLElement*> documents = ProtocolParser::childElementsByTagName(e, "Document");
 
     // Parse all the document objects
     for(int i = 0; i < documents.count(); i++)
@@ -162,7 +162,7 @@ void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, QString Par
         // Create the document and parse its xml
         ProtocolDocumentation* doc = new ProtocolDocumentation(parse, Parent, support);
 
-        doc->setElement(documents.at(i).toElement());
+        doc->setElement(documents.at(i));
         doc->parse();
 
         // Keep it around

@@ -2,7 +2,9 @@
 #define PROTOCOLSUPPORT_H
 
 #include <QString>
-#include <QDomElement>
+#include "tinyxml2.h"
+
+using namespace tinyxml2;
 
 class ProtocolSupport
 {
@@ -10,10 +12,10 @@ public:
     ProtocolSupport();
 
     //! Parse attributes from the ProtocolTag
-    void parse(const QDomNamedNodeMap& map);
+    void parse(const XMLAttribute* map);
 
     //! Parse the global file names
-    void parseFileNames(const QDomNamedNodeMap& map);
+    void parseFileNames(const XMLAttribute* map);
 
     //! Return the list of attributes understood by ProtocolSupport
     QStringList getAttriblist(void) const;

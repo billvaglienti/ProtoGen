@@ -6,7 +6,6 @@
 #include "protocolbitfield.h"
 #include "prebuiltSources/floatspecial.h"
 #include <QString>
-#include <QDomElement>
 #include <math.h>
 
 TypeData::TypeData(ProtocolSupport sup) :
@@ -971,7 +970,10 @@ void ProtocolField::parse(void)
 
     clear();
 
-    QDomNamedNodeMap map = e.attributes();
+    if(e == nullptr)
+        return;
+
+    const XMLAttribute* map = e->FirstAttribute();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
@@ -1015,86 +1017,82 @@ void ProtocolField::parse(void)
     else if(ProtocolParser::isFieldClear("limitOnEncode", map))
         support.limitonencode = false;
 
-    for(int i = 0; i < map.count(); i++)
+    for(; map != nullptr; map = map->Next())
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        QString attrname = attr.name();
+        QString attrname = QString(map->Name()).trimmed();
 
         if(attrname.compare("title", Qt::CaseInsensitive) == 0)
-            title = attr.value().trimmed();
+            title = QString(map->Value()).trimmed();
         if(attrname.compare("inMemoryType", Qt::CaseInsensitive) == 0)
-            memoryTypeString = attr.value().trimmed();
+            memoryTypeString = QString(map->Value()).trimmed();
         else if(attrname.compare("encodedType", Qt::CaseInsensitive) == 0)
-            encodedTypeString = attr.value().trimmed();
+            encodedTypeString = QString(map->Value()).trimmed();
         else if(attrname.compare("struct", Qt::CaseInsensitive) == 0)
-            structName = attr.value().trimmed();
+            structName = QString(map->Value()).trimmed();
         else if(attrname.compare("max", Qt::CaseInsensitive) == 0)
-            maxString = attr.value().trimmed();
+            maxString = QString(map->Value()).trimmed();
         else if(attrname.compare("min", Qt::CaseInsensitive) == 0)
-            minString = attr.value().trimmed();
+            minString = QString(map->Value()).trimmed();
         else if(attrname.compare("scaler", Qt::CaseInsensitive) == 0)
-            scalerString = attr.value().trimmed();
+            scalerString = QString(map->Value()).trimmed();
         else if(attrname.compare("printscaler", Qt::CaseInsensitive) == 0)
-            printScalerString = attr.value().trimmed();
+            printScalerString = QString(map->Value()).trimmed();
         else if(attrname.compare("array", Qt::CaseInsensitive) == 0)
-            array = attr.value().trimmed();
+            array = QString(map->Value()).trimmed();
         else if(attrname.compare("variableArray", Qt::CaseInsensitive) == 0)
-            variableArray = attr.value().trimmed();
+            variableArray = QString(map->Value()).trimmed();
         else if(attrname.compare("array2d", Qt::CaseInsensitive) == 0)
-            array2d = attr.value().trimmed();
+            array2d = QString(map->Value()).trimmed();
         else if(attrname.compare("variable2dArray", Qt::CaseInsensitive) == 0)
-            variable2dArray = attr.value().trimmed();
+            variable2dArray = QString(map->Value()).trimmed();
         else if(attrname.compare("dependsOn", Qt::CaseInsensitive) == 0)
-            dependsOn = attr.value().trimmed();
+            dependsOn = QString(map->Value()).trimmed();
         else if(attrname.compare("dependsOnValue", Qt::CaseInsensitive) == 0)
-            dependsOnValue = attr.value().trimmed();
+            dependsOnValue = QString(map->Value()).trimmed();
         else if(attrname.compare("dependsOnCompare", Qt::CaseInsensitive) == 0)
-            dependsOnCompare = attr.value().trimmed();
+            dependsOnCompare = QString(map->Value()).trimmed();
         else if(attrname.compare("enum", Qt::CaseInsensitive) == 0)
-            enumName = attr.value().trimmed();
+            enumName = QString(map->Value()).trimmed();
         else if(attrname.compare("default", Qt::CaseInsensitive) == 0)
-            defaultString = attr.value().trimmed();
+            defaultString = QString(map->Value()).trimmed();
         else if(attrname.compare("constant", Qt::CaseInsensitive) == 0)
-            constantString = attr.value().trimmed();
+            constantString = QString(map->Value()).trimmed();
         else if(attrname.compare("checkConstant", Qt::CaseInsensitive) == 0)
-            checkConstant = ProtocolParser::isFieldSet(attr.value().trimmed());
+            checkConstant = ProtocolParser::isFieldSet(QString(map->Value()).trimmed());
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-            comment = ProtocolParser::reflowComment(attr.value().trimmed());
+            comment = ProtocolParser::reflowComment(QString(map->Value()).trimmed());
         else if(attrname.compare("Units", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Units");
-            extraInfoValues.append(attr.value());
+            extraInfoValues.append(QString(map->Value()).trimmed());
         }
         else if(attrname.compare("Range", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Range");
-            extraInfoValues.append(attr.value());
+            extraInfoValues.append(QString(map->Value()).trimmed());
         }
         else if(attrname.compare("Notes", Qt::CaseInsensitive) == 0)
         {
             extraInfoNames.append("Notes");
-            extraInfoValues.append(attr.value());
+            extraInfoValues.append(QString(map->Value()).trimmed());
         }
         else if(attrname.compare("bitfieldGroup", Qt::CaseInsensitive) == 0)
-            bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(attr.value().trimmed());
+            bitfieldData.groupMember = bitfieldData.groupStart = ProtocolParser::isFieldSet(QString(map->Value()).trimmed());
         else if(attrname.compare("hidden", Qt::CaseInsensitive) == 0)
-            hidden = ProtocolParser::isFieldSet(attr.value().trimmed());
+            hidden = ProtocolParser::isFieldSet(QString(map->Value()).trimmed());
         else if(attrname.compare("initialValue", Qt::CaseInsensitive) == 0)
-            initialValueString = attr.value().trimmed();
+            initialValueString = QString(map->Value()).trimmed();
         else if(attrname.compare("verifyMinValue", Qt::CaseInsensitive) == 0)
-            verifyMinString = attr.value().trimmed();
+            verifyMinString = QString(map->Value()).trimmed();
         else if(attrname.compare("verifyMaxValue", Qt::CaseInsensitive) == 0)
-            verifyMaxString = attr.value().trimmed();
+            verifyMaxString = QString(map->Value()).trimmed();
         else if(attrname.compare("map", Qt::CaseInsensitive) == 0)
         {
-            QString v = attr.value().trimmed().toLower();
+            QString v = QString(map->Value()).trimmed();
 
-            if(v.compare("encode") == 0)
+            if(v.compare("encode", Qt::CaseInsensitive) == 0)
                 mapOptions = MAP_ENCODE;
-            else if(v.compare("decode") == 0)
+            else if(v.compare("decode", Qt::CaseInsensitive) == 0)
                 mapOptions = MAP_DECODE;
             else if(ProtocolParser::isFieldSet(v))
                 mapOptions = MAP_BOTH;
@@ -1108,7 +1106,7 @@ void ProtocolField::parse(void)
 
     if(name.isEmpty() && (memoryTypeString != "null"))
     {
-        emitWarning("Data tag without a name: " + e.text());
+        emitWarning("Data tag without a name");
     }
 
     if(title.isEmpty())
@@ -1118,9 +1116,9 @@ void ProtocolField::parse(void)
     if(memoryTypeString.isEmpty())
     {
         // Maybe its an enum?
-        if(!e.attribute("enum").isEmpty())
+        if(e->Attribute("enum"))
             memoryTypeString = "enum";
-        else if(!e.attribute("struct").isEmpty())
+        else if(e->Attribute("struct"))
             memoryTypeString = "struct";
         else
         {

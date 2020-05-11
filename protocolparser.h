@@ -1,13 +1,16 @@
 #ifndef PROTOCOLPARSER_H
 #define PROTOCOLPARSER_H
 
-#include <QDomDocument>
+// #include <QDomDocument>
 #include <QFile>
 #include <QList>
 #include <iostream>
 #include "protocolfile.h"
 #include "xmllinelocator.h"
 #include "protocolsupport.h"
+#include "tinyxml2.h"
+
+using namespace tinyxml2;
 
 // Forward declarations
 class ProtocolDocumentation;
@@ -76,29 +79,32 @@ public:
     //! Output a warning referencing an object by name
     void emitWarning(QString hierarchicalName, QString warning) const;
 
-    //! Return a list of QDomNodes that are direct children and have a specific tag
-    static QList<QDomNode> childElementsByTagName(const QDomNode& node, QString tag, QString tag2 = QString(), QString tag3 = QString());
+    //! Return a list of XMLNodes that are direct children and have a specific tag
+    static QList<const XMLElement*> childElementsByTagName(const XMLElement* node, QString tag, QString tag2 = QString(), QString tag3 = QString());
 
     //! Return the value of an attribute from a Dom Element
-    static QString getAttribute(QString name, const QDomNamedNodeMap& map, QString defaultIfNone = QString());
+    static QString getAttribute(QString name, const XMLAttribute* attr, QString defaultIfNone = QString());
 
     //! Output a long string of text which should be wrapped at 80 characters.
     static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
 
-    //! Parse all enumerations which are direct children of a DomNode
-    void parseEnumerations(QString parent, const QDomNode& node);
+    //! Parse all enumerations which are direct children of a node
+    void parseEnumerations(QString parent, const XMLNode* node);
 
-    //! Parse all enumerations which are direct children of a DomNode
-    const EnumCreator* parseEnumeration(QString parent, const QDomElement& element);
+    //! Parse all enumerations which are direct children of an element
+    const EnumCreator* parseEnumeration(QString parent, const XMLElement* element);
 
-    //! Output all includes which are direct children of a DomNode
-    void outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node) const;
+    //! Output all includes which are direct children of a node
+    void outputIncludes(QString parent, ProtocolFile& file, const XMLNode* node) const;
+
+    //! Output all includes which are direct children of a element
+    void outputIncludes(QString parent, ProtocolFile& file, const XMLElement* element) const;
 
     //! Format a long string of text which should be wrapped at 80 characters.
     static QString outputLongComment(const QString& prefix, const QString& text);
 
     //! Get a correctly reflowed comment from a DOM
-    static QString getComment(const QDomElement& e);
+    static QString getComment(const XMLElement* e);
 
     //! Take a comment line and reflow it for our needs.
     static QString reflowComment(QString comment, QString prefix = QString(), int charlimit = 0);
@@ -134,22 +140,22 @@ public:
     QString getInputPath(void) {return inputpath;}
 
     //! Return true if the element has a particular attribute set to {'true','yes','1'}
-    static bool isFieldSet(const QDomElement &e, QString label);
+    static bool isFieldSet(const XMLElement* e, QString label);
 
     //! Return true if the value set to {'true','yes','1'}
     static bool isFieldSet(QString value);
 
     //! Return true if the value of an attribute is 'true', 'yes', or '1'
-    static bool isFieldSet(QString attribname, QDomNamedNodeMap map);
+    static bool isFieldSet(QString attribname, const XMLAttribute* firstattrib);
 
     //! Return true if the element has a particular attribute set to {'false','no','0'}
-    static bool isFieldClear(const QDomElement &e, QString label);
+    static bool isFieldClear(const XMLElement* e, QString label);
 
     //! Return true if the value is set to {'false','no','0'}
     static bool isFieldClear(QString value);
 
     //! Determine if the value of an attribute is either {'false','no','0'}
-    static bool isFieldClear(QString attribname, QDomNamedNodeMap map);
+    static bool isFieldClear(QString attribname, const XMLAttribute* firstattrib);
 
     //! Set the license text
     void setLicenseText(const QString text) { support.licenseText = text; }
@@ -175,6 +181,12 @@ protected:
 
     //! Protocol support information
     ProtocolSupport support;
+
+    //! The list of xml documents we created by loading files
+    QList<XMLDocument*> xmldocs;
+
+    //! The document currently being parsed
+    XMLDocument* currentxml;
 
     //! The protocol header file (*.h)
     ProtocolHeaderFile* header;
@@ -213,7 +225,7 @@ protected:
 private:
 
     //! Create the header file for the top level module of the protocol
-    void createProtocolHeader(const QDomElement& docElem);
+    void createProtocolHeader(const XMLElement* docElem);
 
     //! Finish the protocol header file
     void finishProtocolHeader(void);

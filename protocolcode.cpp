@@ -36,40 +36,36 @@ void ProtocolCode::parse(void)
 {
     clear();
 
-    QDomNamedNodeMap map = e.attributes();
+    if(e == nullptr)
+        return;
+
+    const XMLAttribute* map = e->FirstAttribute();
 
     // We use name as part of our debug outputs, so its good to have it first.
-    name = ProtocolParser::getAttribute("name", map);
+    name = ProtocolParser::getAttribute("name", map, "_unknown");
 
-    if(name.isEmpty())
-        name = "_unknown";
-
-    for(int i = 0; i < map.count(); i++)
+    for(; map != nullptr; map = map->Next())
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        QString attrname = attr.name();
+        QString attrname = QString(map->Name()).trimmed();
 
         if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-            name = attr.value().trimmed();
+            name = QString(map->Value()).trimmed();
         else if((attrname.compare("encode", Qt::CaseInsensitive) == 0) || (attrname.compare("encode_c", Qt::CaseInsensitive) == 0))
-            encode = attr.value().trimmed();
+            encode = QString(map->Value()).trimmed();
         else if((attrname.compare("decode", Qt::CaseInsensitive) == 0) || (attrname.compare("decode_c", Qt::CaseInsensitive) == 0))
-            decode = attr.value().trimmed();
+            decode = QString(map->Value()).trimmed();
         else if(attrname.compare("encode_cpp", Qt::CaseInsensitive) == 0)
-            encodecpp = attr.value().trimmed();
+            encodecpp = QString(map->Value()).trimmed();
         else if(attrname.compare("decode_cpp", Qt::CaseInsensitive) == 0)
-            decodecpp = attr.value().trimmed();
+            decodecpp = QString(map->Value()).trimmed();
         else if(attrname.compare("encode_python", Qt::CaseInsensitive) == 0)
-            encodepython = attr.value().trimmed();
+            encodepython = QString(map->Value()).trimmed();
         else if(attrname.compare("decode_python", Qt::CaseInsensitive) == 0)
-            decodepython = attr.value().trimmed();
+            decodepython = QString(map->Value()).trimmed();
         else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-            comment = attr.value().trimmed();
+            comment = QString(map->Value()).trimmed();
         else if(attrname.compare("include", Qt::CaseInsensitive) == 0)
-            include = attr.value().trimmed();
+            include = QString(map->Value()).trimmed();
         else if(support.disableunrecognized == false)
             emitWarning("Unrecognized attribute \"" + attrname + "\"");
 

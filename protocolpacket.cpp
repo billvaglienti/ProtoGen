@@ -73,6 +73,9 @@ void ProtocolPacket::parse(void)
     // Initialize metadata
     clear();
 
+    if(e == nullptr)
+        return;
+
     // Get any documentation for this packet
     ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
 
@@ -81,7 +84,7 @@ void ProtocolPacket::parse(void)
     // re-implementation of ProtocolStructureModule with different rules.
     ProtocolStructure::parse();
 
-    QDomNamedNodeMap map = e.attributes();
+    const XMLAttribute* map = e->FirstAttribute();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);

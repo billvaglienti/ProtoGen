@@ -7,7 +7,7 @@
 #include "protocolsupport.h"
 #include "protocolbitfield.h"
 #include "protocoldocumentation.h"
-#include <QDomDocument>
+// #include <QDomDocument>
 #include <QFile>
 #include <QDir>
 #include <QFileDevice>
@@ -23,6 +23,8 @@ const QString ProtocolParser::genVersion = "3.0.b This is beta code, use with ca
  * \brief ProtocolParser::ProtocolParser
  */
 ProtocolParser::ProtocolParser() :
+    currentxml(nullptr),
+    header(nullptr),
     latexHeader(1),
     latexEnabled(false),
     nomarkdown(false),
@@ -57,7 +59,11 @@ ProtocolParser::~ProtocolParser()
     qDeleteAll(lines.begin(), lines.end());
     lines.clear();
 
-    delete header;
+    qDeleteAll(xmldocs.begin(), xmldocs.end());
+    xmldocs.clear();
+
+    if(header != nullptr)
+        delete header;
 }
 
 
@@ -70,7 +76,6 @@ ProtocolParser::~ProtocolParser()
  */
 bool ProtocolParser::parse(QString filename, QString path, QStringList otherfiles)
 {
-    QDomDocument doc;
     QFile file(filename);
     QFileInfo fileinfo(filename);
 
@@ -89,16 +94,12 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         return false;
     }
 
-    // Qt's XML parsing
-    QString errorMsg;
-    int errorLine;
-    int errorCol;
-
-    if(!doc.setContent(file.readAll(), false, &errorMsg, &errorLine, &errorCol))
+    currentxml = new XMLDocument();
+    xmldocs.append(currentxml);
+    if(currentxml->Parse(file.readAll()) != XML_SUCCESS)
     {
         file.close();
-        QString warning = filename + ":" + QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + errorMsg;
-        std::cerr << warning.toStdString() << std::endl;
+        std::cerr << currentxml->ErrorStr() << std::endl;
         return false;
     }
 
@@ -129,30 +130,28 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     }
 
     // The outer most element
-    QDomElement docElem = doc.documentElement();
+    XMLElement* docElem = currentxml->RootElement();
 
     // This element must have the "Protocol" tag
-    if(docElem.tagName().toLower() != "protocol")
+    if((docElem == nullptr) || (XMLUtil::StringEqual(docElem->Name(), "protocol") == false))
     {
         emitWarning(" error: Protocol tag not found in XML");
         return false;
     }
 
-    // Protocol options options specified in the xml
-    QDomNamedNodeMap map = docElem.attributes();
-
-    support.protoName = name = getAttribute("name", map);
+    // Protocol options specified in the xml
+    support.protoName = name = getAttribute("name", docElem->FirstAttribute());
     if(support.protoName.isEmpty())
     {
         emitWarning(" error: Protocol name not found in Protocol tag");
         return false;
     }
 
-    title = getAttribute("title", map);
-    api = getAttribute("api", map);
-    version = getAttribute("version", map);
-    comment = getAttribute("comment", map);
-    support.parse(map);
+    title = getAttribute("title", docElem->FirstAttribute());
+    api = getAttribute("api", docElem->FirstAttribute());
+    version = getAttribute("version", docElem->FirstAttribute());
+    comment = getAttribute("comment", docElem->FirstAttribute());
+    support.parse(docElem->FirstAttribute());
 
     if(support.disableunrecognized == false)
     {
@@ -162,14 +161,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         // and the ones we understand
         attriblist << "name" << "title" << "api" << "version" << "comment";
 
-        for(int i = 0; i < map.count(); i++)
+        for(const XMLAttribute* a = docElem->FirstAttribute(); a != nullptr; a = a->Next())
         {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
-
-            if((attriblist.contains(attr.name(), Qt::CaseInsensitive) == false))
-                emitWarning(support.protoName, support.protoName + ": Unrecognized attribute \"" + attr.name() + "\"");
+            if((attriblist.contains(a->Name(), Qt::CaseInsensitive) == false))
+                emitWarning(support.protoName, support.protoName + ": Unrecognized attribute \"" + a->Name() + "\"");
 
         }// for all the attributes
 
@@ -447,51 +442,55 @@ bool ProtocolParser::parseFile(QString xmlFilename)
 
     // Error parsing
     QString error;
-    int errorLine, errorCol;
+    //int errorLine, errorCol;
 
-    QDomDocument xmlDoc;
+    currentxml = new XMLDocument();
 
     // Extract XML data
-    if( !xmlDoc.setContent( contents, false, &error, &errorLine, &errorCol ) )
+    if(currentxml->Parse(contents.toUtf8().constData()) != XML_SUCCESS)
     {
-        QString warning = xmlFilename + ":" + QString::number(errorLine) + ":" + QString::number(errorCol) + " error: " + error;
-        std::cerr << warning.toStdString() << std::endl;
+        std::cerr << currentxml->ErrorStr() << std::endl;
+        delete currentxml;
+
+        if(xmldocs.size() > 0)
+            currentxml = xmldocs.last();
+        else
+            currentxml = nullptr;
+
         return false;
     }
+    else
+        xmldocs.append(currentxml);
 
-    // Extract the outer-most tag from the document
-    QDomElement top = xmlDoc.documentElement();
+    // The outer most element
+    XMLElement* docElem = currentxml->RootElement();
 
-    // Ensure that outer tag is correct
-    if( top.tagName().toLower() != "protocol" )
+    // This element must have the "Protocol" tag
+    if((docElem == nullptr) || (XMLUtil::StringEqual(docElem->Name(), "protocol") == false))
     {
         QString warning = xmlFilename + ":0:0: error: 'Protocol' tag not found in file";
         std::cerr << warning.toStdString() << std::endl;
         return false;
     }
 
+    /// TODO: tinyxml will do this I believe
     // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
     lines.append(new XMLLineLocator());
     lines.last()->setXMLContents(contents, ProtocolFile::sanitizePath(fileinfo.absolutePath()), fileinfo.fileName(), name);
 
-    // Iterate over each top level node in the file
-    QDomNodeList nodes = top.childNodes();
-
     // Protocol file options specified in the xml
-    localsupport.parseFileNames(top.attributes());
+    localsupport.parseFileNames(docElem->FirstAttribute());
 
-    for(int i = 0; i < nodes.size(); i++)
+    for(const XMLElement* element = docElem->FirstChildElement(); element != nullptr; element = element->NextSiblingElement())
     {
-        QDomNode node = nodes.item(i);
-
-        QString nodename = node.nodeName().toLower();
+        QString nodename = QString(element->Name()).toLower();
 
         // Import another file recursively
         // File recursion is handled first so that ordering is preserved
         // This effectively creates a single flattened XML structure
         if( nodename == "require" )
         {
-            QString subfile = getAttribute( "file", node.attributes() );
+            QString subfile = getAttribute("file", element->FirstAttribute());
 
             if( subfile.isEmpty() )
             {
@@ -515,7 +514,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
             ProtocolStructureModule* module = new ProtocolStructureModule( this, localsupport, api, version );
 
             // Remember the XML
-            module->setElement( node.toElement() );
+            module->setElement(element);
 
             structures.append( module );
         }
@@ -523,7 +522,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         {
             EnumCreator* Enum = new EnumCreator( this, nodename, localsupport );
 
-            Enum->setElement( node.toElement() );
+            Enum->setElement(element);
 
             globalEnums.append( Enum );
             alldocumentsinorder.append( Enum );
@@ -533,16 +532,16 @@ bool ProtocolParser::parseFile(QString xmlFilename)
         {
             ProtocolPacket* packet = new ProtocolPacket( this, localsupport, api, version );
 
-            packet->setElement( node.toElement() );
+            packet->setElement(element);
 
             packets.append( packet );
             alldocumentsinorder.append( packet );
         }
-        else if ( nodename == "doc" || nodename == "documentation" )
+        else if ( nodename == "doc" || nodename.contains("document"))
         {
             ProtocolDocumentation* document = new ProtocolDocumentation( this, nodename, localsupport );
 
-            document->setElement( node.toElement() );
+            document->setElement(element);
 
             documents.append( document );
             alldocumentsinorder.append( document );
@@ -595,7 +594,7 @@ void ProtocolParser::emitWarning(QString hierarchicalName, QString warning) cons
  * Create the header file for the top level module of the protocol
  * \param docElem is the "protocol" element from the DOM
  */
-void ProtocolParser::createProtocolHeader(const QDomElement& docElem)
+void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
 {
     // Build the header file
     header = new ProtocolHeaderFile(support);
@@ -742,9 +741,9 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
  * \param e is the DOM to get the comment from
  * \return the correctly reflowed comment, which could be empty
  */
-QString ProtocolParser::getComment(const QDomElement& e)
+QString ProtocolParser::getComment(const XMLElement* e)
 {
-    return reflowComment(e.attribute("comment"));
+    return reflowComment(e->Attribute("comment"));
 }
 
 /*!
@@ -853,31 +852,27 @@ QString ProtocolParser::reflowComment(QString text, QString prefix, int charlimi
 
 
 /*!
- * Return a list of QDomNodes that are direct children and have a specific tag
- * name. This is different then elementsByTagName() because that gets all
- * descendants, including grand-children. We just want children.
+ * Return a list of XNLNodes that are direct children and have a specific tag
+ * name. This gets just children, not grand children.
  * \param node is the parent node.
  * \param tag is the tag name to look for.
  * \param tag2 is a second optional tag name to look for.
  * \param tag3 is a third optional tag name to look for.
- * \return a list of QDomNodes.
+ * \return a list of XMLNodes.
  */
-QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QString tag, QString tag2, QString tag3)
+QList<const XMLElement*> ProtocolParser::childElementsByTagName(const XMLElement* node, QString tag, QString tag2, QString tag3)
 {
-    QList<QDomNode> list;
-
-    // All the direct children
-    QDomNodeList children = node.childNodes();
+    QList<const XMLElement*> list;
 
     // Now just the ones with the tag(s) we want
-    for (int i = 0; i < children.size(); ++i)
+    for(const XMLElement* child = node->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
-        if(!tag.isEmpty() && children.item(i).nodeName().contains(tag, Qt::CaseInsensitive))
-            list.append(children.item(i));
-        else if(!tag2.isEmpty() && children.item(i).nodeName().contains(tag2, Qt::CaseInsensitive))
-            list.append(children.item(i));
-        else if(!tag3.isEmpty() && children.item(i).nodeName().contains(tag3, Qt::CaseInsensitive))
-            list.append(children.item(i));
+        if(!tag.isEmpty() && QString(child->Value()).contains(tag, Qt::CaseInsensitive))
+            list.append(child);
+        else if(!tag2.isEmpty() && QString(child->Value()).contains(tag2, Qt::CaseInsensitive))
+            list.append(child);
+        else if(!tag3.isEmpty() && QString(child->Value()).contains(tag3, Qt::CaseInsensitive))
+            list.append(child);
     }
 
     return list;
@@ -888,21 +883,18 @@ QList<QDomNode> ProtocolParser::childElementsByTagName(const QDomNode& node, QSt
 /*!
  * Return the value of an attribute from a node map
  * \param name is the name of the attribute to return. name is not case sensitive
- * \param map is the attribute node map from a DOM element.
+ * \param attr is the root attribute from a DOM element.
  * \param defaultIfNone is returned if no name attribute is found.
  * \return the value of the name attribute, or defaultIfNone if none found
  */
-QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map, QString defaultIfNone)
+QString ProtocolParser::getAttribute(QString name, const XMLAttribute* attr, QString defaultIfNone)
 {
-    for(int i = 0; i < map.count(); i++)
+    for( const XMLAttribute* a = attr; a; a = a->Next() )
     {
-        QDomAttr attr = map.item(i).toAttr();
-        if(attr.isNull())
-            continue;
-
-        // This is the only way I know to get a case insensitive attribute tag
-        if(attr.name().compare(name, Qt::CaseInsensitive) == 0)
-            return attr.value().trimmed();
+        if ( XMLUtil::StringEqual( a->Name(), name.toUtf8().constData() ) )
+        {
+            return QString(a->Value()).trimmed();
+        }
     }
 
     return defaultIfNone;
@@ -916,16 +908,20 @@ QString ProtocolParser::getAttribute(QString name, const QDomNamedNodeMap& map, 
  * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param node is parent node
  */
-void ProtocolParser::parseEnumerations(QString parent, const QDomNode& node)
+void ProtocolParser::parseEnumerations(QString parent, const XMLNode* node)
 {
-    // Build the top level enumerations
-    QList<QDomNode>list = childElementsByTagName(node, "Enum");
+    const XMLElement* element = node->ToElement();
 
-    for(int i = 0; i < list.size(); i++)
+    if(element == nullptr)
+        return;
+
+    // Interate through the child elements
+    for(const XMLElement* e = element->FirstChildElement(); e != nullptr; e = e->NextSiblingElement())
     {
-        parseEnumeration(parent, list.at(i).toElement());
-
-    }// for all my enum tags
+        // Look at those which are tagged "enum"
+        if(XMLUtil::StringEqual(e->Name(), "enum"))
+            parseEnumeration(parent, e);
+    }
 
 }// ProtocolParser::parseEnumerations
 
@@ -938,7 +934,7 @@ void ProtocolParser::parseEnumerations(QString parent, const QDomNode& node)
  * \param element is the QDomElement that represents this enumeration
  * \return a pointer to the newly created enumeration object.
  */
-const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomElement& element)
+const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const XMLElement* element)
 {
     EnumCreator* Enum = new EnumCreator(this, parent, support);
 
@@ -957,42 +953,56 @@ const EnumCreator* ProtocolParser::parseEnumeration(QString parent, const QDomEl
  * \param file receives the output
  * \param node is parent node
  */
-void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const QDomNode& node) const
+void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const XMLNode* node) const
 {
-    // Build the top level enumerations
-    QList<QDomNode>list = childElementsByTagName(node, "Include");
-    for(int i = 0; i < list.size(); i++)
+    outputIncludes(parent, file, node->ToElement());
+
+}// ProtocolParser::outputIncludes
+
+
+/*!
+ * Output all include directions which are direct children of an element
+ * \param parent is the hierarchical name of the owning object
+ * \param file receives the output
+ * \param node is parent node
+ */
+void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const XMLElement* element) const
+{
+    if(element == nullptr)
+        return;
+
+    // Interate through the child elements
+    for(const XMLElement* e = element->FirstChildElement(); e != nullptr; e = e->NextSiblingElement())
     {
-        QDomElement e = list.at(i).toElement();
-        QDomNamedNodeMap map = e.attributes();
-
-        QString include = ProtocolParser::getAttribute("name", map);
-        QString comment;
-        bool global = false;
-
-        for(int i = 0; i < map.count(); i++)
+        // Look at those which are tagged "include"
+        if(XMLUtil::StringEqual(e->Name(), "include"))
         {
-            QDomAttr attr = map.item(i).toAttr();
-            if(attr.isNull())
-                continue;
+            QString include = ProtocolParser::getAttribute("name", e->FirstAttribute());
+            QString comment;
 
-            QString attrname = attr.name();
+            bool global = false;
 
-            if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-                include = attr.value().trimmed();
-            else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-                comment = ProtocolParser::reflowComment(attr.value().trimmed());
-            else if(attrname.compare("global", Qt::CaseInsensitive) == 0)
-                global = ProtocolParser::isFieldSet(attr.value().trimmed());
-            else if(support.disableunrecognized == false)
-                emitWarning(parent + ":" + include + ": Unrecognized attribute \"" + attrname + "\"");
+            for(const XMLAttribute* a = e->FirstAttribute(); a != nullptr; a = a->Next())
+            {
+                QString attrname = QString(a->Name()).trimmed();
 
-        }// for all attributes
+                if(attrname.compare("name", Qt::CaseInsensitive) == 0)
+                    include = QString(a->Value()).trimmed();
+                else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
+                    comment = QString(a->Value()).trimmed();
+                else if(attrname.compare("global", Qt::CaseInsensitive) == 0)
+                    global = ProtocolParser::isFieldSet(QString(a->Value()).trimmed());
+                else if(support.disableunrecognized == false)
+                    emitWarning(parent + ":" + include + ": Unrecognized attribute \"" + attrname + "\"");
 
-        if(!include.isEmpty())
-            file.writeIncludeDirective(include, comment, global);
+            }// for all attributes
 
-    }// for all include tags
+            if(!include.isEmpty())
+                file.writeIncludeDirective(include, comment, global);
+
+        }// if element is an include
+
+    }// for all elements
 
 }// ProtocolParser::outputIncludes
 
@@ -1520,9 +1530,9 @@ description column of the table.\n";
  * \param label is the name of the attribute form the element to test
  * \return true if the attribute value is "true", "yes", or "1"
  */
-bool ProtocolParser::isFieldSet(const QDomElement &e, QString label)
+bool ProtocolParser::isFieldSet(const XMLElement* e, QString label)
 {
-    return isFieldSet(e.attribute(label).trimmed().toLower());
+    return isFieldSet(label, e->FirstAttribute());
 }
 
 
@@ -1532,7 +1542,7 @@ bool ProtocolParser::isFieldSet(const QDomElement &e, QString label)
  * \param map is the list of all attributes to search
  * \return true if the attribute value is "true", "yes", or "1"
  */
-bool ProtocolParser::isFieldSet(QString attribname, QDomNamedNodeMap map)
+bool ProtocolParser::isFieldSet(QString attribname, const XMLAttribute* map)
 {
     return isFieldSet(ProtocolParser::getAttribute(attribname, map));
 }
@@ -1562,12 +1572,12 @@ bool ProtocolParser::isFieldSet(QString value)
 /*!
  * Determine if the field contains a given label, and the value is either {'false','no','0'}
  * \param e is the element from the DOM to test
- * \param label is the name of the attribute from the element to test
- * \return true if the attribute value is "false", "no", or "0"
+ * \param label is the name of the attribute form the element to test
+ * \return true if the attribute value is "true", "yes", or "1"
  */
-bool ProtocolParser::isFieldClear(const QDomElement &e, QString label)
+bool ProtocolParser::isFieldClear(const XMLElement* e, QString label)
 {
-    return isFieldClear(e.attribute(label).trimmed().toLower());
+    return isFieldSet(label, e->FirstAttribute());
 }
 
 
@@ -1577,7 +1587,7 @@ bool ProtocolParser::isFieldClear(const QDomElement &e, QString label)
  * \param map is the list of all attributes to search
  * \return true if the attribute value is "false", "no", or "0"
  */
-bool ProtocolParser::isFieldClear(QString attribname, QDomNamedNodeMap map)
+bool ProtocolParser::isFieldClear(QString attribname, const XMLAttribute* map)
 {
     return isFieldClear(ProtocolParser::getAttribute(attribname, map));
 }

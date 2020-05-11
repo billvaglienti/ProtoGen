@@ -4,7 +4,6 @@
 #include "protocolsupport.h"
 #include "encodedlength.h"
 #include "protocoldocumentation.h"
-#include <QDomElement>
 #include <QString>
 
 class Encodable : public ProtocolDocumentation
@@ -17,7 +16,7 @@ public:
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const QDomElement& field);
+    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const XMLElement* field);
 
     //! Provide the pointer to a previous encodable in the list
     virtual void setPreviousEncodable(Encodable* prev) {(void)prev;}

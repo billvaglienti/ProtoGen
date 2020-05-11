@@ -34,7 +34,10 @@ void EnumElement::checkAgainstKeywords()
 
 void EnumElement::parse()
 {
-    auto map = e.attributes();
+    if(e == nullptr)
+        return;
+
+    const XMLAttribute* map = e->FirstAttribute();
 
     testAndWarnAttributes(map, QStringList()
                           << "name"
@@ -174,7 +177,7 @@ void EnumCreator::parse(void)
     // Get any documentation for this enumeration
     ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
 
-    QDomNamedNodeMap map = e.attributes();
+    const XMLAttribute* map = e->FirstAttribute();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
@@ -231,11 +234,6 @@ void EnumCreator::parse(void)
         emitWarning("Enumeration must be global to support file attribute");
     }
 
-    QDomNodeList list = e.elementsByTagName("Value");
-
-    // If we have no entries there is nothing to do
-    if(list.size() <= 0)
-        return;
 
     // Put the top level comment in
     if(!comment.isEmpty())
@@ -249,11 +247,14 @@ void EnumCreator::parse(void)
 
     int maxLength = 0;
 
-    for (int i=0; i<list.size(); i++)
+    for(const XMLElement* child = e->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
+        if(!QString(child->Name()).contains("value", Qt::CaseInsensitive))
+            continue;
+
         EnumElement elem(parser, this, parent, support);
 
-        elem.setElement(list.at(i).toElement());
+        elem.setElement(child);
 
         elem.parse();
 
@@ -265,6 +266,13 @@ void EnumCreator::parse(void)
             maxLength = length;
 
     }// for all enum entries
+
+    // If we have no entries there is nothing to do
+    if(elements.size() <= 0)
+    {
+        output.clear();
+        return;
+    }
 
     // Check for keywords that will cause compilation problems
     checkAgainstKeywords();

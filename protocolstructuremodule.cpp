@@ -104,7 +104,7 @@ void ProtocolStructureModule::clear(void)
  * Issue warnings for the structure module. This should be called after the
  * attributes have been parsed.
  */
-void ProtocolStructureModule::issueWarnings(const QDomNamedNodeMap& map)
+void ProtocolStructureModule::issueWarnings(const XMLAttribute* map)
 {
     Q_UNUSED(map);
 
@@ -140,10 +140,13 @@ void ProtocolStructureModule::parse(void)
     // Initialize metadata
     clear();
 
+    if(e == nullptr)
+        return;
+
     // Me and all my children, which may themselves be structures
     ProtocolStructure::parse();
 
-    QDomNamedNodeMap map = e.attributes();
+    const XMLAttribute* map = e->FirstAttribute();
 
     QString moduleName = ProtocolParser::getAttribute("file", map);
     QString defheadermodulename = ProtocolParser::getAttribute("deffile", map);

@@ -1,6 +1,5 @@
 #include <QCommandLineParser>
 #include <QCoreApplication>
-#include <QDomDocument>
 #include <QStringList>
 #include <QFile>
 #include <QDir>

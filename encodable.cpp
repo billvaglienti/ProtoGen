@@ -509,15 +509,20 @@ QString Encodable::getRepeatsDocumentationDetails(void) const
  * \return a pointer to a newly allocated encodable. The caller is
  *         responsible for deleting this object.
  */
-Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const QDomElement& field)
+Encodable* Encodable::generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const XMLElement* field)
 {
     Encodable* enc = NULL;
 
-    if(field.tagName().contains("Structure", Qt::CaseInsensitive))
+    if(field == nullptr)
+        return enc;
+
+    QString tagname(field->Name());
+
+    if(tagname.contains("Structure", Qt::CaseInsensitive))
         enc = new ProtocolStructure(parse, Parent, supported);
-    else if(field.tagName().contains("Data", Qt::CaseInsensitive))
+    else if(tagname.contains("Data", Qt::CaseInsensitive))
         enc = new ProtocolField(parse, Parent, supported);
-    else if(field.tagName().contains("Code", Qt::CaseInsensitive))
+    else if(tagname.contains("Code", Qt::CaseInsensitive))
         enc = new ProtocolCode(parse, Parent, supported);
 
     if(enc != NULL)

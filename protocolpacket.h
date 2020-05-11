@@ -1,8 +1,6 @@
 #ifndef PROTOCOLPACKET_H
 #define PROTOCOLPACKET_H
 
-#include <QDomElement>
-#include <QDomNodeList>
 #include <QList>
 #include "protocolstructuremodule.h"
 

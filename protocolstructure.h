@@ -62,7 +62,7 @@ public:
     QString getMapDecodeString(void) const Q_DECL_OVERRIDE;
 
     //! Parse the DOM data for this structures children
-    void parseChildren(const QDomElement& field);
+    void parseChildren(const XMLElement* field);
 
     //! Set the compare flag for this structure and all children structure
     void setCompare(bool enable);
@@ -280,7 +280,7 @@ protected:
     QString alignStructureData(const QString& structure) const;
 
     //! Parse all enumerations which are direct children of a DomNode
-    void parseEnumerations(const QDomNode& node);
+    void parseEnumerations(const XMLNode* node);
 
     //! This list of all children encodables
     QList<Encodable*> encodables;

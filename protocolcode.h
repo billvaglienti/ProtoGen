@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <QString>
-#include <QDomElement>
 #include "encodable.h"
 
 class ProtocolCode : public Encodable

@@ -2,7 +2,6 @@
 #include "protocolstructuremodule.h"
 #include "protocolparser.h"
 #include "protocolfield.h"
-#include <QDomNodeList>
 #include <QStringList>
 #include <iostream>
 
@@ -100,10 +99,13 @@ void ProtocolStructure::clear(void)
  */
 void ProtocolStructure::parse(void)
 {
-    QDomNamedNodeMap map = e.attributes();
+    if(e == nullptr)
+        return;
+
+    const XMLAttribute* map = e->FirstAttribute();
 
     // All the attribute we care about
-    name = ProtocolParser::getAttribute("name", map);
+    name = ProtocolParser::getAttribute("name", map, "_unknown");
     title = ProtocolParser::getAttribute("title", map);
     array = ProtocolParser::getAttribute("array", map);
     variableArray = ProtocolParser::getAttribute("variableArray", map);
@@ -112,9 +114,6 @@ void ProtocolStructure::parse(void)
     dependsOnCompare = ProtocolParser::getAttribute("dependsOnCompare", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
-
-    if(name.isEmpty())
-        name = "_unknown";
 
     if(title.isEmpty())
         title = name;
@@ -695,14 +694,12 @@ QString ProtocolStructure::getMapDecodeString(void) const
  * Parse and output all enumerations which are direct children of a DomNode
  * \param node is parent node
  */
-void ProtocolStructure::parseEnumerations(const QDomNode& node)
+void ProtocolStructure::parseEnumerations(const XMLNode* node)
 {
-    // Build the top level enumerations
-    QList<QDomNode>list = ProtocolParser::childElementsByTagName(node, "Enum");
-
-    for(int i = 0; i < list.size(); i++)
+    for(const XMLElement* child = node->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
-        enumList.append(parser->parseEnumeration(getHierarchicalName(), list.at(i).toElement()));
+        if(QString(child->Name()).contains("enum", Qt::CaseInsensitive))
+            enumList.append(parser->parseEnumeration(getHierarchicalName(), child));
 
     }// for all my enum tags
 
@@ -713,17 +710,14 @@ void ProtocolStructure::parseEnumerations(const QDomNode& node)
  * Parse the DOM data for the children of this structure
  * \param field is the DOM data for this structure
  */
-void ProtocolStructure::parseChildren(const QDomElement& field)
+void ProtocolStructure::parseChildren(const XMLElement* field)
 {
     Encodable* prevEncodable = NULL;
 
-    // All the direct children, which may themselves be structures or primitive fields
-    QDomNodeList children = field.childNodes();
-
     // Make encodables out of them, and add to our list
-    for (int i = 0; i < children.size(); i++)
+    for(const XMLElement* child = field->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
-        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), support, children.at(i).toElement());
+        Encodable* encodable = generateEncodable(parser, getHierarchicalName(), support, child);
         if(encodable != NULL)
         {            
             // If the encodable is null, then none of the metadata

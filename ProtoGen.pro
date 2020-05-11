@@ -13,7 +13,6 @@ TARGET = ProtoGen
 TEMPLATE = app
 
 QT       += core
-QT       += xml
 QT       -= gui
 
 CONFIG   += console
@@ -49,6 +48,7 @@ SOURCES += main.cpp \
     protocolcode.cpp \
     protocolbitfield.cpp \
     protocoldocumentation.cpp \
+    tinyxml/tinyxml2.cpp \
     xmllinelocator.cpp
 
 HEADERS += \
@@ -69,10 +69,13 @@ HEADERS += \
     protocolcode.h \
     protocolbitfield.h \
     protocoldocumentation.h \
+    tinyxml/tinyxml2.h \
     xmllinelocator.h
 
 RESOURCES += \
     ProtoGen.qrc
+
+INCLUDEPATH += tinyxml
 
 CONFIG(debug, debug|release){
     DEFINES += _DEBUG

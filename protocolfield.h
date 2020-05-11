@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <QString>
 #include <QStringList>
-#include <QDomElement>
 #include "encodable.h"
 
 class TypeData
