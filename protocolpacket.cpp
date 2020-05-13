@@ -215,7 +215,7 @@ void ProtocolPacket::parse(void)
     // Most of the file setup work. This will also declare the structure if
     // warranted (note the details of the structure declaration will reflect
     // back to this class via virtual functions).
-    setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, structureFunctions, false);
+    setupFiles(moduleName.toStdString(), defheadermodulename.toStdString(), verifymodulename.toStdString(), comparemodulename.toStdString(), printmodulename.toStdString(), mapmodulename.toStdString(), structureFunctions, false);
 
     // The functions that include structures which are children of this
     // packet. These need to be declared before the main functions
@@ -229,7 +229,7 @@ void ProtocolPacket::parse(void)
         // The ID may be a value defined somewhere else
         QString include = parser->lookUpIncludeName(ids.at(i));
         if(!include.isEmpty())
-            header.writeIncludeDirective(include);
+            header.writeIncludeDirective(include.toStdString());
     }
 
     // The functions that encode and decode the packet from a structure.
@@ -250,7 +250,7 @@ void ProtocolPacket::parse(void)
         header.makeLineSeparator();
 
         // Utility functions for ID, length, etc.
-        header.write(createUtilityFunctions(QString()));
+        header.write(createUtilityFunctions(QString()).toStdString());
     }
 
     // White space is good
@@ -584,12 +584,12 @@ void ProtocolPacket::createTopLevelInitializeFunction(void)
         if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
         {
             verifyHeader->makeLineSeparator();
-            verifyHeader->write(getSetToInitialValueFunctionPrototype(QString(), false));
+            verifyHeader->write(getSetToInitialValueFunctionPrototype(QString(), false).toStdString());
             verifyHeader->makeLineSeparator();
         }
 
         verifySource->makeLineSeparator();
-        verifySource->write(getSetToInitialValueFunctionBody(false));
+        verifySource->write(getSetToInitialValueFunctionBody(false).toStdString());
         verifySource->makeLineSeparator();
     }
 
@@ -612,11 +612,11 @@ void ProtocolPacket::createTopLevelStructureFunctions(void)
             if(support.language == ProtocolSupport::c_language)
             {
                 header.makeLineSeparator();
-                header.write(getEncodeFunctionPrototype(QString(), false));
+                header.write(getEncodeFunctionPrototype(QString(), false).toStdString());
             }
 
             source.makeLineSeparator();
-            source.write(getEncodeFunctionBody(support.bigendian, false));
+            source.write(getEncodeFunctionBody(support.bigendian, false).toStdString());
         }
 
         if(decode)
@@ -625,11 +625,11 @@ void ProtocolPacket::createTopLevelStructureFunctions(void)
             if(support.language == ProtocolSupport::c_language)
             {
                 header.makeLineSeparator();
-                header.write(getDecodeFunctionPrototype(QString(), false));
+                header.write(getDecodeFunctionPrototype(QString(), false).toStdString());
             }
 
             source.makeLineSeparator();
-            source.write(getDecodeFunctionBody(support.bigendian, false));
+            source.write(getDecodeFunctionBody(support.bigendian, false).toStdString());
         }
 
         header.makeLineSeparator();
@@ -659,7 +659,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             // The prototype for the structure packet encode function
             header.makeLineSeparator();
-            header.write(getStructurePacketEncodePrototype(QString()));
+            header.write(getStructurePacketEncodePrototype(QString()).toStdString());
         }
 
         // In the event that there are no parameters, the parameter function
@@ -668,22 +668,22 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         {
             // The prototype for the structure packet decode function
             header.makeLineSeparator();
-            header.write(getStructurePacketDecodePrototype(QString()));
+            header.write(getStructurePacketDecodePrototype(QString()).toStdString());
         }
 
         if(compare && compareHeader != nullptr)
         {
             compareHeader->makeLineSeparator();
-            compareHeader->write("//! Compare two " + support.prefix + name + " packets and generate a report\n");
-            compareHeader->write("std::string compare" + support.prefix + name + support.packetParameterSuffix + "(std::string prename, const " + support.pointerType + " pkt1, const " + support.pointerType + " pkt2);\n");
+            compareHeader->write("//! Compare two " + support.prefix.toStdString() + name.toStdString() + " packets and generate a report\n");
+            compareHeader->write("std::string compare" + support.prefix.toStdString() + name.toStdString() + support.packetParameterSuffix.toStdString() + "(std::string prename, const " + support.pointerType.toStdString() + " pkt1, const " + support.pointerType.toStdString() + " pkt2);\n");
             compareHeader->makeLineSeparator();
         }
 
         if(print && printHeader != nullptr)
         {
             printHeader->makeLineSeparator();
-            printHeader->write("//! Generate a string that describes the contents of a " + name + " packet\n");
-            printHeader->write("std::string textPrint" + support.prefix + name + support.packetParameterSuffix + "(std::string prename, const " + support.pointerType + " pkt);\n");
+            printHeader->write("//! Generate a string that describes the contents of a " + name.toStdString() + " packet\n");
+            printHeader->write("std::string textPrint" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "(std::string prename, const " + support.pointerType.toStdString() + " pkt);\n");
             printHeader->makeLineSeparator();
         }
 
@@ -695,7 +695,7 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         // The source function for the encode function
         source.makeLineSeparator();
-        source.write(getStructurePacketEncodeBody());
+        source.write(getStructurePacketEncodeBody().toStdString());
     }
 
     // In the event that there are no parameters, the parameter function
@@ -704,14 +704,14 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         // The source function for the decode function
         source.makeLineSeparator();
-        source.write(getStructurePacketDecodeBody());
+        source.write(getStructurePacketDecodeBody().toStdString());
     }
 
     if(compare && (compareSource != nullptr))
     {
         compareSource->makeLineSeparator();
         compareSource->write("/*!\n");
-        compareSource->write(" * Compare two " + name + " packets and generate a report of any differences.\n");
+        compareSource->write(" * Compare two " + name.toStdString() + " packets and generate a report of any differences.\n");
         compareSource->write(" * \\param _pg_prename is prepended to the name of the data field in the comparison report\n");
         compareSource->write(" * \\param _pg_pkt1 is the first data to compare\n");
         compareSource->write(" * \\param _pg_pkt2 is the second data to compare\n");
@@ -719,85 +719,85 @@ void ProtocolPacket::createStructurePacketFunctions(void)
         compareSource->write(" */\n");
 
         if(support.language == ProtocolSupport::c_language)
-            compareSource->write("std::string compare" + support.prefix + name + support.packetParameterSuffix + "(std::string _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
+            compareSource->write("std::string compare" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "(std::string _pg_prename, const " + support.pointerType.toStdString() + " _pg_pkt1, const " + support.pointerType.toStdString() + " _pg_pkt2)\n");
         else
-            compareSource->write("std::string " + typeName + "::compare(std::string _pg_prename, const " + support.pointerType + " _pg_pkt1, const " + support.pointerType + " _pg_pkt2)\n");
+            compareSource->write("std::string " + typeName.toStdString() + "::compare(std::string _pg_prename, const " + support.pointerType.toStdString() + " _pg_pkt1, const " + support.pointerType.toStdString() + " _pg_pkt2)\n");
 
         compareSource->write("{\n");
-        compareSource->write(TAB_IN + "std::string _pg_report;\n");
+        compareSource->write(TAB_IN.toStdString() + "std::string _pg_report;\n");
 
         if(numDecodes > 0)
         {
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "// Structures to decode into\n");
-            compareSource->write(TAB_IN + structName + " _pg_struct1, _pg_struct2;\n");
+            compareSource->write(TAB_IN.toStdString() + "// Structures to decode into\n");
+            compareSource->write(TAB_IN.toStdString() + structName.toStdString() + " _pg_struct1, _pg_struct2;\n");
 
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "if(_pg_prename.empty())\n");
-            compareSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
+            compareSource->write(TAB_IN.toStdString() + "if(_pg_prename.empty())\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_prename = \"" + name.toStdString() + "\";\n");
 
             if(support.language == ProtocolSupport::c_language)
             {
                 // In C we need explicity initializers
                 compareSource->makeLineSeparator();
-                compareSource->write(TAB_IN + "// All zeroes before decoding\n");
-                compareSource->write(TAB_IN + "memset(&_pg_struct1, 0, sizeof(_pg_struct1));\n");
-                compareSource->write(TAB_IN + "memset(&_pg_struct2, 0, sizeof(_pg_struct2));\n");
+                compareSource->write(TAB_IN.toStdString() + "// All zeroes before decoding\n");
+                compareSource->write(TAB_IN.toStdString() + "memset(&_pg_struct1, 0, sizeof(_pg_struct1));\n");
+                compareSource->write(TAB_IN.toStdString() + "memset(&_pg_struct2, 0, sizeof(_pg_struct2));\n");
 
                 compareSource->makeLineSeparator();
-                compareSource->write(TAB_IN + "// Decode each packet\n");
-                compareSource->write(TAB_IN + "if(!decode" + extendedName() + "(_pg_pkt1, &_pg_struct1) || !decode" + extendedName() + "(_pg_pkt2, &_pg_struct2))\n");
+                compareSource->write(TAB_IN.toStdString() + "// Decode each packet\n");
+                compareSource->write(TAB_IN.toStdString() + "if(!decode" + extendedName().toStdString() + "(_pg_pkt1, &_pg_struct1) || !decode" + extendedName().toStdString() + "(_pg_pkt2, &_pg_struct2))\n");
             }
             else
             {
                 compareSource->makeLineSeparator();
-                compareSource->write(TAB_IN + "// Decode each packet\n");
-                compareSource->write(TAB_IN + "if(!_pg_struct1.decode(_pg_pkt1) || !_pg_struct2.decode(_pg_pkt2))\n");
+                compareSource->write(TAB_IN.toStdString() + "// Decode each packet\n");
+                compareSource->write(TAB_IN.toStdString() + "if(!_pg_struct1.decode(_pg_pkt1) || !_pg_struct2.decode(_pg_pkt2))\n");
             }
 
-            compareSource->write(TAB_IN + "{\n");
-            compareSource->write(TAB_IN + TAB_IN + "_pg_report = _pg_prename + \" packets failed to decode\\n\";\n");
-            compareSource->write(TAB_IN + TAB_IN + "return _pg_report;\n");
-            compareSource->write(TAB_IN + "}\n");
+            compareSource->write(TAB_IN.toStdString() + "{\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_report = _pg_prename + \" packets failed to decode\\n\";\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "return _pg_report;\n");
+            compareSource->write(TAB_IN.toStdString() + "}\n");
         }
         else
         {
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "if(_pg_prename.empty())\n");
-            compareSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
+            compareSource->write(TAB_IN.toStdString() + "if(_pg_prename.empty())\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_prename = \"" + name.toStdString() + "\";\n");
 
             compareSource->makeLineSeparator();
-            compareSource->write(TAB_IN + "// Check packet types\n");
-            compareSource->write(TAB_IN + "if((get" + support.protoName + "PacketID(_pg_pkt1) != get" + support.protoName + "PacketID(_pg_pkt1)) || (get"+ support.protoName + "PacketID(_pg_pkt2) != get" + support.prefix + name + support.packetParameterSuffix + "ID()))\n");
-            compareSource->write(TAB_IN + "{\n");
-            compareSource->write(TAB_IN + TAB_IN + "_pg_report += _pg_prename + \" packet IDs are different\\n\";\n");
-            compareSource->write(TAB_IN + TAB_IN + "return _pg_report;\n");
-            compareSource->write(TAB_IN + "}\n");
+            compareSource->write(TAB_IN.toStdString() + "// Check packet types\n");
+            compareSource->write(TAB_IN.toStdString() + "if((get" + support.protoName.toStdString() + "PacketID(_pg_pkt1) != get" + support.protoName.toStdString() + "PacketID(_pg_pkt1)) || (get"+ support.protoName.toStdString() + "PacketID(_pg_pkt2) != get" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "ID()))\n");
+            compareSource->write(TAB_IN.toStdString() + "{\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_report += _pg_prename + \" packet IDs are different\\n\";\n");
+            compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "return _pg_report;\n");
+            compareSource->write(TAB_IN.toStdString() + "}\n");
         }
 
         compareSource->makeLineSeparator();
-        compareSource->write(TAB_IN + "// Check packet sizes. Even if sizes are different the packets may contain the same result\n");
-        compareSource->write(TAB_IN + "if(get" + support.protoName + "PacketSize(_pg_pkt1) != get" + support.protoName + "PacketSize(_pg_pkt2))\n");
-        compareSource->write(TAB_IN + TAB_IN + "_pg_report += _pg_prename + \" packet sizes are different\\n\";\n");
+        compareSource->write(TAB_IN.toStdString() + "// Check packet sizes. Even if sizes are different the packets may contain the same result\n");
+        compareSource->write(TAB_IN.toStdString() + "if(get" + support.protoName.toStdString() + "PacketSize(_pg_pkt1) != get" + support.protoName.toStdString() + "PacketSize(_pg_pkt2))\n");
+        compareSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_report += _pg_prename + \" packet sizes are different\\n\";\n");
 
         if(numDecodes > 0)
         {
             compareSource->makeLineSeparator();
 
             if(support.language == ProtocolSupport::c_language)
-                compareSource->write(TAB_IN + "_pg_report += compare" + structName + "(_pg_prename, &_pg_struct1, &_pg_struct2);\n");
+                compareSource->write(TAB_IN.toStdString() + "_pg_report += compare" + structName.toStdString() + "(_pg_prename, &_pg_struct1, &_pg_struct2);\n");
             else
-                compareSource->write(TAB_IN + "_pg_report += _pg_struct1.compare(_pg_prename, &_pg_struct2);\n");
+                compareSource->write(TAB_IN.toStdString() + "_pg_report += _pg_struct1.compare(_pg_prename, &_pg_struct2);\n");
         }
 
         compareSource->makeLineSeparator();
-        compareSource->write(TAB_IN + "return _pg_report;\n");
+        compareSource->write(TAB_IN.toStdString() + "return _pg_report;\n");
         compareSource->write("\n");
 
         if(support.language == ProtocolSupport::c_language)
-            compareSource->write("}// compare" + support.prefix + name + support.packetParameterSuffix + "\n");
+            compareSource->write("}// compare" + support.prefix.toStdString() + name.toStdString() + support.packetParameterSuffix.toStdString() + "\n");
         else
-            compareSource->write("}// " + typeName + "::compare\n");
+            compareSource->write("}// " + typeName.toStdString() + "::compare\n");
 
     }// if we need to generate compare functions
 
@@ -805,88 +805,88 @@ void ProtocolPacket::createStructurePacketFunctions(void)
     {
         printSource->makeLineSeparator();
         printSource->write("/*!\n");
-        printSource->write(" * Generate a string that describes the contents of a " + name + " packet\n");
+        printSource->write(" * Generate a string that describes the contents of a " + name.toStdString() + " packet\n");
         printSource->write(" * \\param _pg_prename is prepended to the name of the data field in the report\n");
         printSource->write(" * \\param _pg_pkt is the data to print\n");
         printSource->write(" * \\return a string describing the contents of _pg_pkt\n");
         printSource->write(" */\n");
         if(support.language == ProtocolSupport::c_language)
-            printSource->write("std::string textPrint" + support.prefix + name + support.packetParameterSuffix + "(std::string _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
+            printSource->write("std::string textPrint" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "(std::string _pg_prename, const " + support.pointerType.toStdString() + " _pg_pkt)\n");
         else
-            printSource->write("std::string " + typeName + "::textPrint(std::string _pg_prename, const " + support.pointerType + " _pg_pkt)\n");
+            printSource->write("std::string " + typeName.toStdString() + "::textPrint(std::string _pg_prename, const " + support.pointerType.toStdString() + " _pg_pkt)\n");
         printSource->write("{\n");
-        printSource->write(TAB_IN + "std::string _pg_report;\n");
+        printSource->write(TAB_IN.toStdString() + "std::string _pg_report;\n");
 
         if(numDecodes > 0)
         {
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "// Structure to decode into\n");
-            printSource->write(TAB_IN + structName + " _pg_user;\n");
+            printSource->write(TAB_IN.toStdString() + "// Structure to decode into\n");
+            printSource->write(TAB_IN.toStdString() + structName.toStdString() + " _pg_user;\n");
 
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "if(_pg_prename.empty())\n");
-            printSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
+            printSource->write(TAB_IN.toStdString() + "if(_pg_prename.empty())\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_prename = \"" + name.toStdString() + "\";\n");
 
             if(support.language == ProtocolSupport::c_language)
             {
                 // In C we need explicity initializers
                 printSource->makeLineSeparator();
-                printSource->write(TAB_IN + "// All zeroes before decoding\n");
-                printSource->write(TAB_IN + "memset(&_pg_user, 0, sizeof(_pg_user));\n");
+                printSource->write(TAB_IN.toStdString() + "// All zeroes before decoding\n");
+                printSource->write(TAB_IN.toStdString() + "memset(&_pg_user, 0, sizeof(_pg_user));\n");
 
                 printSource->makeLineSeparator();
-                printSource->write(TAB_IN + "// Decode packet\n");
-                printSource->write(TAB_IN + "if(!decode" + extendedName() + "(_pg_pkt, &_pg_user))\n");
+                printSource->write(TAB_IN.toStdString() + "// Decode packet\n");
+                printSource->write(TAB_IN.toStdString() + "if(!decode" + extendedName().toStdString() + "(_pg_pkt, &_pg_user))\n");
             }
             else
             {
                 printSource->makeLineSeparator();
-                printSource->write(TAB_IN + "// Decode packet\n");
-                printSource->write(TAB_IN + "if(!_pg_user.decode(_pg_pkt))\n");
+                printSource->write(TAB_IN.toStdString() + "// Decode packet\n");
+                printSource->write(TAB_IN.toStdString() + "if(!_pg_user.decode(_pg_pkt))\n");
 
             }
 
-            printSource->write(TAB_IN + "{\n");
-            printSource->write(TAB_IN + TAB_IN + "_pg_report = _pg_prename + \" packet failed to decode\\n\";\n");
-            printSource->write(TAB_IN + TAB_IN + "return _pg_report;\n");
-            printSource->write(TAB_IN + "}\n");
+            printSource->write(TAB_IN.toStdString() + "{\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_report = _pg_prename + \" packet failed to decode\\n\";\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "return _pg_report;\n");
+            printSource->write(TAB_IN.toStdString() + "}\n");
         }
         else
         {
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "if(_pg_prename.empty())\n");
-            printSource->write(TAB_IN + TAB_IN + "_pg_prename = \"" + name + "\";\n");
+            printSource->write(TAB_IN.toStdString() + "if(_pg_prename.empty())\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_prename = \"" + name.toStdString() + "\";\n");
 
             printSource->makeLineSeparator();
-            printSource->write(TAB_IN + "// Check packet type\n");
-            printSource->write(TAB_IN + "if(get"+ support.protoName + "PacketID(_pg_pkt) != get" + support.prefix + name + support.packetParameterSuffix + "ID())\n");
-            printSource->write(TAB_IN + "{\n");
-            printSource->write(TAB_IN + TAB_IN + "_pg_report += _pg_prename + \" packet ID is incorrect\\n\";\n");
-            printSource->write(TAB_IN + TAB_IN + "return _pg_report;\n");
-            printSource->write(TAB_IN + "}\n");
+            printSource->write(TAB_IN.toStdString() + "// Check packet type\n");
+            printSource->write(TAB_IN.toStdString() + "if(get"+ support.protoName.toStdString() + "PacketID(_pg_pkt) != get" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "ID())\n");
+            printSource->write(TAB_IN.toStdString() + "{\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "_pg_report += _pg_prename + \" packet ID is incorrect\\n\";\n");
+            printSource->write(TAB_IN.toStdString() + TAB_IN.toStdString() + "return _pg_report;\n");
+            printSource->write(TAB_IN.toStdString() + "}\n");
         }
 
         printSource->makeLineSeparator();
-        printSource->write(TAB_IN + "// Print the packet size\n");
-        printSource->write(TAB_IN + "_pg_report += _pg_prename + \" packet size is \" + std::to_string(get" + support.protoName + "PacketSize(_pg_pkt)) + \"\\n\";\n");
+        printSource->write(TAB_IN.toStdString() + "// Print the packet size\n");
+        printSource->write(TAB_IN.toStdString() + "_pg_report += _pg_prename + \" packet size is \" + std::to_string(get" + support.protoName.toStdString() + "PacketSize(_pg_pkt)) + \"\\n\";\n");
 
         if(numDecodes > 0)
         {
             printSource->makeLineSeparator();
 
             if(support.language == ProtocolSupport::c_language)
-                printSource->write(TAB_IN + "_pg_report += textPrint" + structName + "(_pg_prename, &_pg_user);\n");
+                printSource->write(TAB_IN.toStdString() + "_pg_report += textPrint" + structName.toStdString() + "(_pg_prename, &_pg_user);\n");
             else
-                printSource->write(TAB_IN + "_pg_report += _pg_user.textPrint(_pg_prename);\n");
+                printSource->write(TAB_IN.toStdString() + "_pg_report += _pg_user.textPrint(_pg_prename);\n");
         }
 
         printSource->makeLineSeparator();
-        printSource->write(TAB_IN + "return _pg_report;\n");
+        printSource->write(TAB_IN.toStdString() + "return _pg_report;\n");
         printSource->write("\n");
         if(support.language == ProtocolSupport::c_language)
-            printSource->write("}// textPrint" + support.prefix + name + support.packetParameterSuffix + "\n");
+            printSource->write("}// textPrint" + (support.prefix + name + support.packetParameterSuffix).toStdString() + "\n");
         else
-            printSource->write("}// " + typeName + "::textPrint\n");
+            printSource->write("}// " + typeName.toStdString() + "::textPrint\n");
 
     }// if we need to generate print functions
 
@@ -1290,27 +1290,27 @@ void ProtocolPacket::createPacketFunctions(void)
         {
             // The prototype for the packet encode function
             header.makeLineSeparator();
-            header.write(getParameterPacketEncodePrototype(QString()));
+            header.write(getParameterPacketEncodePrototype(QString()).toStdString());
         }
 
         if(decode)
         {
             // The prototype for the packet decode function
             header.makeLineSeparator();
-            header.write(getParameterPacketDecodePrototype(QString()));
+            header.write(getParameterPacketDecodePrototype(QString()).toStdString());
         }
     }
 
     if(encode)
     {
         source.makeLineSeparator();
-        source.write(getParameterPacketEncodeBody());
+        source.write(getParameterPacketEncodeBody().toStdString());
     }
 
     if(decode)
     {
         source.makeLineSeparator();
-        source.write(getParameterPacketDecodeBody());
+        source.write(getParameterPacketDecodeBody().toStdString());
 
     }// if decode function enabled
 

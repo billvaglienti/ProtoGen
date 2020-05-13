@@ -10,12 +10,12 @@ public:
     FieldCoding(ProtocolSupport sup);
 
     //! Perform the generation, writing out the files
-    bool generate(QStringList& fileNameList, QStringList& filePathList);
+    bool generate(std::vector<std::string>& fileNameList, std::vector<std::string>& filePathList);
 
 protected:
 
     //! Get a human readable type name like "unsigned 3 byte integer".
-    QString getReadableTypeName(int type);
+    std::string getReadableTypeName(int type);
 
     //! Generate the encode header file
     bool generateEncodeHeader(void);
@@ -33,46 +33,46 @@ protected:
     bool generateDecodeSource(void);
 
     //! Generate the one line brief comment for the encode function
-    QString briefEncodeComment(int type, bool bigendian);
+    std::string briefEncodeComment(int type, bool bigendian);
 
     //! Generate the full comment for the encode function
-    QString fullEncodeComment(int type, bool bigendian);
+    std::string fullEncodeComment(int type, bool bigendian);
 
     //! Generate the encode function signature
-    QString encodeSignature(int type, bool bigendian);
+    std::string encodeSignature(int type, bool bigendian);
 
     //! Generate the full encode function
-    QString fullEncodeFunction(int type, bool bigendian);
+    std::string fullEncodeFunction(int type, bool bigendian);
 
     //! Generate the float encode function
-    QString floatEncodeFunction(int type, bool bigendian);
+    std::string floatEncodeFunction(int type, bool bigendian);
 
     //! Generate the integer encode function
-    QString integerEncodeFunction(int type, bool bigendian);
+    std::string integerEncodeFunction(int type, bool bigendian);
 
     //! Generate the one line brief comment for the decode function
-    QString briefDecodeComment(int type, bool bigendian);
+    std::string briefDecodeComment(int type, bool bigendian);
 
     //! Generate the full comment for the decode function
-    QString fullDecodeComment(int type, bool bigendian);
+    std::string fullDecodeComment(int type, bool bigendian);
 
     //! Generate the decode function signature
-    QString decodeSignature(int type, bool bigendian);
+    std::string decodeSignature(int type, bool bigendian);
 
     //! Generate the full decode function
-    QString fullDecodeFunction(int type, bool bigendian);
+    std::string fullDecodeFunction(int type, bool bigendian);
 
     //! Generate the float decode function
-    QString floatDecodeFunction(int type, bool bigendian);
+    std::string floatDecodeFunction(int type, bool bigendian);
 
     //! Generate the integer decode function
-    QString integerDecodeFunction(int type, bool bigendian);
+    std::string integerDecodeFunction(int type, bool bigendian);
 
     //! List of built in type names
-    QStringList typeNames;
+    std::vector<std::string> typeNames;
 
     //! List of type names in function signature
-    QStringList typeSigNames;
+    std::vector<std::string> typeSigNames;
 
     //! Size of built in types
     QList<int> typeSizes;

@@ -103,11 +103,17 @@ public:
     //! Format a long string of text which should be wrapped at 80 characters.
     static QString outputLongComment(const QString& prefix, const QString& text);
 
+    //! Format a long string of text which should be wrapped at 80 characters.
+    static std::string outputLongComment(const std::string& prefix, const std::string& text);
+
     //! Get a correctly reflowed comment from a DOM
     static QString getComment(const XMLElement* e);
 
     //! Take a comment line and reflow it for our needs.
     static QString reflowComment(QString comment, QString prefix = QString(), int charlimit = 0);
+
+    //! Take a comment line and reflow it for our needs.
+    static std::string reflowComment(const std::string& text, const std::string& prefix = std::string(), int charlimit = 0);
 
     //! Find the include name for a specific type
     QString lookUpIncludeName(const QString& typeName) const;
@@ -131,7 +137,7 @@ public:
     void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
 
     //! The version of the protocol generator software
-    static const QString genVersion;
+    static const std::string genVersion;
 
     //! Get the string used for inline css.
     static QString getDefaultInlinCSS(void);
@@ -158,9 +164,9 @@ public:
     static bool isFieldClear(QString attribname, const XMLAttribute* firstattrib);
 
     //! Set the license text
-    void setLicenseText(const QString text) { support.licenseText = text; }
+    void setLicenseText(const QString text) { support.licenseText = text.toStdString(); }
 
-    QString getLicenseText() const { return support.licenseText; }
+    QString getLicenseText() const { return QString().fromStdString(support.licenseText); }
 
 protected:
 

@@ -308,7 +308,7 @@ ProtocolScaling::encodedtypes_t ProtocolScaling::createEncodedType(bool issigned
 
 
 //! Return the name in code of this type
-QString ProtocolScaling::typeName(inmemorytypes_t type) const
+std::string ProtocolScaling::typeName(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -327,7 +327,7 @@ QString ProtocolScaling::typeName(inmemorytypes_t type) const
 }
 
 //! Return the name in code of this type
-QString ProtocolScaling::typeName(encodedtypes_t type) const
+std::string ProtocolScaling::typeName(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -366,7 +366,7 @@ QString ProtocolScaling::typeName(encodedtypes_t type) const
 }
 
 //! Return the name in function signature of this type
-QString ProtocolScaling::typeSigName(inmemorytypes_t type) const
+std::string ProtocolScaling::typeSigName(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -386,7 +386,7 @@ QString ProtocolScaling::typeSigName(inmemorytypes_t type) const
 
 
 //! Return the name in function signature of this type
-QString ProtocolScaling::typeSigName(encodedtypes_t type) const
+std::string ProtocolScaling::typeSigName(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -486,36 +486,36 @@ ProtocolScaling::ProtocolScaling(ProtocolSupport sup) :
  * \param filePathList is appended with the paths of the generated files
  * \return true if both modules are generated
  */
-bool ProtocolScaling::generate(QStringList& fileNameList, QStringList& filePathList)
+bool ProtocolScaling::generate(std::vector<std::string>& fileNameList, std::vector<std::string>& filePathList)
 {
     if(generateEncodeHeader())
     {
-        fileNameList.append(header.fileName());
-        filePathList.append(header.filePath());
+        fileNameList.push_back(header.fileName());
+        filePathList.push_back(header.filePath());
     }
     else
         return false;
 
     if(generateEncodeSource())
     {
-        fileNameList.append(source.fileName());
-        filePathList.append(source.filePath());
+        fileNameList.push_back(source.fileName());
+        filePathList.push_back(source.filePath());
     }
     else
         return false;
 
     if(generateDecodeHeader())
     {
-        fileNameList.append(header.fileName());
-        filePathList.append(header.filePath());
+        fileNameList.push_back(header.fileName());
+        filePathList.push_back(header.filePath());
     }
     else
         return false;
 
     if(generateDecodeSource())
     {
-        fileNameList.append(source.fileName());
-        filePathList.append(source.filePath());
+        fileNameList.push_back(source.fileName());
+        filePathList.push_back(source.filePath());
     }
     else
         return false;
@@ -734,9 +734,9 @@ bool ProtocolScaling::generateEncodeSource(void)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-QString ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString scalingtype;
+    std::string scalingtype;
 
     if(isTypeFloating(inmemory))
         scalingtype = "floating point";
@@ -746,9 +746,9 @@ QString ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtyp
     if(isTypeBitfield(encoded))
     {
         if(typeLength(encoded) > 4)
-            return QString("Scale a " + typeName(inmemory) + " using " + scalingtype + " scaling to the base integer type used for long bitfields.");
+            return std::string("Scale a " + typeName(inmemory) + " using " + scalingtype + " scaling to the base integer type used for long bitfields.");
         else
-            return QString("Scale a " + typeName(inmemory) + " using " + scalingtype + " scaling to the base integer type used for bitfields.");
+            return std::string("Scale a " + typeName(inmemory) + " using " + scalingtype + " scaling to the base integer type used for bitfields.");
     }
     else
     {
@@ -756,15 +756,14 @@ QString ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtyp
         {
             // No endian concerns if using only 1 byte
             if(isTypeSigned(encoded))
-                return QString("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in 1 signed byte.");
+                return std::string("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in 1 signed byte.");
             else
-                return QString("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in 1 unsigned byte.");
+                return std::string("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in 1 unsigned byte.");
         }
         else
         {
-            QString byteLength;
-            byteLength.setNum(typeLength(encoded));
-            QString endian;
+            std::string byteLength = std::to_string(typeLength(encoded));
+            std::string endian;
 
             if(bigendian)
                 endian = "big";
@@ -772,9 +771,9 @@ QString ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtyp
                 endian = "little";
 
             if(isTypeSigned(encoded))
-                return QString("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " signed bytes in " + endian +" endian order.");
+                return std::string("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " signed bytes in " + endian +" endian order.");
             else
-                return QString("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " unsigned bytes in " + endian + " endian order.");
+                return std::string("Encode a " + typeName(inmemory) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " unsigned bytes in " + endian + " endian order.");
 
         }// If multi-byte
     }
@@ -789,9 +788,9 @@ QString ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtyp
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-QString ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString comment= ("/*!\n");
+    std::string comment= ("/*!\n");
 
     if(isTypeBitfield(encoded))
     {
@@ -808,7 +807,7 @@ QString ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encodedtype
         comment += " * \\param value is the number to encode.\n";
         comment += " * \\param bytes is a pointer to the byte stream which receives the encoded data.\n";
         comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
-        comment += " *        will be incremented by " + QString().setNum(typeLength(encoded)) + " when this function is complete.\n";
+        comment += " *        will be incremented by " + std::to_string(typeLength(encoded)) + " when this function is complete.\n";
 
         if(isTypeSigned(encoded))
             comment += " * \\param scaler is multiplied by value to create the encoded integer: encoded = value*scaler.\n";
@@ -833,28 +832,27 @@ QString ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encodedtype
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-QString ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
     {
         if(typeLength(encoded) > 4)
-            return QString(typeName(encoded) + " " + typeSigName(inmemory) + "ScaledToLongBitfield(" + typeName(inmemory) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler, int bits)");
+            return std::string(typeName(encoded) + " " + typeSigName(inmemory) + "ScaledToLongBitfield(" + typeName(inmemory) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler, int bits)");
         else
-            return QString(typeName(encoded) + " " + typeSigName(inmemory) + "ScaledToBitfield(" + typeName(inmemory) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler, int bits)");
+            return std::string(typeName(encoded) + " " + typeSigName(inmemory) + "ScaledToBitfield(" + typeName(inmemory) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler, int bits)");
     }
     else if(typeLength(encoded) == 1)
     {
         // No endian concerns if using only 1 byte
         if(isTypeSigned(encoded))
-            return QString("void " + typeSigName(inmemory) + "ScaledTo1SignedBytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
+            return std::string("void " + typeSigName(inmemory) + "ScaledTo1SignedBytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
         else
-            return QString("void " + typeSigName(inmemory) + "ScaledTo1UnsignedBytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
+            return std::string("void " + typeSigName(inmemory) + "ScaledTo1UnsignedBytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
     }
     else
     {
-        QString byteLength;
-        byteLength.setNum(typeLength(encoded));
-        QString endian;
+        std::string byteLength = std::to_string(typeLength(encoded));
+        std::string endian;
 
         if(bigendian)
             endian = "Be";
@@ -862,9 +860,9 @@ QString ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedtypes_
             endian = "Le";
 
         if(isTypeSigned(encoded))
-            return QString("void " + typeSigName(inmemory) + "ScaledTo" + byteLength + "Signed" + endian + "Bytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
+            return std::string("void " + typeSigName(inmemory) + "ScaledTo" + byteLength + "Signed" + endian + "Bytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
         else
-            return QString("void " + typeSigName(inmemory) + "ScaledTo" + byteLength + "Unsigned" + endian + "Bytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
+            return std::string("void " + typeSigName(inmemory) + "ScaledTo" + byteLength + "Unsigned" + endian + "Bytes(" + typeName(inmemory) + " value, uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " scaler)");
 
     }// If multi-byte
 
@@ -878,7 +876,7 @@ QString ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedtypes_
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString ProtocolScaling::fullEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
         return fullBitfieldEncodeFunction(inmemory, encoded, bigendian);
@@ -896,9 +894,9 @@ QString ProtocolScaling::fullEncodeFunction(inmemorytypes_t inmemory, encodedtyp
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString constantone;
+    std::string constantone;
 
     if(typeLength(encoded) > 4)
         constantone = "0x1ull";
@@ -907,7 +905,7 @@ QString ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, en
     else
         constantone = "0x1u";
 
-    QString function = encodeSignature(inmemory, encoded, bigendian) + "\n";
+    std::string function = encodeSignature(inmemory, encoded, bigendian) + "\n";
     function += "{\n";
     function += "    // The largest integer the bitfield can hold\n";
     function += "    " + typeName(encoded) + " max = (" + constantone + " << bits) - 1;\n";
@@ -972,11 +970,11 @@ QString ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, en
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString function = encodeSignature(inmemory, encoded, bigendian) + "\n";
+    std::string function = encodeSignature(inmemory, encoded, bigendian) + "\n";
 
-    QString endian;
+    std::string endian;
     if(typeLength(encoded) > 1)
     {
         if(bigendian)
@@ -985,10 +983,9 @@ QString ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encod
             endian = "Le";
     }
 
-    QString bitCount;
-    bitCount.setNum(typeLength(encoded)*8);
+    std::string bitCount = std::to_string(typeLength(encoded)*8);
 
-    QString halfFraction;
+    std::string halfFraction;
     if(typeLength(inmemory) > 4)
         halfFraction = "0.5";
     else
@@ -999,8 +996,8 @@ QString ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encod
 
     if(isTypeSigned(encoded))
     {
-        QString max;
-        QString min;
+        std::string max;
+        std::string min;
         switch(typeLength(encoded))
         {
         default:
@@ -1050,7 +1047,7 @@ QString ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encod
     }
     else
     {
-        QString max;
+        std::string max;
 
         switch(typeLength(encoded))
         {
@@ -1093,11 +1090,11 @@ QString ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encod
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString function = encodeSignature(inmemory, encoded, bigendian) + "\n";
+    std::string function = encodeSignature(inmemory, encoded, bigendian) + "\n";
 
-    QString endian;
+    std::string endian;
     if(typeLength(encoded) > 1)
     {
         if(bigendian)
@@ -1106,8 +1103,7 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
             endian = "Le";
     }
 
-    QString bitCount;
-    bitCount.setNum(typeLength(encoded)*8);
+    std::string bitCount = std::to_string(typeLength(encoded)*8);
 
     function += "{\n";
     function += "    // scale the number\n";
@@ -1121,8 +1117,8 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
 
     if(isTypeSigned(encoded))
     {
-        QString max;
-        QString min;
+        std::string max;
+        std::string min;
         switch(typeLength(encoded))
         {
         default:
@@ -1175,7 +1171,7 @@ QString ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, enc
     }
     else
     {
-        QString max;
+        std::string max;
 
         switch(typeLength(encoded))
         {
@@ -1406,9 +1402,9 @@ bool ProtocolScaling::generateDecodeSource(void)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-QString ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString scalingtype;
+    std::string scalingtype;
 
     if(isTypeFloating(inmemory))
         scalingtype = "floating point";
@@ -1418,9 +1414,9 @@ QString ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtyp
     if(isTypeBitfield(encoded))
     {
         if(typeLength(encoded) > 4)
-            return QString("Compute a " + typeName(inmemory) + " using invese " + scalingtype + " scaling from the base integer type used for long bitfields.");
+            return std::string("Compute a " + typeName(inmemory) + " using invese " + scalingtype + " scaling from the base integer type used for long bitfields.");
         else
-            return QString("Compute a " + typeName(inmemory) + " using inverse " + scalingtype + " scaling from the base integer type used for bitfields.");
+            return std::string("Compute a " + typeName(inmemory) + " using inverse " + scalingtype + " scaling from the base integer type used for bitfields.");
     }
     else
     {
@@ -1428,15 +1424,14 @@ QString ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtyp
         {
             // No endian concerns if using only 1 byte
             if(isTypeSigned(encoded))
-                return QString("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from 1 signed byte.");
+                return std::string("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from 1 signed byte.");
             else
-                return QString("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from 1 unsigned byte.");
+                return std::string("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from 1 unsigned byte.");
         }
         else
         {
-            QString byteLength;
-            byteLength.setNum(typeLength(encoded));
-            QString endian;
+            std::string byteLength = std::to_string(typeLength(encoded));
+            std::string endian;
 
             if(bigendian)
                 endian = "big";
@@ -1444,9 +1439,9 @@ QString ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtyp
                 endian = "little";
 
             if(isTypeSigned(encoded))
-                return QString("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " signed bytes in " + endian +" endian order.");
+                return std::string("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " signed bytes in " + endian +" endian order.");
             else
-                return QString("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " unsigned bytes in " + endian + " endian order.");
+                return std::string("Decode a " + typeName(inmemory) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " unsigned bytes in " + endian + " endian order.");
 
         }// If multi-byte
     }
@@ -1461,9 +1456,9 @@ QString ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtyp
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-QString ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString comment= ("/*!\n");
+    std::string comment= ("/*!\n");
 
     if(isTypeBitfield(encoded))
     {
@@ -1488,7 +1483,7 @@ QString ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encodedtype
         comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(inmemory, encoded, bigendian)) + "\n";
         comment += " * \\param bytes is a pointer to the byte stream to decode.\n";
         comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
-        comment += " *        will be incremented by " + QString().setNum(typeLength(encoded)) + " when this function is complete.\n";
+        comment += " *        will be incremented by " + std::to_string(typeLength(encoded)) + " when this function is complete.\n";
 
         if(isTypeFloating(inmemory))
         {
@@ -1536,25 +1531,24 @@ QString ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encodedtype
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-QString ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
     {
-        QString longbit;
+        std::string longbit;
 
         if(typeLength(encoded) > 4)
             longbit = "Long";
 
         if(isTypeFloating(inmemory))
-            return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + longbit + "Bitfield(" + typeName(encoded) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
+            return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + longbit + "Bitfield(" + typeName(encoded) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
         else
-            return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + longbit + "Bitfield(" + typeName(encoded) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
+            return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + longbit + "Bitfield(" + typeName(encoded) + " value, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
     }
     else
     {
-        QString byteLength;
-        byteLength.setNum(typeLength(encoded));
-        QString endian;
+        std::string byteLength = std::to_string(typeLength(encoded));
+        std::string endian;
 
         if(typeLength(encoded) > 1)
         {
@@ -1567,16 +1561,16 @@ QString ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedtypes_
         if(isTypeFloating(inmemory))
         {
             if(isTypeSigned(encoded))
-                return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Signed" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
+                return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Signed" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
             else
-                return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
+                return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " invscaler)");
         }
         else
         {
             if(isTypeSigned(encoded))
-                return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Signed" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
+                return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Signed" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
             else
-                return QString(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
+                return std::string(typeName(inmemory) + " " + typeSigName(inmemory) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(const uint8_t* bytes, int* index, " + typeName(convertTypeToSigned(inmemory)) + " min, " + typeName(convertTypeToUnsigned(inmemory)) + " divisor)");
         }
 
     }// If multi-byte
@@ -1591,9 +1585,9 @@ QString ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedtypes_
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
-    QString function = decodeSignature(inmemory, encoded, bigendian) + "\n";
+    std::string function = decodeSignature(inmemory, encoded, bigendian) + "\n";
     function += "{\n";
 
     if(isTypeBitfield(encoded))
@@ -1605,7 +1599,7 @@ QString ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encodedtyp
     }
     else
     {
-        QString endian;
+        std::string endian;
         if(typeLength(encoded) > 1)
         {
             if(bigendian)
@@ -1614,8 +1608,7 @@ QString ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encodedtyp
                 endian = "Le";
         }
 
-        QString bitCount;
-        bitCount.setNum(typeLength(encoded)*8);
+        std::string bitCount = std::to_string(typeLength(encoded)*8);
 
         if(isTypeFloating(inmemory))
         {

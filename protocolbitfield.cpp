@@ -23,9 +23,9 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
     // Now the source code
     source.setModuleNameAndPath("bitfieldtest", support.outputpath, support.language);
     source.makeLineSeparator();
-    source.writeIncludeDirective("string.h", QString(), true);
-    source.writeIncludeDirective("limits.h", QString(), true);
-    source.writeIncludeDirective("math.h", QString(), true);
+    source.writeIncludeDirective("string.h", std::string(), true);
+    source.writeIncludeDirective("limits.h", std::string(), true);
+    source.writeIncludeDirective("math.h", std::string(), true);
 
     if(support.language == ProtocolSupport::c_language)
     {

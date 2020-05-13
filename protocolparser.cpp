@@ -7,7 +7,6 @@
 #include "protocolsupport.h"
 #include "protocolbitfield.h"
 #include "protocoldocumentation.h"
-// #include <QDomDocument>
 #include <QFile>
 #include <QDir>
 #include <QFileDevice>
@@ -15,9 +14,10 @@
 #include <QStringList>
 #include <QProcess>
 #include <iostream>
+#include <algorithm>
 
 // The version of the protocol generator is set here
-const QString ProtocolParser::genVersion = "3.0.b This is beta code, use with caution";
+const std::string ProtocolParser::genVersion = "3.0.b This is beta code, use with caution";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -80,10 +80,10 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     QFileInfo fileinfo(filename);
 
     // Top level printout of the version information
-    std::cout << "ProtoGen version " << genVersion.toStdString() << std::endl;
+    std::cout << "ProtoGen version " << genVersion << std::endl;
 
     // Remember the input path, in case there are files referenced by the main file
-    inputpath = ProtocolFile::sanitizePath(fileinfo.absolutePath());
+    inputpath = QString::fromStdString(ProtocolFile::sanitizePath(fileinfo.absolutePath().toStdString()));
 
     // Also remember the name of the file, which we use for warning outputs
     inputfile = fileinfo.fileName();
@@ -108,7 +108,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
     // Set our output directory
     // Make the path as short as possible
-    path = ProtocolFile::sanitizePath(path);
+    path = QString::fromStdString(ProtocolFile::sanitizePath(path.toStdString()));
 
     // There is an interesting case here: the user's output path is not
     // empty, but after sanitizing it is empty, which implies the output
@@ -121,7 +121,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     if(path.isEmpty() || QDir::current().mkpath(path))
     {
         // Remember the output path for all users
-        support.outputpath = path;
+        support.outputpath = path.toStdString();
     }
     else
     {
@@ -171,15 +171,15 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     }// if we need to warn for unrecognized attributes
 
     // The list of our output files
-    QStringList fileNameList;
-    QStringList filePathList;
+    std::vector<std::string> fileNameList;
+    std::vector<std::string> filePathList;
 
     // Build the top level module
     createProtocolHeader(docElem);
 
     // And record its file name
-    fileNameList.append(header->fileName());
-    filePathList.append(header->filePath());
+    fileNameList.push_back(header->fileName());
+    filePathList.push_back(header->filePath());
 
     // Now parse the contents of all the files. We do other files first since
     // we expect them to be helpers that the main file may depend on.
@@ -208,7 +208,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         if(support.supportbool && (support.language == ProtocolSupport::c_language))
             enumfile.writeIncludeDirective("stdbool.h", "", true);
 
-        enumfile.write(module->getOutput());
+        enumfile.write(module->getOutput().toStdString());
         enumfile.makeLineSeparator();
         enumfile.flush();
 
@@ -219,17 +219,17 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         {
             enumSourceFile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
 
-            enumSourceFile.write(source);
+            enumSourceFile.write(source.toStdString());
             enumSourceFile.makeLineSeparator();
             enumSourceFile.flush();
 
-            fileNameList.append(enumSourceFile.fileName());
-            filePathList.append(enumSourceFile.filePath());
+            fileNameList.push_back(enumSourceFile.fileName());
+            filePathList.push_back(enumSourceFile.filePath());
         }
 
         // Keep a list of all the file names we used
-        fileNameList.append(enumfile.fileName());
-        filePathList.append(enumfile.filePath());
+        fileNameList.push_back(enumfile.fileName());
+        filePathList.push_back(enumfile.filePath());
     }
 
     // Now parse the global structures
@@ -241,28 +241,28 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         module->parse();
 
         // Keep a list of all the file names
-        fileNameList.append(module->getDefinitionFileName());
-        filePathList.append(module->getDefinitionFilePath());
-        fileNameList.append(module->getHeaderFileName());
-        filePathList.append(module->getHeaderFilePath());
-        fileNameList.append(module->getSourceFileName());
-        filePathList.append(module->getSourceFilePath());
-        fileNameList.append(module->getVerifySourceFileName());
-        filePathList.append(module->getVerifySourceFilePath());
-        fileNameList.append(module->getVerifyHeaderFileName());
-        filePathList.append(module->getVerifyHeaderFilePath());
-        fileNameList.append(module->getCompareSourceFileName());
-        filePathList.append(module->getCompareSourceFilePath());
-        fileNameList.append(module->getCompareHeaderFileName());
-        filePathList.append(module->getCompareHeaderFilePath());
-        fileNameList.append(module->getPrintSourceFileName());
-        filePathList.append(module->getPrintSourceFilePath());
-        fileNameList.append(module->getPrintHeaderFileName());
-        filePathList.append(module->getPrintHeaderFilePath());
-        fileNameList.append(module->getMapSourceFileName());
-        filePathList.append(module->getMapSourceFilePath());
-        fileNameList.append(module->getMapHeaderFileName());
-        filePathList.append(module->getMapHeaderFilePath());
+        fileNameList.push_back(module->getDefinitionFileName());
+        filePathList.push_back(module->getDefinitionFilePath());
+        fileNameList.push_back(module->getHeaderFileName());
+        filePathList.push_back(module->getHeaderFilePath());
+        fileNameList.push_back(module->getSourceFileName());
+        filePathList.push_back(module->getSourceFilePath());
+        fileNameList.push_back(module->getVerifySourceFileName());
+        filePathList.push_back(module->getVerifySourceFilePath());
+        fileNameList.push_back(module->getVerifyHeaderFileName());
+        filePathList.push_back(module->getVerifyHeaderFilePath());
+        fileNameList.push_back(module->getCompareSourceFileName());
+        filePathList.push_back(module->getCompareSourceFilePath());
+        fileNameList.push_back(module->getCompareHeaderFileName());
+        filePathList.push_back(module->getCompareHeaderFilePath());
+        fileNameList.push_back(module->getPrintSourceFileName());
+        filePathList.push_back(module->getPrintSourceFilePath());
+        fileNameList.push_back(module->getPrintHeaderFileName());
+        filePathList.push_back(module->getPrintHeaderFilePath());
+        fileNameList.push_back(module->getMapSourceFileName());
+        filePathList.push_back(module->getMapSourceFilePath());
+        fileNameList.push_back(module->getMapHeaderFileName());
+        filePathList.push_back(module->getMapHeaderFilePath());
 
     }// for all top level structures
 
@@ -284,28 +284,28 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         structures.append(packet);
 
         // Keep a list of all the file names
-        fileNameList.append(packet->getDefinitionFileName());
-        filePathList.append(packet->getDefinitionFilePath());
-        fileNameList.append(packet->getHeaderFileName());
-        filePathList.append(packet->getHeaderFilePath());
-        fileNameList.append(packet->getSourceFileName());
-        filePathList.append(packet->getSourceFilePath());
-        fileNameList.append(packet->getVerifySourceFileName());
-        filePathList.append(packet->getVerifySourceFilePath());
-        fileNameList.append(packet->getVerifyHeaderFileName());
-        filePathList.append(packet->getVerifyHeaderFilePath());
-        fileNameList.append(packet->getCompareSourceFileName());
-        filePathList.append(packet->getCompareSourceFilePath());
-        fileNameList.append(packet->getCompareHeaderFileName());
-        filePathList.append(packet->getCompareHeaderFilePath());
-        fileNameList.append(packet->getPrintSourceFileName());
-        filePathList.append(packet->getPrintSourceFilePath());
-        fileNameList.append(packet->getPrintHeaderFileName());
-        filePathList.append(packet->getPrintHeaderFilePath());
-        fileNameList.append(packet->getMapSourceFileName());
-        filePathList.append(packet->getMapSourceFilePath());
-        fileNameList.append(packet->getMapHeaderFileName());
-        filePathList.append(packet->getMapHeaderFilePath());
+        fileNameList.push_back(packet->getDefinitionFileName());
+        filePathList.push_back(packet->getDefinitionFilePath());
+        fileNameList.push_back(packet->getHeaderFileName());
+        filePathList.push_back(packet->getHeaderFilePath());
+        fileNameList.push_back(packet->getSourceFileName());
+        filePathList.push_back(packet->getSourceFilePath());
+        fileNameList.push_back(packet->getVerifySourceFileName());
+        filePathList.push_back(packet->getVerifySourceFilePath());
+        fileNameList.push_back(packet->getVerifyHeaderFileName());
+        filePathList.push_back(packet->getVerifyHeaderFilePath());
+        fileNameList.push_back(packet->getCompareSourceFileName());
+        filePathList.push_back(packet->getCompareSourceFilePath());
+        fileNameList.push_back(packet->getCompareHeaderFileName());
+        filePathList.push_back(packet->getCompareHeaderFilePath());
+        fileNameList.push_back(packet->getPrintSourceFileName());
+        filePathList.push_back(packet->getPrintSourceFilePath());
+        fileNameList.push_back(packet->getPrintHeaderFileName());
+        filePathList.push_back(packet->getPrintHeaderFilePath());
+        fileNameList.push_back(packet->getMapSourceFileName());
+        filePathList.push_back(packet->getMapSourceFilePath());
+        fileNameList.push_back(packet->getMapHeaderFileName());
+        filePathList.push_back(packet->getMapHeaderFilePath());
 
     }
 
@@ -321,28 +321,28 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
         packet->parse();
 
         // Keep a list of all the file names
-        fileNameList.append(packet->getDefinitionFileName());
-        filePathList.append(packet->getDefinitionFilePath());
-        fileNameList.append(packet->getHeaderFileName());
-        filePathList.append(packet->getHeaderFilePath());
-        fileNameList.append(packet->getSourceFileName());
-        filePathList.append(packet->getSourceFilePath());
-        fileNameList.append(packet->getVerifySourceFileName());
-        filePathList.append(packet->getVerifySourceFilePath());
-        fileNameList.append(packet->getVerifyHeaderFileName());
-        filePathList.append(packet->getVerifyHeaderFilePath());
-        fileNameList.append(packet->getCompareSourceFileName());
-        filePathList.append(packet->getCompareSourceFilePath());
-        fileNameList.append(packet->getCompareHeaderFileName());
-        filePathList.append(packet->getCompareHeaderFilePath());
-        fileNameList.append(packet->getPrintSourceFileName());
-        filePathList.append(packet->getPrintSourceFilePath());
-        fileNameList.append(packet->getPrintHeaderFileName());
-        filePathList.append(packet->getPrintHeaderFilePath());
-        fileNameList.append(packet->getMapSourceFileName());
-        filePathList.append(packet->getMapSourceFilePath());
-        fileNameList.append(packet->getMapHeaderFileName());
-        filePathList.append(packet->getMapHeaderFilePath());
+        fileNameList.push_back(packet->getDefinitionFileName());
+        filePathList.push_back(packet->getDefinitionFilePath());
+        fileNameList.push_back(packet->getHeaderFileName());
+        filePathList.push_back(packet->getHeaderFilePath());
+        fileNameList.push_back(packet->getSourceFileName());
+        filePathList.push_back(packet->getSourceFilePath());
+        fileNameList.push_back(packet->getVerifySourceFileName());
+        filePathList.push_back(packet->getVerifySourceFilePath());
+        fileNameList.push_back(packet->getVerifyHeaderFileName());
+        filePathList.push_back(packet->getVerifyHeaderFilePath());
+        fileNameList.push_back(packet->getCompareSourceFileName());
+        filePathList.push_back(packet->getCompareSourceFilePath());
+        fileNameList.push_back(packet->getCompareHeaderFileName());
+        filePathList.push_back(packet->getCompareHeaderFilePath());
+        fileNameList.push_back(packet->getPrintSourceFileName());
+        filePathList.push_back(packet->getPrintSourceFilePath());
+        fileNameList.push_back(packet->getPrintHeaderFileName());
+        filePathList.push_back(packet->getPrintHeaderFilePath());
+        fileNameList.push_back(packet->getMapSourceFileName());
+        filePathList.push_back(packet->getMapSourceFilePath());
+        fileNameList.push_back(packet->getMapHeaderFileName());
+        filePathList.push_back(packet->getMapHeaderFilePath());
 
     }
 
@@ -362,17 +362,17 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
 
         // Copy the resource files
         // This is where the files are stored in the resources
-        QString sourcePath = ":/files/prebuiltSources/";
+        std::string sourcePath = ":/files/prebuiltSources/";
 
         if(support.specialFloat)
         {
-            fileNameList.append("floatspecial.h");
-            filePathList.append(support.outputpath);
-            fileNameList.append("floatspecial.c");
-            filePathList.append(support.outputpath);
+            fileNameList.push_back("floatspecial.h");
+            filePathList.push_back(support.outputpath);
+            fileNameList.push_back("floatspecial.c");
+            filePathList.push_back(support.outputpath);
 
-            QFile::copy(sourcePath + "floatspecial.c", support.outputpath + ProtocolFile::tempprefix + "floatspecial.c");
-            QFile::copy(sourcePath + "floatspecial.h", support.outputpath + ProtocolFile::tempprefix + "floatspecial.h");
+            QFile::copy(QString::fromStdString(sourcePath + "floatspecial.c"), QString::fromStdString(support.outputpath + ProtocolFile::tempprefix + "floatspecial.c"));
+            QFile::copy(QString::fromStdString(sourcePath + "floatspecial.h"), QString::fromStdString(support.outputpath + ProtocolFile::tempprefix + "floatspecial.h"));
         }
 
     }
@@ -393,7 +393,7 @@ bool ProtocolParser::parse(QString filename, QString path, QStringList otherfile
     finishProtocolHeader();
 
     // This is fun...replace all the temporary files with real ones if needed
-    for(int i = 0; i < fileNameList.count(); i++)
+    for(std::size_t i = 0; i < fileNameList.size(); i++)
         ProtocolFile::copyTemporaryFile(filePathList.at(i), fileNameList.at(i));
 
     // If we are putting the files in our local directory then we don't just want an empty string in our printout
@@ -427,7 +427,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
     // Keep a record of what we have already parsed, so we don't parse the same file twice
     filesparsed.append(fileinfo.absoluteFilePath());
 
-    std::cout << "Parsing file " << ProtocolFile::sanitizePath(fileinfo.absolutePath()).toStdString() << fileinfo.fileName().toStdString() << std::endl;
+    std::cout << "Parsing file " << ProtocolFile::sanitizePath(fileinfo.absolutePath().toStdString()) << fileinfo.fileName().toStdString() << std::endl;
 
     if( !xmlFile.open( QIODevice::ReadOnly ) )
     {
@@ -476,7 +476,7 @@ bool ProtocolParser::parseFile(QString xmlFilename)
     /// TODO: tinyxml will do this I believe
     // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
     lines.append(new XMLLineLocator());
-    lines.last()->setXMLContents(contents, ProtocolFile::sanitizePath(fileinfo.absolutePath()), fileinfo.fileName(), name);
+    lines.last()->setXMLContents(contents, QString::fromStdString(ProtocolFile::sanitizePath(fileinfo.absolutePath().toStdString())), fileinfo.fileName(), name);
 
     // Protocol file options specified in the xml
     localsupport.parseFileNames(docElem->FirstAttribute());
@@ -600,7 +600,7 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     header = new ProtocolHeaderFile(support);
 
     // The file name
-    header->setModuleNameAndPath(name + "Protocol", support.outputpath);
+    header->setModuleNameAndPath(name.toStdString() + "Protocol", support.outputpath);
 
     // Construct the file comment that goes in the \file block
     QString filecomment = "\\mainpage " + name + " protocol stack\n\n" + comment + "\n\n";
@@ -628,7 +628,7 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
         filecomment += "The protocol version is " + version + "\n\n";
 
     // A long comment that should be wrapped at 80 characters in the \file block
-    header->setFileComment(filecomment);
+    header->setFileComment(filecomment.toStdString());
 
     header->makeLineSeparator();
 
@@ -636,7 +636,7 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     if(support.supportbool)
         header->writeIncludeDirective("stdbool.h", "", true);
 
-    header->writeIncludeDirective("stdint.h", QString(), true);
+    header->writeIncludeDirective("stdint.h", std::string(), true);
 
     // Add other includes
     outputIncludes(name, *header, docElem);
@@ -648,7 +648,7 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     {
         header->makeLineSeparator();
         header->write("//! \\return the protocol API enumeration\n");
-        header->write("#define get" + name + "Api() " + api + "\n");
+        header->write("#define get" + name.toStdString() + "Api() " + api.toStdString() + "\n");
     }
 
     // Version macro
@@ -656,14 +656,14 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     {
         header->makeLineSeparator();
         header->write("//! \\return the protocol version string\n");
-        header->write("#define get" + name + "Version() \""  + version + "\"\n");
+        header->write("#define get" + name.toStdString() + "Version() \""  + version.toStdString() + "\"\n");
     }
 
     // Translation macro
     header->makeLineSeparator();
     header->write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
-    header->write("#ifndef translate" + name + "\n");
-    header->write("    #define translate" + name + "(x) x\n");
+    header->write("#ifndef translate" + name.toStdString() + "\n");
+    header->write("    #define translate" + name.toStdString() + "(x) x\n");
     header->write("#endif");
 
     header->makeLineSeparator();
@@ -679,7 +679,7 @@ void ProtocolParser::finishProtocolHeader(void)
     // We need to re-open this file because others may have written to it and
     // we want to append after their write (This is the whole reaons that
     // finishProtocolHeader() is separate from createProtocolHeader()
-    header->setModuleNameAndPath(name + "Protocol", support.outputpath);
+    header->setModuleNameAndPath(name.toStdString() + "Protocol", support.outputpath);
 
     header->makeLineSeparator();
 
@@ -689,19 +689,19 @@ void ProtocolParser::finishProtocolHeader(void)
     header->write("// They are not auto-generated functions, but must be hand-written\n");
     header->write("\n");
     header->write("//! \\return the packet data pointer from the packet\n");
-    header->write("uint8_t* get" + name + "PacketData(" + support.pointerType + " pkt);\n");
+    header->write("uint8_t* get" + name.toStdString() + "PacketData(" + support.pointerType.toStdString() + " pkt);\n");
     header->write("\n");
     header->write("//! \\return the packet data pointer from the packet, const\n");
-    header->write("const uint8_t* get" + name + "PacketDataConst(const " + support.pointerType + " pkt);\n");
+    header->write("const uint8_t* get" + name.toStdString() + "PacketDataConst(const " + support.pointerType.toStdString() + " pkt);\n");
     header->write("\n");
     header->write("//! Complete a packet after the data have been encoded\n");
-    header->write("void finish" + name + "Packet(" + support.pointerType + " pkt, int size, uint32_t packetID);\n");
+    header->write("void finish" + name.toStdString() + "Packet(" + support.pointerType.toStdString() + " pkt, int size, uint32_t packetID);\n");
     header->write("\n");
     header->write("//! \\return the size of a packet from the packet header\n");
-    header->write("int get" + name + "PacketSize(const " + support.pointerType + " pkt);\n");
+    header->write("int get" + name.toStdString() + "PacketSize(const " + support.pointerType.toStdString() + " pkt);\n");
     header->write("\n");
     header->write("//! \\return the ID of a packet from the packet header\n");
-    header->write("uint32_t get" + name + "PacketID(const " + support.pointerType + " pkt);\n");
+    header->write("uint32_t get" + name.toStdString() + "PacketID(const " + support.pointerType.toStdString() + " pkt);\n");
     header->write("\n");
 
     header->flush();
@@ -717,7 +717,7 @@ void ProtocolParser::finishProtocolHeader(void)
  */
 void ProtocolParser::outputLongComment(ProtocolFile& file, const QString& prefix, const QString& text)
 {
-    file.write(outputLongComment(prefix, text));
+    file.write(outputLongComment(prefix, text).toStdString());
 
 }// ProtocolParser::outputLongComment
 
@@ -737,13 +737,27 @@ QString ProtocolParser::outputLongComment(const QString& prefix, const QString& 
 
 
 /*!
+ * Output a long string of text which should be wrapped at 80 characters.
+ * \param prefix precedes each line (for example "//" or " *"
+ * \param text is the long text string to output. If text is empty
+ *        nothing is output.
+ * \return The formatted text string.
+ */
+std::string ProtocolParser::outputLongComment(const std::string& prefix, const std::string& text)
+{
+    return reflowComment(text, prefix, 80);
+
+}// ProtocolParser::outputLongComment
+
+
+/*!
  * Get a correctly reflowed comment from a DOM
  * \param e is the DOM to get the comment from
  * \return the correctly reflowed comment, which could be empty
  */
 QString ProtocolParser::getComment(const XMLElement* e)
 {
-    return reflowComment(e->Attribute("comment"));
+    return reflowComment(QString::fromStdString(e->Attribute("comment")));
 }
 
 /*!
@@ -848,6 +862,19 @@ QString ProtocolParser::reflowComment(QString text, QString prefix, int charlimi
     }// for all blocks
 
     return output;
+}
+
+
+/*!
+ * Take a comment line which may have some unusual spaces and line feeds that
+ * came from the xml formatting and reflow it for our needs.
+ * \param text is the raw comment from the xml.
+ * \param prefix precedes each line (for example "//" or " *"
+ * \return the reflowed comment.
+ */
+std::string ProtocolParser::reflowComment(const std::string& text, const std::string& prefix, int charlimit)
+{
+    return reflowComment(QString::fromStdString(text), QString::fromStdString(prefix), charlimit).toStdString();
 }
 
 
@@ -998,7 +1025,7 @@ void ProtocolParser::outputIncludes(QString parent, ProtocolFile& file, const XM
             }// for all attributes
 
             if(!include.isEmpty())
-                file.writeIncludeDirective(include, comment, global);
+                file.writeIncludeDirective(include.toStdString(), comment.toStdString(), global);
 
         }// if element is an include
 
@@ -1018,7 +1045,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
     {
         if(structures.at(i)->typeName == typeName)
         {
-            return structures.at(i)->getDefinitionFileName();
+            return QString::fromStdString(structures.at(i)->getDefinitionFileName());
         }
     }
 
@@ -1026,7 +1053,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
     {
         if(packets.at(i)->typeName == typeName)
         {
-            return packets.at(i)->getDefinitionFileName();
+            return QString::fromStdString(packets.at(i)->getDefinitionFileName());
         }
     }
 
@@ -1034,7 +1061,7 @@ QString ProtocolParser::lookUpIncludeName(const QString& typeName) const
     {
         if((globalEnums.at(i)->getName() == typeName) || globalEnums.at(i)->isEnumerationValue(typeName))
         {
-            return globalEnums.at(i)->getHeaderFileName();
+            return QString::fromStdString(globalEnums.at(i)->getHeaderFileName());
         }
     }
 
@@ -1216,13 +1243,13 @@ void ProtocolParser::getStructureSubDocumentationDetails(QString typeName, QList
  */
 void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 {
-    QString basepath = support.outputpath;
+    std::string basepath = support.outputpath;
 
     if (!docsDir.isEmpty())
-        basepath = docsDir;
+        basepath = docsDir.toStdString();
 
-    QString filename = basepath + name + ".markdown";
-    QString filecontents = "\n\n";
+    std::string filename = basepath + name.toStdString() + ".markdown";
+    std::string filecontents = "\n\n";
     ProtocolFile file(filename, support, false);
 
     QStringList packetids;
@@ -1234,18 +1261,18 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     if (hasAboutSection())
     {
         if(title.isEmpty())
-            filecontents += "# " + name + " Protocol\n\n";
+            filecontents += "# " + name.toStdString() + " Protocol\n\n";
         else
-            filecontents += "# " + title + "\n\n";
+            filecontents += "# " + title.toStdString() + "\n\n";
 
         if(!comment.isEmpty())
-            filecontents += outputLongComment("", comment) + "\n\n";
+            filecontents += outputLongComment("", comment.toStdString()) + "\n\n";
 
         if(!version.isEmpty())
-            filecontents += title + " Protocol version is " + version + ".\n\n";
+            filecontents += title.toStdString() + " Protocol version is " + version.toStdString() + ".\n\n";
 
         if(!api.isEmpty())
-            filecontents += title + " Protocol API is " + api + ".\n\n";
+            filecontents += title.toStdString() + " Protocol API is " + api.toStdString() + ".\n\n";
 
     }
 
@@ -1258,24 +1285,24 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
             continue;
 
-        filecontents += alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids);
+        filecontents += alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids).toStdString();
         filecontents += "\n";
     }
 
     if (hasAboutSection())
-        filecontents += getAboutSection(isBigEndian);
+        filecontents += getAboutSection(isBigEndian).toStdString();
 
     // The title attribute, remove any emphasis characters. We only put this
     // out if we have a title page, this preserves the behavior before 2.14,
     // which did not have a title attribute
     if(!titlePage.isEmpty())
-        file.write("Title:" + title.remove("*") + "\n\n");
+        file.write("Title:" + title.toStdString() + "\n\n");
 
     // Specific header-level definitions are required for LaTeX compatibility
     if (latexEnabled)
     {
         file.write("Base Header Level: 1 \n");  // Base header level refers to the HTML output format
-        file.write("LaTeX Header Level: " + QString::number(latexHeader) + " \n"); // LaTeX header level can be set by user
+        file.write("LaTeX Header Level: " + std::to_string(latexHeader) + " \n"); // LaTeX header level can be set by user
         file.write("\n");
     }
 
@@ -1286,9 +1313,9 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         file.write("<style>\n");
 
         if(inlinecss.isEmpty())
-            file.write(getDefaultInlinCSS());
+            file.write(getDefaultInlinCSS().toStdString());
         else
-            file.write(inlinecss);
+            file.write(inlinecss.toStdString());
 
         // Close the style tag
         file.write("</style>\n");
@@ -1298,7 +1325,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     if(tableOfContents)
     {
-        QString temp = getTableOfContents(filecontents);
+        std::string temp = getTableOfContents(QString::fromStdString(filecontents)).toStdString();
         temp += "----------------------------\n\n";
         temp += filecontents;
         filecontents = temp;
@@ -1306,17 +1333,17 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
 
     if(!titlePage.isEmpty())
     {
-        QString temp = titlePage;
+        std::string temp = titlePage.toStdString();
         temp += "\n----------------------------\n\n";
         temp += filecontents;
         filecontents = temp;
     }
 
     // Add html page breaks at each ---
-    filecontents.replace("\n---", "<div class=\"page-break\"></div>\n\n\n---");
+    replace(filecontents, "\n---", "<div class=\"page-break\"></div>\n\n\n---");
 
     // Deal with the degrees symbol, which doesn't render in html
-    filecontents.replace("°", "&deg;");
+    replace(filecontents, "°", "&deg;");
 
     file.write(filecontents);
 
@@ -1326,14 +1353,14 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     QStringList arguments;
 
     // Write html documentation
-    QString htmlfile = basepath + name + ".html";
+    QString htmlfile = QString::fromStdString(basepath) + name + ".html";
 
     // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
     process.setStandardOutputFile(QString(htmlfile));
 
     std::cout << "Writing HTML documentation to " << QDir::toNativeSeparators(htmlfile).toStdString() << std::endl;
 
-    arguments << filename;   // The name of the source file
+    arguments << QString::fromStdString(filename);   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
     process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
     #else
@@ -1344,7 +1371,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
     if (latexEnabled)
     {
         // Write LaTeX documentation
-        QString latexFile = basepath + name + ".tex";
+        QString latexFile = QString::fromStdString(basepath) + name + ".tex";
 
         std::cout << "Writing LaTeX documentation to " << latexFile.toStdString() << "\n";
 
@@ -1353,7 +1380,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, QString inlinecss)
         latexProcess.setStandardOutputFile(latexFile);
 
         arguments.clear();
-        arguments << filename;
+        arguments << QString::fromStdString(filename);
         arguments << "--to=latex";
 
         #if defined(__APPLE__) && defined(__MACH__)
@@ -1470,7 +1497,7 @@ QString ProtocolParser::getAboutSection(bool isBigEndian)
 
     output += "This is the interface control document for data *on the wire*, \
 not data in memory. This document was automatically generated by the [ProtoGen software](https://github.com/billvaglienti/ProtoGen), \
-version " + ProtocolParser::genVersion + ". ProtoGen also generates C source code for doing \
+version " + QString::fromStdString(ProtocolParser::genVersion) + ". ProtoGen also generates C source code for doing \
 most of the work of encoding data from memory to the wire, and vice versa.\n";
     output += "\n";
 
@@ -1684,5 +1711,5 @@ void ProtocolParser::outputDoxygen(void)
 
     // Delete our temporary files
     ProtocolFile::deleteFile("Doxyfile");
-    ProtocolFile::deleteFile(fileName);
+    ProtocolFile::deleteFile(fileName.toStdString());
 }

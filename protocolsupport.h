@@ -3,8 +3,34 @@
 
 #include <QString>
 #include "tinyxml2.h"
+#include <vector>
 
 using namespace tinyxml2;
+
+//! Make a copy of a string that is all lower case.
+std::string toLower(const std::string& text);
+
+//! Make a copy of a string that is all upper case.
+std::string toUpper(const std::string& text);
+
+//! Determine if a string contains a sub string.
+bool contains(const std::string& text, const std::string& test, bool casesensitive = false);
+
+//! Trim white space from a std::string.
+std::string trimm(const std::string& text);
+
+//! Replace all occurences of `find` with `replace`;
+std::string replace(const std::string& text, const std::string& find, const std::string& replace = std::string());
+
+//! Replace first occurence of `find` with `replace`;
+std::string replacefirst(const std::string& text, const std::string& find, const std::string& replace = std::string());
+
+//! Replace last occurence of `find` with `replace`;
+std::string replacelast(const std::string& text, const std::string& find, const std::string& replace = std::string());
+
+//! Convert a string list to a vector of std::strings
+std::vector<std::string> convertStringList(const QStringList& list);
+
 
 class ProtocolSupport
 {
@@ -46,18 +72,18 @@ public:
     bool compare;                   //!< True if the compare function is output for all structures
     bool print;                     //!< True if the textPrint and textRead function is output for all structures
     bool mapEncode;                 //!< True if the mapEncode and mapDecode function is output for all structures
-    QString globalFileName;         //!< File name to be used if a name is not given
-    QString globalVerifyName;       //!< Verify file name to be used if a name is not given
-    QString globalCompareName;      //!< Comparison file name to be used if a name is not given
-    QString globalPrintName;        //!< Print file name to be used if a name is not given
-    QString globalMapName;          //!< Map file name to be used if a name is not given
-    QString outputpath;             //!< path to output files to
+    std::string  globalFileName;    //!< File name to be used if a name is not given
+    std::string  globalVerifyName;  //!< Verify file name to be used if a name is not given
+    std::string  globalCompareName; //!< Comparison file name to be used if a name is not given
+    std::string  globalPrintName;   //!< Print file name to be used if a name is not given
+    std::string  globalMapName;     //!< Map file name to be used if a name is not given
+    std::string  outputpath;        //!< path to output files to
     QString packetStructureSuffix;  //!< Name to use at end of encode/decode Packet structure functions
     QString packetParameterSuffix;  //!< Name to use at end of encode/decode Packet parameter functions
     QString protoName;              //!< Name of the protocol
     QString prefix;                 //!< Prefix name
     QString pointerType;            //!< Packet pointer type - default is "void*"
-    QString licenseText;            //!< License text to be added to each generated file
+    std::string licenseText;        //!< License text to be added to each generated file
 
 protected:
 

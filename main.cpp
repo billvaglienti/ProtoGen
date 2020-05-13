@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName( "Protogen" );
-    QCoreApplication::setApplicationVersion(ProtocolParser::genVersion);
+    QCoreApplication::setApplicationVersion(QString().fromStdString(ProtocolParser::genVersion));
 
     QCommandLineParser argParser;
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
     if (!docs.isEmpty() && !argParser.isSet("no-markdown"))
     {
-        docs =  ProtocolFile::sanitizePath(docs);
+        docs =  QString().fromStdString(ProtocolFile::sanitizePath(docs.toStdString()));
 
         if (QDir(docs).exists() || QDir::current().mkdir(docs))
         {

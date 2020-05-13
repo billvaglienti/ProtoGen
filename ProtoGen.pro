@@ -25,6 +25,7 @@ macx{
     CONFIG   += app_bundle
 }
 
+CONFIG += c++17
 
 #QMAKE_CXXFLAGS += -Wno-unused-parameter
 #QMAKE_CXXFLAGS_WARN_ON = -wall -wno-unused-variable

@@ -125,10 +125,10 @@ public:
     virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
 
     //! Get the name of the header file (if any) holding this enumeration
-    QString getHeaderFileName(void) const {return file;}
+    std::string getHeaderFileName(void) const {return file;}
 
     //! Get the path of the header file (if any) holding this enumeration
-    QString getHeaderFilePath(void) const {return filepath;}
+    std::string getHeaderFilePath(void) const {return filepath;}
 
 protected:
 
@@ -142,10 +142,10 @@ protected:
     bool isMathOperator(QChar op) const;
 
     //! Output file for global enumerations
-    QString file;
+    std::string file;
 
     //! Output file path for global enumerations
-    QString filepath;
+    std::string filepath;
 
     //! Output file for source code file (may not be used)
     QString sourceOutput;

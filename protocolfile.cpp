@@ -1,17 +1,15 @@
 #include "protocolfile.h"
 #include "protocolparser.h"
 #include <QDateTime>
-#include <QFile>
-#include <QFileDevice>
-#include <QDir>
-#include <iostream>
+#include <fstream>
+#include <filesystem>
 
 #ifdef WIN32
 // For access to NTFS permissions
 extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #endif
 
-QString ProtocolFile::tempprefix = "temporarydeleteme_";
+std::string ProtocolFile::tempprefix = "temporarydeleteme_";
 
 /*!
  * Create the file object
@@ -19,7 +17,7 @@ QString ProtocolFile::tempprefix = "temporarydeleteme_";
  * \param supported are the Protocol-wide options.
  * \param temp should be true for this file to be a temp file
  */
-ProtocolFile::ProtocolFile(const QString& moduleName, ProtocolSupport supported, bool temp) :
+ProtocolFile::ProtocolFile(const std::string& moduleName, ProtocolSupport supported, bool temp) :
     support(supported),
     module(moduleName),
     dirty(false),
@@ -42,22 +40,23 @@ ProtocolFile::ProtocolFile(ProtocolSupport supported) :
 {
 }
 
-void ProtocolFile::setModuleNameAndPath(QString name, QString filepath)
+
+void ProtocolFile::setModuleNameAndPath(std::string name, std::string filepath)
 {
-    setModuleNameAndPath(QString(), name, filepath, support.language);
+    setModuleNameAndPath(std::string(), name, filepath, support.language);
 }
 
-void ProtocolFile::setModuleNameAndPath(QString name, QString filepath, ProtocolSupport::LanguageType languageoverride)
+void ProtocolFile::setModuleNameAndPath(std::string name, std::string filepath, ProtocolSupport::LanguageType languageoverride)
 {
-    setModuleNameAndPath(QString(), name, filepath, languageoverride);
+    setModuleNameAndPath(std::string(), name, filepath, languageoverride);
 }
 
-void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString filepath)
+void ProtocolFile::setModuleNameAndPath(std::string prefix, std::string name, std::string filepath)
 {
     setModuleNameAndPath(prefix, name, filepath, support.language);
 }
 
-void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString filepath, ProtocolSupport::LanguageType languageoverride)
+void ProtocolFile::setModuleNameAndPath(std::string prefix, std::string name, std::string filepath, ProtocolSupport::LanguageType languageoverride)
 {
     // Remove any contents we currently have
     clear();
@@ -81,13 +80,11 @@ void ProtocolFile::setModuleNameAndPath(QString prefix, QString name, QString fi
 }
 
 
-
-
 /*!
  * Get the extension information for this name, and remove it from the name.
  * \param name has its extension (if any) recorded and removed
  */
-void ProtocolFile::extractExtension(QString& name)
+void ProtocolFile::extractExtension(std::string& name)
 {
     extractExtension(name, extension);
 }
@@ -98,17 +95,17 @@ void ProtocolFile::extractExtension(QString& name)
  * \param name has its extension (if any) removed
  * \param extension receives the extension
  */
-void ProtocolFile::extractExtension(QString& name, QString& extension)
+void ProtocolFile::extractExtension(std::string& name, std::string& extension)
 {
     // Note that "." as the first character is not an extension, it indicates a hidden file
-    int index = name.lastIndexOf(".");
-    if(index >= 1)
+    std::size_t index = name.rfind(".");
+    if((index >= 1) && (index < name.size()))
     {
         // The extension, including the "."
-        extension = name.right(name.size() - index);
+        extension = name.substr(index);
 
         // The name without the extension
-        name = name.left(index);
+        name = name.erase(index);
     }
     else
         extension.clear();
@@ -126,40 +123,38 @@ void ProtocolFile::extractExtension(QString& name, QString& extension)
  *        absolute path information, in which case the filepath will be
  *        replaced with the name path
  */
-void ProtocolFile::separateModuleNameAndPath(QString& name, QString& filepath)
+void ProtocolFile::separateModuleNameAndPath(std::string& name, std::string& filepath)
 {
     // Handle the case where the file includes "./" to reference the current working
     // directory. We just remove this as its not needed.
-    if(name.startsWith("./"))
-        name.remove("./");
-    else if(name.startsWith(".\\"))
-        name.remove(".\\");
+    if((name.find("./") == 0) || (name.find(".\\") == 0))
+        name.erase(0, 2);
 
     // Does the name include some path information?
-    int index = name.lastIndexOf("/");
-    if(index < 0)
-        index = name.lastIndexOf("\\");
+    std::size_t index = name.rfind("/");
+    if(index >= name.size())
+        index = name.rfind("\\");
 
-    if(index >= 0)
+    if(index < name.size())
     {
         // The path information in the name (including the path separator)
-        QString namepath = name.left(index+1);
+        std::string namepath = name.substr(0, index+1);
 
         // In case the user gave path information in the name which
         // references a global location, ignore the filepath (i.e. user
         // can override the working directory)
-        if(namepath.contains(":") || namepath.startsWith('\\') || namepath.startsWith('/'))
+        if((namepath.find(":") < namepath.size()) || (namepath.find('\\')==0) || (namepath.find('/')==0))
             filepath = namepath;
         else
         {
-            if(filepath.isEmpty())
+            if(filepath.empty())
                 filepath += ".";
 
             filepath += "/" + namepath;
         }
 
         // The name without the path data
-        name = name.right(name.size() - index - 1);
+        name = name.erase(0, index+1);
 
     }// If name contains a path separator
 
@@ -185,7 +180,7 @@ void ProtocolFile::clear()
  * mark the file as dirty, which will cause it to be flushed to disk on destruction
  * \param text is the information to append
  */
-void ProtocolFile::write(const QString& text)
+void ProtocolFile::write(const std::string& text)
 {
     contents += text;
     dirty = true;
@@ -199,9 +194,9 @@ void ProtocolFile::write(const QString& text)
  * appear in the file contents.
  * \param text is the information to append
  */
-void ProtocolFile::writeOnce(const QString& text)
+void ProtocolFile::writeOnce(const std::string& text)
 {
-    if(!contents.contains(text))
+    if(contents.find(text) >= contents.size())
     {
         write(text);
     }
@@ -213,9 +208,9 @@ void ProtocolFile::writeOnce(const QString& text)
  * using quotes, not global brackes
  * \param list is the list of module names that need to be included
  */
-void ProtocolFile::writeIncludeDirectives(const QStringList& list)
+void ProtocolFile::writeIncludeDirectives(const std::vector<std::string>& list)
 {
-    for(int i = 0; i < list.count(); i++)
+    for(std::size_t i = 0; i < list.size(); i++)
         writeIncludeDirective(list.at(i));
 }
 
@@ -230,15 +225,15 @@ void ProtocolFile::writeIncludeDirectives(const QStringList& list)
  * \param autoextensions should be true to automatically append ".h" to the
  *        include name if it is not already included
  */
-void ProtocolFile::writeIncludeDirective(const QString& include, const QString& comment, bool global, bool autoextension)
+void ProtocolFile::writeIncludeDirective(const std::string& include, const std::string& comment, bool global, bool autoextension)
 {
-    if(include.isEmpty())
+    if(include.empty())
         return;
 
-    QString directive = include.trimmed();
+    std::string directive = trimm(include);
 
     // Technically things other than .h* could be included, but not by ProtoGen
-    if(!directive.contains(".h") && autoextension)
+    if(!contains(directive, ".h") && autoextension)
         directive += ".h";
 
     // Don't include ourselves
@@ -252,21 +247,21 @@ void ProtocolFile::writeIncludeDirective(const QString& include, const QString& 
         directive = "#include <" + directive + ">";
 
     // See if this include directive is already present, in which case we don't need to add it again
-    if(contents.contains(directive))
+    if(contains(contents, directive, true))
         return;
 
     // Add the comment if there is one
-    if(comment.isEmpty())
+    if(comment.empty())
         directive += "\n";
     else
         directive += "\t// " + comment + "\n";
 
     // We try to group all the #includes together
-    int index = contents.lastIndexOf("#include");
-    if(index >= 0)
+    std::size_t index = contents.rfind("#include");
+    if(index < contents.size())
     {
         // Find the end of the line
-        index = contents.indexOf("\n", index);
+        index = contents.find("\n", index);
         if(index >= 0)
         {
             contents.insert(index+1, directive);
@@ -299,16 +294,56 @@ void ProtocolFile::makeLineSeparator(void)
  * between the current contents and anything that is added after this function
  * \param contents is the string whose ending is adjusted
  */
-void ProtocolFile::makeLineSeparator(QString& contents)
+void ProtocolFile::makeLineSeparator(std::string& contents)
 {
     // Make sure that there are exactly two line terminators at the end of the string
-    int last = contents.size() - 1;
+    int last = ((int)contents.size()) - 1;
     int lastChar = last;
 
     if(last < 0)
         return;
 
-    // Scroll backwards until we have cleared the linefeeds and last is pointing at the last non-linefeed character
+    // Scroll backwards until we have cleared the linefeeds and lastChar is pointing at the last non-linefeed character
+    while(lastChar >= 0)
+    {
+        if(contents.at(lastChar) == '\n')
+            lastChar--;
+        else
+            break;
+    }
+
+    // Three cases:
+    // 1) Too many linefeeds, chop some off
+    // 2) Just the right amount of line feeds, change nothing
+    // 3) Too few linefeeds, add some
+    if(last > lastChar + 2)
+        contents.erase(lastChar + 3);
+    else
+    {
+        while(last < lastChar + 2)
+        {
+            contents += "\n";
+            last++;
+        }
+    }
+}
+
+
+/*!
+ * Make sure the string data end such that there is exactly one blank line
+ * between the current contents and anything that is added after this function
+ * \param contents is the string whose ending is adjusted
+ */
+void ProtocolFile::makeLineSeparator(QString& contents)
+{
+    // Make sure that there are exactly two line terminators at the end of the string
+    int last = ((int)contents.size()) - 1;
+    int lastChar = last;
+
+    if(last < 0)
+        return;
+
+    // Scroll backwards until we have cleared the linefeeds and lastChar is pointing at the last non-linefeed character
     while(lastChar >= 0)
     {
         if(contents.at(lastChar) == '\n')
@@ -339,27 +374,27 @@ void ProtocolFile::makeLineSeparator(QString& contents)
  * \param path is the path to sanitize
  * \return the sanitized path
  */
-QString ProtocolFile::sanitizePath(const QString& path)
+std::string ProtocolFile::sanitizePath(const std::string& path)
 {
-    QString relative;
-    QString absolute;
+    std::error_code ec;
 
-    // Empty paths are the simplest
-    if(path.isEmpty())
-        return relative;
+    // Empty paths are the simplest. Also, special handling for resource path
+    if(path.empty() || (path.at(0) == ':'))
+        return path;
 
-    // Absolute path including the mount point
-    absolute = QDir(path).absolutePath();
+    // Absolute and relative versions of path
+    std::string absolute = std::filesystem::absolute(path, ec).string();
+    std::string relative = std::filesystem::relative(path, ec).string();
 
     // Make sure it has a trailing separator
-    if(!absolute.endsWith('/') && !absolute.endsWith('\\'))
+    if(!((absolute.back() == '/') || (absolute.back() == '\\')))
         absolute += '/';
 
-    // Make the result relative to the current working directory
-    relative = QDir::current().relativeFilePath(absolute + "randomfilename.txt").remove("randomfilename.txt");
+    if(!((relative.back() == '/') || (relative.back() == '\\')))
+        relative += '/';
 
     // Return the shorter of the two paths
-    if(relative.count() > absolute.count())
+    if(relative.size() > absolute.size())
         return absolute;
     else
         return relative;
@@ -370,11 +405,12 @@ QString ProtocolFile::sanitizePath(const QString& path)
  * delete a specific file. The file will be deleted even if it is read-only.
  * \param fileName identifies the file relative to the current working directory
  */
-void ProtocolFile::deleteFile(const QString& fileName)
+void ProtocolFile::deleteFile(const std::string& fileName)
 {
+    std::error_code ec;
+
     makeFileWritable(fileName);
-    if(QFile::exists(fileName))
-        QFile::remove(fileName);
+    std::filesystem::remove(fileName, ec);
 }
 
 
@@ -384,14 +420,16 @@ void ProtocolFile::deleteFile(const QString& fileName)
  * \param oldName is the old name of the file
  * \param newName is the new name of the file
  */
-void ProtocolFile::renameFile(const QString& oldName, const QString& newName)
+void ProtocolFile::renameFile(const std::string& oldName, const std::string& newName)
 {
+    std::error_code ec;
+
     // Make sure the new file does not exist
     deleteFile(newName);
 
     // Now make the old name become the new name
     makeFileWritable(oldName);
-    QFile::rename(oldName, newName);
+    std::filesystem::rename(oldName, newName, ec);
 
 }// ProtocolFile::renameFile
 
@@ -400,27 +438,12 @@ void ProtocolFile::renameFile(const QString& oldName, const QString& newName)
  * Make a specific file writable.
  * \param fileName identifies the file relative to the current working directory
  */
-void ProtocolFile::makeFileWritable(const QString& fileName)
+void ProtocolFile::makeFileWritable(const std::string& fileName)
 {
-    #ifdef WIN32
-    // We want to work with permissions...
-    qt_ntfs_permission_lookup++;
-    #endif
+    std::error_code ec;
 
-    // Trying to delete the file directly can fail if we don't have permission
-    QFileDevice::Permissions per;
-    if(QFile::exists(fileName))
-    {
-        per = QFile::permissions(fileName);
-        per |= QFileDevice::ReadUser;
-        per |= QFileDevice::WriteUser;
-        QFile::setPermissions(fileName, per);
-    }
-
-    #ifdef WIN32
-    // Done working with permissions
-    qt_ntfs_permission_lookup--;
-    #endif
+    // Make sure the file has owner read and write permissiosn
+    std::filesystem::permissions(fileName, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write, std::filesystem::perm_options::add, ec);
 }
 
 
@@ -429,26 +452,37 @@ void ProtocolFile::makeFileWritable(const QString& fileName)
  * \param path is the path to the files
  * \param fileName is the real file name, which does not include the temporary prefix
  */
-void ProtocolFile::copyTemporaryFile(const QString& path, const QString& fileName)
+void ProtocolFile::copyTemporaryFile(const std::string& path, const std::string& fileName)
 {
     bool equal = false;
-    QString tempFileName = path + tempprefix + fileName;
-    QString permFileName = path + fileName;
+    std::string tempFileName = path + tempprefix + fileName;
+    std::string permFileName = path + fileName;
 
-    QFile tempfile(tempFileName);
-    QFile permfile(permFileName);
+    // Open the temporary file
+    std::fstream tempfile(tempFileName, std::ios_base::in);
 
     // Its possible we already copied and deleted the file, so this isn't an error
-    if(!tempfile.open(QIODevice::ReadOnly | QIODevice::Text))
+    if(!tempfile.is_open())
         return;
 
+    // Open the permanent file
+    std::fstream permfile(permFileName, std::ios_base::in);
+
     // Check if the files are the same
-    if(permfile.open(QIODevice::ReadOnly | QIODevice::Text))
-        equal = tempfile.readAll() == permfile.readAll();
+    if(permfile.is_open())
+    {
+        // Real all file bytes into a string, notice parentheses to deal with "most vexing parse problem"
+        std::string tempdata((std::istreambuf_iterator<char>(tempfile)), std::istreambuf_iterator<char>());
+        std::string permdata((std::istreambuf_iterator<char>(permfile)), std::istreambuf_iterator<char>());
+
+        if(tempdata == permdata)
+            equal = true;
+
+        permfile.close();
+    }
 
     // Done with the file contents
     tempfile.close();
-    permfile.close();
 
     if(equal)
     {
@@ -470,7 +504,7 @@ void ProtocolFile::copyTemporaryFile(const QString& path, const QString& fileNam
  * delete both the .c and .h file. The files will be deleted even if they are read-only.
  * \param moduleName gives the file name without extension.
  */
-void ProtocolFile::deleteModule(const QString& moduleName)
+void ProtocolFile::deleteModule(const std::string& moduleName)
 {
     deleteFile(moduleName + ".cpp");
     deleteFile(moduleName + ".c");
@@ -491,7 +525,7 @@ ProtocolFile::~ProtocolFile()
  * \return the the correct on disk name. This name will include the temporary
  *         prefix if needed
  */
-QString ProtocolFile::fileNameAndPathOnDisk(void) const
+std::string ProtocolFile::fileNameAndPathOnDisk(void) const
 {
     if(temporary)
         return path + tempprefix+fileName();
@@ -507,30 +541,33 @@ QString ProtocolFile::fileNameAndPathOnDisk(void) const
 bool ProtocolFile::flush(void)
 {
     // Nothing to write
-    if(!dirty || contents.isEmpty())
+    if(!dirty || contents.empty())
         return false;
 
     // Got to have a name
-    if(module.isEmpty())
+    if(module.empty())
     {
         std::cerr << "Empty module name when writing protocol file" << std::endl;
         return false;
     }
 
-    QFile file(fileNameAndPathOnDisk());
+    std::error_code ec;
 
     // Make sure the path exists
-    if(!path.isEmpty())
-        QDir::current().mkpath(path);
+    if(!path.empty())
+        std::filesystem::create_directory(path, ec);
 
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    // Open the file for write
+    std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);
+
+    if(!file.is_open())
     {
-        std::cerr << "error: failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "error: failed to open " << fileName() << std::endl;
         return false;
     }
 
     // The actual interesting contents
-    file.write(qUtf8Printable(contents));
+    file << contents;
 
     // And the file
     file.close();
@@ -548,10 +585,10 @@ bool ProtocolFile::flush(void)
  * if the file comment has already been set.
  * \param comment is the file comment, which will be reflowed to 80 characters.
  */
-void ProtocolHeaderFile::setFileComment(const QString& comment)
+void ProtocolHeaderFile::setFileComment(const std::string& comment)
 {
-    QString match;
-    QString filecomment;
+    std::string match;
+    std::string filecomment;
 
     // This is the comment block as it is without a file comment
     match += "/*!\n";
@@ -564,7 +601,7 @@ void ProtocolHeaderFile::setFileComment(const QString& comment)
     filecomment += ProtocolParser::reflowComment(comment, " * ", 80);
     filecomment += " */\n";
 
-    contents.replace(match, filecomment);
+    contents = replace(contents, match, filecomment);
 
 }// ProtocolHeaderFile::setFileComment
 
@@ -573,12 +610,12 @@ void ProtocolHeaderFile::setFileComment(const QString& comment)
  * Get the extension information for this name, and remove it from the name.
  * \param name has its extension (if any) logged and removed
  */
-void ProtocolHeaderFile::extractExtension(QString& name)
+void ProtocolHeaderFile::extractExtension(std::string& name)
 {
     ProtocolFile::extractExtension(name);
 
     // A head file extension must start with ".h" (.h, .hpp, .hxx, etc.)
-    if(!extension.contains(".h", Qt::CaseInsensitive))
+    if(!contains(extension, ".h"))
         extension = ".h";
 
 }// ProtocolHeaderFile::extractExtension
@@ -591,33 +628,36 @@ void ProtocolHeaderFile::extractExtension(QString& name)
 bool ProtocolHeaderFile::flush(void)
 {
     // Nothing to write
-    if(!dirty || contents.isEmpty())
+    if(!dirty || contents.empty())
         return false;
 
     // Got to have a name
-    if(module.isEmpty())
+    if(module.empty())
     {
         std::cerr << "Empty module name when writing protocol header file" << std::endl;
         return false;
     }
 
-    QFile file(fileNameAndPathOnDisk());
+    std::error_code ec;
 
     // Make sure the path exists
-    if(!path.isEmpty())
-        QDir::current().mkpath(path);
+    if(!path.empty())
+        std::filesystem::create_directory(path, ec);
 
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    // Open the file for write
+    std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);
+
+    if(!file.is_open())
     {
-        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName() << std::endl;
         return false;
     }
 
     // The actual interesting contents
-    file.write(qUtf8Printable(contents));
+    file << contents;
 
     // close the file out
-    file.write(qUtf8Printable(getClosingStatement()));
+    file << getClosingStatement();
 
     // And the file
     file.close();
@@ -633,9 +673,9 @@ bool ProtocolHeaderFile::flush(void)
 /*!
  * \return the text that is appended to close a header file
  */
-QString ProtocolHeaderFile::getClosingStatement(void)
+std::string ProtocolHeaderFile::getClosingStatement(void)
 {
-    QString close;
+    std::string close;
 
     if(support.language == ProtocolSupport::c_language)
     {
@@ -646,7 +686,7 @@ QString ProtocolHeaderFile::getClosingStatement(void)
     }
 
     // close the opening #ifdef
-    close += "#endif // _" + module.toUpper() + "_H\n";
+    close += "#endif // _" + toUpper(module) + "_H\n";
 
     return close;
 }
@@ -659,24 +699,28 @@ QString ProtocolHeaderFile::getClosingStatement(void)
  */
 void ProtocolHeaderFile::prepareToAppend(void)
 {    
-    QFile file(fileNameAndPathOnDisk());
+    std::error_code ec;
 
-    if(file.exists())
+    if(std::filesystem::exists(fileNameAndPathOnDisk(), ec))
     {
-        if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        std::fstream file(fileNameAndPathOnDisk(), std::ios_base::in);
+
+        if(!file.is_open())
         {
-            std::cerr << "Failed to open " << fileName().toStdString() << " for append" << std::endl;
-            return ;
+            std::cerr << "Failed to open " << fileName() << " for append" << std::endl;
+            return;
         }
 
         // Read the entire file, and store as existing text string data
-        contents = file.readAll();
+        contents = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         // Close the file, we don't need it anymore
         file.close();
 
         // Remove the trailing closing statement from the file so we can append further stuff
-        contents.remove(getClosingStatement());
+        size_t index = contents.rfind(getClosingStatement());
+        if(index < contents.size())
+            contents.erase(index);
 
         // we are appending
         appending = true;
@@ -687,18 +731,18 @@ void ProtocolHeaderFile::prepareToAppend(void)
         // If this file does not yet exist, then put the stuff on top that is always included
 
         // Tag for what generated the file
-        write(qUtf8Printable("// " + fileName() + " was generated by ProtoGen version " + ProtocolParser::genVersion + "\n\n"));
+        write("// " + fileName() + " was generated by ProtoGen version " + ProtocolParser::genVersion + "\n\n");
 
-        if (!support.licenseText.isEmpty())
+        if (!support.licenseText.empty())
         {
             write(support.licenseText);
             makeLineSeparator();
         }
 
         // The opening #ifdef
-        QString define = "_" + module.toUpper() + "_H";
-        write(qUtf8Printable("#ifndef " + define + "\n"));
-        write(qUtf8Printable("#define " + define + "\n"));
+        std::string define = "_" + toUpper(module) + "_H";
+        write("#ifndef " + define + "\n");
+        write("#define " + define + "\n");
 
         if(support.language == ProtocolSupport::c_language)
         {
@@ -726,7 +770,7 @@ void ProtocolHeaderFile::prepareToAppend(void)
  * Get the extension information for this name, and remove it from the name.
  * \param name has its extension (if any) logged and removed
  */
-void ProtocolSourceFile::extractExtension(QString& name)
+void ProtocolSourceFile::extractExtension(std::string& name)
 {
     ProtocolFile::extractExtension(name);
 
@@ -735,7 +779,7 @@ void ProtocolSourceFile::extractExtension(QString& name)
     else
     {
         // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
-        if(!extension.contains(".c", Qt::CaseInsensitive))
+        if(!contains(extension, ".c", Qt::CaseInsensitive))
             extension = ".c";
     }
 
@@ -749,33 +793,36 @@ void ProtocolSourceFile::extractExtension(QString& name)
 bool ProtocolSourceFile::flush(void)
 {
     // Nothing to write
-    if(!dirty || contents.isEmpty())
+    if(!dirty || contents.empty())
         return false;
 
     // Got to have a name
-    if(module.isEmpty())
+    if(module.empty())
     {
         std::cerr << "Empty module name when writing protocol source file" << std::endl;
         return false;
     }
 
-    QFile file(fileNameAndPathOnDisk());
+    std::error_code ec;
 
     // Make sure the path exists
-    if(!path.isEmpty())
-        QDir::current().mkpath(path);
+    if(!path.empty())
+        std::filesystem::create_directory(path, ec);
 
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    // Open the file for write
+    std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);
+
+    if(!file.is_open())
     {
-        std::cerr << "Failed to open " << fileName().toStdString() << std::endl;
+        std::cerr << "Failed to open " << fileName() << std::endl;
         return false;
     }
 
     // The actual interesting contents
-    file.write(qUtf8Printable(contents));
+    file << contents;
 
-    // Close it out
-    file.write(qUtf8Printable(getClosingStatement()));
+    // close the file out
+    file << getClosingStatement();
 
     // And the file
     file.close();
@@ -791,9 +838,9 @@ bool ProtocolSourceFile::flush(void)
 /*!
  * \return the text that is appended to close a source file
  */
-QString ProtocolSourceFile::getClosingStatement(void)
+std::string ProtocolSourceFile::getClosingStatement(void)
 {
-    QString close;
+    std::string close;
 
     // Mark the end of the file (so we can find it later if we append)
     close += "// end of " + fileName() + "\n";
@@ -809,24 +856,28 @@ QString ProtocolSourceFile::getClosingStatement(void)
  */
 void ProtocolSourceFile::prepareToAppend(void)
 {
-    QFile file(fileNameAndPathOnDisk());
+    std::error_code ec;
 
-    if(file.exists())
+    if(std::filesystem::exists(fileNameAndPathOnDisk(), ec))
     {
-        if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        std::fstream file(fileNameAndPathOnDisk(), std::ios_base::in);
+
+        if(!file.is_open())
         {
-            std::cerr << "Failed to open " << file.fileName().toStdString() << " for append" << std::endl;
-            return ;
+            std::cerr << "Failed to open " << fileName() << " for append" << std::endl;
+            return;
         }
 
-        // Read the entire file, and store as existing text string data
-        contents = file.readAll();
+        // Read the entire file, and store as existing text string data 
+        contents = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         // Close the file, we don't need it anymore
         file.close();
 
         // Remove the trailing closing statement from the file so we can append further stuff
-        contents.remove(getClosingStatement());
+        size_t index = contents.rfind(getClosingStatement());
+        if(index < contents.size())
+            contents.erase(index);
 
         // we are appending
         appending = true;
@@ -837,16 +888,16 @@ void ProtocolSourceFile::prepareToAppend(void)
         // If this file does not yet exist, then put the stuff on top that is always included
 
         // Tag for what generated the file
-        write(qUtf8Printable("// " + fileName() + " was generated by ProtoGen version " + ProtocolParser::genVersion + "\n\n"));
+        write("// " + fileName() + " was generated by ProtoGen version " + ProtocolParser::genVersion + "\n\n");
 
-        if (!support.licenseText.isEmpty())
+        if (!support.licenseText.empty())
         {
             write(support.licenseText);
             makeLineSeparator();
         }
 
         // The source file includes the header
-        write(qUtf8Printable("#include \"" + module + ".h\"\n"));
+        write("#include \"" + module + ".h\"\n");
     }
 
 }// ProtocolSourceFile::prepareToAppend

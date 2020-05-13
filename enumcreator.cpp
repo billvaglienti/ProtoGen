@@ -204,31 +204,31 @@ void EnumCreator::parse(void)
     lookup = ProtocolParser::isFieldSet("lookup", map);
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
     lookupComment = ProtocolParser::isFieldSet("lookupComment", map);
-    file = ProtocolParser::getAttribute("file", map);
+    file = ProtocolParser::getAttribute("file", map).toStdString();
 
     // The file attribute is only supported on global enumerations
     if(isglobal)
     {
-        QString extension;
+        std::string extension;
         filepath = support.outputpath;
 
         // If no file information is provided we use the global header name
-        if(file.isEmpty())
-            file = support.protoName + "Protocol";
+        if(file.empty())
+            file = support.protoName.toStdString() + "Protocol";
 
         // This will separate all the path information
         ProtocolFile::separateModuleNameAndPath(file, filepath);
 
         // Make sure the extension is correct (.h, .hpp, .hxx, etc)
         ProtocolFile::extractExtension(file, extension);
-        if(!extension.contains(".h"))
+        if(!contains(extension, ".h"))
             extension = ".h";
 
         // Now put the (corrected) extension back
         file += extension;
 
     }
-    else if(!file.isEmpty())
+    else if(!file.empty())
     {
         file.clear();
         emitWarning("Enumeration must be global to support file attribute");

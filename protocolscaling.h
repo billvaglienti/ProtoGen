@@ -15,7 +15,7 @@
 #include "protocolfile.h"
 #include "protocolsupport.h"
 #include <QList>
-#include <QStringList>
+#include <string>
 
 class ProtocolScaling
 {
@@ -24,7 +24,7 @@ public:
     ProtocolScaling(ProtocolSupport sup);
 
     //! Perform the generation, writing out the files
-    bool generate(QStringList& fileNameList, QStringList& filePathList);
+    bool generate(std::vector<std::string>& fileNameList, std::vector<std::string>& filePathList);
 
 protected:
 
@@ -111,16 +111,16 @@ protected:
     encodedtypes_t createEncodedType(bool issigned, int length) const;
 
     //! Return the name in code of this type
-    QString typeName(inmemorytypes_t type) const;
+    std::string typeName(inmemorytypes_t type) const;
 
     //! Return the name in code of this type
-    QString typeName(encodedtypes_t type) const;
+    std::string typeName(encodedtypes_t type) const;
 
     //! Return the name in function signature of this type
-    QString typeSigName(inmemorytypes_t type) const;
+    std::string typeSigName(inmemorytypes_t type) const;
 
     //! Return the name in function signature of this type
-    QString typeSigName(encodedtypes_t type) const;
+    std::string typeSigName(encodedtypes_t type) const;
 
     //! Determine if type is supported by this protocol
     bool isTypeSupported(inmemorytypes_t type) const;
@@ -138,25 +138,25 @@ protected:
     bool generateEncodeSource(void);
 
     //! Generate the one line brief comment for the encode function
-    QString briefEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string briefEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full comment for the encode function
-    QString fullEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the encode function signature
-    QString encodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string encodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full encode function
-    QString fullEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full encode function for integer scaling
-    QString fullBitfieldEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullBitfieldEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full encode function for floating point scaling
-    QString fullFloatEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const ;
+    std::string fullFloatEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const ;
 
     //! Generate the full encode function for integer scaling
-    QString fullIntegerEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullIntegerEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the decode header file
     bool generateDecodeHeader(void);
@@ -165,25 +165,25 @@ protected:
     bool generateDecodeSource(void);
 
     //! Generate the one line brief comment for the decode function
-    QString briefDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string briefDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full comment for the decode function
-    QString fullDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the decode function signature
-    QString decodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string decodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full decode function
-    QString fullDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full decode function for integer scaling
-    QString fullBitfieldDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullBitfieldDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Generate the full decode function for floating point scaling
-    QString fullFloatDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const ;
+    std::string fullFloatDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const ;
 
     //! Generate the full decode function for integer scaling
-    QString fullIntegerDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
+    std::string fullIntegerDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const;
 
     //! Header file output object
     ProtocolHeaderFile header;

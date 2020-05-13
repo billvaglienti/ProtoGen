@@ -11,30 +11,30 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
 
     if(support.int64)
     {
-        typeNames    <<"uint64_t"<<"int64_t"<<"uint64_t"<<"int64_t"<<"uint64_t"<<"int64_t"<<"uint64_t"<<"int64_t";
-        typeSigNames <<"uint64"  <<"int64"  <<"uint56"  <<"int56"  <<"uint48"  <<"int48"  <<"uint40"  <<"int40"  ;
+        typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");
+        typeSigNames.push_back("uint64"); typeSigNames.push_back("int64"); typeSigNames.push_back("uint56"); typeSigNames.push_back("int56"); typeSigNames.push_back("uint48"); typeSigNames.push_back("int48"); typeSigNames.push_back("uint40"); typeSigNames.push_back("int40");
         typeSizes    <<        8 <<       8 <<        7 <<       7 <<        6 <<       6 <<        5 <<       5 ;
         typeUnsigneds<< true     << false   << true     << false   << true     << false   << true     << false   ;
     }
 
     // These types are always supported
-    typeNames    << "float" <<"uint32_t"<<"int32_t"<<"uint32_t"<<"int32_t"<<"uint16_t"<<"int16_t"<<"uint8_t"<<"int8_t";
-    typeSigNames <<"float32"<<"uint32"  <<"int32"  <<"uint24"  <<"int24"  <<"uint16"  <<"int16"  <<"uint8"  <<"int8";
+    typeNames.push_back("float");       typeNames.push_back("uint32_t");  typeNames.push_back("int32_t");  typeNames.push_back("uint32_t");  typeNames.push_back("int32_t");  typeNames.push_back("uint16_t");  typeNames.push_back("int16_t");  typeNames.push_back("uint8_t");  typeNames.push_back("int8_t");
+    typeSigNames.push_back("float32");  typeSigNames.push_back("uint32"); typeSigNames.push_back("int32"); typeSigNames.push_back("uint24"); typeSigNames.push_back("int24"); typeSigNames.push_back("uint16"); typeSigNames.push_back("int16"); typeSigNames.push_back("uint8"); typeSigNames.push_back("int8");
     typeSizes    <<       4 <<      4   <<       4 <<        3 <<       3 <<        2 <<       2 <<       1 << 1;
     typeUnsigneds<< false   << true     << false   << true     << false   << true     << false   << true    << false;
 
     if(support.float64)
     {
-        typeNames    << "double";
-        typeSigNames <<"float64";
+        typeNames.push_back("double");
+        typeSigNames.push_back("float64");
         typeSizes    <<       8 ;
         typeUnsigneds<< false   ;
     }
 
     if(support.specialFloat)
     {
-        typeNames    <<"float"   <<"float"  ;
-        typeSigNames <<"float24" <<"float16";
+        typeNames.push_back("float");      typeNames.push_back("float");
+        typeSigNames.push_back("float24"); typeSigNames.push_back("float16");
         typeSizes    <<        3 <<       2 ;
         typeUnsigneds<< false    << false   ;
     }
@@ -48,36 +48,36 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
  * \param filePathList is appended with the paths of the generated files
  * \return true if both modules are generated
  */
-bool FieldCoding::generate(QStringList& fileNameList, QStringList& filePathList)
+bool FieldCoding::generate(std::vector<std::string>& fileNameList, std::vector<std::string>& filePathList)
 {
     if(generateEncodeHeader())
     {
-        fileNameList.append(header.fileName());
-        filePathList.append(header.filePath());
+        fileNameList.push_back(header.fileName());
+        filePathList.push_back(header.filePath());
     }
     else
         return false;
 
     if(generateEncodeSource())
     {
-        fileNameList.append(source.fileName());
-        filePathList.append(source.filePath());
+        fileNameList.push_back(source.fileName());
+        filePathList.push_back(source.filePath());
     }
     else
         return false;
 
     if(generateDecodeHeader())
     {
-        fileNameList.append(header.fileName());
-        filePathList.append(header.filePath());
+        fileNameList.push_back(header.fileName());
+        filePathList.push_back(header.filePath());
     }
     else
         return false;
 
     if(generateDecodeSource())
     {
-        fileNameList.append(source.fileName());
-        filePathList.append(source.filePath());
+        fileNameList.push_back(source.fileName());
+        filePathList.push_back(source.filePath());
     }
     else
         return false;
@@ -165,7 +165,7 @@ bool FieldCoding::generateEncodeHeader(void)
         header.write("#ifdef UINT64_MAX\n");
     }
 
-    for(int i = 0; i < typeNames.size(); i++)
+    for(int i = 0; i < (int)typeNames.size(); i++)
     {
         if(support.int64 && (i > 0))
         {
@@ -337,7 +337,7 @@ void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
         source.write("#ifdef UINT64_MAX\n");
     }
 
-    for(int i = 0; i < typeNames.size(); i++)
+    for(int i = 0; i < (int)typeNames.size(); i++)
     {
         if(support.int64 && (i > 0))
         {
@@ -372,26 +372,26 @@ void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
  * \param type is the type enumeration
  * \return the human readable type name
  */
-QString FieldCoding::getReadableTypeName(int type)
+std::string FieldCoding::getReadableTypeName(int type)
 {
-    QString name;
+    std::string name;
 
-    if(typeSigNames[type].contains("float64"))
+    if(contains(typeSigNames.at(type), "float64"))
     {
         name = "8 byte float";
     }
-    else if(typeSigNames[type].contains("float32"))
+    else if(contains(typeSigNames.at(type), "float32"))
     {
         name = "4 byte float";
     }
     else
     {
-        if(typeUnsigneds[type])
+        if(typeUnsigneds.at(type))
             name = "unsigned ";
         else
             name = "signed ";
 
-        name += QString().setNum(typeSizes[type]);
+        name += std::to_string(typeSizes.at(type));
 
         name += " byte integer";
     }
@@ -407,25 +407,25 @@ QString FieldCoding::getReadableTypeName(int type)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-QString FieldCoding::briefEncodeComment(int type, bool bigendian)
+std::string FieldCoding::briefEncodeComment(int type, bool bigendian)
 {
-    QString name = getReadableTypeName(type);
+    std::string name = getReadableTypeName(type);
 
     if(typeSizes[type] == 1)
     {
         // No endian concerns if using only 1 byte
-        return QString("Encode a " + name + " on a byte stream.");
+        return "Encode a " + name + " on a byte stream.";
     }
     else
     {
-        QString endian;
+        std::string endian;
 
         if(bigendian)
             endian = "big";
         else
             endian = "little";
 
-        return QString("Encode a " + name + " on a " + endian + " endian byte stream.");
+        return "Encode a " + name + " on a " + endian + " endian byte stream.";
 
     }// If multi-byte
 
@@ -438,16 +438,16 @@ QString FieldCoding::briefEncodeComment(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-QString FieldCoding::fullEncodeComment(int type, bool bigendian)
+std::string FieldCoding::fullEncodeComment(int type, bool bigendian)
 {
-    QString comment = "/*!\n";
+    std::string comment = "/*!\n";
 
     comment += ProtocolParser::outputLongComment(" *", briefEncodeComment(type, bigendian)) + "\n";
     comment += " * \\param number is the value to encode.\n";
     comment += " * \\param bytes is a pointer to the byte stream which receives the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
-    comment += " *        will be incremented by " + QString().setNum(typeSizes[type]) + " when this function is complete.\n";
-    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+    comment += " *        will be incremented by " + std::to_string(typeSizes[type]) + " when this function is complete.\n";
+    if(contains(typeSigNames[type], "float24") || contains(typeSigNames[type], "float16"))
         comment += " * \\param sigbits is the number of bits to use in the significand of the float.\n";
     comment += " */";
 
@@ -461,9 +461,9 @@ QString FieldCoding::fullEncodeComment(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-QString FieldCoding::encodeSignature(int type, bool bigendian)
+std::string FieldCoding::encodeSignature(int type, bool bigendian)
 {
-    QString endian;
+    std::string endian;
 
     // No endian concerns if using only 1 byte
     if(typeSizes[type] > 1)
@@ -473,14 +473,14 @@ QString FieldCoding::encodeSignature(int type, bool bigendian)
         else
             endian = "Le";
 
-        if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
-            return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index, int sigbits)");
+        if(contains(typeSigNames[type], "float24") || contains(typeSigNames[type], "float16"))
+            return std::string("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index, int sigbits)");
         else
-            return QString("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
+            return std::string("void " + typeSigNames[type] + "To" + endian + "Bytes(" + typeNames[type] + " number, uint8_t* bytes, int* index)");
     }
     else
     {
-        return QString("#define " + typeSigNames[type] + "ToBytes(number, bytes, index) (bytes)[(*(index))++] = ((" + typeNames[type] + ")(number))");
+        return std::string("#define " + typeSigNames[type] + "ToBytes(number, bytes, index) (bytes)[(*(index))++] = ((" + typeNames[type] + ")(number))");
     }
 
 }// FieldCoding::encodeSignature
@@ -492,9 +492,9 @@ QString FieldCoding::encodeSignature(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::fullEncodeFunction(int type, bool bigendian)
+std::string FieldCoding::fullEncodeFunction(int type, bool bigendian)
 {
-    if(typeSigNames[type].contains("float"))
+    if(contains(typeSigNames[type], "float"))
         return floatEncodeFunction(type, bigendian);
     else
         return integerEncodeFunction(type, bigendian);
@@ -507,16 +507,16 @@ QString FieldCoding::fullEncodeFunction(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::floatEncodeFunction(int type, bool bigendian)
+std::string FieldCoding::floatEncodeFunction(int type, bool bigendian)
 {
-    QString endian;
+    std::string endian;
 
     if(bigendian)
         endian = "Be";
     else
         endian = "Le";
 
-    QString function = encodeSignature(type, bigendian) + "\n";
+    std::string function = encodeSignature(type, bigendian) + "\n";
     function += "{\n";
 
     if((typeSizes[type] == 8) || (typeSizes[type] == 4))
@@ -537,7 +537,7 @@ QString FieldCoding::floatEncodeFunction(int type, bool bigendian)
         function += "\n";
         function += "    field.floatValue = number;\n";
         function += "\n";
-        function += "    uint" + QString().setNum(8*typeSizes[type]) + "To" + endian + "Bytes(field.integerValue, bytes, index);\n";
+        function += "    uint" + std::to_string(8*typeSizes[type]) + "To" + endian + "Bytes(field.integerValue, bytes, index);\n";
     }
     else if(typeSizes[type] == 3)
     {
@@ -559,9 +559,9 @@ QString FieldCoding::floatEncodeFunction(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
+std::string FieldCoding::integerEncodeFunction(int type, bool bigendian)
 {
-    QString function = encodeSignature(type, bigendian) + "\n";
+    std::string function = encodeSignature(type, bigendian) + "\n";
     function += "{\n";
 
     if(typeSizes[type] == 1)
@@ -570,10 +570,10 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
     {
         function += "    // increment byte pointer for starting point\n";
 
-        QString opt;
+        std::string opt;
         if(bigendian)
         {
-            function += "    bytes += (*index) + " + QString().setNum(typeSizes[type]-1) + ";\n";
+            function += "    bytes += (*index) + " + std::to_string(typeSizes[type]-1) + ";\n";
             opt = "--";
         }
         else
@@ -598,7 +598,7 @@ QString FieldCoding::integerEncodeFunction(int type, bool bigendian)
         function += "\n";
 
         // Update the index value to the user
-        function += "    (*index) += " + QString().setNum(typeSizes[type]) + ";\n";
+        function += "    (*index) += " + std::to_string(typeSizes[type]) + ";\n";
 
     }// if multi-byte fields
 
@@ -678,7 +678,7 @@ bool FieldCoding::generateDecodeHeader(void)
         header.write("#ifdef UINT64_MAX\n");
     }
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int type = 0; type < (int)typeNames.size(); type++)
     {
         if(support.int64 && (type > 0))
         {
@@ -825,7 +825,7 @@ void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\
         source.write("#ifdef UINT64_MAX\n");
     }
 
-    for(int type = 0; type < typeNames.size(); type++)
+    for(int type = 0; type < (int)typeNames.size(); type++)
     {
         if(support.int64 && (type > 0))
         {
@@ -861,25 +861,25 @@ void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-QString FieldCoding::briefDecodeComment(int type, bool bigendian)
+std::string FieldCoding::briefDecodeComment(int type, bool bigendian)
 {
-    QString name = getReadableTypeName(type);
+    std::string name = getReadableTypeName(type);
 
     if(typeSizes[type] == 1)
     {
         // No endian concerns if using only 1 byte
-        return QString("Decode a " + name + " from a byte stream.");
+        return std::string("Decode a " + name + " from a byte stream.");
     }
     else
     {
-        QString endian;
+        std::string endian;
 
         if(bigendian)
             endian = "big";
         else
             endian = "little";
 
-        return QString("Decode a " + name + " from a " + endian + " endian byte stream.");
+        return std::string("Decode a " + name + " from a " + endian + " endian byte stream.");
 
     }// If multi-byte
 
@@ -892,16 +892,16 @@ QString FieldCoding::briefDecodeComment(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-QString FieldCoding::fullDecodeComment(int type, bool bigendian)
+std::string FieldCoding::fullDecodeComment(int type, bool bigendian)
 {
-    QString comment= ("/*!\n");
+    std::string comment= ("/*!\n");
 
     comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(type, bigendian)) + "\n";
     comment += " * \\param bytes is a pointer to the byte stream which contains the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
-    comment += " *        will be incremented by " + QString().setNum(typeSizes[type]) + " when this function is complete.\n";
+    comment += " *        will be incremented by " + std::to_string(typeSizes[type]) + " when this function is complete.\n";
 
-    if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
+    if(contains(typeSigNames[type], "float24") || contains(typeSigNames[type], "float16"))
         comment += " * \\param sigbits is the number of bits to use in the significand of the float.\n";
 
     comment += " * \\return the number decoded from the byte stream\n";
@@ -916,9 +916,9 @@ QString FieldCoding::fullDecodeComment(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-QString FieldCoding::decodeSignature(int type, bool bigendian)
+std::string FieldCoding::decodeSignature(int type, bool bigendian)
 {
-    QString endian;
+    std::string endian;
 
     // No endian concerns if using only 1 byte
     if(typeSizes[type] > 1)
@@ -928,14 +928,14 @@ QString FieldCoding::decodeSignature(int type, bool bigendian)
         else
             endian = "Le";
 
-        if(typeSigNames[type].contains("float24") || typeSigNames[type].contains("float16"))
-            return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index, int sigbits)");
+        if(contains(typeSigNames[type], "float24") || contains(typeSigNames[type], "float16"))
+            return std::string(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index, int sigbits)");
         else
-            return QString(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
+            return std::string(typeNames[type] + " " + typeSigNames[type] + "From" + endian + "Bytes(const uint8_t* bytes, int* index)");
     }
     else
     {
-        return QString("#define " + typeSigNames[type] + "FromBytes(bytes, index) (" + typeNames[type] + ")((bytes)[(*(index))++])");
+        return std::string("#define " + typeSigNames[type] + "FromBytes(bytes, index) (" + typeNames[type] + ")((bytes)[(*(index))++])");
     }
 
 }// FieldCoding::decodeSignature
@@ -947,9 +947,9 @@ QString FieldCoding::decodeSignature(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::fullDecodeFunction(int type, bool bigendian)
+std::string FieldCoding::fullDecodeFunction(int type, bool bigendian)
 {
-    if(typeSigNames[type].contains("float"))
+    if(contains(typeSigNames[type], "float"))
         return floatDecodeFunction(type, bigendian);
     else
         return integerDecodeFunction(type, bigendian);
@@ -962,16 +962,16 @@ QString FieldCoding::fullDecodeFunction(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::floatDecodeFunction(int type, bool bigendian)
+std::string FieldCoding::floatDecodeFunction(int type, bool bigendian)
 {
-    QString endian;
+    std::string endian;
 
     if(bigendian)
         endian = "Be";
     else
         endian = "Le";
 
-    QString function = decodeSignature(type, bigendian) + "\n";
+    std::string function = decodeSignature(type, bigendian) + "\n";
     function += "{\n";
 
     if((typeSizes[type] == 8) || (typeSizes[type] == 4))
@@ -990,7 +990,7 @@ QString FieldCoding::floatDecodeFunction(int type, bool bigendian)
         }
         function += "    }field;\n";
         function += "\n";
-        function += "    field.integerValue = uint" + QString().setNum(8*typeSizes[type]) + "From" + endian + "Bytes(bytes, index);\n";
+        function += "    field.integerValue = uint" + std::to_string(8*typeSizes[type]) + "From" + endian + "Bytes(bytes, index);\n";
         function += "\n";
 
         if(support.specialFloat)
@@ -1027,9 +1027,9 @@ QString FieldCoding::floatDecodeFunction(int type, bool bigendian)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
+std::string FieldCoding::integerDecodeFunction(int type, bool bigendian)
 {
-    QString function = decodeSignature(type, bigendian) + "\n";
+    std::string function = decodeSignature(type, bigendian) + "\n";
     function += "{\n";
 
     if(typeSizes[type] == 1)
@@ -1069,7 +1069,7 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
         if(bigendian)
             function += "    bytes += *index;\n";
         else
-            function += "    bytes += (*index) + " + QString().setNum(typeSizes[type]-1) + ";\n";
+            function += "    bytes += (*index) + " + std::to_string(typeSizes[type]-1) + ";\n";
 
         function += "\n";
 
@@ -1109,7 +1109,7 @@ QString FieldCoding::integerDecodeFunction(int type, bool bigendian)
         }// if little endian encoding
 
         function += "\n";
-        function += "    (*index) += " + QString().setNum(typeSizes[type]) + ";\n";
+        function += "    (*index) += " + std::to_string(typeSizes[type]) + ";\n";
 
         function += "\n";
 

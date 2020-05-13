@@ -42,80 +42,80 @@ public:
     void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
 
     //! Get the name of the header file that encompasses this structure definition
-    QString getDefinitionFileName(void) const {return structHeader->fileName();}
+    std::string getDefinitionFileName(void) const {return structHeader->fileName();}
 
     //! Get the name of the header file that encompasses this structure interface functions
-    QString getHeaderFileName(void) const {return header.fileName();}
+    std::string getHeaderFileName(void) const {return header.fileName();}
 
     //! Get the name of the source file for this structure
-    QString getSourceFileName(void) const {return source.fileName();}
+    std::string getSourceFileName(void) const {return source.fileName();}
 
     //! Get the path of the header file that encompasses this structure definition
-    QString getDefinitionFilePath(void) const {return structHeader->filePath();}
+    std::string getDefinitionFilePath(void) const {return structHeader->filePath();}
 
     //! Get the path of the header file that encompasses this structure interface functions
-    QString getHeaderFilePath(void) const {return header.filePath();}
+    std::string getHeaderFilePath(void) const {return header.filePath();}
 
     //! Get the path of the source file for this structure
-    QString getSourceFilePath(void) const {return source.filePath();}
+    std::string getSourceFilePath(void) const {return source.filePath();}
 
     //! Get the name of the header file that encompasses this structure verify functions
-    QString getVerifyHeaderFileName(void) const {return (verifyHeader == nullptr) ? QString() : verifyHeader->fileName();}
+    std::string getVerifyHeaderFileName(void) const {return (verifyHeader == nullptr) ? std::string() : verifyHeader->fileName();}
 
     //! Get the name of the source file that encompasses this structure verify functions
-    QString getVerifySourceFileName(void) const {return (verifySource == nullptr) ? QString() : verifySource->fileName();}
+    std::string getVerifySourceFileName(void) const {return (verifySource == nullptr) ? std::string() : verifySource->fileName();}
 
     //! Get the path of the header file that encompasses this structure verify functions
-    QString getVerifyHeaderFilePath(void) const {return (verifyHeader == nullptr) ? QString() : verifyHeader->filePath();}
+    std::string getVerifyHeaderFilePath(void) const {return (verifyHeader == nullptr) ? std::string() : verifyHeader->filePath();}
 
     //! Get the path of the source file that encompasses this structure verify functions
-    QString getVerifySourceFilePath(void) const {return (verifySource == nullptr) ? QString() : verifySource->filePath();}
+    std::string getVerifySourceFilePath(void) const {return (verifySource == nullptr) ? std::string() : verifySource->filePath();}
 
     //! Get the name of the header file that encompasses this structure comparison functions
-    QString getCompareHeaderFileName(void) const {return (compareHeader == nullptr) ? QString() : compareHeader->fileName();}
+    std::string getCompareHeaderFileName(void) const {return (compareHeader == nullptr) ? std::string() : compareHeader->fileName();}
 
     //! Get the name of the source file that encompasses this structure comparison functions
-    QString getCompareSourceFileName(void) const {return (compareSource == nullptr) ? QString() : compareSource->fileName();}
+    std::string getCompareSourceFileName(void) const {return (compareSource == nullptr) ? std::string() : compareSource->fileName();}
 
     //! Get the path of the header file that encompasses this structure comparison functions
-    QString getCompareHeaderFilePath(void) const {return (compareHeader == nullptr) ? QString() : compareHeader->filePath();}
+    std::string getCompareHeaderFilePath(void) const {return (compareHeader == nullptr) ? std::string() : compareHeader->filePath();}
 
     //! Get the path of the source file that encompasses this structure comparison functions
-    QString getCompareSourceFilePath(void) const {return (compareSource == nullptr) ? QString() : compareSource->filePath();}
+    std::string getCompareSourceFilePath(void) const {return (compareSource == nullptr) ? std::string() : compareSource->filePath();}
 
     //! Get the name of the header file that encompasses this structure comparison functions
-    QString getPrintHeaderFileName(void) const {return (printHeader == nullptr) ? QString() : printHeader->fileName();}
+    std::string getPrintHeaderFileName(void) const {return (printHeader == nullptr) ? std::string() : printHeader->fileName();}
 
     //! Get the name of the source file that encompasses this structure comparison functions
-    QString getPrintSourceFileName(void) const {return (printSource == nullptr) ? QString() : printSource->fileName();}
+    std::string getPrintSourceFileName(void) const {return (printSource == nullptr) ? std::string() : printSource->fileName();}
 
     //! Get the path of the header file that encompasses this structure comparison functions
-    QString getPrintHeaderFilePath(void) const {return (printHeader == nullptr) ? QString() : printHeader->filePath();}
+    std::string getPrintHeaderFilePath(void) const {return (printHeader == nullptr) ? std::string() : printHeader->filePath();}
 
     //! Get the path of the source file that encompasses this structure comparison functions
-    QString getPrintSourceFilePath(void) const {return (printSource == nullptr) ? QString() : printSource->filePath();}
+    std::string getPrintSourceFilePath(void) const {return (printSource == nullptr) ? std::string() : printSource->filePath();}
 
     //! Get the name of the header file that encompasses this structure map functions
-    QString getMapHeaderFileName(void) const {return (mapHeader == nullptr) ? QString() : mapHeader->fileName();}
+    std::string getMapHeaderFileName(void) const {return (mapHeader == nullptr) ? std::string() : mapHeader->fileName();}
 
     //! Get the name of the source file that encompasses this structure map functions
-    QString getMapSourceFileName(void) const {return (mapSource == nullptr) ? QString() : mapSource->fileName();}
+    std::string getMapSourceFileName(void) const {return (mapSource == nullptr) ? std::string() : mapSource->fileName();}
 
     //! Get the path of the header file that encompasses this structure map functions
-    QString getMapHeaderFilePath(void) const {return (mapHeader == nullptr) ? QString() : mapHeader->filePath();}
+    std::string getMapHeaderFilePath(void) const {return (mapHeader == nullptr) ? std::string() : mapHeader->filePath();}
 
     //! Get the path of the source file that encompasses this structure map functions
-    QString getMapSourceFilePath(void) const {return (mapSource == nullptr) ? QString() : mapSource->filePath();}
+    std::string getMapSourceFilePath(void) const {return (mapSource == nullptr) ? std::string() : mapSource->filePath();}
 
 protected:
 
     //! Setup the files, which accounts for all the ways the files can be organized for this structure.
-    void setupFiles(QString moduleName,
-                    QString defheadermodulename,
-                    QString verifymodulename,
-                    QString comparemodulename,
-                    QString printmodulename,
-                    QString mapmodulename,
+    void setupFiles(std::string moduleName,
+                    std::string defheadermodulename,
+                    std::string verifymodulename,
+                    std::string comparemodulename,
+                    std::string printmodulename,
+                    std::string mapmodulename,
                     bool forceStructureDeclaration = true, bool outputUtilities = true);
 
     //! Create utility functions for structure lengths
