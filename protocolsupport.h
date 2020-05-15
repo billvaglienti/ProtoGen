@@ -16,11 +16,17 @@ std::string toUpper(const std::string& text);
 //! Find the index of a sub string within a string, with optional case sensitivity
 std::size_t find(const std::string& text, const std::string& test, bool casesensitive = false);
 
+//! Determine if two strings are equal, with optional case sensitivity
+bool isEqual(const std::string& text, const std::string& test, bool casesensitive = false);
+
 //! Determine if a string contains a sub string.
 bool contains(const std::string& text, const std::string& test, bool casesensitive = false);
 
 //! Determine if a string list contains a string.
-bool contains(const std::vector<std::string>& text, const std::string& test, bool casesensitive = false);
+bool contains(const std::vector<std::string>& list, const std::string& test, bool casesensitive = false);
+
+//! Return the string from a list that startsWith another string
+std::string liststartsWith(const std::vector<std::string>& list, const std::string& test, bool casesensitive = false);
 
 //! Determine if a string starts with another string
 bool startsWith(const std::string& text, const std::string& test, bool casesensitive = false);

@@ -58,6 +58,22 @@ std::size_t find(const std::string& text, const std::string& test, bool casesens
 
 
 /*!
+ * Determine if two strings are equal, with optional case sensitivity
+ * \param text is the string to check.
+ * \param test is the substring that is searched for within text.
+ * \param casesensitive should be true to require the case to match.
+ * \return true if the strings are equal.
+ */
+bool isEqual(const std::string& text, const std::string& test, bool casesensitive)
+{
+    if((text.size() == test.size() && find(text, test, casesensitive) != std::string::npos))
+        return true;
+    else
+        return false;
+}
+
+
+/*!
  * Determine if a string contains a sub string.
  * \param text is the string to check.
  * \param test is the substring that is searched for within text.
@@ -118,6 +134,26 @@ bool contains(const std::vector<std::string>& list, const std::string& test, boo
 
         return false;
     }
+}
+
+
+
+/*!
+ * Return the string from a list that startsWith another string.
+ * \param list is the list of strings to search.
+ * \param test is the start string to test against.
+ * \param casesensitive should be true to do the search case sensitive.
+ * \return The string from list that starts with test, or an empty string if none is found.
+ */
+std::string liststartsWith(const std::vector<std::string>& list, const std::string& test, bool casesensitive)
+{
+    for(std::size_t i = 0; i < list.size(); i++)
+    {
+        if(startsWith(list.at(i), test, casesensitive))
+            return list.at(i);
+    }
+
+    return std::string();
 }
 
 

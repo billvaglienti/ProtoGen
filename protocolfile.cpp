@@ -369,11 +369,18 @@ std::string ProtocolFile::sanitizePath(const std::string& path)
     std::string absolute = std::filesystem::absolute(path, ec).string();
     std::string relative = std::filesystem::relative(path, ec).string();
 
+    // Error checking, the path creation could fail, especially for relative paths that don't exist
+    if(absolute.empty())
+        absolute = path;
+
+    if(relative.empty())
+        relative = path;
+
     // Make sure it has a trailing separator
-    if(!((absolute.back() == '/') || (absolute.back() == '\\')))
+    if(!absolute.empty() && !((absolute.back() == '/') || (absolute.back() == '\\')))
         absolute += std::filesystem::path::preferred_separator;
 
-    if(!((relative.back() == '/') || (relative.back() == '\\')))
+    if(!relative.empty() && !((relative.back() == '/') || (relative.back() == '\\')))
         relative += std::filesystem::path::preferred_separator;
 
     // Return the shorter of the two paths

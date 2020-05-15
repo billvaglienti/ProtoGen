@@ -9,12 +9,7 @@
 #include "protocolbitfield.h"
 #include "protocoldocumentation.h"
 #include "shuntingyard.h"
-#include <QFile>
-#include <QDir>
-#include <QFileDevice>
-#include <QDateTime>
 #include <string>
-#include <QProcess>
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
@@ -1342,46 +1337,26 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
 
     file.flush();
 
-    QProcess process;
-    QStringList arguments;
-
     // Write html documentation
-    std::string htmlfile = basepath + name + ".html";
-
-    // Tell the QProcess to send stdout to a file, since that's how the script outputs its data
-    process.setStandardOutputFile(QString::fromStdString(htmlfile));
-
+    std::string htmlfile =  basepath + name + ".html";
     std::cout << "Writing HTML documentation to " << htmlfile << std::endl;
-
-    arguments.push_back(QString::fromStdString(filename));   // The name of the source file
     #if defined(__APPLE__) && defined(__MACH__)
-    process.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
-    #else
-    process.start(QString("multimarkdown"), arguments);
+    std::system(("/usr/local/bin/MultiMarkdown " + filename + " > " + htmlfile).c_str());
+    #else    
+    std::system(("multimarkdown " + filename + " > " + htmlfile).c_str());
     #endif
-    process.waitForFinished();
 
     if (latexEnabled)
     {
         // Write LaTeX documentation
-        std::string latexFile = basepath + name + ".tex";
-
-        std::cout << "Writing LaTeX documentation to " << latexFile << "\n";
-
-        QProcess latexProcess;
-
-        latexProcess.setStandardOutputFile(QString::fromStdString(latexFile));
-
-        arguments.clear();
-        arguments << QString::fromStdString(filename);
-        arguments << "--to=latex";
+        std::string latexfile =  basepath + name + ".tex";
+        std::cout << "Writing LaTeX documentation to " << latexfile << "\n";
 
         #if defined(__APPLE__) && defined(__MACH__)
-        latexProcess.start(QString("/usr/local/bin/MultiMarkdown"), arguments);
+        std::system(("/usr/local/bin/MultiMarkdown " + filename + " > " + latexfile + " --to=latex").c_str());
         #else
-        latexProcess.start(QString("multimarkdown"), arguments);
+        std::system(("multimarkdown " + filename + " > " + latexfile + " --to=latex").c_str());
         #endif
-        latexProcess.waitForFinished();
     }
 }
 
@@ -1826,16 +1801,12 @@ void ProtocolParser::outputDoxygen(void)
 
     doxfile.close();
 
-    // Launch the process
-    QProcess process;
-
     // On the mac doxygen is a utility inside the Doxygen.app bundle.
     #if defined(__APPLE__) && defined(__MACH__)
-    process.start(QString("/Applications/Doxygen.app/Contents/Resources/doxygen"), QStringList("Doxyfile"));
+    std::system("/Applications/Doxygen.app/Contents/Resources/doxygen Doxyfile");
     #else
-    process.start(QString("doxygen"), QStringList("Doxyfile"));
+    std::system("doxygen Doxyfile");
     #endif
-    process.waitForFinished();
 
     // Delete our temporary files
     ProtocolFile::deleteFile("Doxyfile");

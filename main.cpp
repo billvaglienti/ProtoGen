@@ -1,16 +1,50 @@
-#include <QCommandLineParser>
-#include <QCoreApplication>
-#include <QStringList>
-#include <QFile>
-#include <QDir>
 #include <iostream>
 #include <fstream>
 
+#include "shuntingyard.h"
 #include "protocolparser.h"
 #include "xmllinelocator.h"
 
 int main(int argc, char *argv[])
 {
+    std::vector<std::string> arguments;
+
+    // First argument is the application name - skip that one
+    for(int i = 1; i < argc; i++)
+    {
+        std::string argument = trimm(std::string(argv[i]));
+
+        // All leading "--" are converted to "-" here
+        while(startsWith(argument, "--"))
+            argument.erase(0, 1);
+
+        if(argument.empty())
+            continue;
+
+        // Some arguments require that the following argument be a special
+        // string, like "-license afile.txt". Other arguments do not depend
+        // on following arguments like "-no-helper-files". We group arguments
+        // together that need to go together. All such special arguments
+        // start with "-".
+        if((argument.front() == '-') && (i < argc - 1))
+        {
+            // These are the arguments that need followers
+            if( startsWith(argument, "-d")            ||
+                isEqual(argument, "-l")               ||
+                startsWith(argument, "-latex-header") ||
+                isEqual(argument, "-s")               ||
+                startsWith(argument, "-style")        ||
+                startsWith(argument, "-t") )
+                arguments.push_back(argument + " " + trimm(argv[++i]));
+        }
+        else
+            arguments.push_back(argument);
+
+    }// for all arguments except the first one
+
+
+
+    /*
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName( "Protogen" );
     QCoreApplication::setApplicationVersion(QString().fromStdString(ProtocolParser::genVersion));
@@ -43,41 +77,44 @@ int main(int argc, char *argv[])
     argParser.addOption({"lang-cpp", "Force the output language to C++, overriding the language specifier in the protocol file"});
 
     argParser.process(a);
+    */
 
     ProtocolParser parser;
 
     // Process the positional arguments
-    QStringList args = argParser.positionalArguments();
-    QStringList otherfiles;
-    QString filename, path;
+    std::vector<std::string> otherfiles;
+    std::string filename, path;
 
-    for(int i = 0; i < args.count(); i++)
+    for(std::size_t i = 0; i < arguments.size(); i++)
     {
-        QString argument = args.at(i);
+        // Positional arguments do not have a "-" at the beginning
+        if(startsWith(arguments.at(i), "-"))
+            continue;
 
         // The first ".xml" argument is the main file, but you can
         // have more xml files after that if you want.
-        if(argument.endsWith(".xml", Qt::CaseInsensitive))
+        if(endsWith(arguments.at(i), ".xml"))
         {
-            if(filename.isEmpty())
-                filename = argument;
+            if(filename.empty())
+                filename = arguments.at(i);
             else
-                otherfiles.append(argument);
+                otherfiles.push_back(arguments.at(i));
         }
-        else if(!argument.isEmpty())
-            path = argument;
+        else
+            path = arguments.at(i);
     }
 
-    if(filename.isEmpty())
+    if(filename.empty())
     {
         std::cerr << "error: must provide a protocol (*.xml) file." << std::endl;
         return 2;   // no input file
     }
 
     // License template file
-    std::string licenseTemplate = argParser.value("license").toStdString();
+    std::string licenseTemplate = liststartsWith(arguments, "-l");
+    licenseTemplate = licenseTemplate.substr(licenseTemplate.find(" ") + 1);
     if(!licenseTemplate.empty())
-    {
+    {       
         std::fstream file(licenseTemplate, std::ios_base::in);
 
         if (file.is_open())
@@ -96,34 +133,33 @@ int main(int argc, char *argv[])
     }
 
     // Documentation directory
-    std::string docs = argParser.value("docs").toStdString();
-
-    if (!docs.empty() && !argParser.isSet("no-markdown"))
-    {
+    std::string docs = liststartsWith(arguments, "-d");
+    docs = docs.substr(docs.find(" ") + 1);
+    if (!docs.empty() && !contains(arguments, "-no-markdown"))
         parser.setDocsPath(ProtocolFile::sanitizePath(docs));
-    }
 
     // Process the optional arguments
-    parser.disableDoxygen(!argParser.isSet("yes-doxygen"));
-    parser.disableMarkdown(argParser.isSet("no-markdown"));
-    parser.disableHelperFiles(argParser.isSet("no-helper-files"));
-    parser.disableAboutSection(argParser.isSet("no-about-section"));
-    parser.showHiddenItems(argParser.isSet("show-hidden-items"));
-    parser.disableUnrecognizedWarnings(argParser.isSet("no-unrecognized-warnings"));
-    parser.setLaTeXSupport(argParser.isSet("latex"));
-    parser.disableCSS(argParser.isSet("no-css"));
-    parser.enableTableOfContents(argParser.isSet("table-of-contents"));
+    parser.disableDoxygen(!contains(arguments, "-yes-doxygen"));
+    parser.disableMarkdown(contains(arguments, "-no-markdown"));
+    parser.disableHelperFiles(contains(arguments, "-no-helper-files"));
+    parser.disableAboutSection(contains(arguments, "-no-about-section"));
+    parser.showHiddenItems(contains(arguments, "-show-hidden-items"));
+    parser.disableUnrecognizedWarnings(contains(arguments, "-no-unrecognized-warnings"));
+    parser.setLaTeXSupport(contains(arguments, "-latex"));
+    parser.disableCSS(contains(arguments, "-no-css"));
+    parser.enableTableOfContents(contains(arguments, "-table-of-contents"));
 
-    if(argParser.isSet("lang-c"))
+    if(contains(arguments, "-lang-c"))
         parser.setLanguageOverride(ProtocolSupport::c_language);
-    else if(argParser.isSet("lang-cpp"))
+    else if(contains(arguments, "-lang-cpp"))
         parser.setLanguageOverride(ProtocolSupport::cpp_language);
 
-    QString latexLevel = argParser.value("latex-header-level");
-    if(!latexLevel.isEmpty())
+    std::string latexLevel = liststartsWith(arguments, "-latex-header");
+    latexLevel = latexLevel.substr(latexLevel.find(" ") + 1);
+    if(!latexLevel.empty())
     {
         bool ok = false;
-        int lvl = latexLevel.toInt(&ok);
+        int lvl = ShuntingYard::toInt(latexLevel, &ok);
 
         if (ok)
         {
@@ -131,11 +167,15 @@ int main(int argc, char *argv[])
         }
         else
         {
-            std::cerr << "warning: -latex-header-level argument '" << latexLevel.toStdString() << "' is invalid.";
+            std::cerr << "warning: -latex-header-level argument '" << latexLevel << "' is invalid.";
         }
     }
 
-    std::string css = argParser.value("style").toStdString();
+    std::string css = liststartsWith(arguments, "-style");
+    if(css.empty())
+        css = liststartsWith(arguments, "-s ");
+
+    css = css.substr(docs.find(" ") + 1);
     if(!css.empty() && endsWith(css, ".css", Qt::CaseInsensitive))
     {
         std::fstream file(css, std::ios_base::in);
@@ -152,7 +192,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::string titlePage = argParser.value("titlepage").toStdString();
+    std::string titlePage = liststartsWith(arguments, "-title");
+    titlePage = titlePage.substr(titlePage.find(" ") + 1);
     if(!titlePage.empty())
     {
         std::fstream file(titlePage, std::ios_base::in);
@@ -168,7 +209,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (parser.parse(filename.toStdString(), path.toStdString(), convertStringList(otherfiles)))
+    if (parser.parse(filename, path, otherfiles))
     {
         // Normal exit
         return 0;
