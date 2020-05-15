@@ -33,6 +33,7 @@ CONFIG += c++17
 
 SOURCES += main.cpp \
     prebuiltSources/floatspecial.c \
+    protocolfloatspecial.cpp \
     protocolparser.cpp \
     protocolpacket.cpp \
     protocolfield.cpp \
@@ -54,6 +55,7 @@ SOURCES += main.cpp \
 
 HEADERS += \
     prebuiltSources/floatspecial.h \
+    protocolfloatspecial.h \
     protocolparser.h \
     protocolpacket.h \
     protocolfield.h \
@@ -73,10 +75,10 @@ HEADERS += \
     tinyxml/tinyxml2.h \
     xmllinelocator.h
 
-RESOURCES += \
-    ProtoGen.qrc
+RESOURCES +=
 
-INCLUDEPATH += tinyxml
+INCLUDEPATH += tinyxml \
+               prebuiltSources
 
 CONFIG(debug, debug|release){
     DEFINES += _DEBUG
@@ -140,4 +142,5 @@ DISTFILES += \
     exampleprotocol_cpp.xml \
     moredocsfile.txt \
     dependson.xml \
-    licensetest.txt
+    licensetest.txt \
+    prebuiltSources/bitfieldtest.xml

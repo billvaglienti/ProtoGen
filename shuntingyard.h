@@ -24,43 +24,47 @@
  * \author Five By Five Development, LLC
  */
 
-#include <QString>
+#include <string>
 
 class ShuntingYard
 {
 public:
+
     //! Compute an infix expresions
-    static double computeInfix(const QString& infix, bool* ok = 0);
+    static double computeInfix(const std::string& infix, bool* ok = nullptr);
 
     //! Convert an infix expression toa properly delimited postfix expression
-    static QString infixToPostfix(const QString& infix, bool* ok = 0);
+    static std::string infixToPostfix(const std::string& infix, bool* ok = nullptr);
 
     //! Compute a properly delimited postfix expression
-    static double computePostfix(const QString& postfix, bool* ok = 0);
+    static double computePostfix(const std::string& postfix, bool* ok = nullptr);
 
     //! Convert an input string to an integer
-    static int64_t toInt(QString input, bool* ok);
+    static int64_t toInt(std::string input, bool* ok = nullptr);
+
+    //! Convert an input string to an unsigned integer
+    static uint64_t toUint(std::string input, bool* ok = nullptr);
 
     //! Test if input string is an integer
-    static bool isInt(const QString& input);
+    static bool isInt(const std::string& input);
 
     //! Convert an input string to a number
-    static double toNumber(QString input, bool* ok);
+    static double toNumber(std::string input, bool* ok = nullptr);
 
     //! Test if input string is a number
-    static bool isNumber(const QString& input);
+    static bool isNumber(const std::string& input);
 
     //! Test if input character is a number
-    static bool isNumber(const QChar& input, bool hex = false, bool binary = false);
+    static bool isNumber(char input, bool hex = false, bool binary = false);
 
     //! Replace "pi" or "e" in the string with the numeric values
-    static QString& replacePie(QString& input);
+    static std::string& replacePie(std::string& input);
 
     //! Test if input character is an operator
-    static bool isOperator(const QChar& input);
+    static bool isOperator(char input);
 
     //! Test if input character is a parenthesis
-    static bool isParen(const QChar& input);
+    static bool isParen(char input);
 
     //! Test the ShuntingYard class
     static bool test();
@@ -68,19 +72,19 @@ public:
 private:
 
     //! Place delimiters as needed in the infix expression
-    static QString tokenize(const QString& input);
+    static std::string tokenize(const std::string& input);
 
     //! Return operator precedence
-    static int precedence(const QString& op);
+    static int precedence(const std::string& op);
 
     //! Test if operator is right associative
-    static bool isRightAssociative(const QString& op);
+    static bool isRightAssociative(const std::string& op);
 
     //! Test if operator is left associative
-    static bool isLeftAssociative(const QString& op);
+    static bool isLeftAssociative(const std::string& op);
 
     //! Test if input string is an operator
-    static bool isOperator(const QString& input);
+    static bool isOperator(const std::string& input);
 
 };
 

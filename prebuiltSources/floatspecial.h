@@ -39,29 +39,17 @@ int isFloat32Valid(uint32_t value);
 //! Determine if a 64-bit field represents a valid 64-bit IEEE-754 floating point number.
 int isFloat64Valid(uint64_t value);
 
-//! Convert a 32-bit floating point value to 24-bit floating point with 15 bit significand (deprecated)
-uint32_t float32ToFloat24(float value);
-
-//! Convert a 24-bit floating point representation with 15 bits significand to binary32 (deprecated)
-float float24ToFloat32(uint32_t value);
-
 //! Convert a 32-bit floating point value to 24-bit floating point
-uint32_t float32ToFloat24ex(float value, int sigbits);
+uint32_t float32ToFloat24(float value, int sigbits);
 
 //! Convert a IEEE-754 binary24 floating point representation to binary32
-float float24ToFloat32ex(uint32_t value, int sigbits);
-
-//! Convert a 32-bit floating point value to 16-bit floating point with 9 bit significand (deprecated)
-uint16_t float32ToFloat16(float value);
-
-//! Convert a 16-bit floating point representation with 9 bits significand to binary32 (deprecated)
-float float16ToFloat32(uint16_t value);
+float float24ToFloat32(uint32_t value, int sigbits);
 
 //! Convert a 32-bit floating point value to 16-bit floating point representation
-uint16_t float32ToFloat16ex(float value, int sigbits);
+uint16_t float32ToFloat16(float value, int sigbits);
 
 //! Convert a 16 bit floating point representation to binary32
-float float16ToFloat32ex(uint16_t value, int sigbits);
+float float16ToFloat32(uint16_t value, int sigbits);
 
 //! test the special float functionality
 int testSpecialFloat(void);

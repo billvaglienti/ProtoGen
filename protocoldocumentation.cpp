@@ -1,23 +1,23 @@
 #include "protocoldocumentation.h"
 #include "protocolparser.h"
-#include <QDir>
-#include <QFile>
+#include <fstream>
 
 // Initialize convenience strings
-const QString ProtocolDocumentation::TAB_IN = "    ";
+const std::string ProtocolDocumentation::TAB_IN = "    ";
 
 //! The list of C language keywords, visible to all encodables
-QStringList ProtocolDocumentation::keywords = QStringList() << "auto" << "double" << "int" << "struct" << "break" << "else" << "long" << "switch" << "case" << "enum" << "register" << "typedef" << "char" << "extern" << "return" << "union" << "const" << "float" << "short" << "unsigned" << "continue" << "for" << "signed" << "void" << "default" << "goto" << "sizeof" << "volatile" << "do" << "if" << "static" << "while" << "bool";
+std::vector<std::string> ProtocolDocumentation::keywords = {"auto", "double", "int", "struct", "break", "else", "long", "switch", "case", "enum", "register", "typedef", "char", "extern", "return", "union", "const", "float", "short", "unsigned", "continue", "for", "signed", "void", "default", "goto", "sizeof", "volatile", "do", "if", "static", "while", "bool" };
 
 //! The list of protogen variable names, visible to all encodables
-QStringList ProtocolDocumentation::variablenames = QStringList() << "_pg_user" << "_pg_user1" << "_pg_user2" << "_pg_data" << "_pg_i" << "_pg_j" << "_pg_byteindex" << "_pg_bytecount" << "_pg_numBytes" << "_pg_bitfieldbytes" << "_pg_tempbitfield" << "_pg_templongbitfield" << "_pg_bitfieldindex" << "_pg_good" << "_pg_struct1" << "_pg_struct2" << "_pg_prename" << "_pg_report";
+std::vector<std::string> ProtocolDocumentation::variablenames = {"_pg_user", "_pg_user1", "_pg_user2", "_pg_data", "_pg_i", "_pg_j", "_pg_byteindex", "_pg_bytecount", "_pg_numBytes", "_pg_bitfieldbytes", "_pg_tempbitfield", "_pg_templongbitfield", "_pg_bitfieldindex", "_pg_good", "_pg_struct1", "_pg_struct2", "_pg_prename", "_pg_report"};
 
 //! Construct the document object, with details about the overall protocol
-ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
+ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, std::string Parent, ProtocolSupport supported) :
     support(supported),
     parser(parse),
     parent(Parent),
     e(nullptr),
+    attriblist({"name", "title", "comment", "file", "paragraph"}),
     outlineLevel(0)
 {
 }
@@ -37,17 +37,17 @@ void ProtocolDocumentation::parse(void)
     title = ProtocolParser::getAttribute("title", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     docfile = ProtocolParser::getAttribute("file", map);
-    QString outline = ProtocolParser::getAttribute("paragraph", map);
+    std::string outline = ProtocolParser::getAttribute("paragraph", map);
 
-    if(title.isEmpty())
+    if(title.empty())
         title = name;
 
     // Inform the user if there are any problems with the attributes
-    testAndWarnAttributes(map, QStringList() << "name" << "title" << "comment" << "file" << "paragraph");
+    testAndWarnAttributes(map);
 
     // The outline level is a number
-    if(!outline.isEmpty())
-        outlineLevel = outline.toInt();
+    if(!outline.empty())
+        outlineLevel = std::stoi(outline);
 }
 
 
@@ -57,11 +57,11 @@ void ProtocolDocumentation::parse(void)
  * \param ids are ignored
  * \return the markdown output string
  */
-QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringList& ids) const
+std::string ProtocolDocumentation::getTopLevelMarkdown(bool global, const std::vector<std::string>& ids) const
 {
     Q_UNUSED(ids);
 
-    QString markdown;
+    std::string markdown;
     int level = outlineLevel;
 
     // Make sure the outline level is acceptable
@@ -73,7 +73,7 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
             level = 3;
     }
 
-    if(!title.isEmpty())
+    if(!title.empty())
     {
         for(int i = 0; i < level; i++)
             markdown += "#";
@@ -81,16 +81,17 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
         markdown += " " + title +"\n\n";
     }
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         markdown += comment + "\n\n";
 
-    if(!docfile.isEmpty())
+    if(!docfile.empty())
     {
-        QFile file(parser->getInputPath() + docfile);
+        std::fstream file(parser->getInputPath() + docfile, std::ios_base::in);
 
-        if(file.open(QFile::Text | QFile::ReadOnly))
+        if(file.is_open())
         {
-            markdown += QString(file.readAll()) + "\n\n";
+            markdown += std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            markdown += "\n\n";
             file.close();
         }
 
@@ -106,11 +107,11 @@ QString ProtocolDocumentation::getTopLevelMarkdown(bool global, const QStringLis
  * \param warning is the warning text
  * \param subname is the subname to append to the hierarchical name, this can be empty
  */
-void ProtocolDocumentation::emitWarning(QString warning, const QString& subname) const
+void ProtocolDocumentation::emitWarning(const std::string& warning, const std::string& subname) const
 {
-    QString name = getHierarchicalName();
+    std::string name = getHierarchicalName();
 
-    if(!subname.isEmpty())
+    if(!subname.empty())
         name += ":" + subname;
 
     parser->emitWarning(name, warning);
@@ -120,10 +121,9 @@ void ProtocolDocumentation::emitWarning(QString warning, const QString& subname)
 /*!
  * Test the list of attributes and warn if any of them are unrecognized
  * \param map is the list of attributes
- * \param attriblist is the list of attributes that are recognized
  * \param subname is the optional name of a sub-element for which this test is done
  */
-void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map, const QStringList& attriblist, const QString& subname) const
+void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map,const std::string& subname) const
 {
     // The only thing we check for is unrecognized attributes
     if(support.disableunrecognized)
@@ -135,8 +135,8 @@ void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map, const
     for(const XMLAttribute* a = map; a != nullptr; a = a->Next())
     {
         // Check to see if the attribute is not in the list of known attributes
-        if((attriblist.contains(a->Name(), Qt::CaseInsensitive) == false))
-            emitWarning("Unrecognized attribute \"" + QString(a->Name()) + "\"", subname);
+        if((contains(attriblist, a->Name()) == false))
+            emitWarning("Unrecognized attribute \"" + std::string(a->Name()) + "\"", subname);
 
     }// for all attributes
 
@@ -151,13 +151,13 @@ void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map, const
  * \param e is the DOM element which may have documentation children
  * \param list receives the list of allocated objects.
  */
-void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, QString Parent, ProtocolSupport support, const XMLElement* e, QList<ProtocolDocumentation*>& list)
+void ProtocolDocumentation::getChildDocuments(ProtocolParser* parse, const std::string& Parent, ProtocolSupport support, const XMLElement* e, std::vector<ProtocolDocumentation*>& list)
 {
     // The list of documentation that goes inside this packet
-    QList<const XMLElement*> documents = ProtocolParser::childElementsByTagName(e, "Document");
+    std::vector<const XMLElement*> documents = ProtocolParser::childElementsByTagName(e, "Document");
 
     // Parse all the document objects
-    for(int i = 0; i < documents.count(); i++)
+    for(std::size_t i = 0; i < documents.size(); i++)
     {
         // Create the document and parse its xml
         ProtocolDocumentation* doc = new ProtocolDocumentation(parse, Parent, support);

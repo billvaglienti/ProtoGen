@@ -5,41 +5,41 @@
 #include "protocolfile.h"
 #include "enumcreator.h"
 #include "protocolbitfield.h"
-#include <QString>
+#include <string>
 
 class ProtocolStructureModule : public ProtocolStructure
 {
 public:
 
     //! Construct the structure parsing object, with details about the overall protocol
-    ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const QString& protocolApi, const QString& protocolVersion);
+    ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const std::string& protocolApi, const std::string& protocolVersion);
 
     //! Parse a packet from the DOM
-    void parse(void) Q_DECL_OVERRIDE;
+    void parse(void) override;
 
     //! Reset our data contents
-    void clear(void) Q_DECL_OVERRIDE;
+    void clear(void) override;
 
     //! Destroy the protocol packet
     ~ProtocolStructureModule(void);
 
     //! Return the include directives needed for this encodable
-    void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives that go into source code for this encodable
-    void getSourceIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getSourceIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's init and verify functions
-    void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getInitAndVerifyIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's map functions
-    void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getMapIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's compare functions
-    void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getCompareIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's print functions
-    void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getPrintIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Get the name of the header file that encompasses this structure definition
     std::string getDefinitionFileName(void) const {return structHeader->fileName();}
@@ -119,7 +119,7 @@ protected:
                     bool forceStructureDeclaration = true, bool outputUtilities = true);
 
     //! Create utility functions for structure lengths
-    QString createUtilityFunctions(const QString& spacing) const Q_DECL_OVERRIDE;
+    std::string createUtilityFunctions(const std::string& spacing) const override;
 
     //! Issue warnings for the structure module.
     void issueWarnings(const XMLAttribute* map);
@@ -137,7 +137,7 @@ protected:
     void createTopLevelStructureHelperFunctions(void);
 
     //! Get the text used to extract text for text read functions
-    static QString getExtractTextFunction(void);
+    static std::string getExtractTextFunction(void);
 
     // These files are always used
     ProtocolSourceFile source;          //!< The source file (*.c)
@@ -165,8 +165,8 @@ protected:
     ProtocolSourceFile* mapSource;      //!< Pointer to the source file for map code (*.cpp)
     ProtocolHeaderFile* mapHeader;      //!< Pointer to the header file for map code (*.h)
 
-    QString api;                    //!< The protocol API enumeration
-    QString version;                //!< The version string
+    std::string api;                    //!< The protocol API enumeration
+    std::string version;                //!< The version string
 };
 
 #endif // PROTOCOLSTRUCTUREMODULE_H

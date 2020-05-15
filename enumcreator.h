@@ -1,8 +1,6 @@
 #ifndef ENUMCREATOR_H
 #define ENUMCREATOR_H
 
-#include <QString>
-#include <QStringList>
 #include "protocolsupport.h"
 #include "protocoldocumentation.h"
 
@@ -17,36 +15,36 @@ class EnumElement : public ProtocolDocumentation
 public:
 
     //! Cronstruct an enumeration element
-    EnumElement(ProtocolParser* parse, EnumCreator* creator, QString Parent, ProtocolSupport supported);
+    EnumElement(ProtocolParser* parse, EnumCreator* creator, const std::string& Parent, ProtocolSupport supported);
 
     //! Parse an enumeration element
-    virtual void parse() Q_DECL_OVERRIDE;
+    void parse(void) override;
 
     //! Check the enumeration element against C keywords
-    virtual void checkAgainstKeywords() Q_DECL_OVERRIDE;
+    void checkAgainstKeywords(void) override;
 
     //! Return true if this element is hidden from the documentation
-    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+    bool isHidden (void) const override {return hidden;}
 
     //! The enumeration element name, with or without prefix
-    QString getName() const;
+    std::string getName() const;
 
     //! The enumeration element lookup name
-    QString getLookupName() const;
+    std::string getLookupName() const;
 
     //! The enumeration element declaration string
-    QString getDeclaration() const;
+    std::string getDeclaration() const;
 
 protected:
 
     //! The name returned
-    QString lookupName;
+    std::string lookupName;
 
     //! The numeration value string
-    QString value;
+    std::string value;
 
     //! The numeration number (if it can be computed)
-    QString number;
+    std::string number;
 
     //! Indicates if this enumeration element is hidden from documentation
     bool hidden;
@@ -66,7 +64,7 @@ class EnumCreator : public ProtocolDocumentation
 {
 public:
     //! Construct the enumeration object
-    EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
+    EnumCreator(ProtocolParser* parse, const std::string& parent, ProtocolSupport supported);
 
     ~EnumCreator(void);
 
@@ -74,43 +72,43 @@ public:
     void clear(void);
 
     //! Parse the DOM to fill out the enumeration list
-    virtual void parse() Q_DECL_OVERRIDE;
+    void parse() override;
 
     //! Parse the DOM to fill out the enumeration list for a global enum
     void parseGlobal(void);
 
     //! Check names against the list of C keywords
-    virtual void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
+    void checkAgainstKeywords(void) override;
 
     //! Get the markdown documentation for this enumeration
-    virtual QString getTopLevelMarkdown(bool global = false, const QStringList& ids = QStringList()) const Q_DECL_OVERRIDE;
+    std::string getTopLevelMarkdown(bool global = false, const std::vector<std::string>& ids = std::vector<std::string>()) const override;
 
     //! Return the enumeration name
-    QString getName(void) const {return name;}
+    std::string getName(void) const {return name;}
 
     //! Return the enumeration comment
-    QString getComment(void) const {return comment;}
+    std::string getComment(void) const {return comment;}
 
     //! Return the header file output string
-    QString getOutput(void) const {return output;}
+    std::string getOutput(void) const {return output;}
 
     //! Get the prefix applied to each enumeration element
-    QString getPrefix() const { return prefix; }
+    std::string getPrefix() const { return prefix; }
 
     //! Return the source file output string
-    QString getSourceOutput(void) const { return sourceOutput; }
+    std::string getSourceOutput(void) const { return sourceOutput; }
 
     //! Replace any text that matches an enumeration name with the value of that enumeration
-    QString& replaceEnumerationNameWithValue(QString& text) const;
+    std::string replaceEnumerationNameWithValue(const std::string& text) const;
 
     //! Find the enumeration value with this name and return its comment, or an empty string
-    QString getEnumerationValueComment(const QString& name) const;
+    std::string getEnumerationValueComment(const std::string& name) const;
 
     //! Return the name of the first enumeration in the list (used for initial value)
-    QString getFirstEnumerationName(void) const;
+    std::string getFirstEnumerationName(void) const;
 
     //! Determine if text is an enumeration name
-    bool isEnumerationValue(const QString& text) const;
+    bool isEnumerationValue(const std::string& text) const;
 
     //! Return the minimum number of bits needed to encode the enumeration
     int getMinBitWidth(void) const {return minbitwidth;}
@@ -119,10 +117,10 @@ public:
     int getMaximumValue(void) const {return maxvalue;}
 
     //! Return true if this enumeration is hidden from the documentation
-    virtual bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+    bool isHidden (void) const override {return hidden;}
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
+    std::string getHierarchicalName(void) const override {return parent + ":" + name;}
 
     //! Get the name of the header file (if any) holding this enumeration
     std::string getHeaderFileName(void) const {return file;}
@@ -136,10 +134,10 @@ protected:
     void computeNumberList(void);
 
     //! Split string around math operators
-    QStringList splitAroundMathOperators(QString text) const;
+    std::vector<std::string> splitAroundMathOperators(std::string text) const;
 
     //! Determine if a character is a math operator
-    bool isMathOperator(QChar op) const;
+    bool isMathOperator(char op) const;
 
     //! Output file for global enumerations
     std::string file;
@@ -148,19 +146,19 @@ protected:
     std::string filepath;
 
     //! Output file for source code file (may not be used)
-    QString sourceOutput;
+    std::string sourceOutput;
 
     //! List of all the enumerated values
-    QList<EnumElement> elements;
+    std::vector<EnumElement> elements;
 
     //! A longer description is possible for enums (will be displayed in the documentation)
-    QString description;
+    std::string description;
 
     //! A prefix can be specified for each element in the enum
-    QString prefix;
+    std::string prefix;
 
     //! The header file output string of the enumeration
-    QString output;
+    std::string output;
 
     //! Minimum number of bits needed to encode the enumeration
     int minbitwidth;
@@ -184,10 +182,10 @@ protected:
     bool isglobal;
 
     //! List of document objects
-    QList<ProtocolDocumentation*> documentList;
+    std::vector<ProtocolDocumentation*> documentList;
 };
 
 //! Output a string with specific spacing
-QString spacedString(QString text, int spacing);
+std::string spacedString(const std::string& text, std::size_t spacing);
 
 #endif // ENUMCREATOR_H

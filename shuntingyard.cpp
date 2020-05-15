@@ -1,6 +1,5 @@
 #include "shuntingyard.h"
-#include <QStack>
-#include <QStringList>
+#include "protocolsupport.h"
 #include <math.h>
 
 
@@ -10,10 +9,10 @@
  * \param input is the input string, which will be modified
  * \return a reference to input.
  */
-QString& ShuntingYard::replacePie(QString& input)
+std::string& ShuntingYard::replacePie(std::string& input)
 {
-    input.replace("pi", "3.14159265358979323846", Qt::CaseInsensitive);
-    input.replace("e" , "2.71828182845904523536", Qt::CaseInsensitive);
+    replaceinplace(input, "pi", "3.14159265358979323846");
+    replaceinplace(input, "e" , "2.71828182845904523536");
     return input;
 
 }// ShuntingYard::replacePie
@@ -26,10 +25,10 @@ QString& ShuntingYard::replacePie(QString& input)
  * \param ok is set to true if the computation is god. ok can point to NULL.
  * \return the computational result, or 0 if the computation cannot be performed.
  */
-double ShuntingYard::computeInfix(const QString& infix, bool* ok)
+double ShuntingYard::computeInfix(const std::string& infix, bool* ok)
 {
     bool inputok;
-    QString postfix = infixToPostfix(infix, &inputok);
+    std::string postfix = infixToPostfix(infix, &inputok);
 
     if(inputok)
         return computePostfix(postfix, ok);
@@ -51,20 +50,20 @@ double ShuntingYard::computeInfix(const QString& infix, bool* ok)
  * \param ok is set to true if the conversions does not have problems. ok can point to NULL.
  * \return the equivalent postfix expression
  */
-QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
+std::string ShuntingYard::infixToPostfix(const std::string& infix, bool* ok)
 {
     bool Return = true;
-    QStack<QString> operatorStack;
-    QString postfix;
+    std::list<std::string> operatorStack;
+    std::string postfix;
 
     // split the string by the separators
-    QStringList list = tokenize(infix).split(' ');
+    std::vector<std::string> list = split(tokenize(infix), " ");
 
-    for(int i = 0; i < list.size(); i++)
+    for(std::size_t i = 0; i < list.size(); i++)
     {
-        QString o1 = list.at(i);
+        std::string o1 = list.at(i);
 
-        if(o1.isEmpty())
+        if(o1.empty())
             continue;
 
         if(isNumber(o1))
@@ -72,18 +71,20 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
             postfix += o1;
             postfix += " ";
         }
-        else if(o1.contains('('))
-            operatorStack.push(list.at(i));
-        else if(o1.contains(')'))
+        else if(o1.find('(') != std::string::npos)
+            operatorStack.push_back(list.at(i));
+        else if(o1.find(')') != std::string::npos)
         {
-            QString o2;
+            std::string o2;
 
             // pop the stack until we hit the left paren. Notice neither
             // the left nor the right paren ends up in the output.
             while(operatorStack.size() > 0)
             {
-                o2 = operatorStack.pop();
-                if(o2.contains('('))
+                o2 = operatorStack.back();
+                operatorStack.pop_back();
+
+                if(o2.find('(') != std::string::npos)
                     break;
                 else
                     postfix += o2 + " ";
@@ -91,7 +92,7 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
             }// while operators to pop
 
             // If we never find the left paren then the input is malformed
-            if(!o2.contains('('))
+            if(o2.find('(') == std::string::npos)
                 Return = false;
         }
         else if(isOperator(o1))
@@ -99,15 +100,21 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
             while(operatorStack.size() > 0)
             {
                 // o2 is not yet popped here
-                QString o2 = operatorStack.top();
+                std::string o2 = operatorStack.back();
 
                 // Although this is the "operator" stack, o2 could be a parenthesis
                 if(isOperator(o2))
                 {
                     if(isLeftAssociative(o1) && (precedence(o1) <= precedence(o2)))
-                        postfix += operatorStack.pop() + " ";
+                    {
+                        postfix += operatorStack.back() + " ";
+                        operatorStack.pop_back();
+                    }
                     else if(isRightAssociative(o1) && (precedence(o1) < precedence(o2)))
-                        postfix += operatorStack.pop() + " ";
+                    {
+                        postfix += operatorStack.back() + " ";
+                        operatorStack.pop_back();
+                    }
                     else
                         break;
                 }
@@ -116,7 +123,7 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
 
             }// while operators to pop
 
-            operatorStack.push(o1);
+            operatorStack.push_back(o1);
 
         }// if new operator
         else
@@ -131,7 +138,8 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
     // Finally pop the remaining operators off the stack
     while(operatorStack.size() > 0)
     {
-        QString o2 = operatorStack.pop();
+        std::string o2 = operatorStack.back();
+        operatorStack.pop_back();
 
         // There can be no more parenthesis unless the input was bad
         if(isParen(o2.at(0)))
@@ -144,7 +152,7 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
         *ok = Return;
 
     // Clean off any white space and return the result
-    return postfix.trimmed();
+    return trimm(postfix);
 
 }// ShuntingYard::infixToPostfix
 
@@ -157,52 +165,55 @@ QString ShuntingYard::infixToPostfix(const QString& infix, bool* ok)
  * \param ok is set to true if the computation is god. ok can point to NULL.
  * \return the computational result, or 0 if the computation cannot be performed.
  */
-double ShuntingYard::computePostfix(const QString& postfix, bool* ok)
+double ShuntingYard::computePostfix(const std::string& postfix, bool* ok)
 {
-    QStack<double> arguments;
+    std::list<double> arguments;
 
     // split the string by the separators
-    QStringList list = postfix.split(' ');
+    std::vector<std::string> list = split(postfix, " ");
 
-    for(int i = 0; i < list.size(); i++)
+    for(std::size_t i = 0; i < list.size(); i++)
     {
         double arg;
         bool argok;
-        QString o1 = list.at(i);
+        std::string o1 = list.at(i);
 
-        if(o1.isEmpty())
+        if(o1.empty())
             continue;
 
         // The argument is either an operator or a number
         arg = toNumber(o1, &argok);
 
         if(argok)
-            arguments.push(arg);
+            arguments.push_back(arg);
         else if(arguments.size() >= 2)
         {
             // the rightmost argument is the top of the stack
-            double arg2 = arguments.pop();
-            double arg1 = arguments.pop();
+            double arg2 = arguments.back();
+            arguments.pop_back();
 
-            if(o1.contains('^'))
+            double arg1 = arguments.back();
+            arguments.pop_back();
+
+            if(o1.find('^') != std::string::npos)
             {
-                arguments.push(powf(arg1, arg2));
+                arguments.push_back(powf(arg1, arg2) != std::string::npos);
             }
-            else if(o1.contains('*'))
+            else if(o1.find('*') != std::string::npos)
             {
-                arguments.push(arg1*arg2);
+                arguments.push_back(arg1*arg2);
             }
-            else if(o1.contains('/'))
+            else if(o1.find('/') != std::string::npos)
             {
-                arguments.push(arg1/arg2);
+                arguments.push_back(arg1/arg2);
             }
-            else if(o1.contains('+'))
+            else if(o1.find('+') != std::string::npos)
             {
-                arguments.push(arg1+arg2);
+                arguments.push_back(arg1+arg2);
             }
-            else if(o1.contains('-'))
+            else if(o1.find('-') != std::string::npos)
             {
-                arguments.push(arg1-arg2);
+                arguments.push_back(arg1-arg2);
             }
 
         }// if token is operator
@@ -224,7 +235,7 @@ double ShuntingYard::computePostfix(const QString& postfix, bool* ok)
         if(ok != 0)
             *ok = true;
 
-        return arguments.pop();
+        return arguments.back();
     }
     else
     {
@@ -244,17 +255,17 @@ double ShuntingYard::computePostfix(const QString& postfix, bool* ok)
  * \return the precedence of the operator, from 4 (for exponentiation) to 2
  *         (for addition or subtraction). 0 if the operator is not recognized.
  */
-int ShuntingYard::precedence(const QString& op)
+int ShuntingYard::precedence(const std::string& op)
 {
-    if(op.contains("^"))
+    if(op.find('^') != std::string::npos)
         return 4;
-    else if(op.contains("*"))
+    else if(op.find('*') != std::string::npos)
         return 3;
-    else if(op.contains("/"))
+    else if(op.find('/') != std::string::npos)
         return 3;
-    else if(op.contains("+"))
+    else if(op.find('+') != std::string::npos)
         return 2;
-    else if(op.contains("-"))
+    else if(op.find('-') != std::string::npos)
         return 2;
     else
         return 0;
@@ -265,7 +276,7 @@ int ShuntingYard::precedence(const QString& op)
  * \param op is the operator string to test
  * \return true if the operator is right associative
  */
-bool ShuntingYard::isRightAssociative(const QString& op)
+bool ShuntingYard::isRightAssociative(const std::string& op)
 {
     return !isLeftAssociative(op);
 }
@@ -275,14 +286,13 @@ bool ShuntingYard::isRightAssociative(const QString& op)
  * \param op is the operator string to test
  * \return true if the operator is left associative
  */
-bool ShuntingYard::isLeftAssociative(const QString& op)
+bool ShuntingYard::isLeftAssociative(const std::string& op)
 {
-    if(op.contains("^"))
+    if(op.find('^') != std::string::npos)
         return false;
     else
         return true;
 }
-
 
 
 /*!
@@ -293,16 +303,114 @@ bool ShuntingYard::isLeftAssociative(const QString& op)
  *         be set to false
  * \return the converted value, or 0 if the conversion fails
  */
-int64_t ShuntingYard::toInt(QString input, bool* ok)
+int64_t ShuntingYard::toInt(std::string input, bool* ok)
 {
-    if(input.startsWith("0b", Qt::CaseInsensitive))
-        return (int64_t)input.remove(0, 2).toULongLong(ok, 2);
-    else if(input.startsWith("0x", Qt::CaseInsensitive))
-        return (int64_t)input.remove(0, 2).toULongLong(ok, 16);
-    else
-        return input.toLongLong(ok);
+    int64_t value = 0;
+    int base = 10;
+    std::string set;
 
-}
+    if(startsWith(input, "0b"))
+    {
+        base = 2;
+        input.erase(0, 2);
+        set = "01";
+    }
+    else if(startsWith(input, "0x"))
+    {
+        base = 16;
+        input.erase(0, 2);
+        set = "0123456789aAbBcCdDeEfF";
+    }
+    else
+        set = "-0123456789";
+
+    // Test if the number has any characters we do not support
+    std::size_t index = input.find_first_not_of(set);
+
+    if(index < input.size())
+    {
+        if(ok != nullptr)
+            (*ok) = false;
+    }
+    else
+    {
+        if(ok != nullptr)
+            (*ok) = true;
+
+        try
+        {
+            value = (int64_t)std::stoll(input, nullptr, base);
+        }
+        catch (...)
+        {
+            value = 0;
+            if(ok != nullptr)
+                (*ok) = false;
+        }
+    }
+
+    return value;
+
+}// ShuntingYard::toInt
+
+
+/*!
+ * Convert an input string to an unsigned integer.
+ * \param input is the string to convert. It can be a binary ("0b") or hex ("0x")
+ *        or a decimal number.
+ * \param ok will be set to true if the conversion is successful, else it will
+ *         be set to false
+ * \return the converted value, or 0 if the conversion fails
+ */
+uint64_t ShuntingYard::toUint(std::string input, bool* ok)
+{
+    uint64_t value = 0;
+    int base = 10;
+    std::string set;
+
+    if(startsWith(input, "0b"))
+    {
+        base = 2;
+        input.erase(0, 2);
+        set = "01";
+    }
+    else if(startsWith(input, "0x"))
+    {
+        base = 16;
+        input.erase(0, 2);
+        set = "0123456789aAbBcCdDeEfF";
+    }
+    else
+        set = "0123456789";
+
+    // Test if the number has any characters we do not support
+    std::size_t index = input.find_first_not_of(set);
+
+    if(index < input.size())
+    {
+        if(ok != nullptr)
+            (*ok) = false;
+    }
+    else
+    {
+        if(ok != nullptr)
+            (*ok) = true;
+
+        try
+        {
+            value = (uint64_t)std::stoull(input, nullptr, base);
+        }
+        catch (...)
+        {
+            value = 0;
+            if(ok != nullptr)
+                (*ok) = false;
+        }
+    }
+
+    return value;
+
+}// ShuntingYard::toUint
 
 
 /*!
@@ -310,7 +418,7 @@ int64_t ShuntingYard::toInt(QString input, bool* ok)
  *        or an integer number
  * \return true if we can convert input to an integer
  */
-bool ShuntingYard::isInt(const QString& input)
+bool ShuntingYard::isInt(const std::string& input)
 {
     bool ok = false;
 
@@ -328,16 +436,41 @@ bool ShuntingYard::isInt(const QString& input)
  *         be set to false
  * \return the converted value, or 0 if the conversion fails
  */
-double ShuntingYard::toNumber(QString input, bool* ok)
+double ShuntingYard::toNumber(std::string input, bool* ok)
 {
-    if(input.startsWith("0b", Qt::CaseInsensitive))
-        return (double)input.remove(0, 2).toULongLong(ok, 2);
-    else if(input.startsWith("0x", Qt::CaseInsensitive))
-        return (double)input.remove(0, 2).toULongLong(ok, 16);
-    else
-        return input.toDouble(ok);
+    double value = 0;
 
-}
+    if(startsWith(input, "0b") || startsWith(input, "0x"))
+        return toInt(input, ok);
+
+    // Test if the number has any characters we do not support
+    std::size_t index = input.find_first_not_of("-.0123456789");
+
+    if(index < input.size())
+    {
+        if(ok != nullptr)
+            (*ok) = false;
+    }
+    else
+    {
+        if(ok != nullptr)
+            (*ok) = true;
+
+        try
+        {
+            value = std::stod(input);
+        }
+        catch (...)
+        {
+            value = 0;
+            if(ok != nullptr)
+                (*ok) = false;
+        }
+    }
+
+    return value;
+
+}// ShuntingYard::toNumber
 
 
 /*!
@@ -345,7 +478,7 @@ double ShuntingYard::toNumber(QString input, bool* ok)
  *        or a decimal number
  * \return true if we can convert input to a number
  */
-bool ShuntingYard::isNumber(const QString& input)
+bool ShuntingYard::isNumber(const std::string& input)
 {
     bool ok = false;
 
@@ -362,9 +495,9 @@ bool ShuntingYard::isNumber(const QString& input)
  * \return true if the input is in the set ".0123456789" for decimal or "01"
  *         for binary or "0123456789aAbBcCdDeEfF" for hexadecimal.
  */
-bool ShuntingYard::isNumber(const QChar& input, bool hex, bool binary)
+bool ShuntingYard::isNumber(char input, bool hex, bool binary)
 {
-    QString set;
+    std::string set;
 
     if(binary)
         set = "01";
@@ -373,7 +506,7 @@ bool ShuntingYard::isNumber(const QChar& input, bool hex, bool binary)
     else
         set = ".0123456789";
 
-    return set.contains(input);
+    return (set.find(input) != std::string::npos);
 }
 
 
@@ -381,7 +514,7 @@ bool ShuntingYard::isNumber(const QChar& input, bool hex, bool binary)
  * \param input is the string to test
  * \return true if the first character of the string is an operator from the set " + - * / ^ "
  */
-bool ShuntingYard::isOperator(const QString& input)
+bool ShuntingYard::isOperator(const std::string& input)
 {
     return isOperator(input.at(0));
 }
@@ -391,20 +524,9 @@ bool ShuntingYard::isOperator(const QString& input)
  * \param input is the character to test
  * \return true if the char is an operator from the set " + - * / ^ "
  */
-bool ShuntingYard::isOperator(const QChar& input)
+bool ShuntingYard::isOperator(char input)
 {
-    if(input == '+')
-        return true;
-    else if(input == '-')
-        return true;
-    else if(input == '*')
-        return true;
-    else if(input == '/')
-        return true;
-    else if(input == '^')
-        return true;
-    else
-        return false;
+    return (std::string("+-*/^").find(input) != std::string::npos);
 }
 
 
@@ -412,7 +534,7 @@ bool ShuntingYard::isOperator(const QChar& input)
  * \param input is the character to test
  * \return true if the char is a parenthesis
  */
-bool ShuntingYard::isParen(const QChar& input)
+bool ShuntingYard::isParen(char input)
 {
     if(input == '(')
         return true;
@@ -428,7 +550,7 @@ bool ShuntingYard::isParen(const QChar& input)
  * \param raw is the input string
  * \return the output string with space separators between tokens
  */
-QString ShuntingYard::tokenize(const QString& raw)
+std::string ShuntingYard::tokenize(const std::string& raw)
 {
     typedef enum
     {
@@ -437,23 +559,21 @@ QString ShuntingYard::tokenize(const QString& raw)
         numtokentypes
     }tokentypes;
 
-    int i;
-    QString output;
-    QString input = raw;
+    std::string output;
+    std::string input = raw;
     tokentypes lasttoken = operation;
-    QChar lastcharacter = ' ';
+    char lastcharacter = ' ';
 
     // These flags track if we are parsing a binary or hex number, they can only be set by seeing the 0x or 0b prefix
     bool binary = false;
     bool hex = false;
 
-    // Handle special numbers. There are enough characters here to exceed the
-    // double precision representation
+    // Handle special numbers.
     replacePie(input);
 
-    for(i = 0; i < input.size(); i++)
+    for(std::size_t i = 0; i < input.size(); i++)
     {
-        QChar character = input.at(i);
+        char character = input.at(i);
 
         // this first case is hard, some numbers contain leading negative signs, but not hex or binary numbers.
         if(isNumber(character, hex, binary) || ((character == '-') && (lasttoken == operation) && !hex && !binary))

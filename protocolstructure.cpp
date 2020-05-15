@@ -2,17 +2,17 @@
 #include "protocolstructuremodule.h"
 #include "protocolparser.h"
 #include "protocolfield.h"
-#include <QStringList>
+#include <string>
 #include <iostream>
 
 /*!
  * Construct a protocol structure
  * \param parse points to the global protocol parser that owns everything
- * \param Parent is the hierarchical name of the object that owns this object.
+ * \param parent is the hierarchical name of the object that owns this object.
  * \param support are the protocol support details
  */
-ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
-    Encodable(parse, Parent, supported),
+ProtocolStructure::ProtocolStructure(ProtocolParser* parse, std::string parent, ProtocolSupport supported) :
+    Encodable(parse, parent, supported),
     numbitfieldgroupbytes(0),
     bitfields(false),
     usestempencodebitfields(false),
@@ -39,7 +39,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, QString Parent, Prot
     redefines(nullptr)
 {
     // List of attributes understood by ProtocolStructure
-    attriblist << "name" << "title" << "array" << "variableArray" << "array2d" << "variable2dArray" << "dependsOn" << "comment" << "hidden" << "limitOnEncode";
+    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "limitOnEncode"};
 
 }
 
@@ -52,7 +52,7 @@ void ProtocolStructure::clear(void)
     Encodable::clear();
 
     // Delete any encodable objects in our list
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         if(encodables[i])
         {
@@ -115,7 +115,7 @@ void ProtocolStructure::parse(void)
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
 
-    if(title.isEmpty())
+    if(title.empty())
         title = name;
 
     // This will propagate to any of the children we create
@@ -124,36 +124,36 @@ void ProtocolStructure::parse(void)
     else if(ProtocolParser::isFieldClear("limitOnEncode", map))
         support.limitonencode = false;
 
-    testAndWarnAttributes(map, attriblist);
+    testAndWarnAttributes(map);
 
     // for now the typename is derived from the name
     structName = typeName = support.prefix + name + "_t";
 
     // We can't have a variable array length without an array
-    if(array.isEmpty() && !variableArray.isEmpty())
+    if(array.empty() && !variableArray.empty())
     {
         emitWarning("must specify array length to specify variable array length");
         variableArray.clear();
     }
 
-    if(!dependsOn.isEmpty() && !variableArray.isEmpty())
+    if(!dependsOn.empty() && !variableArray.empty())
     {
         emitWarning("variable length arrays cannot also use dependsOn");
         dependsOn.clear();
     }
 
-    if(!dependsOnValue.isEmpty() && dependsOn.isEmpty())
+    if(!dependsOnValue.empty() && dependsOn.empty())
     {
         emitWarning("dependsOnValue does not make sense unless dependsOn is defined");
         dependsOnValue.clear();
     }
 
-    if(!dependsOnCompare.isEmpty() && dependsOnValue.isEmpty())
+    if(!dependsOnCompare.empty() && dependsOnValue.empty())
     {
         emitWarning("dependsOnCompare does not make sense unless dependsOnValue is defined");
         dependsOnCompare.clear();
     }
-    else if(dependsOnCompare.isEmpty() && !dependsOnValue.isEmpty())
+    else if(dependsOnCompare.empty() && !dependsOnValue.empty())
     {
         // This is not a warning, it is expected
         dependsOnCompare = "==";
@@ -170,14 +170,14 @@ void ProtocolStructure::parse(void)
 
     // Sum the length of all the children
     EncodedLength length;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         length.addToLength(encodables.at(i)->encodedLength);
     }
 
     // Account for array, variable array, and depends on
     encodedLength.clear();
-    encodedLength.addToLength(length, array, !variableArray.isEmpty(), !dependsOn.isEmpty());
+    encodedLength.addToLength(length, array, !variableArray.empty(), !dependsOn.empty());
 
 }// ProtocolStructure::parse
 
@@ -187,18 +187,18 @@ void ProtocolStructure::parse(void)
  * This includes the spacing, typename, name, semicolon, comment, and linefeed
  * \return the declaration string for this encodable
  */
-QString ProtocolStructure::getDeclaration(void) const
+std::string ProtocolStructure::getDeclaration(void) const
 {
-    QString output = TAB_IN + "" + typeName + " " + name;
+    std::string output = TAB_IN + "" + typeName + " " + name;
 
-    if(array.isEmpty())
+    if(array.empty())
         output += ";";
-    else if(array2d.isEmpty())
+    else if(array2d.empty())
         output += "[" + array + "];";
     else
         output += "[" + array + "][" + array2d + "]";
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += " //!< " + comment;
 
     output += "\n";
@@ -215,23 +215,23 @@ QString ProtocolStructure::getDeclaration(void) const
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to encode this structure
  */
-QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
+std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
     Q_UNUSED(isBigEndian);
     Q_UNUSED(bitcount);
 
-    QString output;
-    QString access = getEncodeFieldAccess(isStructureMember);
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string access = getEncodeFieldAccess(isStructureMember);
+    std::string spacing = TAB_IN;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
-    if(!dependsOn.isEmpty())
+    if(!dependsOn.empty())
     {
         output += spacing + "if(" + getEncodeFieldAccess(isStructureMember, dependsOn);
 
-        if(!dependsOnValue.isEmpty())
+        if(!dependsOnValue.empty())
             output += " " + dependsOnCompare + " " + dependsOnValue;
 
         output += ")\n" + spacing + "{\n";
@@ -261,7 +261,7 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
     }
 
     // Close the depends on block
-    if(!dependsOn.isEmpty())
+    if(!dependsOn.empty())
         output += TAB_IN + "}\n";
 
     return output;
@@ -276,24 +276,24 @@ QString ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to decode this structure
  */
-QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
     Q_UNUSED(isBigEndian);
     Q_UNUSED(bitcount);
     Q_UNUSED(defaultEnabled);
 
-    QString output;
-    QString access = getEncodeFieldAccess(isStructureMember);
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string access = getEncodeFieldAccess(isStructureMember);
+    std::string spacing = TAB_IN;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
-    if(!dependsOn.isEmpty())
+    if(!dependsOn.empty())
     {
         output += spacing + "if(" + getDecodeFieldAccess(isStructureMember, dependsOn);
 
-        if(!dependsOnValue.isEmpty())
+        if(!dependsOnValue.empty())
             output += " " + dependsOnCompare + " " + dependsOnValue;
 
         output += ")\n" + spacing + "{\n";
@@ -326,7 +326,7 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
         output += spacing + TAB_IN + "return false;\n";
     }
 
-    if(!dependsOn.isEmpty())
+    if(!dependsOn.empty())
         output += TAB_IN + "}\n";
 
     return output;
@@ -338,16 +338,16 @@ QString ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool
  * Get the code which verifies this structure
  * \return the code to put in the source file
  */
-QString ProtocolStructure::getVerifyString(void) const
+std::string ProtocolStructure::getVerifyString(void) const
 {
-    QString output;
-    QString access = name;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string access = name;
+    std::string spacing = TAB_IN;
 
     if(!hasverify)
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
     // Do not call getDecodeArrayIterationCode() because we explicity don't handle variable length arrays here
@@ -383,16 +383,16 @@ QString ProtocolStructure::getVerifyString(void) const
  * Get the code which sets this structure member to initial values
  * \return the code to put in the source file
  */
-QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) const
+std::string ProtocolStructure::getSetInitialValueString(bool isStructureMember) const
 {
-    QString output;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string spacing = TAB_IN;
 
     // We only need this function if we are C language, C++ classes initialize themselves
     if((!hasinit) || (support.language != ProtocolSupport::c_language))
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
     // Do not call getDecodeArrayIterationCode() because we explicity don't handle variable length arrays here
@@ -416,11 +416,11 @@ QString ProtocolStructure::getSetInitialValueString(bool isStructureMember) cons
 
 
 //! Return the strings that #define initial and variable values
-QString ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
+std::string ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
 {
-    QString output;
+    std::string output;
 
-    for(int i = 0; i < encodables.count(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // Children's outputs do not have comments, just the top level stuff
         output += encodables.at(i)->getInitialAndVerifyDefines(false);
@@ -428,7 +428,7 @@ QString ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
 
     // I don't want to output this comment if there are no values being commented,
     // that's why I insert the comment after the #defines are output
-    if(!output.isEmpty() && includeComment)
+    if(!output.empty() && includeComment)
     {
         output.insert(0, "// Initial and verify values for " + name + "\n");
     }
@@ -442,18 +442,18 @@ QString ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) const
  * Get the string used for comparing this field.
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getComparisonString(void) const
+std::string ProtocolStructure::getComparisonString(void) const
 {
-    QString output;
-    QString access1, access2;
+    std::string output;
+    std::string access1, access2;
 
     // We must have parameters that we decode to do a comparison
     if(!compare || (getNumberOfDecodeParameters() == 0))
         return output;
 
-    QString spacing = TAB_IN;
+    std::string spacing = TAB_IN;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
     /// TODO: obey variable array length limits?
@@ -514,17 +514,17 @@ QString ProtocolStructure::getComparisonString(void) const
  * Get the string used for printing this field as text.
  * \return the print string, which may be empty
  */
-QString ProtocolStructure::getTextPrintString(void) const
+std::string ProtocolStructure::getTextPrintString(void) const
 {
-    QString output;
-    QString access;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string access;
+    std::string spacing = TAB_IN;
 
     // We must parameters that we decode to do a print out
     if(!print || (getNumberOfDecodeParameters() == 0))
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
     output += getEncodeArrayIterationCode(spacing, true);
@@ -560,17 +560,17 @@ QString ProtocolStructure::getTextPrintString(void) const
  * Get the string used for reading this field from text.
  * \return the read string, which may be empty
  */
-QString ProtocolStructure::getTextReadString(void) const
+std::string ProtocolStructure::getTextReadString(void) const
 {
-    QString output;
-    QString access;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string access;
+    std::string spacing = TAB_IN;
 
     // We must parameters that we decode to do a print out
     if(!print || (getNumberOfDecodeParameters() == 0))
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
     output += getEncodeArrayIterationCode(spacing, true);
@@ -608,19 +608,19 @@ QString ProtocolStructure::getTextReadString(void) const
  * Return the string used for encoding this field to a map
  * \return the encode string, which may be empty
  */
-QString ProtocolStructure::getMapEncodeString(void) const
+std::string ProtocolStructure::getMapEncodeString(void) const
 {
-    QString output;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string spacing = TAB_IN;
 
     // We must parameters that we decode to do a print out
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
-    QString key = "\":" + name + "\"";
+    std::string key = "\":" + name + "\"";
 
     output += getEncodeArrayIterationCode(spacing, true);
     if(isArray())
@@ -651,19 +651,19 @@ QString ProtocolStructure::getMapEncodeString(void) const
  * Get the string used for decoding this field from a map.
  * \return the map decode string, which may be empty
  */
-QString ProtocolStructure::getMapDecodeString(void) const
+std::string ProtocolStructure::getMapDecodeString(void) const
 {
-    QString output;
-    QString spacing = TAB_IN;
+    std::string output;
+    std::string spacing = TAB_IN;
 
     // We must parameters that we decode to do a print out
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
         return output;
 
-    if(!comment.isEmpty())
+    if(!comment.empty())
         output += spacing + "// " + comment + "\n";
 
-    QString key = "\":" + name + "\"";
+    std::string key = "\":" + name + "\"";
 
     output += getDecodeArrayIterationCode(spacing, true);
     if(isArray())
@@ -698,8 +698,8 @@ void ProtocolStructure::parseEnumerations(const XMLNode* node)
 {
     for(const XMLElement* child = node->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
-        if(QString(child->Name()).contains("enum", Qt::CaseInsensitive))
-            enumList.append(parser->parseEnumeration(getHierarchicalName(), child));
+        if(contains(child->Name(), "enum"))
+            enumList.push_back(parser->parseEnumeration(getHierarchicalName(), child));
 
     }// for all my enum tags
 
@@ -733,7 +733,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
 
                     if(field->overridesPreviousEncodable())
                     {
-                        int prev;
+                        std::size_t prev;
                         for(prev = 0; prev < encodables.size(); prev++)
                         {
                             if(field->getOverriddenTypeData(dynamic_cast<ProtocolField*>(encodables.at(prev))))
@@ -799,7 +799,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
                         // Check defaults. If a previous field was defaulted but this
                         // field is not, then we have to terminate the previous default,
                         // only the last fields can have defaults
-                        for(int j = 0; j < encodables.size(); j++)
+                        for(std::size_t j = 0; j < encodables.size(); j++)
                         {
                             if(encodables[j]->usesDefaults())
                             {
@@ -833,9 +833,9 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
 
 
                 // Handle the variable array case. We have to make sure that the referenced variable exists
-                if(!encodable->variableArray.isEmpty())
+                if(!encodable->variableArray.empty())
                 {
-                    int prev;
+                    std::size_t prev;
                     for(prev = 0; prev < encodables.size(); prev++)
                     {
                        Encodable* previous = encodables.at(prev);
@@ -864,9 +864,9 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
                 }// if this is a variable length array
 
                 // Handle the variable 2d array case. We have to make sure that the referenced variable exists
-                if(!encodable->variable2dArray.isEmpty())
+                if(!encodable->variable2dArray.empty())
                 {
-                    int prev;
+                    std::size_t prev;
                     for(prev = 0; prev < encodables.size(); prev++)
                     {
                        Encodable* previous = encodables.at(prev);
@@ -895,7 +895,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
                 }// if this is a 2d variable length array
 
                 // Handle the dependsOn case. We have to make sure that the referenced variable exists
-                if(!encodable->dependsOn.isEmpty())
+                if(!encodable->dependsOn.empty())
                 {
                     if(encodable->isBitfield())
                     {
@@ -904,7 +904,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
                     }
                     else
                     {
-                        int prev;
+                        std::size_t prev;
                         for(prev = 0; prev < encodables.size(); prev++)
                         {
                            Encodable* previous = encodables.at(prev);
@@ -966,7 +966,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
 //! Set the compare flag for this structure and all children structure
 void ProtocolStructure::setCompare(bool enable)
 {
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // Is this encodable a structure?
         ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -985,7 +985,7 @@ void ProtocolStructure::setCompare(bool enable)
 //! Set the print flag for this structure and all children structure
 void ProtocolStructure::setPrint(bool enable)
 {
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // Is this encodable a structure?
         ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1004,7 +1004,7 @@ void ProtocolStructure::setPrint(bool enable)
 //! Set the mapEncode flag for this structure and all children structure
 void ProtocolStructure::setMapEncode(bool enable)
 {
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // Is this encodable a structure?
         ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1036,7 +1036,7 @@ void ProtocolStructure::getBitfieldGroupNumBytes(int* num) const
 int ProtocolStructure::getNumberOfEncodes(void) const
 {
     int numEncodes = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // If its not encoded at all, then it does not count
         if(encodables.at(i)->isNotEncoded())
@@ -1057,7 +1057,7 @@ int ProtocolStructure::getNumberOfEncodes(void) const
 int ProtocolStructure::getNumberOfEncodeParameters(void) const
 {
     int numEncodes = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // If its not encoded at all, or its encoded as a constant, then it does not count
         if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isConstant())
@@ -1080,7 +1080,7 @@ int ProtocolStructure::getNumberOfDecodeParameters(void) const
 {
     // Its is possible that all of our decodes are in fact not set by the user
     int numDecodes = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         // If its not encoded at all, or its not in memory (hence not decoded) it does not count
         if(encodables.at(i)->isNotEncoded() || encodables.at(i)->isNotInMemory())
@@ -1100,7 +1100,7 @@ int ProtocolStructure::getNumberOfDecodeParameters(void) const
 int ProtocolStructure::getNumberInMemory(void) const
 {
     int num = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         if(encodables.at(i)->isNotInMemory())
             continue;
@@ -1117,29 +1117,29 @@ int ProtocolStructure::getNumberInMemory(void) const
  * but for external structures or enumerations we need to bring in the include file
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getIncludeDirectives(list);
 
     // Array sizes could be enumerations that need an include directive
-    if(!array.isEmpty())
+    if(!array.empty())
     {
-        QString include = parser->lookUpIncludeName(array);
-        if(!include.isEmpty())
-            list.append(include);
+        std::string include = parser->lookUpIncludeName(array);
+        if(!include.empty())
+            list.push_back(include);
     }
 
     // Array sizes could be enumerations that need an include directive
-    if(!array2d.isEmpty())
+    if(!array2d.empty())
     {
-        QString include = parser->lookUpIncludeName(array2d);
-        if(!include.isEmpty())
-            list.append(include);
+        std::string include = parser->lookUpIncludeName(array2d);
+        if(!include.empty())
+            list.push_back(include);
     }
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 
 }// ProtocolStructure::getIncludeDirectives
 
@@ -1149,13 +1149,13 @@ void ProtocolStructure::getIncludeDirectives(QStringList& list) const
  * but code encodables may have source code includes.
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getSourceIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getSourceIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getSourceIncludeDirectives(list);
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 }
 
 
@@ -1163,13 +1163,13 @@ void ProtocolStructure::getSourceIncludeDirectives(QStringList& list) const
  * Return the include directives needed for this encodable's init and verify functions
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getInitAndVerifyIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getInitAndVerifyIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getInitAndVerifyIncludeDirectives(list);
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 }
 
 
@@ -1177,13 +1177,13 @@ void ProtocolStructure::getInitAndVerifyIncludeDirectives(QStringList& list) con
  * Return the include directives needed for this encodable's map functions
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getMapIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getMapIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getMapIncludeDirectives(list);
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 }
 
 
@@ -1191,13 +1191,13 @@ void ProtocolStructure::getMapIncludeDirectives(QStringList& list) const
  * Return the include directives needed for this encodable's compare functions
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getCompareIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getCompareIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getCompareIncludeDirectives(list);
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 }
 
 
@@ -1205,13 +1205,13 @@ void ProtocolStructure::getCompareIncludeDirectives(QStringList& list) const
  * Return the include directives needed for this encodable's print functions
  * \param list is appended with any directives this encodable requires.
  */
-void ProtocolStructure::getPrintIncludeDirectives(QStringList& list) const
+void ProtocolStructure::getPrintIncludeDirectives(std::vector<std::string>& list) const
 {
     // Includes that our encodable members may need
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getPrintIncludeDirectives(list);
 
-    list.removeDuplicates();
+    removeDuplicates(list);
 }
 
 
@@ -1221,16 +1221,16 @@ void ProtocolStructure::getPrintIncludeDirectives(QStringList& list) const
  * \param alwaysCreate should be true to force creation of the structure, even if there is only one member
  * \return the string that represents the structure declaration
  */
-QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
+std::string ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
 {
-    QString output;
-    QString structure;
+    std::string output;
+    std::string structure;
 
     // Declare our childrens structures first, but only if we are not redefining
     // someone else, in which case they have already declared the children
     if(redefines == nullptr)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Is this encodable a structure?
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1247,7 +1247,7 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
 
     /// TODO: Move this to be within the class for C++
     // Output enumerations specific to this structure
-    for(int i = 0; i < enumList.size(); i++)
+    for(std::size_t i = 0; i < enumList.size(); i++)
     {
         output += enumList.at(i)->getOutput();
         ProtocolFile::makeLineSeparator(output);
@@ -1267,9 +1267,9 @@ QString ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
  * Get the structure declaration, for this structure only (not its children) for the C language
  * \return The string that gives the structure declaration
  */
-QString ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) const
+std::string ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) const
 {
-    QString output;
+    std::string output;
 
     // We don't generate the structure if there is only one element, whats
     // the point? Unless the the caller tells us to always create it. We
@@ -1277,10 +1277,10 @@ QString ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) const
     // the structure already exists.
     if((redefines == nullptr) && (getNumberInMemory() > 0) && ((getNumberInMemory() > 1) || alwaysCreate))
     {
-        QString structure;
+        std::string structure;
 
         // The top level comment for the structure definition
-        if(!comment.isEmpty())
+        if(!comment.empty())
         {
             output += "/*!\n";
             output += ProtocolParser::outputLongComment(" *", comment) + "\n";
@@ -1290,7 +1290,7 @@ QString ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) const
         // The opening to the structure
         output += "typedef struct\n";
         output += "{\n";
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
             structure += encodables[i]->getDeclaration();
 
         // Make structures pretty with alignment goodness
@@ -1310,13 +1310,13 @@ QString ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) const
  * Get the class declaration, for this structure only (not its children) for the C++ language
  * \return The string that gives the class declaration
  */
-QString ProtocolStructure::getClassDeclaration_CPP(void) const
+std::string ProtocolStructure::getClassDeclaration_CPP(void) const
 {
-    QString output;
-    QString structure;
+    std::string output;
+    std::string structure;
 
     // The top level comment for the class definition
-    if(!comment.isEmpty())
+    if(!comment.empty())
     {
         output += "/*!\n";
         output += ProtocolParser::outputLongComment(" *", comment) + "\n";
@@ -1404,7 +1404,7 @@ QString ProtocolStructure::getClassDeclaration_CPP(void) const
         }
 
         // Now declare the members of this class
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
             structure += encodables[i]->getDeclaration();
 
         // Make classes pretty with alignment goodness
@@ -1427,29 +1427,32 @@ QString ProtocolStructure::getClassDeclaration_CPP(void) const
  * \param structure is the input structure string
  * \return a new string that is the aligned structure string
  */
-QString ProtocolStructure::alignStructureData(const QString& structure) const
+std::string ProtocolStructure::alignStructureData(const std::string& structure) const
 {
-    int i, index;
+    std::size_t i, index;
 
     // The strings as a list separated by line feeds
-    QStringList list = structure.split("\n", QString::SkipEmptyParts);
+    std::vector<std::string> list = split(structure, "\n");
 
     // The space separates the typeName from the name,
     // but skip the indent spaces
-    int max = 0;
+    std::size_t max = 0;
     for(i = 0; i < list.size(); i++)
     {
-        int index = list[i].indexOf(" ", 4);
-        if(index > max)
+        index = list.at(i).find(" ", TAB_IN.size());
+        if((index < list.at(i).size()) && (index > max))
             max = index;
     }
 
-    for(int i = 0; i < list.size(); i++)
+    for(i = 0; i < list.size(); i++)
     {
         // Insert spaces until we have reached the max
-        index = list[i].indexOf(" ", 4);
-        for(; index < max; index++)
-            list[i].insert(index, " ");
+        index = list.at(i).find(" ", TAB_IN.size());
+        if((index < list.at(i).size()))
+        {
+            for(; index < max; index++)
+                list[i].insert(index, " ");
+        }
     }
 
     // The first semicolon we find separates the name from the comment
@@ -1457,25 +1460,27 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
     for(i = 0; i < list.size(); i++)
     {
         // we want the character after the semicolon
-        index = list[i].indexOf(";") + 1;
-        if(index > max)
-            max = index;
+        index = list[i].find(";");
+        if(index < list.at(i).size())
+        {
+            if(index + 1 > max)
+                max = index + 1;
+        }
     }
 
     for(i = 0; i < list.size(); i++)
     {
         // Insert spaces until we have reached the max
-        index = list[i].indexOf(";") + 1;
-        for(; index < max; index++)
-            list[i].insert(index, " ");
+        index = list[i].find(";");
+        if(index < list.at(i).size())
+        {
+            for(index += 1; index < max; index++)
+                list[i].insert(index, " ");
+        }
     }
 
     // Re-assemble the output, put the line feeds back on
-    QString output;
-    for(i = 0; i < list.size(); i++)
-        output += list[i] + "\n";
-
-    return output;
+    return join(list, "\n") + "\n";
 
 }// ProtocolStructure::alignStructureData
 
@@ -1485,13 +1490,13 @@ QString ProtocolStructure::alignStructureData(const QString& structure) const
  * \param insource should be true to indicate this signature is in source code
  * \return the signature of the encode function.
  */
-QString ProtocolStructure::getEncodeFunctionSignature(bool insource) const
+std::string ProtocolStructure::getEncodeFunctionSignature(bool insource) const
 {
-    QString output;
+    std::string output;
 
     if(support.language == ProtocolSupport::c_language)
     {
-        QString pg;
+        std::string pg;
 
         if(insource)
             pg = "_pg_";
@@ -1538,14 +1543,14 @@ QString ProtocolStructure::getEncodeFunctionSignature(bool insource) const
  * \param includeChildren should be true to output the children's prototypes.
  * \return The string including the comments and prototypes with linefeeds and semicolons.
  */
-QString ProtocolStructure::getEncodeFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getEncodeFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // Only the C language needs this. C++ declares the prototype within the class
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Is this encodable a structure?
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1576,13 +1581,13 @@ QString ProtocolStructure::getEncodeFunctionPrototype(const QString& spacing, bo
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons.
  */
-QString ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeChildren) const
+std::string ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Is this encodable a structure?
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1621,7 +1626,7 @@ QString ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeC
     if(numbitfieldgroupbytes > 0)
     {
         output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
-        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + std::to_string(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsEncodeIterator)
@@ -1631,7 +1636,7 @@ QString ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeC
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     int bitcount = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
@@ -1656,13 +1661,13 @@ QString ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeC
  * \param insource should be true to indicate this signature is in source code
  * \return the signature of the decode function.
  */
-QString ProtocolStructure::getDecodeFunctionSignature(bool insource) const
+std::string ProtocolStructure::getDecodeFunctionSignature(bool insource) const
 {
-    QString output;
+    std::string output;
 
     if(support.language == ProtocolSupport::c_language)
     {
-        QString pg;
+        std::string pg;
 
         if(insource)
             pg = "_pg_";
@@ -1698,14 +1703,14 @@ QString ProtocolStructure::getDecodeFunctionSignature(bool insource) const
  * \param includeChildren should be true to output the children's prototypes.
  * \return The string including the comments and prototypes with linefeeds and semicolons.
  */
-QString ProtocolStructure::getDecodeFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getDecodeFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // Only the C language needs this. C++ declares the prototype within the class
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Is this encodable a structure?
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1734,13 +1739,13 @@ QString ProtocolStructure::getDecodeFunctionPrototype(const QString& spacing, bo
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons.
  */
-QString ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeChildren) const
+std::string ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Is this encodable a structure?
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
@@ -1779,7 +1784,7 @@ QString ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeC
     if(numbitfieldgroupbytes > 0)
     {
         output += TAB_IN + "int _pg_bitfieldindex = 0;\n";
-        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + QString::number(numbitfieldgroupbytes) + "];\n";
+        output += TAB_IN + "uint8_t _pg_bitfieldbytes[" + std::to_string(numbitfieldgroupbytes) + "];\n";
     }
 
     if(needsDecodeIterator)
@@ -1789,7 +1794,7 @@ QString ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeC
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
     int bitcount = 0;
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
@@ -1816,9 +1821,9 @@ QString ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeC
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the set to initial value function.
  */
-QString ProtocolStructure::getSetToInitialValueFunctionSignature(bool insource) const
+std::string ProtocolStructure::getSetToInitialValueFunctionSignature(bool insource) const
 {
-    QString output;
+    std::string output;
 
     if(support.language == ProtocolSupport::c_language)
     {
@@ -1855,9 +1860,9 @@ QString ProtocolStructure::getSetToInitialValueFunctionSignature(bool insource) 
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getSetToInitialValueFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getSetToInitialValueFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // C++ always has init (constructor) functions, but not C
     if(!hasInit() && (support.language == ProtocolSupport::c_language))
@@ -1866,7 +1871,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(const QString& 
     // Go get any children structures set to initial functions
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -1899,9 +1904,9 @@ QString ProtocolStructure::getSetToInitialValueFunctionPrototype(const QString& 
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // C++ always has init (constructor) functions, but not C
     if(!hasInit() && (support.language == ProtocolSupport::c_language))
@@ -1910,7 +1915,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
     // Go get any children structures set to initial functions
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -1942,7 +1947,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         if(needs2ndInitIterator)
             output += TAB_IN + "int _pg_j = 0;\n";
 
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             /// TODO: change this to zeroize all fields
             ProtocolFile::makeLineSeparator(output);
@@ -1957,9 +1962,9 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
     {
         // Set to initial values is just the constructor. We initialize every
         // member that is not itself another class (they take care of themselves).
-        QString initializerlist;
+        std::string initializerlist;
 
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             // Structures (classes really) take care of themselves
             if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
@@ -1969,10 +1974,10 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
         }
 
         // Get rid of the comma on the last member of the initializer list
-        if(initializerlist.endsWith(",\n"))
-            initializerlist = initializerlist.left(initializerlist.lastIndexOf(",\n")) + "\n";
+        if(endsWith(initializerlist, ",\n"))
+            initializerlist = initializerlist.erase(initializerlist.rfind(",\n")) + "\n";
 
-        if(initializerlist.isEmpty())
+        if(initializerlist.empty())
             initializerlist = "\n";
         else
             initializerlist = " :\n" + initializerlist;
@@ -1996,7 +2001,7 @@ QString ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChildren
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the verify function.
  */
-QString ProtocolStructure::getVerifyFunctionSignature(bool insource) const
+std::string ProtocolStructure::getVerifyFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2023,9 +2028,9 @@ QString ProtocolStructure::getVerifyFunctionSignature(bool insource) const
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getVerifyFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getVerifyFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // Only if we have verify functions
     if(!hasVerify())
@@ -2034,7 +2039,7 @@ QString ProtocolStructure::getVerifyFunctionPrototype(const QString& spacing, bo
     // Go get any children structures verify functions
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2063,9 +2068,9 @@ QString ProtocolStructure::getVerifyFunctionPrototype(const QString& spacing, bo
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons
  */
-QString ProtocolStructure::getVerifyFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getVerifyFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // Only if we have verify functions
     if(!hasVerify())
@@ -2074,7 +2079,7 @@ QString ProtocolStructure::getVerifyFunctionBody(bool includeChildren) const
     // Go get any children structures verify functions
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2119,7 +2124,7 @@ QString ProtocolStructure::getVerifyFunctionBody(bool includeChildren) const
     if(needs2ndVerifyIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getVerifyString();
@@ -2143,7 +2148,7 @@ QString ProtocolStructure::getVerifyFunctionBody(bool includeChildren) const
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the comparison function.
  */
-QString ProtocolStructure::getComparisonFunctionSignature(bool insource) const
+std::string ProtocolStructure::getComparisonFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2169,9 +2174,9 @@ QString ProtocolStructure::getComparisonFunctionSignature(bool insource) const
  * \param includeChildren should be true to include the function prototypes of the children structures of this structure
  * \return the function prototype string, which may be empty
  */
-QString ProtocolStructure::getComparisonFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getComparisonFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a compare
     if(!compare || (getNumberOfDecodeParameters() == 0))
@@ -2180,7 +2185,7 @@ QString ProtocolStructure::getComparisonFunctionPrototype(const QString& spacing
     // Go get any children structures compare functions
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2209,9 +2214,9 @@ QString ProtocolStructure::getComparisonFunctionPrototype(const QString& spacing
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a compare
     if(!compare || (getNumberOfDecodeParameters() == 0))
@@ -2220,7 +2225,7 @@ QString ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
     // Go get any childrens structure compare functions
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2262,7 +2267,7 @@ QString ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getComparisonString();
@@ -2286,7 +2291,7 @@ QString ProtocolStructure::getComparisonFunctionBody(bool includeChildren) const
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the comparison function.
  */
-QString ProtocolStructure::getTextPrintFunctionSignature(bool insource) const
+std::string ProtocolStructure::getTextPrintFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2312,9 +2317,9 @@ QString ProtocolStructure::getTextPrintFunctionSignature(bool insource) const
  * \param includeChildren should be true to include the function prototypes of the children of this structure.
  * \return the function prototype string, which may be empty
  */
-QString ProtocolStructure::getTextPrintFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getTextPrintFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a print out
     if(!print || (getNumberOfDecodeParameters() == 0))
@@ -2323,7 +2328,7 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(const QString& spacing,
     // Go get any children structures textPrint functions
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2351,9 +2356,9 @@ QString ProtocolStructure::getTextPrintFunctionPrototype(const QString& spacing,
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a print out
     if(!print || (getNumberOfDecodeParameters() == 0))
@@ -2362,7 +2367,7 @@ QString ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
     // Go get any childrens structure textPrint functions
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2393,7 +2398,7 @@ QString ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getTextPrintString();
@@ -2417,7 +2422,7 @@ QString ProtocolStructure::getTextPrintFunctionBody(bool includeChildren) const
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the comparison function.
  */
-QString ProtocolStructure::getTextReadFunctionSignature(bool insource) const
+std::string ProtocolStructure::getTextReadFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2445,9 +2450,9 @@ QString ProtocolStructure::getTextReadFunctionSignature(bool insource) const
  *        the children structures of this structure
  * \return the function prototype string, which may be empty
  */
-QString ProtocolStructure::getTextReadFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getTextReadFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a read
     if(!print || (getNumberOfDecodeParameters() == 0))
@@ -2456,7 +2461,7 @@ QString ProtocolStructure::getTextReadFunctionPrototype(const QString& spacing, 
     // Go get any children structures textRead functions
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2484,9 +2489,9 @@ QString ProtocolStructure::getTextReadFunctionPrototype(const QString& spacing, 
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // We must have parameters that we decode to do a read
     if(!print || (getNumberOfDecodeParameters() == 0))
@@ -2495,7 +2500,7 @@ QString ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
     // Go get any childrens structure textRead functions
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2528,7 +2533,7 @@ QString ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getTextReadString();
@@ -2552,7 +2557,7 @@ QString ProtocolStructure::getTextReadFunctionBody(bool includeChildren) const
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the comparison function.
  */
-QString ProtocolStructure::getMapEncodeFunctionSignature(bool insource) const
+std::string ProtocolStructure::getMapEncodeFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2580,9 +2585,9 @@ QString ProtocolStructure::getMapEncodeFunctionSignature(bool insource) const
  *        of the child structures
  * \return the function prototype string, which may be empty
  */
-QString ProtocolStructure::getMapEncodeFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getMapEncodeFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     // Only the C language has to create the prototype functions, in C++ this is part of the class declaration
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
@@ -2590,7 +2595,7 @@ QString ProtocolStructure::getMapEncodeFunctionPrototype(const QString& spacing,
 
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length();  i++)
+        for(std::size_t i = 0; i < encodables.size();  i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2619,16 +2624,16 @@ QString ProtocolStructure::getMapEncodeFunctionPrototype(const QString& spacing,
  * \param includeChildren should be true to include the functions of the child structures
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getMapEncodeFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getMapEncodeFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
         return output;
 
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2660,7 +2665,7 @@ QString ProtocolStructure::getMapEncodeFunctionBody(bool includeChildren) const
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i=0; i<encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getMapEncodeString();
@@ -2683,7 +2688,7 @@ QString ProtocolStructure::getMapEncodeFunctionBody(bool includeChildren) const
  * \param insource should be true to indicate this signature is in source code.
  * \return the signature of the comparison function.
  */
-QString ProtocolStructure::getMapDecodeFunctionSignature(bool insource) const
+std::string ProtocolStructure::getMapDecodeFunctionSignature(bool insource) const
 {
     if(support.language == ProtocolSupport::c_language)
     {
@@ -2711,16 +2716,16 @@ QString ProtocolStructure::getMapDecodeFunctionSignature(bool insource) const
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getMapDecodeFunctionPrototype(const QString& spacing, bool includeChildren) const
+std::string ProtocolStructure::getMapDecodeFunctionPrototype(const std::string& spacing, bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
         return output;
 
     if(includeChildren && (support.language == ProtocolSupport::c_language))
     {
-        for(int i = 0; i < encodables.length();  i++)
+        for(std::size_t i = 0; i < encodables.size();  i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2750,16 +2755,16 @@ QString ProtocolStructure::getMapDecodeFunctionPrototype(const QString& spacing,
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
-QString ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) const
+std::string ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) const
 {
-    QString output;
+    std::string output;
 
     if(!mapEncode || (getNumberOfDecodeParameters() == 0))
         return output;
 
     if(includeChildren)
     {
-        for(int i = 0; i < encodables.length(); i++)
+        for(std::size_t i = 0; i < encodables.size(); i++)
         {
             ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
 
@@ -2792,7 +2797,7 @@ QString ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) const
     if(needs2ndDecodeIterator)
         output += TAB_IN + "unsigned _pg_j = 0;\n";
 
-    for(int i=0; i<encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
         output += encodables[i]->getMapDecodeString();
@@ -2820,70 +2825,69 @@ QString ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) const
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const
 {
-    QString description;
+    std::string description;
 
-    QString maxEncodedLength = encodedLength.maxEncodedLength;
+    std::string maxEncodedLength = encodedLength.maxEncodedLength;
 
     // See if we can replace any enumeration names with values
     maxEncodedLength = parser->replaceEnumerationNameWithValue(maxEncodedLength);
 
     // The byte after this one
-    QString nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
+    std::string nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
 
     // The length data
-    if(maxEncodedLength.isEmpty() || (maxEncodedLength.compare("1") == 0))
-        bytes.append(startByte);
+    if(maxEncodedLength.empty() || (maxEncodedLength.compare("1") == 0))
+        bytes.push_back(startByte);
     else
     {
-        QString endByte = EncodedLength::subtractOneFromLengthString(nextStartByte);
+        std::string endByte = EncodedLength::subtractOneFromLengthString(nextStartByte);
 
         // The range of the data
-        bytes.append(startByte + "..." + endByte);
+        bytes.push_back(startByte + "..." + endByte);
     }
 
     // The name information
-    outline.last() += 1;
-    QString outlineString;
-    outlineString.setNum(outline.at(0));
-    for(int i = 1; i < outline.size(); i++)
-        outlineString += "." + QString().setNum(outline.at(i));
+    outline.back() += 1;
+    std::string outlineString = std::to_string(outline.at(0));
+    for(std::size_t i = 1; i < outline.size(); i++)
+        outlineString += "." + std::to_string(outline.at(i));
     outlineString += ")" + title;
-    names.append(outlineString);
+    names.push_back(outlineString);
 
     // Encoding is blank for structures
-    encodings.append(QString());
+    encodings.push_back(std::string());
 
     // The repeat/array column
-    if(array.isEmpty())
-        repeats.append(QString());
+    if(array.empty())
+        repeats.push_back(std::string());
     else
-        repeats.append(getRepeatsDocumentationDetails());
+        repeats.push_back(getRepeatsDocumentationDetails());
 
     // The commenting
     description += comment;
 
-    if(!dependsOn.isEmpty())
+    if(!dependsOn.empty())
     {
-        if(!description.endsWith('.'))
+        if(description.back() != '.')
             description += ".";
 
-        if(dependsOnValue.isEmpty())
+        if(dependsOnValue.empty())
             description += " Only included if " + dependsOn + " is non-zero.";
         else
         {
-            if(dependsOnCompare.isEmpty())
+            if(dependsOnCompare.empty())
                 description += " Only included if " + dependsOn + " equal to " + dependsOnValue + ".";
             else
                 description += " Only included if " + dependsOn + " " + dependsOnCompare + " " + dependsOnValue + ".";
         }
     }
 
-    if(description.isEmpty())
-        comments.append(QString());
+    if(description.empty())
+        comments.push_back(std::string());
     else
-        comments.append(description);
+        comments.push_back(description);
 
     // Now go get the sub-encodables
     getSubDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
@@ -2904,15 +2908,15 @@ void ProtocolStructure::getDocumentationDetails(QList<int>& outline, QString& st
  * \param repeats is appended for the array information of this encodable.
  * \param comments is appended for the description of this encodable.
  */
-void ProtocolStructure::getSubDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const
+void ProtocolStructure::getSubDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const
 {
-    outline.append(0);
+    outline.push_back(0);
 
     // Go get the sub-encodables
-    for(int i = 0; i < encodables.length(); i++)
+    for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getDocumentationDetails(outline, startByte, bytes, names, encodings, repeats, comments);
 
-    outline.removeLast();
+    outline.pop_back();
 
 }// ProtocolStructure::getSubDocumentationDetails
 

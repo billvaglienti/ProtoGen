@@ -5,12 +5,13 @@
 /*!
  * Construct a blank protocol field
  * \param parse points to the global protocol parser that owns everything
- * \param Parent is the hierarchical name of the owning object
+ * \param parent is the hierarchical name of the owning object
  * \param supported indicates what the protocol can support
  */
-ProtocolCode::ProtocolCode(ProtocolParser* parse, QString Parent, ProtocolSupport supported):
-    Encodable(parse, Parent, supported)
+ProtocolCode::ProtocolCode(ProtocolParser* parse, std::string parent, ProtocolSupport supported):
+    Encodable(parse, parent, supported)
 {
+    attriblist = {"name", "encode", "decode", "encode_c", "decode_c", "encode_cpp", "decode_cpp", "encode_python", "decode_python", "comment", "include"};
 }
 
 
@@ -43,33 +44,22 @@ void ProtocolCode::parse(void)
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map, "_unknown");
+    encode = ProtocolParser::getAttribute("encode_c", map);
+    decode = ProtocolParser::getAttribute("decode_c", map);
+    encodecpp = ProtocolParser::getAttribute("encode_cpp", map);
+    decodecpp = ProtocolParser::getAttribute("decode_cpp", map);
+    encodepython = ProtocolParser::getAttribute("encode_python", map);
+    decodepython = ProtocolParser::getAttribute("decode_python", map);
+    comment = ProtocolParser::getAttribute("comment", map);
+    include = ProtocolParser::getAttribute("include", map);
 
-    for(; map != nullptr; map = map->Next())
-    {
-        QString attrname = QString(map->Name()).trimmed();
+    if(encode.empty())
+        encode = ProtocolParser::getAttribute("encode", map);
 
-        if(attrname.compare("name", Qt::CaseInsensitive) == 0)
-            name = QString(map->Value()).trimmed();
-        else if((attrname.compare("encode", Qt::CaseInsensitive) == 0) || (attrname.compare("encode_c", Qt::CaseInsensitive) == 0))
-            encode = QString(map->Value()).trimmed();
-        else if((attrname.compare("decode", Qt::CaseInsensitive) == 0) || (attrname.compare("decode_c", Qt::CaseInsensitive) == 0))
-            decode = QString(map->Value()).trimmed();
-        else if(attrname.compare("encode_cpp", Qt::CaseInsensitive) == 0)
-            encodecpp = QString(map->Value()).trimmed();
-        else if(attrname.compare("decode_cpp", Qt::CaseInsensitive) == 0)
-            decodecpp = QString(map->Value()).trimmed();
-        else if(attrname.compare("encode_python", Qt::CaseInsensitive) == 0)
-            encodepython = QString(map->Value()).trimmed();
-        else if(attrname.compare("decode_python", Qt::CaseInsensitive) == 0)
-            decodepython = QString(map->Value()).trimmed();
-        else if(attrname.compare("comment", Qt::CaseInsensitive) == 0)
-            comment = QString(map->Value()).trimmed();
-        else if(attrname.compare("include", Qt::CaseInsensitive) == 0)
-            include = QString(map->Value()).trimmed();
-        else if(support.disableunrecognized == false)
-            emitWarning("Unrecognized attribute \"" + attrname + "\"");
+    if(decode.empty())
+        decode = ProtocolParser::getAttribute("decode", map);
 
-    }// for all attributes
+    testAndWarnAttributes(map);
 
 }// ProtocolCode::parse
 
@@ -84,24 +74,24 @@ void ProtocolCode::parse(void)
  *        to the inMemoryType, ignored.
  * \return The string to add to the source file for this code.
  */
-QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
+std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
     Q_UNUSED(isBigEndian);
     Q_UNUSED(bitcount);
     Q_UNUSED(isStructureMember);
 
-    QString output;
+    std::string output;
 
-    if((support.language == ProtocolSupport::c_language) && !encode.isEmpty())
+    if((support.language == ProtocolSupport::c_language) && !encode.empty())
     {
-        if(!comment.isEmpty())
+        if(!comment.empty())
             output += TAB_IN + "// " + comment + "\n";
 
         output += TAB_IN + encode + "\n";
     }
-    else if((support.language == ProtocolSupport::cpp_language) && !encodecpp.isEmpty())
+    else if((support.language == ProtocolSupport::cpp_language) && !encodecpp.empty())
     {
-        if(!comment.isEmpty())
+        if(!comment.empty())
             output += TAB_IN + "// " + comment + "\n";
 
         output += TAB_IN + encodecpp + "\n";
@@ -123,25 +113,25 @@ QString ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isSt
  * \param defaultEnabled should be true to handle defaults, ignored.
  * \return The string to add to the source file for this code.
  */
-QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
     Q_UNUSED(isBigEndian);
     Q_UNUSED(bitcount);
     Q_UNUSED(isStructureMember);
     Q_UNUSED(defaultEnabled);
 
-    QString output;
+    std::string output;
 
-    if((support.language == ProtocolSupport::c_language) && !decode.isEmpty())
+    if((support.language == ProtocolSupport::c_language) && !decode.empty())
     {
-        if(!comment.isEmpty())
+        if(!comment.empty())
             output += TAB_IN + "// " + comment + "\n";
 
         output += TAB_IN + decode + "\n";
     }
-    else if((support.language == ProtocolSupport::cpp_language) && !decodecpp.isEmpty())
+    else if((support.language == ProtocolSupport::cpp_language) && !decodecpp.empty())
     {
-        if(!comment.isEmpty())
+        if(!comment.empty())
             output += TAB_IN + "// " + comment + "\n";
 
         output += TAB_IN + decodecpp + "\n";
@@ -152,10 +142,10 @@ QString ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isSt
 
 
 //! Return the include directives that go into source code needed for this encodable
-void ProtocolCode::getSourceIncludeDirectives(QStringList& list) const
+void ProtocolCode::getSourceIncludeDirectives(std::vector<std::string>& list) const
 {
-    if(!include.isEmpty())
-        list.append(include);
+    if(!include.empty())
+        list.push_back(include);
 }
 
 

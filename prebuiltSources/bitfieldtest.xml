@@ -1,4 +1,4 @@
-<Protocol name="bitfieldtest" comment="Test structure for bitfields">
+R"===(<Protocol name="bitfieldtest" comment="Test structure for bitfields">
 
     <Structure name="bitfieldtest" file="bitfieldtest" comment="A bitfield structure used for testing bitfields in Protogen">
         <Data name="test1" inMemoryType="bitfield1"   initialValue="1"              comment="A bitfield of length 1"/>
@@ -32,4 +32,4 @@
         <Data name="testd" inMemoryType="bitfield11"  initialValue="0"              constant="0"/>
     </Structure>
 
-</Protocol>
+</Protocol>)==="

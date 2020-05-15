@@ -11,32 +11,38 @@ FieldCoding::FieldCoding(ProtocolSupport sup) :
 
     if(support.int64)
     {
-        typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");  typeNames.push_back("uint64_t");  typeNames.push_back("int64_t");
-        typeSigNames.push_back("uint64"); typeSigNames.push_back("int64"); typeSigNames.push_back("uint56"); typeSigNames.push_back("int56"); typeSigNames.push_back("uint48"); typeSigNames.push_back("int48"); typeSigNames.push_back("uint40"); typeSigNames.push_back("int40");
-        typeSizes    <<        8 <<       8 <<        7 <<       7 <<        6 <<       6 <<        5 <<       5 ;
-        typeUnsigneds<< true     << false   << true     << false   << true     << false   << true     << false   ;
+        typeNames    = {"uint64_t", "int64_t", "uint64_t", "int64_t", "uint64_t", "int64_t", "uint64_t", "int64_t"};
+        typeSigNames = {"uint64"  , "int64"  , "uint56"  , "int56"  , "uint48"  , "int48"  , "uint40"  , "int40"  };
+        typeSizes    = {        8 ,        8 ,         7 ,        7 ,         6 ,        6 ,         5 ,       5  };
+        typeUnsigneds= { true     ,  false   ,  true     ,  false   ,  true     ,  false   ,  true     ,   false  };
     }
 
     // These types are always supported
-    typeNames.push_back("float");       typeNames.push_back("uint32_t");  typeNames.push_back("int32_t");  typeNames.push_back("uint32_t");  typeNames.push_back("int32_t");  typeNames.push_back("uint16_t");  typeNames.push_back("int16_t");  typeNames.push_back("uint8_t");  typeNames.push_back("int8_t");
-    typeSigNames.push_back("float32");  typeSigNames.push_back("uint32"); typeSigNames.push_back("int32"); typeSigNames.push_back("uint24"); typeSigNames.push_back("int24"); typeSigNames.push_back("uint16"); typeSigNames.push_back("int16"); typeSigNames.push_back("uint8"); typeSigNames.push_back("int8");
-    typeSizes    <<       4 <<      4   <<       4 <<        3 <<       3 <<        2 <<       2 <<       1 << 1;
-    typeUnsigneds<< false   << true     << false   << true     << false   << true     << false   << true    << false;
+
+    std::vector<std::string> temp1 = {"float"  , "uint32_t", "int32_t", "uint32_t", "int32_t", "uint16_t", "int16_t", "uint8_t", "int8_t"};
+    std::vector<std::string> temp2 = {"float32", "uint32"  , "int32"  , "uint24"  , "int24"  , "uint16"  , "int16"  , "uint8"  , "int8"  };
+    std::vector<int>         temp3 = {       4 ,       4   ,        4 ,         3 ,        3 ,         2 ,        2 ,        1 ,       1 };
+    std::vector<bool>        temp4 = { false   ,  true     ,  false   ,  true     ,  false   ,  true     ,  false   ,  true    ,  false  };
+
+    typeNames.insert(typeNames.end(), temp1.begin(), temp1.end());
+    typeSigNames.insert(typeSigNames.end(), temp2.begin(), temp2.end());
+    typeSizes.insert(typeSizes.end(), temp3.begin(), temp3.end());
+    typeUnsigneds.insert(typeUnsigneds.end(), temp4.begin(), temp4.end());
 
     if(support.float64)
     {
         typeNames.push_back("double");
         typeSigNames.push_back("float64");
-        typeSizes    <<       8 ;
-        typeUnsigneds<< false   ;
+        typeSizes.push_back(8);
+        typeUnsigneds.push_back(false);
     }
 
     if(support.specialFloat)
     {
         typeNames.push_back("float");      typeNames.push_back("float");
         typeSigNames.push_back("float24"); typeSigNames.push_back("float16");
-        typeSizes    <<        3 <<       2 ;
-        typeUnsigneds<< false    << false   ;
+        typeSizes.push_back(3);            typeSizes.push_back(2);
+        typeUnsigneds.push_back(false);    typeUnsigneds.push_back(false);
     }
 
 }
@@ -94,74 +100,72 @@ bool FieldCoding::generateEncodeHeader(void)
 {
     header.setModuleNameAndPath("fieldencode", support.outputpath, support.language);
 
-    // Top level comment
-    header.write("\
-/*!\n\
- * \\file\n\
- * fieldencode provides routines to place numbers into a byte stream.\n\
- *\n\
- * fieldencode provides routines to place numbers in local memory layout into\n\
- * a big or little endian byte stream. The byte stream is simply a sequence of\n\
- * bytes, as might come from the data payload of a packet.\n\
- *\n\
- * Support is included for non-standard types such as unsigned 24. When\n\
- * working with nonstandard types the data in memory are given using the next\n\
- * larger standard type. For example an unsigned 24 is actually a uint32_t in\n\
- * which the most significant byte is clear, and only the least significant\n\
- * three bytes are placed into a byte stream\n\
- *\n\
- * Big or Little Endian refers to the order that a computer architecture will\n\
- * place the bytes of a multi-byte word into successive memory locations. For\n\
- * example the 32-bit number 0x01020304 can be placed in successive memory\n\
- * locations in Big Endian: [0x01][0x02][0x03][0x04]; or in Little Endian:\n\
- * [0x04][0x03][0x02][0x01]. The names \"Big Endian\" and \"Little Endian\" come\n\
- * from Swift's Gulliver's travels, referring to which end of an egg should be\n\
- * opened. The choice of name is made to emphasize the degree to which the\n\
- * choice of memory layout is un-interesting, as long as one stays within the\n\
- * local memory.\n\
- *\n\
- * When transmitting data from one computer to another that assumption no\n\
- * longer holds. In computer-to-computer transmission there are three endians\n\
- * to consider: the endianness of the sender, the receiver, and the protocol\n\
- * between them. A protocol is Big Endian if it sends the most significant\n\
- * byte first and the least significant last. If the computer and the protocol\n\
- * have the same endianness then encoding data from memory into a byte stream\n\
- * is a simple copy. However if the endianness is not the same then bytes must\n\
- * be re-ordered for the data to be interpreted correctly.\n\
- */\n");
+// Raw string magic
+header.setFileComment(R"(fieldencode provides routines to place numbers into a byte stream.
 
+fieldencode provides routines to place numbers in local memory layout into
+a big or little endian byte stream. The byte stream is simply a sequence of
+bytes, as might come from the data payload of a packet.
+
+Support is included for non-standard types such as unsigned 24. When
+working with nonstandard types the data in memory are given using the next
+larger standard type. For example an unsigned 24 is actually a uint32_t in
+which the most significant byte is clear, and only the least significant
+three bytes are placed into a byte stream
+
+Big or Little Endian refers to the order that a computer architecture will
+place the bytes of a multi-byte word into successive memory locations. For
+example the 32-bit number 0x01020304 can be placed in successive memory
+locations in Big Endian: [0x01][0x02][0x03][0x04]; or in Little Endian:
+[0x04][0x03][0x02][0x01]. The names "Big Endian" and "Little Endian" come
+from Swift's Gulliver's travels, referring to which end of an egg should be
+opened. The choice of name is made to emphasize the degree to which the
+choice of memory layout is un-interesting, as long as one stays within the
+local memory.
+
+When transmitting data from one computer to another that assumption no
+longer holds. In computer-to-computer transmission there are three endians
+to consider: the endianness of the sender, the receiver, and the protocol
+between them. A protocol is Big Endian if it sends the most significant
+byte first and the least significant last. If the computer and the protocol
+have the same endianness then encoding data from memory into a byte stream
+is a simple copy. However if the endianness is not the same then bytes must
+be re-ordered for the data to be interpreted correctly.)");
+
+    header.makeLineSeparator();
     header.write("\n#define __STDC_CONSTANT_MACROS\n");
     header.write("#include <stdint.h>\n");
 
     if(support.supportbool)
         header.writeIncludeDirective("stdbool.h", "", true);
 
-    header.write("\n");
-    header.write("//! Macro to limit a number to be no more than a maximum value\n");
-    header.write("#define limitMax(number, max) (((number) > (max)) ? (max) : (number))\n");
-    header.write("\n");
-    header.write("//! Macro to limit a number to be no less than a minimum value\n");
-    header.write("#define limitMin(number, min) (((number) < (min)) ? (min) : (number))\n");
-    header.write("\n");
-    header.write("//! Macro to limit a number to be no less than a minimum value and no more than a maximum value\n");
-    header.write("#define limitBoth(number, min, max) (((number) > (max)) ? (max) : (limitMin((number), (min))))\n");
+    header.makeLineSeparator();
 
-    header.write("\n");
-    header.write("//! Copy a null terminated string\n");
-    header.write("void pgstrncpy(char* dst, const char* src, int maxLength);\n");
-    header.write("\n");
-    header.write("//! Encode a null terminated string on a byte stream\n");
-    header.write("void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
-    header.write("\n");
-    header.write("//! Copy an array of bytes to a byte stream without changing the order.\n");
-    header.write("void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);\n");
-    header.write("\n");
-    header.write("//! Copy an array of bytes to a byte stream while reversing the order.\n");
-    header.write("void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);\n");
+// Raw string magic
+header.write(R"(//! Macro to limit a number to be no more than a maximum value
+#define limitMax(number, max) (((number) > (max)) ? (max) : (number))
+
+//! Macro to limit a number to be no less than a minimum value
+#define limitMin(number, min) (((number) < (min)) ? (min) : (number))
+
+//! Macro to limit a number to be no less than a minimum value and no more than a maximum value
+#define limitBoth(number, min, max) (((number) > (max)) ? (max) : (limitMin((number), (min))))
+
+//! Copy a null terminated string
+void pgstrncpy(char* dst, const char* src, int maxLength);
+
+//! Encode a null terminated string on a byte stream
+void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength);
+
+//! Copy an array of bytes to a byte stream without changing the order.
+void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);
+
+//! Copy an array of bytes to a byte stream while reversing the order.
+void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num);)");
 
     if(support.int64)
     {
-        header.write("\n");
+        header.makeLineSeparator();
         header.write("#ifdef UINT64_MAX\n");
     }
 
@@ -176,18 +180,18 @@ bool FieldCoding::generateEncodeHeader(void)
         if(typeSizes[i] != 1)
         {
             // big endian
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefEncodeComment(i, true) + "\n");
             header.write(encodeSignature(i, true) + ";\n");
             
             // little endian
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefEncodeComment(i, false) + "\n");
             header.write(encodeSignature(i, false) + ";\n");
         }
         else
         {
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefEncodeComment(i, true) + "\n");
             header.write(encodeSignature(i, true) + "\n");            
         }
@@ -195,7 +199,7 @@ bool FieldCoding::generateEncodeHeader(void)
 
     }// for all output byte counts
 
-    header.write("\n");
+    header.makeLineSeparator();
 
     return header.flush();
 
@@ -213,127 +217,127 @@ bool FieldCoding::generateEncodeSource(void)
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
 
-    source.write("\n\n");
+    source.makeLineSeparator();
 
-    // The string functions, these were hand-written and pasted in here
-    source.write("\
-/*!\n\
- * Copy a null terminated string to a destination whose maximum length (with\n\
- * null terminator) is `maxLength`. The destination string is guaranteed to\n\
- * have a null terminator when this operation is complete. This is a\n\
- * replacement for strncpy().\n\
- * \\param dst receives the string, and is guaranteed to be null terminated.\n\
- * \\param src is the null terminated source string to copy.\n\
- * \\param maxLength is the size of the `dst` buffer.\n\
- */\n\
-void pgstrncpy(char* dst, const char* src, int maxLength)\n\
-{\n\
-    int index = 0;\n\
-    stringToBytes(src, (uint8_t*)dst, &index, maxLength, 0);\n\
-}\n\
-\n\
-\n\
-/*!\n\
- * Encode a null terminated string on a byte stream\n\
- * \\param string is the null termianted string to encode\n\
- * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by the number of bytes encoded when this function\n\
- *        is complete.\n\
- * \\param maxLength is the maximum number of bytes that can be encoded. A null\n\
- *        terminator is always included in the encoding.\n\
- * \\param fixedLength should be 1 to force the number of bytes encoded to be\n\
- *        exactly equal to maxLength.\n\
- */\n\
-void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
-{\n\
-    int i;\n\
-\n\
-    // increment byte pointer for starting point\n\
-    bytes += (*index);\n\
-\n\
-    // Reserve the last byte for null termination\n\
-    for(i = 0; i < maxLength - 1; i++)\n\
-    {\n\
-        if(string[i] == 0)\n\
-            break;\n\
-        else\n\
-            bytes[i] = (uint8_t)string[i];\n\
-    }\n\
-\n\
-    // Make sure last byte has null termination\n\
-    bytes[i++] = 0;\n\
-\n\
-    if(fixedLength)\n\
-    {\n\
-        // Finish with null bytes\n\
-        for(; i < maxLength; i++)\n\
-            bytes[i] = 0;\n\
-    }\n\
-\n\
-    // Return for the number of bytes we encoded\n\
-    (*index) += i;\n\
-\n\
-}// stringToBytes\n\
-\n\
-\n\
-/*!\n\
- * Copy an array of bytes to a byte stream without changing the order.\n\
- * \\param data is the array of bytes to copy.\n\
- * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by num when this function is complete.\n\
- * \\param num is the number of bytes to copy\n\
- */\n\
-void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
-{\n\
-    // increment byte pointer for starting point\n\
-    bytes += (*index);\n\
-\n\
-    // Increment byte index to indicate number of bytes copied\n\
-    (*index) += num;\n\
-\n\
-    // Copy the bytes without changing the order\n\
-    while(num > 0)\n\
-    {\n\
-        *(bytes++) = *(data++);\n\
-        num--;\n\
-    }\n\
-\n\
-}// bytesToBeBytes\n\
-\n\
-\n\
-/*!\n\
- * Copy an array of bytes to a byte stream while reversing the order.\n\
- * \\param data is the array of bytes to copy.\n\
- * \\param bytes is a pointer to the byte stream which receives the encoded data.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by num when this function is complete.\n\
- * \\param num is the number of bytes to copy\n\
- */\n\
-void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
-{\n\
-    // increment byte pointer for starting point\n\
-    bytes += (*index);\n\
-\n\
-    // Increment byte index to indicate number of bytes copied\n\
-    (*index) += num;\n\
-\n\
-    // To encode as \"little endian bytes\", (a nonsensical statement), reverse the byte order\n\
-    bytes += (num - 1);\n\
-\n\
-    // Copy the bytes, reversing the order\n\
-    while(num > 0)\n\
-    {\n\
-        *(bytes--) = *(data++);\n\
-        num--;\n\
-    }\n\
-\n\
-}// bytesToLeBytes\n");
+source.write(R"(/*!
+ * Copy a null terminated string to a destination whose maximum length (with
+ * null terminator) is `maxLength`. The destination string is guaranteed to
+ * have a null terminator when this operation is complete. This is a
+ * replacement for strncpy().
+ * \param dst receives the string, and is guaranteed to be null terminated.
+ * \param src is the null terminated source string to copy.
+ * \param maxLength is the size of the `dst` buffer.
+ */
+void pgstrncpy(char* dst, const char* src, int maxLength)
+{
+    int index = 0;
+    stringToBytes(src, (uint8_t*)dst, &index, maxLength, 0);
+}
+
+
+/*!
+ * Encode a null terminated string on a byte stream
+ * \param string is the null termianted string to encode
+ * \param bytes is a pointer to the byte stream which receives the encoded data.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by the number of bytes encoded when this function
+ *        is complete.
+ * \param maxLength is the maximum number of bytes that can be encoded. A null
+ *        terminator is always included in the encoding.
+ * \param fixedLength should be 1 to force the number of bytes encoded to be
+ *        exactly equal to maxLength.
+ */
+void stringToBytes(const char* string, uint8_t* bytes, int* index, int maxLength, int fixedLength)
+{
+    int i;
+
+    // increment byte pointer for starting point
+    bytes += (*index);
+
+    // Reserve the last byte for null termination
+    for(i = 0; i < maxLength - 1; i++)
+    {
+        if(string[i] == 0)
+            break;
+        else
+            bytes[i] = (uint8_t)string[i];
+    }
+
+    // Make sure last byte has null termination
+    bytes[i++] = 0;
+
+    if(fixedLength)
+    {
+        // Finish with null bytes
+        for(; i < maxLength; i++)
+            bytes[i] = 0;
+    }
+
+    // Return for the number of bytes we encoded
+    (*index) += i;
+
+}// stringToBytes
+
+
+/*!
+ * Copy an array of bytes to a byte stream without changing the order.
+ * \param data is the array of bytes to copy.
+ * \param bytes is a pointer to the byte stream which receives the encoded data.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by num when this function is complete.
+ * \param num is the number of bytes to copy
+ */
+void bytesToBeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)
+{
+    // increment byte pointer for starting point
+    bytes += (*index);
+
+    // Increment byte index to indicate number of bytes copied
+    (*index) += num;
+
+    // Copy the bytes without changing the order
+    while(num > 0)
+    {
+        *(bytes++) = *(data++);
+        num--;
+    }
+
+}// bytesToBeBytes
+
+
+/*!
+ * Copy an array of bytes to a byte stream while reversing the order.
+ * \param data is the array of bytes to copy.
+ * \param bytes is a pointer to the byte stream which receives the encoded data.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by num when this function is complete.
+ * \param num is the number of bytes to copy
+ */
+void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)
+{
+    // increment byte pointer for starting point
+    bytes += (*index);
+
+    // Increment byte index to indicate number of bytes copied
+    (*index) += num;
+
+    // To encode as "little endian bytes", (a nonsensical statement), reverse the byte order
+    bytes += (num - 1);
+
+    // Copy the bytes, reversing the order
+    while(num > 0)
+    {
+        *(bytes--) = *(data++);
+        num--;
+    }
+
+}// bytesToLeBytes)");
+
+    source.makeLineSeparator();
 
     if(support.int64)
     {
-        source.write("\n");
+        source.makeLineSeparator();
         source.write("#ifdef UINT64_MAX\n");
     }
 
@@ -348,19 +352,19 @@ void bytesToLeBytes(const uint8_t* data, uint8_t* bytes, int* index, int num)\n\
         if(typeSizes[i] != 1)
         {
             // big endian
-            source.write("\n");
+            source.makeLineSeparator();
             source.write(fullEncodeComment(i, true) + "\n");
             source.write(fullEncodeFunction(i, true) + "\n");
             
             // little endian
-            source.write("\n");
+            source.makeLineSeparator();
             source.write(fullEncodeComment(i, false) + "\n");
             source.write(fullEncodeFunction(i, false) + "\n");
         }
 
     }
 
-    source.write("\n");
+    source.makeLineSeparator();
 
     return source.flush();
 
@@ -541,10 +545,10 @@ std::string FieldCoding::floatEncodeFunction(int type, bool bigendian)
     }
     else if(typeSizes[type] == 3)
     {
-        function += "    uint24To" + endian + "Bytes(float32ToFloat24ex(number, sigbits), bytes, index);\n";
+        function += "    uint24To" + endian + "Bytes(float32ToFloat24(number, sigbits), bytes, index);\n";
     }
     else
-        function += "    uint16To" + endian + "Bytes(float32ToFloat16ex(number, sigbits), bytes, index);\n";
+        function += "    uint16To" + endian + "Bytes(float32ToFloat16(number, sigbits), bytes, index);\n";
 
     function += "}\n";
 
@@ -617,43 +621,39 @@ bool FieldCoding::generateDecodeHeader(void)
 {
     header.setModuleNameAndPath("fielddecode", support.outputpath, support.language);
 
-    // Top level comment
-    header.write("\
-/*!\n\
- * \\file\n\
- * fielddecode provides routines to pull numbers from a byte stream.\n\
- *\n\
- * fielddecode provides routines to pull numbers in local memory layout from\n\
- * a big or little endian byte stream. It is the opposite operation from the\n\
- * routines contained in fieldencode.h\n\
- *\n\
- * When compressing unsigned numbers (for example 32-bits to 16-bits) the most\n\
- * signficant bytes are discarded and the only requirement is that the value of\n\
- * the number fits in the smaller width. When going the other direction the\n\
- * most significant bytes are simply set to 0x00. However signed two's\n\
- * complement numbers are more complicated.\n\
- *\n\
- * If the signed value is a positive number that fits in the range then the\n\
- * most significant byte will be zero, and we can discard it. If the signed\n\
- * value is negative (in two's complement) then the most significant bytes are\n\
- * 0xFF and again we can throw them away. See the example below\n\
- *\n\
- * 32-bit +100 | 16-bit +100 | 8-bit +100\n\
- *  0x00000064 |      0x0064 |       0x64 <-- notice most significant bit clear\n\
- *\n\
- * 32-bit -100 | 16-bit -100 | 8-bit -100\n\
- *  0xFFFFFF9C |      0xFF9C |       0x9C <-- notice most significant bit set\n\
- *\n\
- * The signed complication comes when going the other way. If the number is\n\
- * positive setting the most significant bytes to zero is correct. However\n\
- * if the number is negative the most significant bytes must be set to 0xFF.\n\
- * This is the process of sign-extension. Typically this is handled by the\n\
- * compiler. For example if a int16_t is assigned to an int32_t the compiler\n\
- * (or the processor instruction) knows to perform the sign extension. However\n\
- * in our case we can decode signed 24-bit numbers (for example) which are\n\
- * returned to the caller as int32_t. In this instance fielddecode performs the\n\
- * sign extension.\n\
- */\n");
+// Top level comment
+header.setFileComment(R"(fielddecode provides routines to pull numbers from a byte stream.
+
+fielddecode provides routines to pull numbers in local memory layout from
+a big or little endian byte stream. It is the opposite operation from the
+routines contained in fieldencode.h
+
+When compressing unsigned numbers (for example 32-bits to 16-bits) the most
+signficant bytes are discarded and the only requirement is that the value of
+the number fits in the smaller width. When going the other direction the
+most significant bytes are simply set to 0x00. However signed two's
+complement numbers are more complicated.
+
+If the signed value is a positive number that fits in the range then the
+most significant byte will be zero, and we can discard it. If the signed
+value is negative (in two's complement) then the most significant bytes are
+0xFF and again we can throw them away. See the example below
+
+32-bit +100 | 16-bit +100 | 8-bit +100
+ 0x00000064 |      0x0064 |       0x64 <-- notice most significant bit clear
+
+32-bit -100 | 16-bit -100 | 8-bit -100
+ 0xFFFFFF9C |      0xFF9C |       0x9C <-- notice most significant bit set
+
+The signed complication comes when going the other way. If the number is
+positive setting the most significant bytes to zero is correct. However
+if the number is negative the most significant bytes must be set to 0xFF.
+This is the process of sign-extension. Typically this is handled by the
+compiler. For example if a int16_t is assigned to an int32_t the compiler
+(or the processor instruction) knows to perform the sign extension. However
+in our case we can decode signed 24-bit numbers (for example) which are
+returned to the caller as int32_t. In this instance fielddecode performs the
+sign extension.)");
 
     header.write("\n");
     header.write("#define __STDC_CONSTANT_MACROS\n");
@@ -662,19 +662,21 @@ bool FieldCoding::generateDecodeHeader(void)
     if(support.supportbool)
         header.writeIncludeDirective("stdbool.h", "", true);
 
-    header.write("\n");
-    header.write("//! Decode a null terminated string from a byte stream\n");
-    header.write("void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);\n");
-    header.write("\n");
-    header.write("//! Copy an array of bytes from a byte stream without changing the order.\n");
-    header.write("void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);\n");
-    header.write("\n");
-    header.write("//! Copy an array of bytes from a byte stream while reversing the order.\n");
-    header.write("void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);\n");
+    header.makeLineSeparator();
+
+header.write(R"(//! Decode a null terminated string from a byte stream
+void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength);
+
+//! Copy an array of bytes from a byte stream without changing the order.
+void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);
+
+//! Copy an array of bytes from a byte stream while reversing the order.
+void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num);)");
+
 
     if(support.int64)
     {
-        header.write("\n");
+        header.makeLineSeparator();
         header.write("#ifdef UINT64_MAX\n");
     }
 
@@ -688,17 +690,17 @@ bool FieldCoding::generateDecodeHeader(void)
 
         if(typeSizes[type] != 1)
         {
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefDecodeComment(type, true) + "\n");
             header.write(decodeSignature(type, true) + ";\n");
 
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefDecodeComment(type, false) + "\n");
             header.write(decodeSignature(type, false) + ";\n");
         }
         else
         {
-            header.write("\n");
+            header.makeLineSeparator();
             header.write("//! " + briefDecodeComment(type, true) + "\n");
             header.write(decodeSignature(type, true) + "\n");
         }
@@ -706,7 +708,7 @@ bool FieldCoding::generateDecodeHeader(void)
 
     }// for all input types
 
-    header.write("\n");
+    header.makeLineSeparator();
 
     return header.flush();
 
@@ -724,104 +726,104 @@ bool FieldCoding::generateDecodeSource(void)
     if(support.specialFloat)
         source.writeIncludeDirective("floatspecial.h");
 
-    source.write("\n\n");
+    source.makeLineSeparator();
 
-    source.write("\
-/*!\n\
- * Decode a null terminated string from a byte stream\n\
- * \\param string receives the deocded null-terminated string.\n\
- * \\param bytes is a pointer to the byte stream to be decoded.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by the number of bytes decoded when this function\n\
- *        is complete.\n\
- * \\param maxLength is the maximum number of bytes that can be decoded.\n\
- *        maxLength includes the null terminator, which is always applied.\n\
- * \\param fixedLength should be 1 to force the number of bytes decoded to be\n\
- *        exactly equal to maxLength.\n\
- */\n\
-void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength)\n\
-{\n\
-    int i;\n\
-\n\
-    // increment byte pointer for starting point\n\
-    bytes += *index;\n\
-\n\
-    for(i = 0; i < maxLength - 1; i++)\n\
-    {\n\
-        if(bytes[i] == 0)\n\
-            break;\n\
-        else\n\
-            string[i] = (char)bytes[i];\n\
-    }\n\
-\n\
-    // Make sure we include null terminator\n\
-    string[i++] = 0;\n\
-\n\
-    if(fixedLength)\n\
-        (*index) += maxLength;\n\
-    else\n\
-        (*index) += i;\n\
-\n\
-}// stringFromBytes\n\
-\n\
-\n\
-/*!\n\
- * Copy an array of bytes from a byte stream without changing the order.\n\
- * \\param data receives the copied bytes\n\
- * \\param bytes is a pointer to the byte stream to be copied from.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by num when this function is complete.\n\
- * \\param num is the number of bytes to copy\n\
- */\n\
-void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\n\
-{\n\
-    // increment byte pointer for starting point\n\
-    bytes += (*index);\n\
-\n\
-    // Increment byte index to indicate number of bytes copied\n\
-    (*index) += num;\n\
-\n\
-    // Copy the bytes without changing the order\n\
-    while(num > 0)\n\
-    {\n\
-        *(data++) = *(bytes++);\n\
-        num--;\n\
-    }\n\
-\n\
-}// bytesFromBeBytes\n\
-\n\
-\n\
-/*!\n\
- * Copy an array of bytes from a byte stream, reversing the order.\n\
- * \\param data receives the copied bytes\n\
- * \\param bytes is a pointer to the byte stream to be copied.\n\
- * \\param index gives the location of the first byte in the byte stream, and\n\
- *        will be incremented by num when this function is complete.\n\
- * \\param num is the number of bytes to copy\n\
- */\n\
-void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\n\
-{\n\
-    // increment byte pointer for starting point\n\
-    bytes += (*index);\n\
-\n\
-    // Increment byte index to indicate number of bytes copied\n\
-    (*index) += num;\n\
-\n\
-    // To encode as \"little endian bytes\", (a nonsensical statement), reverse the byte order\n\
-    bytes += (num - 1);\n\
-\n\
-    // Copy the bytes, reversing the order\n\
-    while(num > 0)\n\
-    {\n\
-        *(data++) = *(bytes--);\n\
-        num--;\n\
-    }\n\
-\n\
-}// bytesFromLeBytes\n");
+// Raw string magic
+source.write(R"(/*!
+ * Decode a null terminated string from a byte stream
+ * \param string receives the deocded null-terminated string.
+ * \param bytes is a pointer to the byte stream to be decoded.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by the number of bytes decoded when this function
+ *        is complete.
+ * \param maxLength is the maximum number of bytes that can be decoded.
+ *        maxLength includes the null terminator, which is always applied.
+ * \param fixedLength should be 1 to force the number of bytes decoded to be
+ *        exactly equal to maxLength.
+ */
+void stringFromBytes(char* string, const uint8_t* bytes, int* index, int maxLength, int fixedLength)
+{
+    int i;
+
+    // increment byte pointer for starting point
+    bytes += *index;
+
+    for(i = 0; i < maxLength - 1; i++)
+    {
+        if(bytes[i] == 0)
+            break;
+        else
+            string[i] = (char)bytes[i];
+    }
+
+    // Make sure we include null terminator
+    string[i++] = 0;
+
+    if(fixedLength)
+        (*index) += maxLength;
+    else
+        (*index) += i;
+
+}// stringFromBytes
+
+
+/*!
+ * Copy an array of bytes from a byte stream without changing the order.
+ * \param data receives the copied bytes
+ * \param bytes is a pointer to the byte stream to be copied from.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by num when this function is complete.
+ * \param num is the number of bytes to copy
+ */
+void bytesFromBeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)
+{
+    // increment byte pointer for starting point
+    bytes += (*index);
+
+    // Increment byte index to indicate number of bytes copied
+    (*index) += num;
+
+    // Copy the bytes without changing the order
+    while(num > 0)
+    {
+        *(data++) = *(bytes++);
+        num--;
+    }
+
+}// bytesFromBeBytes
+
+
+/*!
+ * Copy an array of bytes from a byte stream, reversing the order.
+ * \param data receives the copied bytes
+ * \param bytes is a pointer to the byte stream to be copied.
+ * \param index gives the location of the first byte in the byte stream, and
+ *        will be incremented by num when this function is complete.
+ * \param num is the number of bytes to copy
+ */
+void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)
+{
+    // increment byte pointer for starting point
+    bytes += (*index);
+
+    // Increment byte index to indicate number of bytes copied
+    (*index) += num;
+
+    // To encode as "little endian bytes", (a nonsensical statement), reverse the byte order
+    bytes += (num - 1);
+
+    // Copy the bytes, reversing the order
+    while(num > 0)
+    {
+        *(data++) = *(bytes--);
+        num--;
+    }
+
+}// bytesFromLeBytes)");
 
     if(support.int64)
     {
-        source.write("\n");
+        source.makeLineSeparator();
         source.write("#ifdef UINT64_MAX\n");
     }
 
@@ -836,19 +838,19 @@ void bytesFromLeBytes(uint8_t* data, const uint8_t* bytes, int* index, int num)\
         if(typeSizes[type] != 1)
         {
             // big endian unsigned
-            source.write("\n");
+            source.makeLineSeparator();
             source.write(fullDecodeComment(type, true) + "\n");
             source.write(fullDecodeFunction(type, true) + "\n");
 
             // little endian unsigned
-            source.write("\n");
+            source.makeLineSeparator();
             source.write(fullDecodeComment(type, false) + "\n");
             source.write(fullDecodeFunction(type, false) + "\n");
         }
 
     }// for all input types
 
-    source.write("\n");
+    source.makeLineSeparator();
 
     return source.flush();
 
@@ -1009,10 +1011,10 @@ std::string FieldCoding::floatDecodeFunction(int type, bool bigendian)
     }
     else if(typeSizes[type] == 3)
     {
-        function += "    return float24ToFloat32ex(uint24From" + endian + "Bytes(bytes, index), sigbits);\n";
+        function += "    return float24ToFloat32(uint24From" + endian + "Bytes(bytes, index), sigbits);\n";
     }
     else
-        function += "    return float16ToFloat32ex(uint16From" + endian + "Bytes(bytes, index), sigbits);\n";
+        function += "    return float16ToFloat32(uint16From" + endian + "Bytes(bytes, index), sigbits);\n";
 
     function += "}\n";
 

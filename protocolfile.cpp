@@ -130,33 +130,16 @@ void ProtocolFile::separateModuleNameAndPath(std::string& name, std::string& fil
     if((name.find("./") == 0) || (name.find(".\\") == 0))
         name.erase(0, 2);
 
-    // Does the name include some path information?
-    std::size_t index = name.rfind("/");
-    if(index >= name.size())
-        index = name.rfind("\\");
+    // We use this to get any path data from the name
+    std::filesystem::path namepath(name);
 
-    if(index < name.size())
+    // Remove the path from the name and add it to the file path
+    if(namepath.has_parent_path())
     {
-        // The path information in the name (including the path separator)
-        std::string namepath = name.substr(0, index+1);
-
-        // In case the user gave path information in the name which
-        // references a global location, ignore the filepath (i.e. user
-        // can override the working directory)
-        if((namepath.find(":") < namepath.size()) || (namepath.find('\\')==0) || (namepath.find('/')==0))
-            filepath = namepath;
-        else
-        {
-            if(filepath.empty())
-                filepath += ".";
-
-            filepath += "/" + namepath;
-        }
-
-        // The name without the path data
-        name = name.erase(0, index+1);
-
-    }// If name contains a path separator
+        filepath += std::filesystem::path::preferred_separator;
+        filepath += namepath.parent_path().string();
+        name = namepath.filename().string();
+    }
 
     // Make sure the path uses native separators and ends with a separator (unless its empty)
     filepath = sanitizePath(filepath);
@@ -388,10 +371,10 @@ std::string ProtocolFile::sanitizePath(const std::string& path)
 
     // Make sure it has a trailing separator
     if(!((absolute.back() == '/') || (absolute.back() == '\\')))
-        absolute += '/';
+        absolute += std::filesystem::path::preferred_separator;
 
     if(!((relative.back() == '/') || (relative.back() == '\\')))
-        relative += '/';
+        relative += std::filesystem::path::preferred_separator;
 
     // Return the shorter of the two paths
     if(relative.size() > absolute.size())
@@ -598,10 +581,10 @@ void ProtocolHeaderFile::setFileComment(const std::string& comment)
     // Construct the file comment
     filecomment += "/*!\n";
     filecomment += " * \\file\n";
-    filecomment += ProtocolParser::reflowComment(comment, " * ", 80);
+    filecomment += ProtocolParser::reflowComment(comment, " * ", 80) + "\n";
     filecomment += " */\n";
 
-    contents = replace(contents, match, filecomment);
+    replaceinplace(contents, match, filecomment);
 
 }// ProtocolHeaderFile::setFileComment
 

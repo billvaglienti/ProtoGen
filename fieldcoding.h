@@ -75,9 +75,9 @@ protected:
     std::vector<std::string> typeSigNames;
 
     //! Size of built in types
-    QList<int> typeSizes;
+    std::vector<int> typeSizes;
 
-    QList<bool> typeUnsigneds;
+    std::vector<bool> typeUnsigneds;
 };
 
 #endif // FIELDCODING_H

@@ -2,30 +2,29 @@
 #include "protocolparser.h"
 #include "shuntingyard.h"
 #include "encodedlength.h"
-#include <QStringList>
-#include <QRegularExpression>
-#include <QChar>
 #include <math.h>
 #include <iostream>
+#include <algorithm>
 
-EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, QString Parent, ProtocolSupport supported) :
-    ProtocolDocumentation(parse, Parent, supported),
+EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, const std::string& parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, parent, supported),
     hidden(false),
     ignoresPrefix(false),
     ignoresLookup(false),
     parentEnum(creator)
 {
+    attriblist = {"name", "title", "lookupName", "value", "comment", "hidden", "ignorePrefix", "ignoreLookup"};
 }
 
 void EnumElement::checkAgainstKeywords()
 {
-    if (keywords.contains(getName()))
+    if (contains(keywords, getName(), true))
     {
         emitWarning("enum value name matches C keyword, changed to name_");
         name += "_";
     }
 
-    if (keywords.contains(value))
+    if (contains(keywords, value, true))
     {
         emitWarning("enum value matches C keyword, changed to value_");
         value += "_";
@@ -39,15 +38,7 @@ void EnumElement::parse()
 
     const XMLAttribute* map = e->FirstAttribute();
 
-    testAndWarnAttributes(map, QStringList()
-                          << "name"
-                          << "title"
-                          << "lookupName"
-                          << "value"
-                          << "comment"
-                          << "hidden"
-                          << "ignorePrefix"
-                          << "ignoreLookup");
+    testAndWarnAttributes(map);
 
     name = ProtocolParser::getAttribute("name", map);
     title = ProtocolParser::getAttribute("title", map);
@@ -61,7 +52,7 @@ void EnumElement::parse()
     checkAgainstKeywords();
 }
 
-QString EnumElement::getName() const
+std::string EnumElement::getName() const
 {
     if(ignoresPrefix)
         return name;
@@ -69,9 +60,9 @@ QString EnumElement::getName() const
         return parentEnum->getPrefix() + name;
 }
 
-QString EnumElement::getLookupName() const
+std::string EnumElement::getLookupName() const
 {
-    if (lookupName.isEmpty())
+    if (lookupName.empty())
     {
         return getName();
     }
@@ -81,11 +72,11 @@ QString EnumElement::getLookupName() const
     }
 }
 
-QString EnumElement::getDeclaration() const
+std::string EnumElement::getDeclaration() const
 {
-    QString decl = getName();
+    std::string decl = getName();
 
-    if (!value.isEmpty())
+    if (!value.empty())
     {
         decl += " = " + value;
     }
@@ -94,8 +85,8 @@ QString EnumElement::getDeclaration() const
 }
 
 //! Create an empty enumeration list
-EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport supported) :
-    ProtocolDocumentation(parse, Parent, supported),
+EnumCreator::EnumCreator(ProtocolParser* parse, const std::string& parent, ProtocolSupport supported) :
+    ProtocolDocumentation(parse, parent, supported),
     minbitwidth(0),
     maxvalue(0),
     hidden(false),
@@ -104,17 +95,18 @@ EnumCreator::EnumCreator(ProtocolParser* parse, QString Parent, ProtocolSupport 
     lookupComment(false),
     isglobal(false)
 {
+    attriblist = {"name", "title", "comment", "description", "hidden", "lookup", "lookupTitle", "lookupComment", "prefix", "file"};
 }
 
 EnumCreator::~EnumCreator(void)
 {
     // Delete all the objects in the list
-    for(int i = 0; i < documentList.count(); i++)
+    for(std::size_t i = 0; i < documentList.size(); i++)
     {
-        if(documentList[i] != NULL)
+        if(documentList.at(i) != nullptr)
         {
-            delete documentList[i];
-            documentList[i] = NULL;
+            delete documentList.at(i);
+            documentList.at(i) = nullptr;
         }
     }
 }
@@ -138,12 +130,12 @@ void EnumCreator::clear(void)
     prefix.clear();
 
     // Delete all the objects in the list
-    for(int i = 0; i < documentList.count(); i++)
+    for(std::size_t i = 0; i < documentList.size(); i++)
     {
-        if(documentList[i] != NULL)
+        if(documentList.at(i) != nullptr)
         {
-            delete documentList[i];
-            documentList[i] = NULL;
+            delete documentList.at(i);
+            documentList.at(i) = nullptr;
         }
     }
 
@@ -174,26 +166,16 @@ void EnumCreator::parse(void)
 {
     clear();
 
-    // Get any documentation for this enumeration
-    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
-
     const XMLAttribute* map = e->FirstAttribute();
 
     // We use name as part of our debug outputs, so its good to have it first.
     name = ProtocolParser::getAttribute("name", map);
 
+    // Get any documentation for this enumeration
+    ProtocolDocumentation::getChildDocuments(parser, getHierarchicalName(), support, e, documentList);
+
     // Tell the user of any problems in the attributes
-    testAndWarnAttributes(map, QStringList()
-                          << "name"
-                          << "title"
-                          << "comment"
-                          << "description"
-                          << "hidden"
-                          << "lookup"
-                          << "lookupTitle"
-                          << "lookupComment"
-                          << "prefix"
-                          << "file");
+    testAndWarnAttributes(map);
 
     // Go get the rest of the attributes
     title = ProtocolParser::getAttribute("title", map);
@@ -204,7 +186,7 @@ void EnumCreator::parse(void)
     lookup = ProtocolParser::isFieldSet("lookup", map);
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
     lookupComment = ProtocolParser::isFieldSet("lookupComment", map);
-    file = ProtocolParser::getAttribute("file", map).toStdString();
+    file = ProtocolParser::getAttribute("file", map);
 
     // The file attribute is only supported on global enumerations
     if(isglobal)
@@ -214,7 +196,7 @@ void EnumCreator::parse(void)
 
         // If no file information is provided we use the global header name
         if(file.empty())
-            file = support.protoName.toStdString() + "Protocol";
+            file = support.protoName + "Protocol";
 
         // This will separate all the path information
         ProtocolFile::separateModuleNameAndPath(file, filepath);
@@ -236,7 +218,7 @@ void EnumCreator::parse(void)
 
 
     // Put the top level comment in
-    if(!comment.isEmpty())
+    if(!comment.empty())
     {
         output += "/*!\n";
         output += ProtocolParser::outputLongComment(" *", comment) + "\n";
@@ -245,7 +227,7 @@ void EnumCreator::parse(void)
 
     elements.clear();
 
-    int maxLength = 0;
+    std::size_t maxLength = 0;
 
     for(const XMLElement* child = e->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
@@ -258,10 +240,10 @@ void EnumCreator::parse(void)
 
         elem.parse();
 
-        elements.append(elem);
+        elements.push_back(elem);
 
         // Track the longest declaration
-        int length = elem.getDeclaration().length();
+        std::size_t length = elem.getDeclaration().length();
         if(length > maxLength)
             maxLength = length;
 
@@ -290,11 +272,11 @@ void EnumCreator::parse(void)
     output += "typedef enum\n";
     output += "{\n";
 
-    for(int i = 0; i < elements.size(); i++)
+    for(std::size_t i = 0; i < elements.size(); i++)
     {
-        auto element = elements.at(i);
+        const auto& element = elements.at(i);
 
-        auto declaration = TAB_IN + element.getDeclaration();
+        std::string declaration = TAB_IN + element.getDeclaration();
 
         // Output the enumerator name and separator
         output += declaration;
@@ -306,11 +288,11 @@ void EnumCreator::parse(void)
             output += " ";
 
         // Pad to maxLength
-        for(int j = declaration.length(); j < maxLength; j++)
+        for(std::size_t j = declaration.length(); j < maxLength; j++)
             output += " ";
 
         // Output the comment
-        if(element.comment.isEmpty())
+        if(element.comment.empty())
             output += "\n";
         else
             output += "//!< " + element.comment + "\n";
@@ -326,7 +308,7 @@ void EnumCreator::parse(void)
         output += "\n";
         output += "//! \\return the label of a '" + name + "' enum entry, based on its value\n";
 
-        QString func = "const char* " + name + "_EnumLabel(int value)";
+        std::string func = "const char* " + name + "_EnumLabel(int value)";
 
         output += func + ";\n";
 
@@ -347,7 +329,7 @@ void EnumCreator::parse(void)
         sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
 
         // Add the reverse-lookup text for each entry in the enumeration
-        for (int i=0; i<elements.size(); i++)
+        for(std::size_t i = 0; i < elements.size(); i++)
         {
             auto element = elements.at(i);
 
@@ -368,7 +350,7 @@ void EnumCreator::parse(void)
         output += "\n";
         output += "//! \\return the title of a '" + name + "' enum entry, based on its value\n";
 
-        QString func = "const char* " + name + "_EnumTitle(int value)";
+        std::string func = "const char* " + name + "_EnumTitle(int value)";
 
         output += func + ";\n";
 
@@ -389,7 +371,7 @@ void EnumCreator::parse(void)
         sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
 
         // Add the reverse-lookup text for each entry in the enumeration
-        for (int i=0; i<elements.size(); i++)
+        for(std::size_t i = 0; i < elements.size(); i++)
         {
             auto element = elements.at(i);
 
@@ -399,13 +381,13 @@ void EnumCreator::parse(void)
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
 
             // Title takes first preference, if supplied
-            QString title = element.title;
+            std::string title = element.title;
 
             // Comment takes second preference, if supplied
-            if (title.isEmpty())
+            if (title.empty())
                 title = element.comment;
 
-            if (title.isEmpty())
+            if (title.empty())
                 title = element.getLookupName();
 
             sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + title + "\");\n";
@@ -421,7 +403,7 @@ void EnumCreator::parse(void)
         output += "\n";
         output += "//! \\return the comment of a '" + name + "' enum entry, based on its value\n";
 
-        QString func = "const char* " + name + "_EnumComment(int value)";
+        std::string func = "const char* " + name + "_EnumComment(int value)";
 
         output += func + ";\n";
 
@@ -442,7 +424,7 @@ void EnumCreator::parse(void)
         sourceOutput += TAB_IN + TAB_IN + "return \"\";\n";
 
         // Add the reverse-lookup text for each entry in the enumeration
-        for (int i=0; i<elements.size(); i++)
+        for(std::size_t i = 0; i < elements.size(); i++)
         {
             auto element = elements.at(i);
 
@@ -452,13 +434,13 @@ void EnumCreator::parse(void)
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
 
             // Title takes first preference, if supplied
-            QString _comment = element.comment;
+            std::string _comment = element.comment;
 
             // Title takes second preference, if supplied
-            if (_comment.isEmpty())
+            if (_comment.empty())
                 _comment = element.title;
 
-            if (_comment.isEmpty())
+            if (_comment.empty())
                 _comment = element.getLookupName();
 
             sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + _comment + "\");\n";
@@ -475,7 +457,7 @@ void EnumCreator::parse(void)
 //! Check names against the list of C keywords, this includes the global enumeration name as well as all the value names
 void EnumCreator::checkAgainstKeywords(void)
 {
-    if(keywords.contains(name))
+    if(contains(keywords, name))
     {
         emitWarning("name matches C keyword, changed to _name");
         name = "_" + name;
@@ -494,32 +476,29 @@ void EnumCreator::computeNumberList(void)
     // Attempt to get a list of numbers that represents the value of each enumeration
     maxvalue = 1;
     int value = -1;
-    QString baseString;
+    std::string baseString;
 
-    for (int i=0; i<elements.size(); i++)
+    for(std::size_t i = 0; i < elements.size(); i++)
     {
         auto& element = elements[i];
 
-        // The string from the XML, which may be empty
-        QString stringValue = element.value;
+        // The string from the XML, which may be empty, clear any whitespace from it just to be sure
+        std::string stringValue = trimm(element.value);
 
-        // Clear any whitespace from it just to be sure
-        stringValue = stringValue.trimmed();
-
-        if(stringValue.isEmpty())
+        if(stringValue.empty())
         {
             // Increment enumeration value by one
             value++;
 
             // Is this incremented value absolute, or referenced to
             // some other string we could not resolve?
-            if(baseString.isEmpty())
+            if(baseString.empty())
             {
-                stringValue.setNum(value);
+                stringValue = std::to_string(value);
             }
             else
             {
-                stringValue = baseString + " + " + QString().setNum(value);
+                stringValue = baseString + " + " + std::to_string(value);
             }
 
         }// if the xml was empty
@@ -553,7 +532,7 @@ void EnumCreator::computeNumberList(void)
             else
             {
                 baseString.clear();
-                stringValue.setNum(value);
+                stringValue = std::to_string(value);
             }
 
         }// if we got a string from the xml
@@ -585,27 +564,27 @@ void EnumCreator::computeNumberList(void)
  * \param packetids is the list of packet identifiers, used to determine if a link should be added
  * \return the markdown output string
  */
-QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packetids) const
+std::string EnumCreator::getTopLevelMarkdown(bool global, const std::vector<std::string>& packetids) const
 {
-    QString output;
+    std::string output;
 
     if(elements.size() > 0)
     {
-        QStringList codeNameList;
+        std::vector<std::string> codeNameList;
 
         // figure out the column spacing in the tables
-        int firstColumnSpacing = QString("Name").length();
-        int secondColumnSpacing = QString("Value").length();
-        int thirdColumnSpacing = QString("Description").length();
+        std::size_t firstColumnSpacing = std::string("Name").length();
+        std::size_t secondColumnSpacing = std::string("Value").length();
+        std::size_t thirdColumnSpacing = std::string("Description").length();
 
-        for(int i = 0; i < elements.size(); i++)
+        for(std::size_t i = 0; i < elements.size(); i++)
         {
             auto element = elements.at(i);
 
             bool link = false;
 
             // Check to see if this enumeration is a packet identifier
-            for(int j = 0; j < packetids.size(); j++)
+            for(std::size_t j = 0; j < packetids.size(); j++)
             {
                 if(packetids.at(j) == element.getName())
                 {
@@ -614,10 +593,10 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
                 }
             }
 
-            QString linkText;
+            std::string linkText;
 
             // Mark name as code, with or without a link to an anchor elsewhere
-            if(element.title.isEmpty())
+            if(element.title.empty())
             {
                 if(link)
                 {
@@ -640,31 +619,31 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
                 }
             }
 
-            codeNameList.append(linkText);
+            codeNameList.push_back(linkText);
 
-            firstColumnSpacing = qMax(firstColumnSpacing, linkText.length());
-            secondColumnSpacing = qMax(secondColumnSpacing, element.number.length());
-            thirdColumnSpacing = qMax(thirdColumnSpacing, element.comment.length());
+            firstColumnSpacing = std::max(firstColumnSpacing, linkText.length());
+            secondColumnSpacing = std::max(secondColumnSpacing, element.number.length());
+            thirdColumnSpacing = std::max(thirdColumnSpacing, element.comment.length());
         }
 
         // The outline paragraph
         if(global)
         {
-            if(title.isEmpty())
+            if(title.empty())
                 output += "## " + name + " enumeration\n\n";
             else
                 output += "## " + title + "\n\n";
         }
 
         // commenting for this field
-        if(!comment.isEmpty())
+        if(!comment.empty())
             output += comment + "\n\n";
 
-        for(int i = 0; i < documentList.count(); i++)
+        for(std::size_t i = 0; i < documentList.size(); i++)
             output += documentList.at(i)->getTopLevelMarkdown();
 
         // If a longer description exists for this enum, display it in the documentation
-        if (!description.isEmpty())
+        if (!description.empty())
         {
             output += "**Description:**\n";
             output += description;
@@ -682,20 +661,20 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
 
         // Underscore the header
         output += "| ";
-        for(int i = 0; i < firstColumnSpacing; i++)
+        for(std::size_t i = 0; i < firstColumnSpacing; i++)
             output += "-";
         output += " | :";
-        for(int i = 1; i < secondColumnSpacing-1; i++)
+        for(std::size_t i = 1; i < secondColumnSpacing-1; i++)
             output += "-";
         output += ": | ";
-        for(int i = 0; i < thirdColumnSpacing; i++)
+        for(std::size_t i = 0; i < thirdColumnSpacing; i++)
             output += "-";
         output += " |\n";
 
         // Now write out the outputs
-        for(int i = 0; i < codeNameList.length(); i++)
+        for(std::size_t i = 0; i < codeNameList.size(); i++)
         {
-            auto element = elements.at(i);
+            const auto& element = elements.at(i);
 
             // Skip hidden values
             if(element.isHidden())
@@ -711,7 +690,7 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
         }
 
         // Table caption, with an anchor for the enumeration name
-        if(title.isEmpty())
+        if(title.empty())
             output += "[<a name=\""+name+"\"></a>" + name + " enumeration]\n";
         else
             output += "[<a name=\""+name+"\"></a>" + title + " enumeration]\n";
@@ -731,14 +710,14 @@ QString EnumCreator::getTopLevelMarkdown(bool global, const QStringList& packeti
  * \param text is modified to replace names with numbers
  * \return a reference to text
  */
-QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
+std::string EnumCreator::replaceEnumerationNameWithValue(const std::string& text) const
 {
     // split words around mathematical operators
-    QStringList tokens = splitAroundMathOperators(text);
+    std::vector<std::string> tokens = splitAroundMathOperators(text);
 
-    for(int j = 0; j < tokens.size(); j++)
+    for(std::size_t j = 0; j < tokens.size(); j++)
     {
-        QString token = tokens.at(j).trimmed();
+        std::string token = trimm(tokens.at(j));
 
         // Don't look to replace the mathematical operators
         if(isMathOperator(token.at(0)))
@@ -748,16 +727,16 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
         if (ShuntingYard::isInt(token))
             continue;
 
-        for (auto element : elements )
+        for (const auto& element : elements )
         {
             // The entire token must match before we will replace it
-            if(token.compare(element.getName().trimmed()) == 0)
+            if(token == trimm(element.getName()))
             {
-                if (!element.number.isEmpty())
+                if (!element.number.empty())
                 {
                     tokens[j] = element.number;
                 }
-                else if (!element.value.isEmpty())
+                else if (!element.value.empty())
                 {
                     tokens[j] = element.value;
                 }
@@ -768,50 +747,49 @@ QString& EnumCreator::replaceEnumerationNameWithValue(QString& text) const
     }// for all tokens
 
     // Rejoin the strings
-    text = tokens.join(QString());
-    return text;
+    return join(tokens);
 
 }// EnumCreator::replaceEnumerationNameWithValue
 
 
 /*!
- * Split a string around the math operators. This is just like QString::split(), except we keep the operators as tokens
+ * Split a string around the math operators, keeping the operators as strings in the output.
  * \param text is the input text to split
  * \return is the list of split strings
  */
-QStringList EnumCreator::splitAroundMathOperators(QString text) const
+std::vector<std::string> EnumCreator::splitAroundMathOperators(std::string text) const
 {
-    QStringList output;
-    QString token;
+    std::vector<std::string> output;
+    std::string token;
 
-    for(int i = 0; i < text.count(); i++)
+    for(std::size_t i = 0; i < text.size(); i++)
     {
         if(isMathOperator(text.at(i)))
         {
             // If we got a math operator, then append the preceding token to the list
-            if(!token.isEmpty())
+            if(!token.empty())
             {
-                output.append(token);
+                output.push_back(token);
 
                 // Clear the token, its finished
                 token.clear();
             }
 
             // Also append the operator as a token, we want to keep this
-            output.append(text.at(i));
+            output.push_back(text.substr(i, 1));
         }
         else
         {
             // If not a math operator, then just add to the current token
-            token.append(text.at(i));
+            token.push_back(text.at(i));
 
         }// switch on character
 
     }// for all characters in the input
 
     // Get the last token (might be the only one)
-    if(!token.isEmpty())
-        output.append(token);
+    if(!token.empty())
+        output.push_back(token);
 
     return output;
 
@@ -823,7 +801,7 @@ QStringList EnumCreator::splitAroundMathOperators(QString text) const
  * \param op is the character to check
  * \return true if op is a math operator
  */
-bool EnumCreator::isMathOperator(QChar op) const
+bool EnumCreator::isMathOperator(char op) const
 {
     if(ShuntingYard::isOperator(op) || ShuntingYard::isParen(op))
         return true;
@@ -834,15 +812,15 @@ bool EnumCreator::isMathOperator(QChar op) const
 
 
 //! Return the name of the first enumeration in the list (used for initial value)
-QString EnumCreator::getFirstEnumerationName(void) const
+std::string EnumCreator::getFirstEnumerationName(void) const
 {
-    if(elements.count() <= 0)
+    if(elements.size() <= 0)
     {
         // In this case just return zero, cast to the enumeration name
         return "(" + name + ")0";
     }
     else
-        return elements.first().getName();
+        return elements.front().getName();
 }
 
 
@@ -851,15 +829,15 @@ QString EnumCreator::getFirstEnumerationName(void) const
  * \param name is the name of the enumeration value to find
  * \return the comment string of the name enumeration element, or an empty string if name is not found
  */
-QString EnumCreator::getEnumerationValueComment(const QString& name) const
+std::string EnumCreator::getEnumerationValueComment(const std::string& name) const
 {
-    for (auto element : elements )
+    for(const auto& element : elements )
     {
-        if (name.compare(element.getName()) == 0 )
+        if(trimm(name) == trimm(element.getName()))
             return element.comment;
     }
 
-    return QString();
+    return std::string();
 }
 
 
@@ -869,11 +847,11 @@ QString EnumCreator::getEnumerationValueComment(const QString& name) const
  * \param text is the enumeration value string to compare.
  * \return true if text is a value in this enumeration.
  */
-bool EnumCreator::isEnumerationValue(const QString& text) const
+bool EnumCreator::isEnumerationValue(const std::string& text) const
 {
-    for (auto element : elements )
+    for(const auto& element : elements )
     {
-        if (text.trimmed().compare(element.getName().trimmed()) == 0 )
+        if(trimm(text) == trimm(element.getName()))
             return true;
     }
 
@@ -889,9 +867,9 @@ bool EnumCreator::isEnumerationValue(const QString& text) const
  *        spaces to reach this length.
  * \return The spaced string.
  */
-QString spacedString(QString text, int spacing)
+std::string spacedString(const std::string& text, std::size_t spacing)
 {
-    QString output = text;
+    std::string output = text;
 
     while(output.length() < spacing)
         output += " ";

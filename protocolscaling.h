@@ -14,7 +14,6 @@
 
 #include "protocolfile.h"
 #include "protocolsupport.h"
-#include <QList>
 #include <string>
 
 class ProtocolScaling

@@ -1,9 +1,7 @@
 #ifndef PROTOCOLPARSER_H
 #define PROTOCOLPARSER_H
 
-// #include <QDomDocument>
 #include <QFile>
-#include <QList>
 #include <iostream>
 #include "protocolfile.h"
 #include "xmllinelocator.h"
@@ -26,7 +24,7 @@ public:
     ~ProtocolParser();
 
     //! Configure a documentation path separate to the main protocol output directory
-    void setDocsPath(QString path);
+    void setDocsPath(std::string path);
 
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
@@ -53,7 +51,7 @@ public:
     void enableTableOfContents(bool enable) {tableOfContents = enable;}
 
     //! Option to enable title page section
-    void setTitlePage(QString pagetext) {titlePage = pagetext;}
+    void setTitlePage(std::string pagetext) {titlePage = pagetext;}
 
     //! Return status of 'About this ICD' section
     bool hasAboutSection() const { return !noAboutSection; }
@@ -65,122 +63,116 @@ public:
     void disableUnrecognizedWarnings(bool disable) {support.disableunrecognized = disable;}
 
     //! Set the inlinee css
-    void setInlineCSS(QString css) {inlinecss = css;}
+    void setInlineCSS(std::string css) {inlinecss = css;}
 
     //! Disable CSS entirely
     void disableCSS(bool disable) { nocss = disable; }
 
     //! Parse the DOM from the xml file(s). This kicks off the auto code generation for the protocol
-    bool parse(QString filename, QString path, QStringList otherfiles);
+    bool parse(std::string filename, std::string path, std::vector<std::string> otherfiles);
 
     //! Output a warning referencing the main input path and file
-    void emitWarning(QString warning) const;
+    void emitWarning(std::string warning) const;
 
     //! Output a warning referencing an object by name
-    void emitWarning(QString hierarchicalName, QString warning) const;
+    void emitWarning(std::string hierarchicalName, std::string warning) const;
 
     //! Return a list of XMLNodes that are direct children and have a specific tag
-    static QList<const XMLElement*> childElementsByTagName(const XMLElement* node, QString tag, QString tag2 = QString(), QString tag3 = QString());
+    static std::vector<const XMLElement*> childElementsByTagName(const XMLElement* node, std::string tag, std::string tag2 = std::string(), std::string tag3 = std::string());
 
     //! Return the value of an attribute from a Dom Element
-    static QString getAttribute(QString name, const XMLAttribute* attr, QString defaultIfNone = QString());
+    static std::string getAttribute(const std::string& name, const XMLAttribute* attr, const std::string& defaultIfNone = std::string());
 
     //! Output a long string of text which should be wrapped at 80 characters.
-    static void outputLongComment(ProtocolFile& file, const QString& prefix, const QString& comment);
+    static void outputLongComment(ProtocolFile& file, const std::string& prefix, const std::string& comment);
 
     //! Parse all enumerations which are direct children of a node
-    void parseEnumerations(QString parent, const XMLNode* node);
+    void parseEnumerations(const std::string& parent, const XMLNode* node);
 
     //! Parse all enumerations which are direct children of an element
-    const EnumCreator* parseEnumeration(QString parent, const XMLElement* element);
+    const EnumCreator* parseEnumeration(const std::string& parent, const XMLElement* element);
 
     //! Output all includes which are direct children of a node
-    void outputIncludes(QString parent, ProtocolFile& file, const XMLNode* node) const;
+    void outputIncludes(const std::string& parent, ProtocolFile& file, const XMLNode* node) const;
 
     //! Output all includes which are direct children of a element
-    void outputIncludes(QString parent, ProtocolFile& file, const XMLElement* element) const;
-
-    //! Format a long string of text which should be wrapped at 80 characters.
-    static QString outputLongComment(const QString& prefix, const QString& text);
+    void outputIncludes(const std::string& parent, ProtocolFile& file, const XMLElement* element) const;
 
     //! Format a long string of text which should be wrapped at 80 characters.
     static std::string outputLongComment(const std::string& prefix, const std::string& text);
 
     //! Get a correctly reflowed comment from a DOM
-    static QString getComment(const XMLElement* e);
+    static std::string getComment(const XMLElement* e);
 
     //! Take a comment line and reflow it for our needs.
-    static QString reflowComment(QString comment, QString prefix = QString(), int charlimit = 0);
-
-    //! Take a comment line and reflow it for our needs.
-    static std::string reflowComment(const std::string& text, const std::string& prefix = std::string(), int charlimit = 0);
+    static std::string reflowComment(const std::string& text, const std::string& prefix = std::string(), std::size_t charlimit = 0);
 
     //! Find the include name for a specific type
-    QString lookUpIncludeName(const QString& typeName) const;
+    std::string lookUpIncludeName(const std::string& typeName) const;
 
     //! Find the enumeration creator for this enum
-    const EnumCreator* lookUpEnumeration(const QString& enumName) const;
+    const EnumCreator* lookUpEnumeration(const std::string& enumName) const;
 
     //! Replace any text that matches an enumeration name with the value of that enumeration
-    QString replaceEnumerationNameWithValue(const QString& text) const;
+    std::string replaceEnumerationNameWithValue(const std::string& text) const;
 
     //! Determine if text is part of an enumeration.
-    QString getEnumerationNameForEnumValue(const QString& text) const;
+    std::string getEnumerationNameForEnumValue(const std::string& text) const;
 
     //! Find the enumeration with this name and return its comment, or an empty string
-    QString getEnumerationValueComment(const QString& name) const;
+    std::string getEnumerationValueComment(const std::string& name) const;
 
     //! Find the global structure point for a specific type
-    const ProtocolStructureModule* lookUpStructure(const QString& typeName) const;
+    const ProtocolStructureModule* lookUpStructure(const std::string& typeName) const;
 
     //! Get the documentation details for a specific global structure type
-    void getStructureSubDocumentationDetails(QString typeName, QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const;
+    void getStructureSubDocumentationDetails(std::string typeName, std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const;
 
     //! The version of the protocol generator software
     static const std::string genVersion;
 
     //! Get the string used for inline css.
-    static QString getDefaultInlinCSS(void);
+    static std::string getDefaultInlinCSS(void);
 
     //! Return the path of the xml source file
-    QString getInputPath(void) {return inputpath;}
+    std::string getInputPath(void) {return inputpath;}
 
     //! Return true if the element has a particular attribute set to {'true','yes','1'}
-    static bool isFieldSet(const XMLElement* e, QString label);
+    static bool isFieldSet(const XMLElement* e, const std::string& label);
 
     //! Return true if the value set to {'true','yes','1'}
-    static bool isFieldSet(QString value);
+    static bool isFieldSet(const std::string& value);
 
     //! Return true if the value of an attribute is 'true', 'yes', or '1'
-    static bool isFieldSet(QString attribname, const XMLAttribute* firstattrib);
+    static bool isFieldSet(const std::string& attribname, const XMLAttribute* firstattrib);
 
     //! Return true if the element has a particular attribute set to {'false','no','0'}
-    static bool isFieldClear(const XMLElement* e, QString label);
+    static bool isFieldClear(const XMLElement* e, const std::string& label);
 
     //! Return true if the value is set to {'false','no','0'}
-    static bool isFieldClear(QString value);
+    static bool isFieldClear(const std::string& value);
 
     //! Determine if the value of an attribute is either {'false','no','0'}
-    static bool isFieldClear(QString attribname, const XMLAttribute* firstattrib);
+    static bool isFieldClear(const std::string& attribname, const XMLAttribute* firstattrib);
 
     //! Set the license text
-    void setLicenseText(const QString text) { support.licenseText = text.toStdString(); }
+    void setLicenseText(const std::string text) { support.licenseText = text; }
 
-    QString getLicenseText() const { return QString().fromStdString(support.licenseText); }
+    std::string getLicenseText() const { return support.licenseText; }
 
 protected:
 
     //! Parses a single XML file handling any require tags to flatten a file
-    bool parseFile(QString xmlFilename);
+    bool parseFile(std::string xmlFilename);
 
     //! Create markdown documentation
-    void outputMarkdown(bool isBigEndian, QString inlinecss);
+    void outputMarkdown(bool isBigEndian, std::string inlinecss);
 
     //! Get the table of contents, based on the file contents
-    QString getTableOfContents(const QString& filecontents);
+    std::string getTableOfContents(const std::string& filecontents);
 
     //! Get the "About this ICD" section to file
-    QString getAboutSection(bool isBigEndian);
+    std::string getAboutSection(bool isBigEndian);
 
     //! Output the doxygen HTML documentation
     void outputDoxygen(void);
@@ -189,7 +181,7 @@ protected:
     ProtocolSupport support;
 
     //! The list of xml documents we created by loading files
-    QList<XMLDocument*> xmldocs;
+    std::vector<XMLDocument*> xmldocs;
 
     //! The document currently being parsed
     XMLDocument* currentxml;
@@ -197,13 +189,13 @@ protected:
     //! The protocol header file (*.h)
     ProtocolHeaderFile* header;
 
-    QString name;   //!< Base name of the protocol
-    QString title;  //!< Title name of the protocol used in documentation
-    QString comment;//!< Comment description of the protocol
-    QString version;//!< The version string
-    QString api;    //!< The protocol API enumeration
+    std::string name;   //!< Base name of the protocol
+    std::string title;  //!< Title name of the protocol used in documentation
+    std::string comment;//!< Comment description of the protocol
+    std::string version;//!< The version string
+    std::string api;    //!< The protocol API enumeration
 
-    QString docsDir;    //!< Directory target for storing documentation markdown
+    std::string docsDir;    //!< Directory target for storing documentation markdown
 
     int latexHeader;    //!< Top heading level for LaTeX output
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
@@ -212,21 +204,21 @@ protected:
     bool nodoxygen;     //!< Disable doxygen output
     bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
     bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
-    QString inlinecss;  //!< CSS used for markdown output
+    std::string inlinecss;  //!< CSS used for markdown output
     bool nocss;         //!< Disable all CSS output
     bool tableOfContents;//!< Enable table of contents
-    QString titlePage;     //!< Title page information
+    std::string titlePage;     //!< Title page information
 
-    QStringList filesparsed;
-    QList<XMLLineLocator*>lines;
-    QList<ProtocolDocumentation*> alldocumentsinorder;
-    QList<ProtocolDocumentation*> documents;
-    QList<ProtocolStructureModule*> structures;
-    QList<ProtocolPacket*> packets;
-    QList<EnumCreator*> enums;
-    QList<EnumCreator*> globalEnums;
-    QString inputpath;
-    QString inputfile;
+    std::vector<std::string> filesparsed;
+    std::vector<XMLLineLocator*>lines;
+    std::vector<ProtocolDocumentation*> alldocumentsinorder;
+    std::vector<ProtocolDocumentation*> documents;
+    std::vector<ProtocolStructureModule*> structures;
+    std::vector<ProtocolPacket*> packets;
+    std::vector<EnumCreator*> enums;
+    std::vector<EnumCreator*> globalEnums;
+    std::string inputpath;
+    std::string inputfile;
 
 private:
 

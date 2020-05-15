@@ -2,8 +2,7 @@
 #define PROTOCOLFIELD_H
 
 #include <stdint.h>
-#include <QString>
-#include <QStringList>
+#include <string>
 #include "encodable.h"
 
 class TypeData
@@ -32,19 +31,13 @@ public:
     int bits;           //!< number of bits used by type
     int sigbits;        //!< number of bits for the significand of a float16 or float24
     int enummax;        //!< maximum value of the enumeration if isEnum is true
-    QString enumName;   //! Name of the enumerated type, empty if not enumerated type
-
-    //! Pull a positive integer value from a string
-    static int extractPositiveInt(const QString& string, bool* ok = 0);
-
-    //! Pull a double precision value from a string
-    static double extractDouble(const QString& string, bool* ok = 0);
+    std::string enumName;   //! Name of the enumerated type, empty if not enumerated type
 
     //! Create the type string
-    QString toTypeString(const QString& structName = QString()) const;
+    std::string toTypeString(const std::string& structName = std::string()) const;
 
     //! Determine the signature of this field (for example uint8).
-    QString toSigString(void) const;
+    std::string toSigString(void) const;
 
     //! Determine the maximum floating point value this TypeData can hold
     double getMaximumFloatValue(void) const;
@@ -59,7 +52,13 @@ public:
     int64_t getMinimumIntegerValue(void) const;
 
     //! Given a constant string (like default value) apply the type correct suffix
-    QString applyTypeToConstant(const QString& number) const;
+    std::string applyTypeToConstant(const std::string& number) const;
+
+    //! Pull a positive integer value from a string
+    static int extractPositiveInt(const std::string& string, bool* ok = nullptr);
+
+    //! Pull a double precision value from a string
+    static double extractDouble(const std::string& string, bool* ok = nullptr);
 
 private:
 
@@ -113,181 +112,181 @@ public:
     };
 
     //! Construct a field, setting the protocol name and name prefix
-    ProtocolField(ProtocolParser* parse, QString parent, ProtocolSupport supported);
+    ProtocolField(ProtocolParser* parse, std::string parent, ProtocolSupport supported);
 
     //! Provide the pointer to a previous encodable in the list
-    void setPreviousEncodable(Encodable* prev) Q_DECL_OVERRIDE;
+    void setPreviousEncodable(Encodable* prev) override;
 
     //! Get overriden type information
     bool getOverriddenTypeData(ProtocolField* prev);
 
     //! Get a properly formatted number string for a double precision number, with special care for pi
-    static QString getDisplayNumberString(double number);
+    static std::string getDisplayNumberString(double number);
 
     //! Get a properly formatted number string for a double precision number
-    QString getNumberString(double number, int bits = 64) const;
+    std::string getNumberString(double number, int bits = 64) const;
 
     //! Reset all data to defaults
-    void clear(void) Q_DECL_OVERRIDE;
+    void clear(void) override;
 
     //! Parse the DOM element
-    void parse(void) Q_DECL_OVERRIDE;
+    void parse(void) override;
 
     //! Check names against the list of C keywords
-    void checkAgainstKeywords(void) Q_DECL_OVERRIDE;
+    void checkAgainstKeywords(void) override;
 
     //! The hierarchical name of this object
-    QString getHierarchicalName(void) const Q_DECL_OVERRIDE {return parent + ":" + name;}
+    std::string getHierarchicalName(void) const override {return parent + ":" + name;}
 
     //! Returns true since protocol field is a primitive type
-    bool isPrimitive(void) const Q_DECL_OVERRIDE {return !inMemoryType.isStruct;}
+    bool isPrimitive(void) const override {return !inMemoryType.isStruct;}
 
     //! Determine if this encodable a string object
-    bool isString(void) const Q_DECL_OVERRIDE {return inMemoryType.isString;}
+    bool isString(void) const override {return inMemoryType.isString;}
 
     //! True if this encodable is NOT encoded
-    bool isNotEncoded(void) const Q_DECL_OVERRIDE {return (encodedType.isNull);}
+    bool isNotEncoded(void) const override {return (encodedType.isNull);}
 
     //! True if this encodable is NOT in memory. Note how overriding a previous field means we are not in memory (because the previous one is)
-    bool isNotInMemory(void) const Q_DECL_OVERRIDE {return (inMemoryType.isNull || overridesPrevious);}
+    bool isNotInMemory(void) const override {return (inMemoryType.isNull || overridesPrevious);}
 
     //! True if this encodable is a constant. Note that protocol fields which are null in memory are constant by definition
-    bool isConstant(void) const Q_DECL_OVERRIDE {return (!constantString.isEmpty() || inMemoryType.isNull);}
+    bool isConstant(void) const override {return (!constantString.empty() || inMemoryType.isNull);}
 
     //! True if this encoable is a primitive bitfield
-    bool isBitfield(void) const Q_DECL_OVERRIDE {return (encodedType.isBitfield && !isNotEncoded());}
+    bool isBitfield(void) const override {return (encodedType.isBitfield && !isNotEncoded());}
 
     //! True if this encodable has a default value
-    bool isDefault(void) const Q_DECL_OVERRIDE {return !defaultString.isEmpty();}
+    bool isDefault(void) const override {return !defaultString.empty();}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    void getBitfieldGroupNumBytes(int* num) const Q_DECL_OVERRIDE;
+    void getBitfieldGroupNumBytes(int* num) const override;
 
     //! Get the declaration for this field
-    QString getDeclaration(void) const Q_DECL_OVERRIDE;
+    std::string getDeclaration(void) const override;
 
     //! Return the include directives needed for this encodable
-    void getIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's init and verify functions
-    void getInitAndVerifyIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getInitAndVerifyIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's map functions
-    void getMapIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getMapIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's compare functions
-    void getCompareIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getCompareIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the include directives needed for this encodable's print functions
-    void getPrintIncludeDirectives(QStringList& list) const Q_DECL_OVERRIDE;
+    void getPrintIncludeDirectives(std::vector<std::string>& list) const override;
 
     //! Return the signature of this field in an encode function signature
-    QString getEncodeSignature(void) const Q_DECL_OVERRIDE;
+    std::string getEncodeSignature(void) const override;
 
     //! Get details needed to produce documentation for this encodable.
-    void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const Q_DECL_OVERRIDE;
+    void getDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const override;
 
     //! Return true if this field is hidden from documentation
-    bool isHidden (void) const Q_DECL_OVERRIDE {return hidden;}
+    bool isHidden (void) const override {return hidden;}
 
     //! True if this encodable has verification data
-    bool hasVerify(void) const Q_DECL_OVERRIDE;
+    bool hasVerify(void) const override;
 
     //! True if this encodable has initialization data
-    bool hasInit(void) const Q_DECL_OVERRIDE;
+    bool hasInit(void) const override;
 
     //! Return the string that is used to encode this encodable
-    QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const Q_DECL_OVERRIDE;
+    std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const override;
 
     //! Return the string that is used to decode this encoable
-    QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const Q_DECL_OVERRIDE;
+    std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
 
     //! Return the string that sets this encodable to its default value in code
-    QString getSetToDefaultsString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    std::string getSetToDefaultsString(bool isStructureMember) const override;
 
     //! Get the string used for verifying this field.
-    QString getVerifyString(void) const Q_DECL_OVERRIDE;
+    std::string getVerifyString(void) const override;
 
     //! Get the string used for comparing this field.
-    QString getComparisonString(void) const Q_DECL_OVERRIDE;
+    std::string getComparisonString(void) const override;
 
     //! Get the string used for text printing this field.
-    QString getTextPrintString(void) const Q_DECL_OVERRIDE;
+    std::string getTextPrintString(void) const override;
 
     //! Get the string used for text reading this field.
-    QString getTextReadString(void) const Q_DECL_OVERRIDE;
+    std::string getTextReadString(void) const override;
 
     //! Get the string used for map encoding this field
-    QString getMapEncodeString(void) const Q_DECL_OVERRIDE;
+    std::string getMapEncodeString(void) const override;
 
     //! Get the string used for map decoding this field
-    QString getMapDecodeString(void) const Q_DECL_OVERRIDE;
+    std::string getMapDecodeString(void) const override;
 
     //! Return the string that sets this encodable to its initial value in code
-    QString getSetInitialValueString(bool isStructureMember) const Q_DECL_OVERRIDE;
+    std::string getSetInitialValueString(bool isStructureMember) const override;
 
     //! Return the string that sets this encodable to specific value in code
-    QString getSetToValueString(bool isStructureMember, QString value) const;
+    std::string getSetToValueString(bool isStructureMember, std::string value) const;
 
     //! Return the strings that #define initial and variable values
-    QString getInitialAndVerifyDefines(bool includeComment = true) const Q_DECL_OVERRIDE;
+    std::string getInitialAndVerifyDefines(bool includeComment = true) const override;
 
     //! Make this primitive not a default
-    void clearDefaults(void) Q_DECL_OVERRIDE {defaultString.clear();}
+    void clearDefaults(void) override {defaultString.clear();}
 
     //! True if this encodable overrides a previous encodable
-    bool overridesPreviousEncodable(void) const Q_DECL_OVERRIDE {return overridesPrevious;}
+    bool overridesPreviousEncodable(void) const override {return overridesPrevious;}
 
     //! Clear the override flag, its not allowed
-    void clearOverridesPrevious(void) Q_DECL_OVERRIDE {overridesPrevious = false;}
+    void clearOverridesPrevious(void) override {overridesPrevious = false;}
 
     //! True if this encodable invalidates an earlier default
-    bool invalidatesPreviousDefault(void) const Q_DECL_OVERRIDE {return !inMemoryType.isNull && !usesDefaults() && !overridesPrevious;}
+    bool invalidatesPreviousDefault(void) const override {return !inMemoryType.isNull && !usesDefaults() && !overridesPrevious;}
 
     //! True if this encodable has a direct child that uses bitfields
-    bool usesBitfields(void) const Q_DECL_OVERRIDE;
+    bool usesBitfields(void) const override;
 
     //! True if this bitfield crosses a byte boundary
     bool bitfieldCrossesByteBoundary(void) const;
 
     //! True if this encodable needs a temporary buffer for its bitfield during encode
-    bool usesEncodeTempBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesEncodeTempBitfield(void) const override;
 
     //! True if this encodable needs a temporary buffer for its long bitfield during encode
-    bool usesEncodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesEncodeTempLongBitfield(void) const override;
 
     //! True if this encodable needs a temporary buffer for its bitfield during decode
-    bool usesDecodeTempBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesDecodeTempBitfield(void) const override;
 
     //! True if this encodable needs a temporary buffer for its long bitfield during decode
-    bool usesDecodeTempLongBitfield(void) const Q_DECL_OVERRIDE;
+    bool usesDecodeTempLongBitfield(void) const override;
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    bool usesEncodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
+    bool usesEncodeIterator(void) const override {return (isArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    bool usesDecodeIterator(void) const Q_DECL_OVERRIDE {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    bool usesDecodeIterator(void) const override {return (isArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator for verifying
-    bool usesVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && usesEncodeIterator();}
+    bool usesVerifyIterator(void) const override {return hasVerify() && usesEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an iterator for initializing
-    bool usesInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && usesEncodeIterator();}
+    bool usesInitIterator(void) const override {return hasInit() && usesEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an iterator on encode
-    bool uses2ndEncodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
+    bool uses2ndEncodeIterator(void) const override {return (is2dArray() && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an iterator on decode
-    bool uses2ndDecodeIterator(void) const Q_DECL_OVERRIDE {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
+    bool uses2ndDecodeIterator(void) const override {return (is2dArray() && !inMemoryType.isNull && !isNotEncoded() && !inMemoryType.isString);}
 
     //! True if this encodable has a direct child that needs an second iterator for verifying
-    bool uses2ndVerifyIterator(void) const Q_DECL_OVERRIDE {return hasVerify() && uses2ndEncodeIterator();}
+    bool uses2ndVerifyIterator(void) const override {return hasVerify() && uses2ndEncodeIterator();}
 
     //! True if this encodable has a direct child that needs an second iterator for initializing
-    bool uses2ndInitIterator(void) const Q_DECL_OVERRIDE {return hasInit() && uses2ndEncodeIterator();}
+    bool uses2ndInitIterator(void) const override {return hasInit() && uses2ndEncodeIterator();}
 
     //! True if this encodable has a direct child that uses defaults
-    bool usesDefaults(void) const Q_DECL_OVERRIDE {return (isDefault() && !isNotEncoded());}
+    bool usesDefaults(void) const override {return (isDefault() && !isNotEncoded());}
 
 protected:
 
@@ -301,43 +300,43 @@ protected:
     double scaler;
 
     //! String providing the maximum encoded value
-    QString maxString;
+    std::string maxString;
 
     //! String providing the minimum encoded value
-    QString minString;
+    std::string minString;
 
     //! String providing the scaler from in-Memory to encoded
-    QString scalerString;
+    std::string scalerString;
 
     //! The string used to multiply the in-memory type to compare and print to text
-    QString printScalerString;
+    std::string printScalerString;
 
     //! The string used to divide the in-memory type to read from text
-    QString readScalerString;
+    std::string readScalerString;
 
     //! String giving the default value to use if the packet is too short
-    QString defaultString;
+    std::string defaultString;
 
     //! String giving the default value for documentation purposes only
-    QString defaultStringForDisplay;
+    std::string defaultStringForDisplay;
 
     //! String giving the constant value to use on encoding
-    QString constantString;
+    std::string constantString;
 
     //! String giving the constant value for documentation purposes only
-    QString constantStringForDisplay;
+    std::string constantStringForDisplay;
 
     //! The string used in the set to defaults function
-    QString initialValueString;
+    std::string initialValueString;
 
     //! The string used in the set to defaults function, for documentation purposes only
-    QString initialValueStringForDisplay;
+    std::string initialValueStringForDisplay;
 
     //! The string used to verify the value on the low side
-    QString verifyMinString;
+    std::string verifyMinString;
 
     //! The string used to verify the value on the low side, for documentation purposes only
-    QString verifyMinStringForDisplay;
+    std::string verifyMinStringForDisplay;
 
     //! Flag if we know the verify min value
     bool hasVerifyMinValue;
@@ -349,16 +348,16 @@ protected:
     double limitMinValue;
 
     //! The string for the limit min value
-    QString limitMinString;
+    std::string limitMinString;
 
     //! The string for the limit min value used in comments
-    QString limitMinStringForComment;
+    std::string limitMinStringForComment;
 
     //! The string used to verify the value on the high side
-    QString verifyMaxString;
+    std::string verifyMaxString;
 
     //! The string used to verify the value on the high side, for documentation purposes only
-    QString verifyMaxStringForDisplay;
+    std::string verifyMaxStringForDisplay;
 
     //! Flag if we know the verify max value
     bool hasVerifyMaxValue;
@@ -370,10 +369,10 @@ protected:
     double limitMaxValue;
 
     //! The string for the limit max value
-    QString limitMaxString;
+    std::string limitMaxString;
 
     //! The string for the limit max value used in comments
-    QString limitMaxStringForComment;
+    std::string limitMaxStringForComment;
 
     //! Flag to force this the decode function to verify the result against the constant value
     bool checkConstant;
@@ -394,8 +393,8 @@ protected:
     BitfieldData bitfieldData;
 
     //! List of extra fields that can be appended to a <Data> tag within a packet description
-    QStringList extraInfoNames;
-    QStringList extraInfoValues;
+    std::vector<std::string> extraInfoNames;
+    std::vector<std::string> extraInfoValues;
 
     //! Pointer to the previous protocol field, or NULL if none
     ProtocolField* prevField;
@@ -407,13 +406,13 @@ protected:
     int mapOptions;
 
     //! Extract the type information from the type string
-    void extractType(TypeData& data, const QString& typeString, bool inMemory, const QString& enumName = QString());
+    void extractType(TypeData& data, const std::string& typeString, bool inMemory, const std::string& enumName = std::string());
 
     //! Return the constant value string, sourced from either constantValue, encodeConstantValue, decodeConstantValue
-    QString getConstantString() const;
+    std::string getConstantString() const;
 
     //! Adjust input string for presence of numeric constants "pi" and "e"
-    QString handleNumericConstants(QString& input) const;
+    std::string handleNumericConstants(std::string& input) const;
 
     //! Compute the encoded length string
     void computeEncodedLength(void);
@@ -428,37 +427,37 @@ protected:
     int getEndingBitCount(void){return bitfieldData.startingBitCount + encodedType.bits;}
 
     //! Get the comment that describes the encoded range
-    QString getRangeComment(bool limitonencode = false) const;
+    std::string getRangeComment(bool limitonencode = false) const;
 
     //! Determine if an argument should be passed to the limiting macro
-    QString getLimitedArgument(QString argument) const;
+    std::string getLimitedArgument(std::string argument) const;
 
     //! Get the next lines(s) of source coded needed to encode a bitfield field
-    QString getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;
+    std::string getEncodeStringForBitfield(int* bitcount, bool isStructureMember) const;
 
     //! Get the next lines of source needed to encode a string field
-    QString getEncodeStringForString(bool isStructureMember) const;
+    std::string getEncodeStringForString(bool isStructureMember) const;
 
     //! Get the next lines of source needed to encode a string field
-    QString getEncodeStringForStructure(bool isStructureMember) const;
+    std::string getEncodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to encode a field, which is not a bitfield or a string
-    QString getEncodeStringForField(bool isBigEndian, bool isStructureMember) const;
+    std::string getEncodeStringForField(bool isBigEndian, bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a bitfield field
-    QString getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const;
+    std::string getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the next lines of source needed to decode a string field
-    QString getDecodeStringForString(bool isStructureMember, bool defaultEnabled) const;
+    std::string getDecodeStringForString(bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the next lines of source needed to decode a string field
-    QString getDecodeStringForStructure(bool isStructureMember) const;
+    std::string getDecodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a field, which is not a bitfield or a string
-    QString getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled) const;
+    std::string getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the source needed to close out a string of bitfields in the encode function.
-    QString getCloseBitfieldString(int* bitcount) const;
+    std::string getCloseBitfieldString(int* bitcount) const;
 
     //! Check to see if we should be doing floating point scaling on this field
     bool isFloatScaling(void) const;

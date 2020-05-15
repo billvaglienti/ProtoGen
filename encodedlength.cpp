@@ -1,6 +1,6 @@
 #include "encodedlength.h"
 #include "shuntingyard.h"
-#include <QStringList>
+#include "protocolsupport.h"
 
 EncodedLength::EncodedLength() :
     minEncodedLength(),
@@ -27,7 +27,7 @@ void EncodedLength::clear(void)
  */
 bool EncodedLength::isEmpty(void)
 {
-    return maxEncodedLength.isEmpty();
+    return maxEncodedLength.empty();
 }
 
 
@@ -52,9 +52,9 @@ bool EncodedLength::isZeroLength(void) const
  * \param isDependent is true if this length is for a field whose presence depends on another field
  * \parma isDefault is true if this lenght is for a default field.
  */
-void EncodedLength::addToLength(const QString & length, bool isString, bool isVariable, bool isDependent, bool isDefault)
+void EncodedLength::addToLength(const std::string & length, bool isString, bool isVariable, bool isDependent, bool isDefault)
 {
-    if(length.isEmpty())
+    if(length.empty())
         return;
 
     addToLengthString(maxEncodedLength, length);
@@ -90,7 +90,7 @@ void EncodedLength::addToLength(const QString & length, bool isString, bool isVa
  * \param isDependent is true if this length is for a field whose presence depends on another field.
  * \param array2d is the 2nd dimension array length, which can be empty.
  */
-void EncodedLength::addToLength(const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent, const QString& array2d)
+void EncodedLength::addToLength(const EncodedLength& rightLength, const std::string& array, bool isVariable, bool isDependent, const std::string& array2d)
 {
     addToLengthString(maxEncodedLength, rightLength.maxEncodedLength, array, array2d);
     addToLengthString(nonDefaultEncodedLength, rightLength.nonDefaultEncodedLength, array, array2d);
@@ -110,7 +110,7 @@ void EncodedLength::addToLength(const EncodedLength& rightLength, const QString&
  * \param isDependent is true if this length is for a field whose presence depends on another field.
  * \param array2d is the 2nd dimension array length, which can be empty.
  */
-void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLength, const QString& array, bool isVariable, bool isDependent, const QString& array2d)
+void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLength, const std::string& array, bool isVariable, bool isDependent, const std::string& array2d)
 {
     if(leftLength != NULL)
         leftLength->addToLength(rightLength, array, isVariable, isDependent, array2d);
@@ -123,13 +123,13 @@ void EncodedLength::add(EncodedLength* leftLength, const EncodedLength& rightLen
  * \param length is the new length to add
  * \param array is the number of times to add it
  */
-void EncodedLength::addToLengthString(QString & totalLength, QString length, QString array, QString array2d)
+void EncodedLength::addToLengthString(std::string & totalLength, std::string length, std::string array, std::string array2d)
 {
     bool ok;
     double number;
     int inumber;
 
-    if(length.isEmpty())
+    if(length.empty())
         return;
 
     // Its possible that length represents something like 24*(6),
@@ -146,27 +146,27 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length, QSt
         if(inumber == 0)
             return;
 
-        length = QString().setNum(inumber);
+        length = std::to_string(inumber);
     }
 
 
-    if(!array.isEmpty() && array != "1")
+    if(!array.empty() && array != "1")
     {
         // How we handle the array multiplier depends on the contents of length
         // We only expect length to have +, -, or * operators. If there are no
         // operators, or the only operators are multipliers, then we don't need
         // the parenthesis. Otherwise we do need them.
 
-        if(array2d.isEmpty() || (array2d == "1"))
+        if(array2d.empty() || (array2d == "1"))
         {
-            if(length.contains("+") || length.contains("-") || length.contains("/"))
+            if(length.find_first_of("+-/") != std::string::npos)
                 length = array + "*(" + length + ")";
             else
                 length = array + "*" + length;
         }
         else
         {
-            if(length.contains("+") || length.contains("-") || length.contains("/"))
+            if(length.find_first_of("+-/") != std::string::npos)
                 length = array + "*" + array2d + "*(" + length + ")";
             else
                 length = array + "*" + array2d + "*" + length;
@@ -174,61 +174,12 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length, QSt
     }
 
 
-    if(totalLength.isEmpty())
+    if(totalLength.empty())
         totalLength = length;
     else
     {
         // Add them up
         totalLength = collapseLengthString(totalLength + "+" + length);
-
-        /*
-        if(totalLength.endsWith(")") || !ok)
-        {
-            totalLength += "+" + length;
-        }
-        else
-        {
-            QString trailingArgument;
-
-            // find the last addition operator
-            int index = totalLength.lastIndexOf("+");
-
-            // Get the trailing argument
-            if(index <= 0)
-                trailingArgument = totalLength;
-            else
-                trailingArgument = totalLength.right(totalLength.size() - index - 1);
-
-            if(isNumber(trailingArgument))
-            {
-                number = ShuntingYard::computeInfix(trailingArgument + "+" + length, &ok);
-                if(ok)
-                {
-                    // round to nearest integer
-                    if(number >= 0)
-                        inumber = (int)(number + 0.5);
-                    else
-                        inumber = (int)(number - 0.5);
-
-                    if(index >= 0)
-                    {
-                        // Remove the previous trailing argument
-                        totalLength.remove(index+1, totalLength.size());
-
-                        // Replace with our new one
-                        totalLength += QString().setNum(inumber);
-                    }
-                    else
-                        totalLength = QString().setNum(inumber);
-                }
-                else
-                    totalLength += "+" + length;
-            }
-            else
-                totalLength += "+" + length;
-
-        }// if length is something we can compute
-        */
 
     }// if totalLength previously had data
 
@@ -242,7 +193,7 @@ void EncodedLength::addToLengthString(QString & totalLength, QString length, QSt
  * \param minusOne should be true to subtract 1 from the output.
  * \return an equivalent collapsed string
  */
-QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, bool minusOne)
+std::string EncodedLength::collapseLengthString(std::string totalLength, bool keepZero, bool minusOne)
 {
     int number = 0;
 
@@ -262,12 +213,12 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
         if(minusOne)
             number--;
 
-        return QString().setNum(number);
+        return std::to_string(number);
     }
 
     // We don't properly support collapsing strings with parenthesis
     /// TODO: support parenthesis using recursion
-    if(totalLength.contains("(") || totalLength.contains(")"))
+    if(totalLength.find_first_of("()") != std::string::npos)
     {
         if(minusOne)
             return totalLength + "-1";
@@ -276,23 +227,23 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
     }
 
     // Split according to the pluses
-    QStringList list = totalLength.split("+");
-    QStringList others;
+    std::vector<std::string> list = split(totalLength, "+");
+    std::vector<std::string> others;
 
     // Some of these groups are simple numbers, some of them are not. We are going to re-order to put the numbers together
     number = 0;
-    for(int i = 0; i < list.size(); i++)
+    for(std::size_t i = 0; i < list.size(); i++)
     {
-        if(list.at(i).isEmpty())
+        if(list.at(i).empty())
             continue;
 
         if(isNumber(list.at(i)))
         {
-            number += list.at(i).toInt();
+            number += std::stoi(list.at(i));
         }
         else
         {
-            others.append(list.at(i));
+            others.push_back(list.at(i));
         }
 
     }// for all the fragments
@@ -301,16 +252,16 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
     if(minusOne)
         number--;
 
-    QList<QStringList> pairlist;
-    for(int i = 0; i < others.size(); i++)
+    std::vector<std::vector<std::string>> pairlist;
+    for(std::size_t i = 0; i < others.size(); i++)
     {
         // Separate a string like "1*N3D" into "1" and "N3D"
-        pairlist.append(others.at(i).split("*"));
+        pairlist.push_back(split(others.at(i), "*"));
     }
 
     others.clear();
-    QString output;
-    for(int i = 0; i < pairlist.size(); i++)
+    std::string output;
+    for(std::size_t i = 0; i < pairlist.size(); i++)
     {
         // Each entry should have two elements and the first should be a number,
         // if not then something weird happened, just put it back the way it was
@@ -318,18 +269,18 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
         {
             if(pairlist.at(i).size() != 0)
             {
-                if(!output.isEmpty())
+                if(!output.empty())
                     output += "+";
 
-                output += pairlist.at(i).join("*");
+                output += join(pairlist.at(i), "*");
             }
             continue;
         }
 
-        int counter = pairlist.at(i).at(0).toInt();
+        int counter = std::stoi(pairlist.at(i).at(0));
 
         // Now go through all entries after this one to find anyone that is common
-        for(int j = i + 1; j < pairlist.size(); j++)
+        for(std::size_t j = i + 1; j < pairlist.size(); j++)
         {
             // if its not a number, then we can't do anything with it,
             // we'll catch it in the outer loop when we get to it
@@ -337,10 +288,10 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
                 continue;
 
             // If the comparison is exactly the same, then we can add this one up
-            if(pairlist.at(i).at(1).compare(pairlist.at(j).at(1)) == 0)
+            if(pairlist.at(i).at(1) == pairlist.at(j).at(1))
             {
                 // These two are multiples of the same thing
-                counter += pairlist.at(j).at(0).toInt();
+                counter += std::stoi(pairlist.at(j).at(0));
 
                 // Clear this element, no contribution in the future.
                 pairlist[j].clear();
@@ -350,28 +301,28 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
         // finally include this in the output
         if(counter != 0)
         {
-            if(!output.isEmpty())
+            if(!output.empty())
                 output += "+";
 
-            output += QString().setNum(counter) + "*" + pairlist.at(i).at(1);
+            output += std::to_string(counter) + "*" + pairlist.at(i).at(1);
         }
     }
 
     // A negative number outputs the "-" by default
     if(number < 0)
-        output += QString().setNum(number);
+        output += std::to_string(number);
     else
     {
         if(number != 0)
         {
-            if(output.isEmpty())
-                output = QString().setNum(number);
+            if(output.empty())
+                output = std::to_string(number);
             else
-                output += "+" + QString().setNum(number);
+                output += "+" + std::to_string(number);
         }
     }
 
-    if((keepZero) && output.isEmpty())
+    if((keepZero) && output.empty())
         output = "0";
 
     // It might be that we can compute a value now, give it a try
@@ -384,7 +335,7 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
         else
             number = (int)(dnumber - 0.5);
 
-        output = QString().setNum(number);
+        output = std::to_string(number);
     }
 
     return output;
@@ -398,7 +349,7 @@ QString EncodedLength::collapseLengthString(QString totalLength, bool keepZero, 
 * \param keepZero should be true keep "0" in the output.
 * \return the string with one less
 */
-QString EncodedLength::subtractOneFromLengthString(QString totalLength, bool keepZero)
+std::string EncodedLength::subtractOneFromLengthString(std::string totalLength, bool keepZero)
 {
     return EncodedLength::collapseLengthString(totalLength, keepZero, true);
 }
@@ -409,17 +360,12 @@ QString EncodedLength::subtractOneFromLengthString(QString totalLength, bool kee
  * \param text is the text to check
  * \return true if only decimal digits, else false
  */
-bool EncodedLength::isNumber(const QString& text)
+bool EncodedLength::isNumber(const std::string& text)
 {
+    /// TODO not sure if I need this size check
     if(text.size() <= 0)
         return false;
 
-    for(int i = 0; i < text.size(); i++)
-    {
-        // Minus signs are OK
-        if(!text.at(i).isDigit() && (text.at(i) != '-'))
-            return false;
-    }
-
-    return true;
+    // Only decimal digits and minus signs are OK
+    return (text.find_first_not_of("-0123456789") == std::string::npos);
 }

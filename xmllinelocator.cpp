@@ -238,8 +238,13 @@ int XMLContent::getMatchingLineNumber(const QStringList& names, int level) const
  * \param file is the name of the file that supplied the text
  * \param topname can be used to override the top level name of the hierarchy
  */
-void XMLLineLocator::setXMLContents(QString text, QString path, QString file, QString topname)
+void XMLLineLocator::setXMLContents(std::string _text, std::string _path, std::string _file, std::string _topname)
 {
+    QString text(QString::fromStdString(_text));
+    QString path(QString::fromStdString(_path));
+    QString file(QString::fromStdString(_file));
+    QString topname(QString::fromStdString(_topname));
+
     // The first character in a string is index 0
     int startindex = 0;
 
@@ -300,9 +305,9 @@ void XMLLineLocator::setXMLContents(QString text, QString path, QString file, QS
  * \return the line number corresponding to the last name in the hierarchy,
  *         or -1 if not found
  */
-int XMLLineLocator::getLineNumber(QString hierarchicalName) const
+int XMLLineLocator::getLineNumber(std::string hierarchicalName) const
 {
-    return contents.getMatchingLineNumber(hierarchicalName.split(":"), 0);
+    return contents.getMatchingLineNumber(QString::fromStdString(hierarchicalName).split(":"), 0);
 
 }// XMLLineLocator::getLineNumber
 
@@ -313,13 +318,13 @@ int XMLLineLocator::getLineNumber(QString hierarchicalName) const
  * \param warning is the text of the warning
  * \return true if hierarchicalName was found, and a warning was output, else false
  */
-bool XMLLineLocator::emitWarning(QString hierarchicalName, QString warning) const
+bool XMLLineLocator::emitWarning(std::string hierarchicalName, std::string warning) const
 {
     int line = getLineNumber(hierarchicalName);
 
     if(line >= 0)
     {
-        QString output = inputpath + inputfile + ":" + QString::number(line) + ":0: warning: " + hierarchicalName + ": " + warning;
+        QString output = inputpath + inputfile + ":" + QString::number(line) + ":0: warning: " + QString::fromStdString(hierarchicalName) + ": " + QString::fromStdString(warning);
         std::cerr << output.toStdString() << std::endl;
         return true;
     }

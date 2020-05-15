@@ -1,5 +1,6 @@
 #include "protocolbitfield.h"
-#include <QFile>
+#include <iomanip>
+#include <sstream>
 
 void ProtocolBitfield::generatetest(ProtocolSupport support)
 {
@@ -265,7 +266,7 @@ uint64_t ProtocolBitfield::maxvalueoffield(int numbits)
  * \param numbits is the number of bits in this field
  * \return the string that is the decoding code
  */
-QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QString cast, QString dataname, QString dataindex, int bitcount, int numbits)
+std::string ProtocolBitfield::getDecodeString(const std::string& spacing, const std::string& argument, const std::string& cast, const std::string& dataname, const std::string& dataindex, int bitcount, int numbits)
 {
     if((numbits > 1) && (((bitcount % 8) + numbits) > 8))
         return getComplexDecodeString(spacing, argument, dataname, dataindex, bitcount, numbits);
@@ -283,22 +284,22 @@ QString ProtocolBitfield::getDecodeString(QString spacing, QString argument, QSt
  * \param numbits is the number of bits in this field
  * \return the string that is the decoding code
  */
-QString ProtocolBitfield::getInnerDecodeString(QString dataname, QString dataindex, int bitcount, int numbits)
+std::string ProtocolBitfield::getInnerDecodeString(const std::string& dataname, const std::string& dataindex, int bitcount, int numbits)
 {
     // This is the easiest case, we can just decode it directly
-    QString rightshift;
-    QString offset;
-    QString mask;
+    std::string rightshift;
+    std::string offset;
+    std::string mask;
 
     // Don't do shifting by zero bits
     int right = 8 - (bitcount%8 + numbits);
     if(right > 0)
-        rightshift = " >> " + QString().setNum(8 - (bitcount%8 + numbits));
+        rightshift = " >> " + std::to_string(8 - (bitcount%8 + numbits));
 
     // This mask protects against any other bits we don't want. We don't
     // need the mask if we are grabbing the most significant bit of this byte
     if((numbits + right) < 8)
-        mask = " & 0x" + QString().setNum(maxvalueoffield(numbits), 16).toUpper();
+        mask = " & 0x" + toUpper((std::stringstream() << std::hex << maxvalueoffield(numbits)).str());
 
     // The value of the bit count after moving all the bits
     int bitoffset = bitcount + numbits;
@@ -307,11 +308,11 @@ QString ProtocolBitfield::getInnerDecodeString(QString dataname, QString dataind
     int byteoffset = (bitoffset-1) >> 3;
 
     if(byteoffset > 0)
-        offset = " + " + QString().setNum(byteoffset);
+        offset = " + " + std::to_string(byteoffset);
 
-    if(mask.isEmpty() && rightshift.isEmpty())
+    if(mask.empty() && rightshift.empty())
         return dataname + "[" + dataindex + offset + "]";
-    else if(mask.isEmpty())
+    else if(mask.empty())
         return "(" + dataname + "[" + dataindex + offset + "]" + rightshift + ")";
     else
         return "((" + dataname + "[" + dataindex + offset + "]" + rightshift + ")" + mask + ")";
@@ -328,9 +329,9 @@ QString ProtocolBitfield::getInnerDecodeString(QString dataname, QString dataind
  * \param numbits is the number of bits in this field
  * \return the string that is the encoding code
  */
-QString ProtocolBitfield::getComplexDecodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits)
+std::string ProtocolBitfield::getComplexDecodeString(const std::string& spacing, const std::string& argument, const std::string& dataname, const std::string& dataindex, int bitcount, int numbits)
 {
-    QString output;
+    std::string output;
 
     // Bits are encoded left-to-right from most-significant to least-significant.
     // The most significant bits are moved first, as that allows us to keep the
@@ -344,12 +345,12 @@ QString ProtocolBitfield::getComplexDecodeString(QString spacing, QString argume
     // First get any most significant bits that are partially encoded in the previous byte
     if(leadingbits)
     {
-        QString offset;
+        std::string offset;
         if(byteoffset)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         // This mask protects against any other bits we don't want
-        QString mask = " & 0x" + QString().setNum(maxvalueoffield(leadingbits), 16).toUpper();
+        std::string mask = " & 0x" + toUpper((std::stringstream() << std::hex << maxvalueoffield(leadingbits)).str());
 
         output += spacing + argument + " = (" + dataname + "[" + dataindex + offset + "]" + mask + ");\n\n";
 
@@ -361,14 +362,14 @@ QString ProtocolBitfield::getComplexDecodeString(QString spacing, QString argume
         if(numbits >= 8)
             output += spacing + argument + " <<= 8;\n";
         else if(numbits)
-            output += spacing + argument + " <<= " + QString().setNum(numbits) + ";\n";
+            output += spacing + argument + " <<= " + std::to_string(numbits) + ";\n";
     }
 
     while(numbits >= 8)
     {
-        QString offset;
+        std::string offset;
         if(byteoffset)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         // Make space in the argument for the next most significant 8 bits
         output += spacing + argument + " |= " + dataname + "[" + dataindex + offset + "];\n\n";
@@ -380,22 +381,22 @@ QString ProtocolBitfield::getComplexDecodeString(QString spacing, QString argume
         if(numbits >= 8)
             output += spacing + argument + " <<= 8;\n";
         else if(numbits)
-            output += spacing + argument + " <<= " + QString().setNum(numbits) + ";\n";
+            output += spacing + argument + " <<= " + std::to_string(numbits) + ";\n";
     }
 
     // Handle the final remainder bits
     if(numbits)
     {
-        QString offset;
+        std::string offset;
 
         if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         // The least significant bits of value, encoded in the most
         // significant bits of the last byte we are going to use. By
         // Definition we don't need a mask because we are grabbing the
         // most significant bit in this case.
-        output += spacing + argument + " |= (" + dataname + "[" + dataindex + offset + "] >> " + QString().setNum(8-numbits) + ");\n\n";
+        output += spacing + argument + " |= (" + dataname + "[" + dataindex + offset + "] >> " + std::to_string(8-numbits) + ");\n\n";
     }
 
     return output;
@@ -413,20 +414,20 @@ QString ProtocolBitfield::getComplexDecodeString(QString spacing, QString argume
  * \param numbits is the number of bits in this field
  * \return the string that is the encoding code
  */
-QString ProtocolBitfield::getEncodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits)
+std::string ProtocolBitfield::getEncodeString(const std::string& spacing, const std::string& argument, const std::string& dataname, const std::string& dataindex, int bitcount, int numbits)
 {
     if((numbits > 1) && (((bitcount % 8) + numbits) > 8))
         return getComplexEncodeString(spacing, argument, dataname, dataindex, bitcount, numbits);
     else
     {
         // This is the easiest case, we can just encode it directly
-        QString leftshift;
-        QString offset;
+        std::string leftshift;
+        std::string offset;
 
         // Don't do any shifting by zero bits
         int left = 8 - (bitcount%8 + numbits);
         if(left > 0)
-            leftshift = " << " + QString().setNum(8 - (bitcount%8 + numbits));
+            leftshift = " << " + std::to_string(8 - (bitcount%8 + numbits));
 
         // The value of the bit count after moving all the bits
         int bitoffset = bitcount + numbits;
@@ -435,7 +436,7 @@ QString ProtocolBitfield::getEncodeString(QString spacing, QString argument, QSt
         int byteoffset = (bitoffset-1) >> 3;
 
         if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         // If this is the first bit of this byte then we assign rather than or-equal
         if((bitcount%8) == 0)
@@ -450,7 +451,7 @@ QString ProtocolBitfield::getEncodeString(QString spacing, QString argument, QSt
         {
             // If the thing we are or-equaling is the string "0" then we can just skip the entire line
             if(argument == "0")
-                return QString();
+                return std::string();
             else
                 return spacing + dataname + "[" + dataindex + offset + "] |= (uint8_t)" + argument + leftshift + ";\n";
         }
@@ -470,9 +471,9 @@ QString ProtocolBitfield::getEncodeString(QString spacing, QString argument, QSt
  * \param numbits is the number of bits in this field
  * \return the string that is the encoding code
  */
-QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argument, QString dataname, QString dataindex, int bitcount, int numbits)
+std::string ProtocolBitfield::getComplexEncodeString(const std::string& spacing, const std::string& argument, const std::string& dataname, const std::string& dataindex, int bitcount, int numbits)
 {
-    QString output;
+    std::string output;
 
     // Bits are encoded left-to-right from most-significant to least-significant.
     // The least significant bits are moved first, as that allows us to keep the
@@ -489,10 +490,10 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
 
     if(remainder)
     {
-        QString offset;
+        std::string offset;
 
         if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         if(argument == "0")
         {
@@ -503,7 +504,7 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
         {
             // The least significant bits of value, encoded in the most
             // significant bits of the last byte we are going to use.
-            output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)("+argument+" << "+QString().setNum(8-remainder)+");\n\n";
+            output += spacing + dataname + "[" + dataindex + offset + "] = (uint8_t)("+argument+" << "+std::to_string(8-remainder)+");\n\n";
         }
 
         // Discard these bits, we have encoded them
@@ -511,7 +512,7 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
 
         // Shift the field down for the next byte of bits
         if((numbits > 0) && (argument != "0"))
-            output += spacing + argument + " >>= " + QString().setNum(remainder) + ";\n";
+            output += spacing + argument + " >>= " + std::to_string(remainder) + ";\n";
 
         remainder = 0;
         byteoffset--;
@@ -521,10 +522,10 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
     // Now aligned on a byte boundary, move full bytes
     while(numbits >= 8)
     {
-        QString offset;
+        std::string offset;
 
         if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         if(argument == "0")
         {
@@ -550,10 +551,10 @@ QString ProtocolBitfield::getComplexEncodeString(QString spacing, QString argume
     // some valid bits in the most signficant bit locations.
     if(numbits > 0)
     {
-        QString offset;
+        std::string offset;
 
         if(byteoffset > 0)
-            offset = " + " + QString().setNum(byteoffset);
+            offset = " + " + std::to_string(byteoffset);
 
         // If the thing we are or-equaling is the string "0" then we can just skip the entire line
         if(argument != "0")

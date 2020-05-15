@@ -3,6 +3,8 @@
 
 #include <QStringList>
 
+//! Split a string into multiple sub strings spearated by a separator.
+static std::vector<std::string> _split(const std::string& text, const std::string& sep, bool keepemptyparts, bool anyof);
 
 /*!
  * Make a copy of a string that is all lower case.
@@ -14,12 +16,7 @@ std::string toLower(const std::string& text)
     std::string lower;
 
     for(const char& c: text)
-    {
-        if((c >= 'A') && (c <= 'Z'))
-            lower.push_back(c + ('a' - 'A'));
-        else
-            lower.push_back(c);
-    }
+        lower.push_back(std::tolower(c));
 
     return lower;
 }
@@ -35,14 +32,28 @@ std::string toUpper(const std::string& text)
     std::string upper;
 
     for(const char& c: text)
-    {
-        if((c >= 'a') && (c <= 'z'))
-            upper.push_back(c - ('a' - 'A'));
-        else
-            upper.push_back(c);
-    }
+        upper.push_back(std::toupper(c));
 
     return upper;
+}
+
+
+/*!
+ * Find the index of a sub string within a string, with optional case sensitivity
+ * \param text is the string to check.
+ * \param test is the substring that is searched for within text.
+ * \param casesensitive should be true to require the case to match.
+ * \return the index position of the start of the sub string, or npos if no match is found.
+ */
+std::size_t find(const std::string& text, const std::string& test, bool casesensitive)
+{
+    if(text.empty() || test.empty())
+        return std::string::npos;
+
+    if(casesensitive)
+        return text.find(test);
+    else
+        return toLower(text).find(toLower(test));
 }
 
 
@@ -55,19 +66,57 @@ std::string toUpper(const std::string& text)
  */
 bool contains(const std::string& text, const std::string& test, bool casesensitive)
 {
+    if(find(text, test, casesensitive) < text.size())
+        return true;
+    else
+        return false;
+}
+
+
+//! Determine if a string starts with another string
+bool startsWith(const std::string& text, const std::string& test, bool casesensitive)
+{
+    if(find(text, test, casesensitive) == 0)
+        return true;
+    else
+        return false;
+}
+
+
+//! Determine if a string ends with another string
+bool endsWith(const std::string& text, const std::string& test, bool casesensitive)
+{
     if(casesensitive)
-    {
-        if(text.find(test) < text.size())
-            return true;
-        else
-            return false;
-    }
+        return (text.rfind(test) == (text.length() - test.length()));
+    else
+        return (toLower(text).rfind(toLower(test)) == (text.length() - test.length()));
+}
+
+
+/*!
+ * Determine if a string list contains a string.
+ * \param list is the list to search.
+ * \param test is the test string to search for.
+ * \param casesensitive should be true to do the search case sensitive.
+ * \return true if a member of list is equal to test.
+ */
+bool contains(const std::vector<std::string>& list, const std::string& test, bool casesensitive)
+{
+    if(list.empty() || test.empty())
+        return false;
+
+    if(casesensitive)
+        return (std::find(list.begin(), list.end(), test) != list.end());
     else
     {
-        if(toLower(text).find(toLower(test)) < text.size())
-            return true;
-        else
-            return false;
+        std::string lowertest = toLower(test);
+        for(std::size_t i = 0; i < list.size(); i++)
+        {
+            if(toLower(list.at(i)) == lowertest)
+                return true;
+        }
+
+        return false;
     }
 }
 
@@ -105,81 +154,193 @@ std::string trimm(const std::string& text)
 std::string replace(const std::string& text, const std::string& find, const std::string& replace)
 {
     std::string output = text;
-    std::size_t index = output.find(find);
+    replaceinplace(output, find, replace);
+    return output;
+}
 
-    while(index < output.size())
+
+/*!
+ * Replace all occurences of `find` with `replace`;
+ * \param text is the string that has its text replaced
+ * \param find is the text to find and replace
+ * \param replace is the text to put in place of `find`.
+ * \return text with all occurrences of `find` replaced with `replace`.
+ */
+std::string& replaceinplace(std::string& text, const std::string& find, const std::string& replace)
+{
+    std::size_t index = text.find(find);
+
+    while(index < text.size())
     {
         // Get rid of the original bytes
-        output.erase(index, find.size());
+        text.erase(index, find.size());
 
         // And insert the new ones
         if(!replace.empty())
         {
-            output.insert(index, replace);
+            text.insert(index, replace);
 
             // Jump past what we just replaced, in case `replace` contains `find`
             index += replace.size();
         }
 
-        index = output.find(find, index);
+        index = text.find(find, index);
 
     }
 
-    return output;
+    return text;
 }
 
 
 /*!
- * Replace first occurence of `find` with `replace`;
- * \param text is the string that has its text replaced
- * \param find is the text to find and replace
- * \param replace is the text to put in place of `find`.
- * \return text with all occurrences of `find` replaced with `replace`.
+ * Split a string into multiple sub strings spearated by a separator. The
+ * separator will not appear in the output list.
+ * \param text is the source string to split.
+ * \param sep is the separator string.
+ * \param keepemptyparts should be true to insert empty strings in the list
+ *        if there are consecutive separators.
+ * \return The list of strings split by the separator.
  */
-std::string replacefirst(const std::string& text, const std::string& find, const std::string& replace)
+std::vector<std::string> split(const std::string& text, const std::string& sep, bool keepemptyparts)
 {
-    std::string output = text;
+    return _split(text, sep, keepemptyparts, false);
+}
 
-    std::size_t index = output.find(find);
+/*!
+ * Split a string into multiple sub strings spearated by a character(s). The
+ * separator characters will not appear in the output list.
+ * \param text is the source string to split.
+ * \param sep is a string of characters, any one of which is a valid separator.
+ * \param keepemptyparts should be true to insert empty strings in the list
+ *        if there are consecutive separators.
+ * \return The list of strings split by the separator.
+ */
+std::vector<std::string> splitanyof(const std::string& text, const std::string& sep, bool keepemptyparts)
+{
+    return _split(text, sep, keepemptyparts, true);
+}
 
-    if(index < output.size())
+/*!
+ * Split a string into multiple sub strings spearated by a separator. The
+ * separator will not appear in the output list.
+ * \param text is the source string to split.
+ * \param sep is the separator string.
+ * \param keepemptyparts should be true to insert empty strings in the list
+ *        if there are consecutive separators.
+ * \param anyof should be true to treach any character of sep as a valid
+ *        separator, otherwise the entire sep string is used as the separator.
+ * \return The list of strings split by the separator.
+ */
+std::vector<std::string> _split(const std::string& text, const std::string& sep, bool keepemptyparts, bool anyof)
+{
+    std::vector<std::string> list;
+
+    if(sep.empty() || text.empty())
     {
-        // Get rid of the original bytes
-        output.erase(index, find.size());
+        // No separators, return the whole string, unless it is empty, unless we keep empty parts
+        if(!text.empty() || keepemptyparts)
+            list.push_back(text);
 
-        // And insert the new ones
-        if(!replace.empty())
-            output.insert(index, replace);
+        return list;
     }
 
-    return output;
+    std::size_t start = 0;
+
+    // Find the first occurence of the separator
+    std::size_t index;
+
+    if(anyof)
+        index = text.find_first_of(sep, start); // Any character is valid
+    else
+        index = text.find(sep, start);          // Only whole string is valid
+
+    while(index < text.size())
+    {
+        // Extract the string, except for the separator
+        if(index == start)
+        {
+            // This will happen when we have consecutive separators
+            if(keepemptyparts)
+                list.push_back(std::string());
+        }
+        else
+            list.push_back(text.substr(start, index - start));
+
+        // Find the next separator
+        if(anyof)
+        {
+            // Index is the first character of the separator, our next search after the character
+            start = index + 1;
+            index = text.find_first_of(sep, start);
+        }
+        else
+        {
+            // Index is the first character of the separator, our next search should be after the separator
+            start = index + sep.length();
+            index = text.find(sep, start);
+        }
+    }
+
+    // It is possible that this is the entire text if there were no separators
+    if((index > start) && (start < text.length()))
+        list.push_back(text.substr(start, index - start));
+
+    return list;
+
+}// _split
+
+
+/*!
+ * Join substrings together.
+ * \param list is the list of strings to join.
+ * \param joiner is text to insert between the substrings of the list.
+ * \return the concatenated list with joiners.
+ */
+std::string join(const std::vector<std::string> list, const std::string& joiner)
+{
+    std::string text;
+
+    if(list.size() > 0)
+    {
+        text = list.front();
+
+        for(std::size_t i = 1; i < list.size(); i++)
+            text += joiner + list.at(i);
+
+    }
+
+    return text;
 }
 
 
 /*!
- * Replace first occurence of `find` with `replace`;
- * \param text is the string that has its text replaced
- * \param find is the text to find and replace
- * \param replace is the text to put in place of `find`.
- * \return text with all occurrences of `find` replaced with `replace`.
+ * Remove duplicate strings.
+ * \param list is the string list whose duplicates are removed. list will be updated.
+ * \param casesensitive should be true to consider case when testing strings.
+ * \return a reference to list.
  */
-std::string replacelast(const std::string& text, const std::string& find, const std::string& replace)
+std::vector<std::string>& removeDuplicates(std::vector<std::string>& list, bool casesensitive)
 {
-    std::string output = text;
-
-    std::size_t index = output.rfind(find);
-
-    if(index < output.size())
+    // Don't use iterators here, I will be changing the list size. I know
+    // there is a better way to do this, but I need more STL fu.
+    for(std::size_t i = 0; i < list.size(); i++)
     {
-        // Get rid of the original bytes
-        output.erase(index, find.size());
-
-        // And insert the new ones
-        if(!replace.empty())
-            output.insert(index, replace);
+        for(std::size_t j = i + 1; j < list.size(); j++)
+        {
+            if(casesensitive)
+            {
+                if(list.at(i) == list.at(j))
+                    list.erase(list.begin() + j);
+            }
+            else
+            {
+                if(toLower(list.at(i)) == toLower(list.at(j)))
+                    list.erase(list.begin() + j);
+            }
+        }
     }
 
-    return output;
+    return list;
 }
 
 
@@ -219,34 +380,34 @@ ProtocolSupport::ProtocolSupport() :
 
 
 //! Return the list of attributes understood by ProtocolSupport
-QStringList ProtocolSupport::getAttriblist(void) const
+std::vector<std::string> ProtocolSupport::getAttriblist(void) const
 {
-    QStringList attribs;
+    std::vector<std::string> attribs;
 
-    attribs << "maxSize"
-            << "supportInt64"
-            << "supportFloat64"
-            << "supportSpecialFloat"
-            << "supportBitfield"
-            << "supportLongBitfield"
-            << "bitfieldTest"
-            << "file"
-            << "verifyfile"
-            << "comparefile"
-            << "printfile"
-            << "mapfile"
-            << "prefix"
-            << "packetStructureSuffix"
-            << "packetParameterSuffix"
-            << "endian"
-            << "pointer"
-            << "supportBool"
-            << "limitOnEncode"
-            << "C"
-            << "CPP"
-            << "compare"
-            << "print"
-            << "map";
+    attribs.push_back("maxSize");
+    attribs.push_back("supportInt64");
+    attribs.push_back("supportFloat64");
+    attribs.push_back("supportSpecialFloat");
+    attribs.push_back("supportBitfield");
+    attribs.push_back("supportLongBitfield");
+    attribs.push_back("bitfieldTest");
+    attribs.push_back("file");
+    attribs.push_back("verifyfile");
+    attribs.push_back("comparefile");
+    attribs.push_back("printfile");
+    attribs.push_back("mapfile");
+    attribs.push_back("prefix");
+    attribs.push_back("packetStructureSuffix");
+    attribs.push_back("packetParameterSuffix");
+    attribs.push_back("endian");
+    attribs.push_back("pointer");
+    attribs.push_back("supportBool");
+    attribs.push_back("limitOnEncode");
+    attribs.push_back("C");
+    attribs.push_back("CPP");
+    attribs.push_back("compare");
+    attribs.push_back("print");
+    attribs.push_back("map");
 
     return attribs;
 }
@@ -271,7 +432,7 @@ void ProtocolSupport::parse(const XMLAttribute* map)
     }
 
     // Maximum bytes of data in a packet.
-    maxdatasize = ProtocolParser::getAttribute("maxSize", map, "0").toInt();
+    maxdatasize = std::stoi(ProtocolParser::getAttribute("maxSize", map, "0"));
 
     // 64-bit support can be turned off
     if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("supportInt64", map)))
@@ -328,14 +489,14 @@ void ProtocolSupport::parse(const XMLAttribute* map)
     pointerType = ProtocolParser::getAttribute("pointer", map, "void*");
 
     // Must be a pointer type
-    if(!pointerType.endsWith("*"))
-        pointerType += "*";
+    if(pointerType.back() != '*')
+        pointerType += '*';
 
     // Packet name post fixes
     packetStructureSuffix = ProtocolParser::getAttribute("packetStructureSuffix", map, packetStructureSuffix);
     packetParameterSuffix = ProtocolParser::getAttribute("packetParameterSuffix", map, packetParameterSuffix);
 
-    if(ProtocolParser::getAttribute("endian", map).contains("little", Qt::CaseInsensitive))
+    if(contains(ProtocolParser::getAttribute("endian", map), "little"))
         bigendian = false;
 
 }// ProtocolSupport::parse
@@ -348,10 +509,16 @@ void ProtocolSupport::parse(const XMLAttribute* map)
 void ProtocolSupport::parseFileNames(const XMLAttribute* map)
 {
     // Global file names can be specified, but cannot have a "." in it
-    globalFileName = replace(ProtocolParser::getAttribute("file", map).toStdString(), ".");
-    globalVerifyName = replace(ProtocolParser::getAttribute("verifyfile", map).toStdString(), ".");
-    globalCompareName = replace(ProtocolParser::getAttribute("comparefile", map).toStdString(), ".");
-    globalPrintName = replace(ProtocolParser::getAttribute("printfile", map).toStdString(), ".");
-    globalMapName = replace(ProtocolParser::getAttribute("mapfile", map).toStdString(), ".");
+    globalFileName = ProtocolParser::getAttribute("file", map);
+    globalVerifyName = ProtocolParser::getAttribute("verifyfile", map);
+    globalCompareName = ProtocolParser::getAttribute("comparefile", map);
+    globalPrintName = ProtocolParser::getAttribute("printfile", map);
+    globalMapName = ProtocolParser::getAttribute("mapfile", map);
+
+    replaceinplace(globalFileName, ".");
+    replaceinplace(globalVerifyName, ".");
+    replaceinplace(globalCompareName, ".");
+    replaceinplace(globalPrintName, ".");
+    replaceinplace(globalMapName, ".");
 
 }// ProtocolSupport::parseFileNames

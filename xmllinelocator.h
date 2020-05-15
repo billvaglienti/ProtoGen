@@ -63,13 +63,13 @@ public:
     XMLLineLocator(){}
 
     //! Input the contents of the XML file, this will trigger a parse operation
-    void setXMLContents(QString text, QString path, QString file, QString topname = QString());
+    void setXMLContents(std::string text, std::string path, std::string file, std::string topname = std::string());
 
     //! Find the line number given a hierarchical name
-    int getLineNumber(QString hierarchicalName) const;
+    int getLineNumber(std::string hierarchicalName) const;
 
     //! Output a warning
-    bool emitWarning(QString hierarchicalName, QString warning) const;
+    bool emitWarning(std::string hierarchicalName, std::string warning) const;
 
 protected:
 

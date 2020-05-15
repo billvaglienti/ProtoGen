@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QDir>
 #include <iostream>
+#include <fstream>
 
 #include "protocolparser.h"
 #include "xmllinelocator.h"
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
     argParser.addOption({"show-hidden-items", "Show all items in documentation even if they are marked as 'hidden'"});
     argParser.addOption({"latex", "Enable extra documentation output required for LaTeX integration"});
     argParser.addOption({{"l", "latex-header-level"}, "LaTeX header level", "latexlevel"});
-    argParser.addOption({"no-doxygen", "Skip generation of developer-level documentation"});
+    argParser.addOption({"yes-doxygen", "Call doxygen to output developer-level documentation"});
     argParser.addOption({"no-markdown", "Skip generation of user-level documentation"});
     argParser.addOption({"no-about-section", "Skip generation of \"About this ICD\" section in documentation output"});
     argParser.addOption({"no-helper-files", "Skip creation of helper files not directly specifed by protocol .xml file"});
@@ -74,47 +75,36 @@ int main(int argc, char *argv[])
     }
 
     // License template file
-    QString licenseTemplate = argParser.value("license");
-
-    if (!licenseTemplate.isEmpty())
+    std::string licenseTemplate = argParser.value("license").toStdString();
+    if(!licenseTemplate.empty())
     {
-        QFile licenseFile(licenseTemplate);
+        std::fstream file(licenseTemplate, std::ios_base::in);
 
-        if (licenseFile.exists())
+        if (file.is_open())
         {
-            if (licenseFile.open(QIODevice::ReadOnly))
-            {
-                // Pull all the data from the file, and convert to Qt standard line endings
-                parser.setLicenseText(licenseFile.readAll().replace("\r\n", "\n"));
+            std::string contents = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-                licenseFile.close();
-            }
-            else
-            {
-                std::cerr << "warning: could not open license file '" << QDir::toNativeSeparators(licenseTemplate).toStdString() << "'" << std::endl;
-            }
+            // Pull all the data from the file, and convert to Qt standard line endings
+            parser.setLicenseText(replaceinplace(contents, "\r\n", "\n"));
+
+            file.close();
         }
         else
         {
-            std::cerr << "warning: license file '" << QDir::toNativeSeparators(licenseTemplate).toStdString() << "' does not exist" << std::endl;
+            std::cerr << "warning: could not open license file '" << licenseTemplate << "'" << std::endl;
         }
     }
 
     // Documentation directory
-    QString docs = argParser.value("docs");
+    std::string docs = argParser.value("docs").toStdString();
 
-    if (!docs.isEmpty() && !argParser.isSet("no-markdown"))
+    if (!docs.empty() && !argParser.isSet("no-markdown"))
     {
-        docs =  QString().fromStdString(ProtocolFile::sanitizePath(docs.toStdString()));
-
-        if (QDir(docs).exists() || QDir::current().mkdir(docs))
-        {
-            parser.setDocsPath(docs);
-        }
+        parser.setDocsPath(ProtocolFile::sanitizePath(docs));
     }
 
     // Process the optional arguments
-    parser.disableDoxygen(argParser.isSet("no-doxygen"));
+    parser.disableDoxygen(!argParser.isSet("yes-doxygen"));
     parser.disableMarkdown(argParser.isSet("no-markdown"));
     parser.disableHelperFiles(argParser.isSet("no-helper-files"));
     parser.disableAboutSection(argParser.isSet("no-about-section"));
@@ -129,10 +119,8 @@ int main(int argc, char *argv[])
     else if(argParser.isSet("lang-cpp"))
         parser.setLanguageOverride(ProtocolSupport::cpp_language);
 
-
     QString latexLevel = argParser.value("latex-header-level");
-
-    if (!latexLevel.isEmpty())
+    if(!latexLevel.isEmpty())
     {
         bool ok = false;
         int lvl = latexLevel.toInt(&ok);
@@ -147,43 +135,40 @@ int main(int argc, char *argv[])
         }
     }
 
-    QString css = argParser.value("style");
-
-    if (!css.isEmpty() && css.endsWith(".css", Qt::CaseInsensitive))
+    std::string css = argParser.value("style").toStdString();
+    if(!css.empty() && endsWith(css, ".css", Qt::CaseInsensitive))
     {
-        // First attempt to open the file
-        QFile file(css);
+        std::fstream file(css, std::ios_base::in);
 
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        if (file.is_open())
         {
-            parser.setInlineCSS(file.readAll());
+            // Pull all the data from the file
+            parser.setInlineCSS(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
             file.close();
         }
         else
         {
-            std::cerr << "warning: Failed to open '" << QDir::toNativeSeparators(css).toStdString() << "', using default css" << std::endl;
+            std::cerr << "warning: Failed to open '" << css << "', using default css" << std::endl;
         }
     }
 
-    QString titlePage = argParser.value("titlepage");
-
-    if (!titlePage.isEmpty() )
+    std::string titlePage = argParser.value("titlepage").toStdString();
+    if(!titlePage.empty())
     {
-        // First attempt to open the file
-        QFile file(titlePage);
+        std::fstream file(titlePage, std::ios_base::in);
 
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        if (file.is_open())
         {
-            parser.setTitlePage(file.readAll());
+            parser.setTitlePage(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
             file.close();
         }
         else
         {
-            std::cerr << "warning: Failed to open '" << QDir::toNativeSeparators(titlePage).toStdString() << "', skipping title page output" << std::endl;
+            std::cerr << "warning: Failed to open '" << titlePage << "', skipping title page output" << std::endl;
         }
     }
 
-    if (parser.parse(filename, path, otherfiles))
+    if (parser.parse(filename.toStdString(), path.toStdString(), convertStringList(otherfiles)))
     {
         // Normal exit
         return 0;

@@ -312,7 +312,7 @@ std::string ProtocolScaling::typeName(inmemorytypes_t type) const
 {
     switch(type)
     {
-    default:            return "unknown";
+    default:              return "unknown";
     case float64inmemory: return "double";
     case uint64inmemory:  return "uint64_t";
     case int64inmemory:   return "int64_t";
@@ -370,7 +370,7 @@ std::string ProtocolScaling::typeSigName(inmemorytypes_t type) const
 {
     switch(type)
     {
-    default:            return "unknown";
+    default:              return "unknown";
     case float64inmemory: return "float64";
     case uint64inmemory:  return "uint64";
     case int64inmemory:   return "int64";
@@ -390,7 +390,7 @@ std::string ProtocolScaling::typeSigName(encodedtypes_t type) const
 {
     switch(type)
     {
-    default:          return "unknown";
+    default:             return "unknown";
     case longbitencoded: return "longBitfield";
     case uint64encoded:  return "uint64";
     case int64encoded:   return "int64";

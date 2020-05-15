@@ -23,7 +23,7 @@ SOURCES += \
         bitfieldtest.cpp \
         fielddecode.cpp \
         fieldencode.cpp \
-        floatspecial.c \
+        floatspecial.cpp \
         globaldependson.cpp \
         linkcode.cpp \
         main.cpp \

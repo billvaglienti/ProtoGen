@@ -1,10 +1,3 @@
 <RCC>
-    <qresource prefix="/files">
-        <file>prebuiltSources/floatspecial.c</file>
-        <file>prebuiltSources/floatspecial.h</file>
-        <file>prebuiltSources/Doxyfile</file>
-        <file>prebuiltSources/markdown.css</file>
-        <file>prebuiltSources/bitfieldtest.xml</file>
-        <file>defaultcss.txt</file>
-    </qresource>
+    <qresource prefix="/files"/>
 </RCC>

@@ -4,19 +4,18 @@
 #include "protocolsupport.h"
 #include "encodedlength.h"
 #include "protocoldocumentation.h"
-#include <QString>
 
 class Encodable : public ProtocolDocumentation
 {
 public:
 
     //! Constructor for basic encodable that sets protocol options
-    Encodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported);
+    Encodable(ProtocolParser* parse, const std::string& parent, ProtocolSupport supported);
 
     virtual ~Encodable() {;}
 
     //! Construct a protocol field by parsing a DOM element
-    static Encodable* generateEncodable(ProtocolParser* parse, QString Parent, ProtocolSupport supported, const XMLElement* field);
+    static Encodable* generateEncodable(ProtocolParser* parse, const std::string& parent, ProtocolSupport supported, const XMLElement* field);
 
     //! Provide the pointer to a previous encodable in the list
     virtual void setPreviousEncodable(Encodable* prev) {(void)prev;}
@@ -28,103 +27,103 @@ public:
     virtual void clear(void);
 
     //! The hierarchical name of this object
-    virtual QString getHierarchicalName(void) const = 0;
+    virtual std::string getHierarchicalName(void) const = 0;
 
     //! Return the string that is used to declare this encodable
-    virtual QString getDeclaration(void) const = 0;
+    virtual std::string getDeclaration(void) const = 0;
 
     //! Return the string that is used to encode this encodable
-    virtual QString getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
+    virtual std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
 
     //! Return the string that is used to decode this encoable
-    virtual QString getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
+    virtual std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
 
     //! Get the string used for verifying this field.
-    virtual QString getVerifyString(void) const {return QString();}
+    virtual std::string getVerifyString(void) const {return std::string();}
 
     //! Return the string that sets this encodable to its initial value in code
-    virtual QString getSetInitialValueString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+    virtual std::string getSetInitialValueString(bool isStructureMember) const {(void)isStructureMember; return std::string();}
 
     //! Return the strings that #define initial and variable values
-    virtual QString getInitialAndVerifyDefines(bool includeComment = true) const {Q_UNUSED(includeComment); return QString();}
+    virtual std::string getInitialAndVerifyDefines(bool includeComment = true) const {(void)includeComment; return std::string();}
 
     //! Get the string used for comparing this field.
-    virtual QString getComparisonString(void) const {return QString();}
+    virtual std::string getComparisonString(void) const {return std::string();}
 
     //! Get the string used for text printing this field.
-    virtual QString getTextPrintString(void) const {return QString();}
+    virtual std::string getTextPrintString(void) const {return std::string();}
 
     //! Get the string used for text reading this field.
-    virtual QString getTextReadString(void) const {return QString();}
+    virtual std::string getTextReadString(void) const {return std::string();}
 
     //! Get the string used to encode this field to a map
-    virtual QString getMapEncodeString(void) const {return QString();}
+    virtual std::string getMapEncodeString(void) const {return std::string();}
 
     //! Get the string used to decode this field from a map
-    virtual QString getMapDecodeString(void) const {return QString();}
+    virtual std::string getMapDecodeString(void) const {return std::string();}
 
     //! Return the string that sets this encodable to its default value in code
-    virtual QString getSetToDefaultsString(bool isStructureMember) const {Q_UNUSED(isStructureMember); return QString();}
+    virtual std::string getSetToDefaultsString(bool isStructureMember) const {(void)isStructureMember; return std::string();}
 
     //! Return the include directives needed for this encodable
-    virtual void getIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the include directives that go into source code needed for this encodable
-    virtual void getSourceIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getSourceIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the include directives needed for this encodable's init and verify functions
-    virtual void getInitAndVerifyIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getInitAndVerifyIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the include directives needed for this encodable's map functions
-    virtual void getMapIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getMapIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the include directives needed for this encodable's compare functions
-    virtual void getCompareIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getCompareIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the include directives needed for this encodable's print functions
-    virtual void getPrintIncludeDirectives(QStringList& list) const {Q_UNUSED(list);}
+    virtual void getPrintIncludeDirectives(std::vector<std::string>& list) const {(void)list;}
 
     //! Return the signature of this field in an encode function signature
-    virtual QString getEncodeSignature(void) const;
+    virtual std::string getEncodeSignature(void) const;
 
     //! Return the signature of this field in a decode function signature
-    virtual QString getDecodeSignature(void) const;
+    virtual std::string getDecodeSignature(void) const;
 
     //! Return the string that documents this field as a encode function parameter
-    virtual QString getEncodeParameterComment(void) const;
+    virtual std::string getEncodeParameterComment(void) const;
 
     //! Return the string that documents this field as a decode function parameter
-    virtual QString getDecodeParameterComment(void) const;
+    virtual std::string getDecodeParameterComment(void) const;
 
     //! Get the string which accessses this field in code for purposes of encoding the field
-    virtual QString getEncodeFieldAccess(bool isStructureMember) const;
+    virtual std::string getEncodeFieldAccess(bool isStructureMember) const;
 
     //! Get the string which accessses this field in code for purposes of encoding the field
-    virtual QString getEncodeFieldAccess(bool isStructureMember, const QString& variable) const;
+    virtual std::string getEncodeFieldAccess(bool isStructureMember, const std::string& variable) const;
 
     //! Get the string which accessses this field in code for purposes of decoding the field
-    virtual QString getDecodeFieldAccess(bool isStructureMember) const;
+    virtual std::string getDecodeFieldAccess(bool isStructureMember) const;
 
     //! Get the string which accessses this field in code for purposes of decoding the field
-    virtual QString getDecodeFieldAccess(bool isStructureMember, const QString& variable) const;
+    virtual std::string getDecodeFieldAccess(bool isStructureMember, const std::string& variable) const;
 
     //! Get a positive or negative return code string, which is language specific
-    virtual QString getReturnCode(bool positive) const;
+    virtual std::string getReturnCode(bool positive) const;
 
     //! Get the array handling code for encoding context
-    virtual QString getEncodeArrayIterationCode(const QString& spacing, bool isStructureMember) const;
+    virtual std::string getEncodeArrayIterationCode(const std::string& spacing, bool isStructureMember) const;
 
     //! Get the array handling code for decoding context
-    virtual QString getDecodeArrayIterationCode(const QString& spacing, bool isStructureMember) const;
+    virtual std::string getDecodeArrayIterationCode(const std::string& spacing, bool isStructureMember) const;
 
     //! Return true if this encodable has documentation for markdown output
     virtual bool hasDocumentation(void) {return true;}
 
     //! Get details needed to produce documentation for this encodable.
-    virtual void getDocumentationDetails(QList<int>& outline, QString& startByte, QStringList& bytes, QStringList& names, QStringList& encodings, QStringList& repeats, QStringList& comments) const = 0;
+    virtual void getDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const = 0;
 
     //! Get documentation repeat details for array or 2d arrays
-    QString getRepeatsDocumentationDetails(void) const;
+    std::string getRepeatsDocumentationDetails(void) const;
 
     //! Make this encodable not a default
     virtual void clearDefaults(void) {}
@@ -136,10 +135,10 @@ public:
     virtual bool isString(void) const = 0;
 
     //! Determine if this encodable is an array
-    bool isArray(void) const {return !array.isEmpty();}
+    bool isArray(void) const {return !array.empty();}
 
     //! Determine if this encodable is a 2d array
-    bool is2dArray(void) const {return (isArray() && !array2d.isEmpty());}
+    bool is2dArray(void) const {return (isArray() && !array2d.empty());}
 
     //! True if this encodable has verification data
     virtual bool hasVerify(void) const {return false;}
@@ -163,7 +162,7 @@ public:
     virtual bool isDefault(void) const {return false;}
 
     //! Get the maximum number of temporary bytes needed for a bitfield group
-    virtual void getBitfieldGroupNumBytes(int* num) const {Q_UNUSED(num);}
+    virtual void getBitfieldGroupNumBytes(int* num) const {(void)num;}
 
     //! True if this encodable uses bitfields or has a child that does
     virtual bool usesBitfields(void ) const = 0;
@@ -217,22 +216,22 @@ public:
     virtual bool invalidatesPreviousDefault(void) const {return !usesDefaults();}
 
     //! Add successive length strings
-    static void addToLengthString(QString & totalLength, const QString & length);
+    static void addToLengthString(std::string & totalLength, const std::string & length);
 
     //! Add successive length strings
-    static void addToLengthString(QString* totalLength, const QString & length);
+    static void addToLengthString(std::string* totalLength, const std::string & length);
 
 public:
 
-    QString typeName;       //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
-    QString array;          //!< The array length of this encodable, empty if no array
-    QString array2d;        //!< The second dimension array length of this encodable, empty if no 2nd dimension
-    QString variableArray;  //!< variable that gives the length of the array in a packet
-    QString variable2dArray;//!< variable that gives the length of the 2nd array dimension in a packet
-    QString dependsOn;      //!< variable that determines if this field is present
-    QString dependsOnValue; //!< String providing the details of the depends on value
-    QString dependsOnCompare;//!< Comparison to use for dependsOnValue
-    EncodedLength encodedLength;    //!< The lengths of the encodables
+    std::string typeName;        //!< The type name of this encodable, like "uint8_t" or "myStructure_t"
+    std::string array;           //!< The array length of this encodable, empty if no array
+    std::string array2d;         //!< The second dimension array length of this encodable, empty if no 2nd dimension
+    std::string variableArray;   //!< variable that gives the length of the array in a packet
+    std::string variable2dArray; //!< variable that gives the length of the 2nd array dimension in a packet
+    std::string dependsOn;       //!< variable that determines if this field is present
+    std::string dependsOnValue;  //!< String providing the details of the depends on value
+    std::string dependsOnCompare;//!< Comparison to use for dependsOnValue
+    EncodedLength encodedLength; //!< The lengths of the encodables
 };
 
 #endif // ENCODABLE_H
