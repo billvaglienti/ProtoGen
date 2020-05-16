@@ -107,6 +107,7 @@ public:
     std::string prefix;                //!< Prefix name
     std::string pointerType;           //!< Packet pointer type - default is "void*"
     std::string licenseText;           //!< License text to be added to each generated file
+    std::string sourcefile;            //!< Source file name, used for warning outputs
 
 protected:
 

@@ -217,8 +217,8 @@ std::string ProtocolStructure::getDeclaration(void) const
  */
 std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
-    Q_UNUSED(isBigEndian);
-    Q_UNUSED(bitcount);
+    (void)isBigEndian;
+    (void)bitcount;
 
     std::string output;
     std::string access = getEncodeFieldAccess(isStructureMember);
@@ -278,9 +278,9 @@ std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, 
  */
 std::string ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
-    Q_UNUSED(isBigEndian);
-    Q_UNUSED(bitcount);
-    Q_UNUSED(defaultEnabled);
+    (void)isBigEndian;
+    (void)bitcount;
+    (void)defaultEnabled;
 
     std::string output;
     std::string access = getEncodeFieldAccess(isStructureMember);
@@ -1283,7 +1283,7 @@ std::string ProtocolStructure::getStructureDeclaration_C(bool alwaysCreate) cons
         if(!comment.empty())
         {
             output += "/*!\n";
-            output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+            output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
             output += " */\n";
         }
 
@@ -1319,7 +1319,7 @@ std::string ProtocolStructure::getClassDeclaration_CPP(void) const
     if(!comment.empty())
     {
         output += "/*!\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
         output += " */\n";
     }
 
@@ -1605,7 +1605,7 @@ std::string ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool incl
     output += "/*!\n";
     output += " * \\brief Encode a " + typeName + " into a byte array\n";
     output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
     output += " * \\param _pg_data points to the byte array to add encoded data to\n";
     output += " * \\param _pg_bytecount points to the starting location in the byte array, and will be incremented by the number of encoded bytes.\n";
     if((support.language == ProtocolSupport::c_language) && (getNumberOfEncodeParameters() > 0))
@@ -1762,13 +1762,13 @@ std::string ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool incl
     output += "/*!\n";
     output += " * \\brief Decode a " + typeName + " from a byte array\n";
     output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
     output += " * \\param _pg_data points to the byte array to decoded data from\n";
     output += " * \\param _pg_bytecount points to the starting location in the byte array, and will be incremented by the number of bytes decoded\n";
     if((support.language == ProtocolSupport::c_language) && (getNumberOfDecodeParameters() > 0))
         output += " * \\param _pg_user is the data to decode from the byte array\n";
 
-    output += " * \\return " + getReturnCode(true) + " if the data are decoded, else " + getReturnCode(false) + ".";
+    output += " * \\return " + getReturnCode(true) + " if the data are decoded, else " + getReturnCode(false) + ".\n";
     output += " */\n";
     output += getDecodeFunctionSignature(true) + "\n";
     output += "{\n";

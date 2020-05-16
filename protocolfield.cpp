@@ -738,37 +738,37 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
 
     data.clear();
 
-    if(startsWith(type, "n", Qt::CaseInsensitive))
+    if(startsWith(type, "n"))
         data.isNull = true;
-    else if(startsWith(type, "over", Qt::CaseInsensitive) && inMemory)
+    else if(startsWith(type, "over") && inMemory)
     {
         overridesPrevious = true;
 
         // This is just a place holder, it will get overriden later
         data.bits = 32;
     }
-    else if(startsWith(type, "stru", Qt::CaseInsensitive))
+    else if(startsWith(type, "stru"))
     {
         if(inMemory)
             data.isStruct = true;
         else
             return;
     }
-    else if(startsWith(type, "string", Qt::CaseInsensitive))
+    else if(startsWith(type, "string"))
     {
         data.isString = true;
         data.isFixedString = false;
 
         data.bits = 8;
     }
-    else if(startsWith(type, "fixedstring", Qt::CaseInsensitive))
+    else if(startsWith(type, "fixedstring"))
     {
         data.isString = true;
         data.isFixedString = true;
 
         data.bits = 8;
     }
-    else if(startsWith(type, "bo", Qt::CaseInsensitive))
+    else if(startsWith(type, "bo"))
     {
         // default to unsigned 8
         data.bits = 8;
@@ -786,7 +786,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
             data.isBool = true;
         }
     }
-    else if(startsWith(type, "bi", Qt::CaseInsensitive))
+    else if(startsWith(type, "bi"))
     {
         // Get the number of bits, between 1 and 32 inclusive
         data.bits = data.extractPositiveInt(type);
@@ -822,7 +822,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
             }
         }
     }
-    else if(startsWith(type, "e", Qt::CaseInsensitive))
+    else if(startsWith(type, "e"))
     {
         // enumeration types are only for in-memory, never encoded
         if(inMemory)
@@ -842,7 +842,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
         // Get the number of bits, between 1 and 32 inclusive
         data.bits = data.extractPositiveInt(type);
 
-        if(startsWith(type, "u", Qt::CaseInsensitive))
+        if(startsWith(type, "u"))
         {
             data.isSigned = false;
         }
@@ -850,7 +850,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
         {
             data.isSigned = true;
 
-            if(startsWith(type, "f", Qt::CaseInsensitive))
+            if(startsWith(type, "f"))
             {
                 // we want to handle the cas where the user types "float16:10" to specify the number of significands
                 if(type.find(':') != std::string::npos)
@@ -871,7 +871,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
                 if(data.bits == 0)
                     data.bits = 32;
             }
-            else if(startsWith(type, "d", Qt::CaseInsensitive))
+            else if(startsWith(type, "d"))
             {
                 data.isFloat = true;
 
@@ -879,7 +879,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
                 if(data.bits == 0)
                     data.bits = 64;
             }
-            else if(!startsWith(type, "s", Qt::CaseInsensitive) && !startsWith(type, "i", Qt::CaseInsensitive))
+            else if(!startsWith(type, "s") && !startsWith(type, "i"))
             {
                 emitWarning("in memory type name not understood, signed integer assumed");
             }
@@ -1717,8 +1717,8 @@ void ProtocolField::parse(void)
     }
     else
     {
-        limitMinValue = encodedType.getMinimumIntegerValue();
-        limitMaxValue = encodedType.getMaximumIntegerValue();
+        limitMinValue = (double)encodedType.getMinimumIntegerValue();
+        limitMaxValue = (double)encodedType.getMaximumIntegerValue();
         limitMaxStringForComment = limitMaxString = std::to_string((int)round(limitMaxValue));
         limitMinStringForComment = limitMinString = std::to_string((int)round(limitMinValue));
     }
@@ -3367,7 +3367,7 @@ std::string ProtocolField::getSetToValueString(bool isStructureMember, std::stri
 //! Return the strings that #define initial and variable values
 std::string ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
 {
-    Q_UNUSED(includeComment);
+    (void)includeComment;
 
     std::string output;
 

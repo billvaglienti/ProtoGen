@@ -446,7 +446,7 @@ std::string FieldCoding::fullEncodeComment(int type, bool bigendian)
 {
     std::string comment = "/*!\n";
 
-    comment += ProtocolParser::outputLongComment(" *", briefEncodeComment(type, bigendian)) + "\n";
+    comment += ProtocolParser::outputLongComment(" * ", briefEncodeComment(type, bigendian)) + "\n";
     comment += " * \\param number is the value to encode.\n";
     comment += " * \\param bytes is a pointer to the byte stream which receives the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
@@ -898,7 +898,7 @@ std::string FieldCoding::fullDecodeComment(int type, bool bigendian)
 {
     std::string comment= ("/*!\n");
 
-    comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(type, bigendian)) + "\n";
+    comment += ProtocolParser::outputLongComment(" * ", briefDecodeComment(type, bigendian)) + "\n";
     comment += " * \\param bytes is a pointer to the byte stream which contains the encoded data.\n";
     comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
     comment += " *        will be incremented by " + std::to_string(typeSizes[type]) + " when this function is complete.\n";

@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.0.b This is beta code, use with caution";
+const std::string ProtocolParser::genVersion = "3.0.c This is beta code, use with caution";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -43,22 +43,24 @@ ProtocolParser::ProtocolParser() :
 ProtocolParser::~ProtocolParser()
 {
     // Delete all of our lists of new'ed objects
-    qDeleteAll(documents.begin(), documents.end());
+    for(auto doc : documents)
+        delete doc;
     documents.clear();
 
-    qDeleteAll(structures.begin(), structures.end());
+    for(auto struc : structures)
+        delete struc;
     structures.clear();
 
-    qDeleteAll(enums.begin(), enums.end());
+    for(auto enu : enums)
+        delete enu;
     enums.clear();
 
-    qDeleteAll(globalEnums.begin(), globalEnums.end());
+    for(auto globalenu : globalEnums)
+        delete globalenu;
     globalEnums.clear();
 
-    qDeleteAll(lines.begin(), lines.end());
-    lines.clear();
-
-    qDeleteAll(xmldocs.begin(), xmldocs.end());
+    for(auto xmldoc : xmldocs)
+        delete xmldoc;
     xmldocs.clear();
 
     if(header != nullptr)
@@ -92,7 +94,7 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
 
     if(!file.is_open())
     {
-        emitWarning(" error: Failed to open protocol file");
+        std::cerr << filename << " : error: Failed to open protocol file" << std::endl;
         return false;
     }
 
@@ -143,15 +145,16 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     // This element must have the "Protocol" tag
     if((docElem == nullptr) || (XMLUtil::StringEqual(docElem->Name(), "protocol") == false))
     {
-        emitWarning(" error: Protocol tag not found in XML");
+        std::cerr << filename << " : error: Protocol tag not found in XML" << std::endl;
         return false;
     }
 
     // Protocol options specified in the xml
+    support.sourcefile = inputpath + inputfile;
     support.protoName = name = getAttribute("name", docElem->FirstAttribute());
     if(support.protoName.empty())
     {
-        emitWarning(" error: Protocol name not found in Protocol tag");
+        std::cerr << filename << " : error: Protocol name not found in XML" << std::endl;
         return false;
     }
 
@@ -173,7 +176,7 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         {
             std::string test = trimm(a->Name());
             if(!contains(attriblist, test) && !contains(supportlist, test))
-                emitWarning(support.protoName, support.protoName + ": Unrecognized attribute \"" + a->Name() + "\"");
+                std::cerr << support.sourcefile << ":" << a->GetLineNum() << ":0: warning: Unrecognized attribute \"" + test + "\"" << std::endl;
 
         }// for all the attributes
 
@@ -494,13 +497,9 @@ bool ProtocolParser::parseFile(std::string xmlFilename)
         return false;
     }
 
-    /// TODO: tinyxml will do this I believe
-    // My XML parsing, I can find no way to recover line numbers from Qt's parsing...
-    lines.push_back(new XMLLineLocator());
-    lines.back()->setXMLContents(contents, ProtocolFile::sanitizePath(path.parent_path().string()), path.filename().string(), name);
-
     // Protocol file options specified in the xml
     localsupport.parseFileNames(docElem->FirstAttribute());
+    localsupport.sourcefile = xmlFilename;
 
     for(const XMLElement* element = docElem->FirstChildElement(); element != nullptr; element = element->NextSiblingElement())
     {
@@ -576,36 +575,6 @@ bool ProtocolParser::parseFile(std::string xmlFilename)
 
 }// ProtocolParser::parseFile
 
-/*!
- * Send a warning string out standard error, referencing the main input file
- * \param warning is the string to warn with
- */
-void ProtocolParser::emitWarning(std::string warning) const
-{
-    std::string output = inputpath + inputfile + ":" + warning;
-    std::cerr << output << std::endl;
-}
-
-
-/*!
- * Send a warning string out standard error, referencing a file by object name
- * \param hierarchicalName is the object name to reference
- * \param warning is the string to warn with
- */
-void ProtocolParser::emitWarning(std::string hierarchicalName, std::string warning) const
-{
-    for(std::size_t i = 0; i < lines.size(); i++)
-    {
-        if(lines.at(i)->emitWarning(hierarchicalName, warning))
-            return;
-    }
-
-    // If we get here then we should emit some warning
-    std::string output = "unknown file:" + hierarchicalName + ":" + warning;
-    std::cerr << output << std::endl;
-
-}
-
 
 /*!
  * Create the header file for the top level module of the protocol
@@ -627,7 +596,7 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     {
         // Make sure this is only a number
         bool ok = false;
-        int number = ShuntingYard::toInt(api, &ok);
+        int64_t number = ShuntingYard::toInt(api, &ok);
         if(ok && number > 0)
         {
             // Turn it back into a string
@@ -946,7 +915,7 @@ void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode*
  * add the enumeration to the global list which can be searched with
  * lookUpEnumeration().
  * \param parent is the hierarchical name of the object which owns the new enumeration
- * \param element is the QDomElement that represents this enumeration
+ * \param element is the DomElement that represents this enumeration
  * \return a pointer to the newly created enumeration object.
  */
 const EnumCreator* ProtocolParser::parseEnumeration(const std::string& parent, const XMLElement* element)
@@ -1007,7 +976,7 @@ void ProtocolParser::outputIncludes(const std::string& parent, ProtocolFile& fil
                 else if(attrname == "global")
                     global = ProtocolParser::isFieldSet(a->Value());
                 else if(support.disableunrecognized == false)
-                    emitWarning(parent + ":" + include + ": Unrecognized attribute \"" + attrname + "\"");
+                    ProtocolDocumentation::emitWarning(support.sourcefile, parent + ": " + include, "Unrecognized attribute", a);
 
             }// for all attributes
 
@@ -1757,10 +1726,9 @@ toc3:before {\n\
 
 
 /*!
- * \brief ProtocolParser::setDocsPath
  * Set the target path for writing output markdown documentation files
- * If no output path is set, then QDir::Current() is used
- * \param path
+ * If no output path is set, the output directory for generated files is used
+ * \param path is the desired output directory
  */
 void ProtocolParser::setDocsPath(std::string path)
 {

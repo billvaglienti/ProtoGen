@@ -59,7 +59,7 @@ void ProtocolDocumentation::parse(void)
  */
 std::string ProtocolDocumentation::getTopLevelMarkdown(bool global, const std::vector<std::string>& ids) const
 {
-    Q_UNUSED(ids);
+    (void)ids;
 
     std::string markdown;
     int level = outlineLevel;
@@ -103,9 +103,11 @@ std::string ProtocolDocumentation::getTopLevelMarkdown(bool global, const std::v
 
 
 /*!
- * Output a warning to stdout. The warning will include the hierarchical name used to describe this objects location in the xml
- * \param warning is the warning text
- * \param subname is the subname to append to the hierarchical name, this can be empty
+ * Output a warning to stderr. The warning will include the hierarchical name.
+ * used to describe this objects location in the xml.
+ * \param warning is the warning text.
+ * \param subname is the subname to append to the hierarchical name, this can
+ *        be empty.
  */
 void ProtocolDocumentation::emitWarning(const std::string& warning, const std::string& subname) const
 {
@@ -114,7 +116,44 @@ void ProtocolDocumentation::emitWarning(const std::string& warning, const std::s
     if(!subname.empty())
         name += ":" + subname;
 
-    parser->emitWarning(name, warning);
+    int line = e->GetLineNum();
+
+    std::cerr << support.sourcefile << ":" << line << ":0: warning: " << name << ": " << warning << std::endl;
+}
+
+
+/*!
+ * Output a warning to stderr. The warning will include the hierarchical name.
+ * used to describe this objects location in the xml.
+ * \param warning is the warning text.
+ * \param a is the offending attribute, which will be used to determine the
+ *        name and line number in the warning.
+ */
+void ProtocolDocumentation::emitWarning(const std::string& warning, const XMLAttribute* a) const
+{
+    emitWarning(support.sourcefile, getHierarchicalName(), warning, a);
+}
+
+
+/*!
+ * Output a warning to stderr.
+ * \param hierarchicalName is the name of the object that owns the offending
+ *        attribute
+ * \param warning is the warning text.
+ * \param a is the offending attribute, which will be used to determine the
+ *        name and line number in the warning.
+ */
+void ProtocolDocumentation::emitWarning(const std::string& sourcefile, const std::string& hierarchicalName, const std::string& warning, const XMLAttribute* a)
+{
+    std::string name;
+    if(hierarchicalName.empty())
+        name = a->Name();
+    else
+        name = hierarchicalName + ":" + a->Name();
+
+    int line = a->GetLineNum();
+
+    std::cerr << sourcefile << ":" << line << ":0: warning: " << name << ": " << warning << std::endl;
 }
 
 
@@ -123,20 +162,18 @@ void ProtocolDocumentation::emitWarning(const std::string& warning, const std::s
  * \param map is the list of attributes
  * \param subname is the optional name of a sub-element for which this test is done
  */
-void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map,const std::string& subname) const
+void ProtocolDocumentation::testAndWarnAttributes(const XMLAttribute* map) const
 {
     // The only thing we check for is unrecognized attributes
     if(support.disableunrecognized)
         return;
 
-    // Note: I would like to test for repeated attributes,
-    // but Qt doesn't make them available (they should be an XML error)
-
+    /// TODO: test for repeated attributes
     for(const XMLAttribute* a = map; a != nullptr; a = a->Next())
     {
         // Check to see if the attribute is not in the list of known attributes
         if((contains(attriblist, a->Name()) == false))
-            emitWarning("Unrecognized attribute \"" + std::string(a->Name()) + "\"", subname);
+            emitWarning("Unrecognized attribute", a);
 
     }// for all attributes
 

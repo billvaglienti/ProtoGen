@@ -723,7 +723,7 @@ void ProtocolSourceFile::extractExtension(std::string& name)
     else
     {
         // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
-        if(!contains(extension, ".c", Qt::CaseInsensitive))
+        if(!contains(extension, ".c"))
             extension = ".c";
     }
 

@@ -41,8 +41,14 @@ public:
     //! Output a warning
     void emitWarning(const std::string& warning, const std::string& subname = std::string()) const;
 
+    //! Output a warning for an attribute
+    void emitWarning(const std::string& warning, const XMLAttribute* a) const;
+
+    //! Output a warning for an attribute to stderr
+    static void emitWarning(const std::string& sourcefile, const std::string& hierarchicalName, const std::string& warning, const XMLAttribute* a);
+
     //! Test the list of attributes and warn if any of them are unrecognized or repeated
-    void testAndWarnAttributes(const XMLAttribute* map, const std::string& subname = std::string()) const;
+    void testAndWarnAttributes(const XMLAttribute* map) const;
 
     //! Helper function to create a list of ProtocolDocumentation objects
     static void getChildDocuments(ProtocolParser* parse, const std::string& parent, ProtocolSupport support, const XMLElement* e, std::vector<ProtocolDocumentation*>& list);

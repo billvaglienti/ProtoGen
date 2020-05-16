@@ -109,7 +109,7 @@ void ProtocolStructureModule::clear(void)
  */
 void ProtocolStructureModule::issueWarnings(const XMLAttribute* map)
 {
-    Q_UNUSED(map);
+    (void)map;
 
     if(isArray())
     {

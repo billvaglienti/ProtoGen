@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
-
 #include "shuntingyard.h"
 #include "protocolparser.h"
-#include "xmllinelocator.h"
 
 static void printHelp(void);
 
@@ -119,8 +117,8 @@ int main(int argc, char *argv[])
     parser.disableMarkdown(contains(arguments, "-no-markdown"));
     parser.disableHelperFiles(contains(arguments, "-no-helper-files"));
     parser.disableAboutSection(contains(arguments, "-no-about-section"));
-    parser.showHiddenItems(contains(arguments, "-show-hidden-items"));
-    parser.disableUnrecognizedWarnings(contains(arguments, "-no-unrecognized-warnings"));
+    parser.showHiddenItems(contains(arguments, "-show-hidden"));
+    parser.disableUnrecognizedWarnings(contains(arguments, "-no-unrecognized"));
     parser.setLaTeXSupport(contains(arguments, "-latex"));
     parser.disableCSS(contains(arguments, "-no-css"));
     parser.enableTableOfContents(contains(arguments, "-table-of-contents"));
@@ -135,7 +133,7 @@ int main(int argc, char *argv[])
     if(!latexLevel.empty())
     {
         bool ok = false;
-        int lvl = ShuntingYard::toInt(latexLevel, &ok);
+        int lvl = (int)ShuntingYard::toInt(latexLevel, &ok);
 
         if (ok)
         {
@@ -152,7 +150,7 @@ int main(int argc, char *argv[])
         css = liststartsWith(arguments, "-s ");
 
     css = css.substr(docs.find(" ") + 1);
-    if(!css.empty() && endsWith(css, ".css", Qt::CaseInsensitive))
+    if(!css.empty() && endsWith(css, ".css"))
     {
         std::fstream file(css, std::ios_base::in);
 

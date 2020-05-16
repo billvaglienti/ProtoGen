@@ -221,7 +221,7 @@ void EnumCreator::parse(void)
     if(!comment.empty())
     {
         output += "/*!\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
         output += " */\n";
     }
 
@@ -475,7 +475,7 @@ void EnumCreator::computeNumberList(void)
 {
     // Attempt to get a list of numbers that represents the value of each enumeration
     maxvalue = 1;
-    int value = -1;
+    int64_t value = -1;
     std::string baseString;
 
     for(std::size_t i = 0; i < elements.size(); i++)
@@ -539,7 +539,7 @@ void EnumCreator::computeNumberList(void)
 
         // keep track of maximum value
         if(value > maxvalue)
-            maxvalue = value;
+            maxvalue = (int)value;
 
         // Remember the value
         element.number = stringValue;

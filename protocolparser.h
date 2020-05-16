@@ -1,10 +1,8 @@
 #ifndef PROTOCOLPARSER_H
 #define PROTOCOLPARSER_H
 
-#include <QFile>
 #include <iostream>
 #include "protocolfile.h"
-#include "xmllinelocator.h"
 #include "protocolsupport.h"
 #include "tinyxml2.h"
 
@@ -70,12 +68,6 @@ public:
 
     //! Parse the DOM from the xml file(s). This kicks off the auto code generation for the protocol
     bool parse(std::string filename, std::string path, std::vector<std::string> otherfiles);
-
-    //! Output a warning referencing the main input path and file
-    void emitWarning(std::string warning) const;
-
-    //! Output a warning referencing an object by name
-    void emitWarning(std::string hierarchicalName, std::string warning) const;
 
     //! Return a list of XMLNodes that are direct children and have a specific tag
     static std::vector<const XMLElement*> childElementsByTagName(const XMLElement* node, std::string tag, std::string tag2 = std::string(), std::string tag3 = std::string());
@@ -210,7 +202,6 @@ protected:
     std::string titlePage;     //!< Title page information
 
     std::vector<std::string> filesparsed;
-    std::vector<XMLLineLocator*>lines;
     std::vector<ProtocolDocumentation*> alldocumentsinorder;
     std::vector<ProtocolDocumentation*> documents;
     std::vector<ProtocolStructureModule*> structures;

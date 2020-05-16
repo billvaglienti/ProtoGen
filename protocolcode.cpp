@@ -76,9 +76,9 @@ void ProtocolCode::parse(void)
  */
 std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
 {
-    Q_UNUSED(isBigEndian);
-    Q_UNUSED(bitcount);
-    Q_UNUSED(isStructureMember);
+    (void)isBigEndian;
+    (void)bitcount;
+    (void)isStructureMember;
 
     std::string output;
 
@@ -115,10 +115,10 @@ std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool 
  */
 std::string ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
-    Q_UNUSED(isBigEndian);
-    Q_UNUSED(bitcount);
-    Q_UNUSED(isStructureMember);
-    Q_UNUSED(defaultEnabled);
+    (void)isBigEndian;
+    (void)bitcount;
+    (void)isStructureMember;
+    (void)defaultEnabled;
 
     std::string output;
 

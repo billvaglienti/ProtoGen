@@ -794,7 +794,7 @@ std::string ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encoded
 
     if(isTypeBitfield(encoded))
     {
-        comment += ProtocolParser::outputLongComment(" *", briefEncodeComment(inmemory, encoded, bigendian)) + "\n";
+        comment += ProtocolParser::outputLongComment(" * ", briefEncodeComment(inmemory, encoded, bigendian)) + "\n";
         comment += " * \\param value is the number to scale.\n";
         comment += " * \\param min is the minimum value that can be encoded.\n";
         comment += " * \\param scaler is multiplied by value to create the encoded integer.\n";
@@ -803,7 +803,7 @@ std::string ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encoded
     }
     else
     {
-        comment += ProtocolParser::outputLongComment(" *", briefEncodeComment(inmemory, encoded, bigendian)) + "\n";
+        comment += ProtocolParser::outputLongComment(" * ", briefEncodeComment(inmemory, encoded, bigendian)) + "\n";
         comment += " * \\param value is the number to encode.\n";
         comment += " * \\param bytes is a pointer to the byte stream which receives the encoded data.\n";
         comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
@@ -1462,7 +1462,7 @@ std::string ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encoded
 
     if(isTypeBitfield(encoded))
     {
-        comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(inmemory, encoded, bigendian)) + "\n";
+        comment += ProtocolParser::outputLongComment(" * ", briefDecodeComment(inmemory, encoded, bigendian)) + "\n";
         comment += " * \\param value is the integer bitfield number to inverse scale\n";
         comment += " * \\param min is the minimum value that can be represented.\n";
 
@@ -1480,7 +1480,7 @@ std::string ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encoded
     }
     else
     {
-        comment += ProtocolParser::outputLongComment(" *", briefDecodeComment(inmemory, encoded, bigendian)) + "\n";
+        comment += ProtocolParser::outputLongComment(" * ", briefDecodeComment(inmemory, encoded, bigendian)) + "\n";
         comment += " * \\param bytes is a pointer to the byte stream to decode.\n";
         comment += " * \\param index gives the location of the first byte in the byte stream, and\n";
         comment += " *        will be incremented by " + std::to_string(typeLength(encoded)) + " when this function is complete.\n";

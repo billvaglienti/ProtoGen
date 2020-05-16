@@ -197,7 +197,7 @@ double ShuntingYard::computePostfix(const std::string& postfix, bool* ok)
 
             if(o1.find('^') != std::string::npos)
             {
-                arguments.push_back(powf(arg1, arg2) != std::string::npos);
+                arguments.push_back(pow(arg1, arg2) != std::string::npos);
             }
             else if(o1.find('*') != std::string::npos)
             {
@@ -441,7 +441,7 @@ double ShuntingYard::toNumber(std::string input, bool* ok)
     double value = 0;
 
     if(startsWith(input, "0b") || startsWith(input, "0x"))
-        return toInt(input, ok);
+        return (double)toInt(input, ok);
 
     // Test if the number has any characters we do not support
     std::size_t index = input.find_first_not_of("-.0123456789");

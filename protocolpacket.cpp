@@ -6,7 +6,6 @@
 #include "protocolparser.h"
 #include "protocoldocumentation.h"
 #include "shuntingyard.h"
-#include <QDateTime>
 #include <iostream>
 
 
@@ -323,7 +322,7 @@ std::string ProtocolPacket::getClassDeclaration_CPP(void) const
     if(!comment.empty())
     {
         output += "/*!\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
         output += " */\n";
     }
 
@@ -986,7 +985,7 @@ std::string ProtocolPacket::getStructurePacketEncodeBody(void) const
     output += "/*!\n";
     output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
     output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
     output += " * \\param _pg_pkt points to the packet which will be created by this function\n";
     if((numEncodes > 0) && (support.language == ProtocolSupport::c_language))
         output += " * \\param _pg_user points to the user data that will be encoded in _pg_pkt\n";
@@ -1138,7 +1137,7 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
         output += "/*!\n";
         output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
         output += " *\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
         output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
         if((getNumberOfDecodeParameters() > 0) && (support.language == ProtocolSupport::c_language))
             output += " * \\param _pg_user receives the data decoded from the packet\n";
@@ -1248,7 +1247,7 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
         output += "/*!\n";
         output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
         output += " *\n";
-        output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+        output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
         output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
         output += " * \\return " + getReturnCode(false) + " is returned if the packet ID is wrong, else " + getReturnCode(true) + "\n";
         output += " */\n";
@@ -1408,7 +1407,7 @@ std::string ProtocolPacket::getParameterPacketEncodeBody(void) const
     output += "/*!\n";
     output += " * \\brief " + getPacketEncodeBriefComment() + "\n";
     output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
     output += " * \\param _pg_pkt points to the packet which will be created by this function\n";
     for(i = 0; i < encodables.size(); i++)
         output += encodables.at(i)->getEncodeParameterComment();
@@ -1553,7 +1552,7 @@ std::string ProtocolPacket::getParameterPacketDecodeBody(void) const
     output += "/*!\n";
     output += " * \\brief " + getPacketDecodeBriefComment() + "\n";
     output += " *\n";
-    output += ProtocolParser::outputLongComment(" *", comment) + "\n";
+    output += ProtocolParser::outputLongComment(" * ", comment) + "\n";
     output += " * \\param _pg_pkt points to the packet being decoded by this function\n";
     for(i = 0; i < encodables.size(); i++)
         output += encodables.at(i)->getDecodeParameterComment();
@@ -1758,8 +1757,8 @@ std::string ProtocolPacket::getDataDecodeBriefComment(void) const
  */
 std::string ProtocolPacket::getTopLevelMarkdown(bool global, const std::vector<std::string>& packetids) const
 {
-    Q_UNUSED(global);
-    Q_UNUSED(packetids);
+    (void)global;
+    (void)packetids;
 
     std::string output;
 
