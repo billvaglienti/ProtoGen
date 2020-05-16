@@ -90,9 +90,6 @@ public:
     //! Make sure one blank line at end
     static void makeLineSeparator(std::string& contents);
 
-    //! Make sure one blank line at end
-    static void makeLineSeparator(QString& contents);
-
     //! The prefix used to indicate a temporary name
     static std::string tempprefix;
 

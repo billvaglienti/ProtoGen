@@ -1,8 +1,6 @@
 #include "protocolsupport.h"
 #include "protocolparser.h"
 
-#include <QStringList>
-
 //! Split a string into multiple sub strings spearated by a separator.
 static std::vector<std::string> _split(const std::string& text, const std::string& sep, bool keepemptyparts, bool anyof);
 
@@ -377,18 +375,6 @@ std::vector<std::string>& removeDuplicates(std::vector<std::string>& list, bool 
     }
 
     return list;
-}
-
-
-//! Convert a string list to a vector of std::strings
-std::vector<std::string> convertStringList(const QStringList& list)
-{
-    std::vector<std::string> newlist;
-
-    for(int i = 0; i < list.size(); i++)
-        newlist.push_back(list.at(i).toStdString());
-
-    return newlist;
 }
 
 

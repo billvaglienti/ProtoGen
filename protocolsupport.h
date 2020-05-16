@@ -1,7 +1,6 @@
 #ifndef PROTOCOLSUPPORT_H
 #define PROTOCOLSUPPORT_H
 
-#include <QString>
 #include "tinyxml2.h"
 #include <vector>
 
@@ -54,9 +53,6 @@ std::string join(const std::vector<std::string> list, const std::string& joiner 
 
 //! Remove duplicate strings
 std::vector<std::string>& removeDuplicates(std::vector<std::string>& list, bool casesensitive = false);
-
-//! Convert a string list to a vector of std::strings
-std::vector<std::string> convertStringList(const QStringList& list);
 
 
 class ProtocolSupport

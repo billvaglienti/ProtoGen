@@ -1,13 +1,7 @@
 #include "protocolfile.h"
 #include "protocolparser.h"
-#include <QDateTime>
 #include <fstream>
 #include <filesystem>
-
-#ifdef WIN32
-// For access to NTFS permissions
-extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
-#endif
 
 std::string ProtocolFile::tempprefix = "temporarydeleteme_";
 
@@ -301,46 +295,6 @@ void ProtocolFile::makeLineSeparator(std::string& contents)
     // 3) Too few linefeeds, add some
     if(last > lastChar + 2)
         contents.erase(lastChar + 3);
-    else
-    {
-        while(last < lastChar + 2)
-        {
-            contents += "\n";
-            last++;
-        }
-    }
-}
-
-
-/*!
- * Make sure the string data end such that there is exactly one blank line
- * between the current contents and anything that is added after this function
- * \param contents is the string whose ending is adjusted
- */
-void ProtocolFile::makeLineSeparator(QString& contents)
-{
-    // Make sure that there are exactly two line terminators at the end of the string
-    int last = ((int)contents.size()) - 1;
-    int lastChar = last;
-
-    if(last < 0)
-        return;
-
-    // Scroll backwards until we have cleared the linefeeds and lastChar is pointing at the last non-linefeed character
-    while(lastChar >= 0)
-    {
-        if(contents.at(lastChar) == '\n')
-            lastChar--;
-        else
-            break;
-    }
-
-    // Three cases:
-    // 1) Too many linefeeds, chop some off
-    // 2) Just the right amount of line feeds, change nothing
-    // 3) Too few linefeeds, add some
-    if(last > lastChar + 2)
-        contents.chop(last - (lastChar + 2));
     else
     {
         while(last < lastChar + 2)

@@ -231,7 +231,7 @@ void EnumCreator::parse(void)
 
     for(const XMLElement* child = e->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
-        if(!QString(child->Name()).contains("value", Qt::CaseInsensitive))
+        if(!contains(trimm(child->Name()), "value"))
             continue;
 
         EnumElement elem(parser, this, parent, support);

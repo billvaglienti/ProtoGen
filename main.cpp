@@ -5,6 +5,8 @@
 #include "protocolparser.h"
 #include "xmllinelocator.h"
 
+static void printHelp(void);
+
 int main(int argc, char *argv[])
 {
     std::vector<std::string> arguments;
@@ -17,6 +19,17 @@ int main(int argc, char *argv[])
         // All leading "--" are converted to "-" here
         while(startsWith(argument, "--"))
             argument.erase(0, 1);
+
+        if(startsWith(argument, "-help") || startsWith(argument, "-?"))
+        {
+            printHelp();
+            return 0;
+        }
+        else if(startsWith(argument, "-v"))
+        {
+            std::cout << ProtocolParser::genVersion << std::endl;
+            return 0;
+        }
 
         if(argument.empty())
             continue;
@@ -41,43 +54,6 @@ int main(int argc, char *argv[])
             arguments.push_back(argument);
 
     }// for all arguments except the first one
-
-
-
-    /*
-    QCoreApplication a(argc, argv);
-    QCoreApplication::setApplicationName( "Protogen" );
-    QCoreApplication::setApplicationVersion(QString().fromStdString(ProtocolParser::genVersion));
-
-    QCommandLineParser argParser;
-
-    argParser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
-    argParser.setApplicationDescription("Protocol generation tool");
-    argParser.addHelpOption();
-    argParser.addVersionOption();
-
-    argParser.addPositionalArgument("input", "Protocol defintion file, .xml");
-    argParser.addPositionalArgument("outputpath", "Path for generated protocol files (default = current working directory)");
-
-    argParser.addOption({{"d", "docs"}, "Path for generated documentation files (default = outputpath)", "docpath"});
-    argParser.addOption({"license", "Path to license template file which will be prepended to each generated file", "license"});
-    argParser.addOption({"show-hidden-items", "Show all items in documentation even if they are marked as 'hidden'"});
-    argParser.addOption({"latex", "Enable extra documentation output required for LaTeX integration"});
-    argParser.addOption({{"l", "latex-header-level"}, "LaTeX header level", "latexlevel"});
-    argParser.addOption({"yes-doxygen", "Call doxygen to output developer-level documentation"});
-    argParser.addOption({"no-markdown", "Skip generation of user-level documentation"});
-    argParser.addOption({"no-about-section", "Skip generation of \"About this ICD\" section in documentation output"});
-    argParser.addOption({"no-helper-files", "Skip creation of helper files not directly specifed by protocol .xml file"});
-    argParser.addOption({{"s", "style"}, "Specify a css file to override the default style for HTML documentation", "cssfile"});
-    argParser.addOption({"no-css", "Skip generation of any css data in documentation files"});
-    argParser.addOption({"no-unrecognized-warnings", "Suppress warnings for unrecognized xml tags"});
-    argParser.addOption({"table-of-contents", "Generate a table of contents"});
-    argParser.addOption({{"t", "titlepage"}, "Path to title page file with text that will above at the beginning of the markdown", "titlefile"});
-    argParser.addOption({"lang-c", "Force the output language to C, overriding the language specifier in the protocol file"});
-    argParser.addOption({"lang-cpp", "Force the output language to C++, overriding the language specifier in the protocol file"});
-
-    argParser.process(a);
-    */
 
     ProtocolParser parser;
 
@@ -220,4 +196,48 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+}// main
+
+
+void printHelp(void)
+{
+    std::string help = "Protocol Generation Tool, version: " + ProtocolParser::genVersion;
+    help += R"===(
+
+Usage: ProtoGen inputfile.xml <outputpath> <otherinputfiles.xml> -options
+
+  inputfile.xml      : Protocol defintion, first .xml file in arguments.
+
+  outputpath         : Path for generated files (current working directory if
+                       empty).
+  -docs <path>       : Path for generated documentation files (default =
+                       outputpath).
+  -license <file>    : License template file which will be prepended to
+                       generated files.
+  -yes-doxygen       : Call doxygen to output developer-level documentation.
+
+  -no-markdown       : Skip generation of user-level documentation.
+
+  -no-about-section  : Skip generation of "About this ICD" section in
+                       documentation output.
+  -no-helper-files   : Skip creation of helper files not directly specifed by
+                       protocol .xml files.
+  -style path        : Specify a css file to override the default style for
+                       HTML documentation.
+  -no-css            : Skip generation of any css data in documentation files.
+
+  -no-unrecognized   : Suppress warnings for unrecognized xml tags.
+
+  -table-of-contents : Generate a table of contents in the markdown.
+
+  -titlepage <file>  : Title page file with text at the beginning of the
+                       markdown.
+  -lang-c            : Force the output language to C, overriding the language
+                       specifier in the protocol file.
+  -lang-cpp          : Force the output language to C++, overriding the
+                       language specifier in the protocol file.
+  -version           : Prints just the version information.
+
+)===";
+    std::cout << help;
 }
