@@ -41,11 +41,11 @@ int main(int argc, char *argv[])
         {
             // These are the arguments that need followers
             if( startsWith(argument, "-d")            ||
-                isEqual(argument, "-l")               ||
+                startsWith(argument, "-l")               ||
                 startsWith(argument, "-latex-header") ||
                 isEqual(argument, "-s")               ||
                 startsWith(argument, "-style")        ||
-                startsWith(argument, "-t") )
+                startsWith(argument, "-ti") )
                 arguments.push_back(argument + " " + trimm(argv[++i]));
         }
         else

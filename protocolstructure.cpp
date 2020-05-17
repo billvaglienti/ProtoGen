@@ -691,7 +691,7 @@ std::string ProtocolStructure::getMapDecodeString(void) const
 
 
 /*!
- * Parse and output all enumerations which are direct children of a DomNode
+ * Parse all enumerations which are direct children of a DomNode
  * \param node is parent node
  */
 void ProtocolStructure::parseEnumerations(const XMLNode* node)
@@ -1226,6 +1226,15 @@ std::string ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
     std::string output;
     std::string structure;
 
+    /// TODO: Move this to be within the class for C++
+    // Output enumerations specific to this structure, be sure to do it before
+    // declaring the structure or any of its children
+    for(std::size_t i = 0; i < enumList.size(); i++)
+    {
+        output += enumList.at(i)->getOutput();
+        ProtocolFile::makeLineSeparator(output);
+    }
+
     // Declare our childrens structures first, but only if we are not redefining
     // someone else, in which case they have already declared the children
     if(redefines == nullptr)
@@ -1244,14 +1253,6 @@ std::string ProtocolStructure::getStructureDeclaration(bool alwaysCreate) const
         }// for all children
 
     }// if not redefining
-
-    /// TODO: Move this to be within the class for C++
-    // Output enumerations specific to this structure
-    for(std::size_t i = 0; i < enumList.size(); i++)
-    {
-        output += enumList.at(i)->getOutput();
-        ProtocolFile::makeLineSeparator(output);
-    }
 
     if(support.language == ProtocolSupport::c_language)
         output += getStructureDeclaration_C(alwaysCreate);

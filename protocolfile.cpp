@@ -315,8 +315,8 @@ std::string ProtocolFile::sanitizePath(const std::string& path)
 {
     std::error_code ec;
 
-    // Empty paths are the simplest. Also, special handling for resource path
-    if(path.empty() || (path.at(0) == ':'))
+    // Empty paths are the simplest
+    if(path.empty())
         return path;
 
     // Absolute and relative versions of path
@@ -331,10 +331,13 @@ std::string ProtocolFile::sanitizePath(const std::string& path)
         relative = path;
 
     // Make sure it has a trailing separator
-    if(!absolute.empty() && !((absolute.back() == '/') || (absolute.back() == '\\')))
+    if(!absolute.empty())
         absolute += std::filesystem::path::preferred_separator;
 
-    if(!relative.empty() && !((relative.back() == '/') || (relative.back() == '\\')))
+    // "." is the current working directory, same as an empty path
+    if(relative == ".")
+        relative.clear();
+    else if(!relative.empty())
         relative += std::filesystem::path::preferred_separator;
 
     // Return the shorter of the two paths
@@ -499,7 +502,7 @@ bool ProtocolFile::flush(void)
 
     // Make sure the path exists
     if(!path.empty())
-        std::filesystem::create_directory(path, ec);
+        std::filesystem::create_directories(path, ec);
 
     // Open the file for write
     std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);
@@ -586,7 +589,7 @@ bool ProtocolHeaderFile::flush(void)
 
     // Make sure the path exists
     if(!path.empty())
-        std::filesystem::create_directory(path, ec);
+        std::filesystem::create_directories(path, ec);
 
     // Open the file for write
     std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);
@@ -751,7 +754,7 @@ bool ProtocolSourceFile::flush(void)
 
     // Make sure the path exists
     if(!path.empty())
-        std::filesystem::create_directory(path, ec);
+        std::filesystem::create_directories(path, ec);
 
     // Open the file for write
     std::fstream file(fileNameAndPathOnDisk(), std::ios_base::out);

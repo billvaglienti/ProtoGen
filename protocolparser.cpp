@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.0.c This is beta code, use with caution";
+const std::string ProtocolParser::genVersion = "3.0.d This is beta code, use with caution";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -125,7 +125,7 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
 
     // Make sure the path exists
     if(!path.empty())
-        std::filesystem::create_directory(path, ec);
+        std::filesystem::create_directories(path, ec);
 
     // Make sure the path exists
     if(!ec)
@@ -1732,7 +1732,8 @@ toc3:before {\n\
  */
 void ProtocolParser::setDocsPath(std::string path)
 {
-    if(std::filesystem::exists(path) || std::filesystem::create_directory(path))
+    std::error_code ec;
+    if(std::filesystem::exists(path) || std::filesystem::create_directories(path, ec))
         docsDir = path;
     else
         docsDir = "";
