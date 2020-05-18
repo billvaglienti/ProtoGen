@@ -100,6 +100,9 @@ bool startsWith(const std::string& text, const std::string& test, bool casesensi
 //! Determine if a string ends with another string
 bool endsWith(const std::string& text, const std::string& test, bool casesensitive)
 {
+    if(test.length() > text.length())
+        return false;
+
     if(casesensitive)
         return (text.rfind(test) == (text.length() - test.length()));
     else

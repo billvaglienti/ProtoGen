@@ -1100,7 +1100,7 @@ std::string ProtocolPacket::getStructurePacketDecodePrototype(const std::string&
 {
     std::string output;
 
-    if(!encode)
+    if(!decode)
         return output;
 
     output += spacing + "//! " + getPacketDecodeBriefComment() + "\n";
