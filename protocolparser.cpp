@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.0.d This is beta code, use with caution";
+const std::string ProtocolParser::genVersion = "3.0.e";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1091,12 +1091,12 @@ std::string ProtocolParser::replaceEnumerationNameWithValue(const std::string& t
 
     for(std::size_t i = 0; i < globalEnums.size(); i++)
     {
-        globalEnums.at(i)->replaceEnumerationNameWithValue(replace);
+        replace = globalEnums.at(i)->replaceEnumerationNameWithValue(replace);
     }
 
     for(std::size_t i = 0; i < enums.size(); i++)
     {
-        enums.at(i)->replaceEnumerationNameWithValue(replace);
+        replace = enums.at(i)->replaceEnumerationNameWithValue(replace);
     }
 
     return replace;
