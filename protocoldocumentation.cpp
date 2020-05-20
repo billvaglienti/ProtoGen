@@ -118,7 +118,7 @@ void ProtocolDocumentation::emitWarning(const std::string& warning, const std::s
 
     int line = e->GetLineNum();
 
-    std::cerr << support.sourcefile << ":" << line << ":0: warning: " << name << ": " << warning << std::endl;
+    std::cerr << support.sourcefile << "(" << line << "): warning: " << name << ": " << warning << std::endl;
 }
 
 
@@ -153,7 +153,7 @@ void ProtocolDocumentation::emitWarning(const std::string& sourcefile, const std
 
     int line = a->GetLineNum();
 
-    std::cerr << sourcefile << ":" << line << ":0: warning: " << name << ": " << warning << std::endl;
+    std::cerr << sourcefile << "(" << line << "): warning: " << name << ": " << warning << std::endl;
 }
 
 
