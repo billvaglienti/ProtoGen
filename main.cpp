@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         {
             // These are the arguments that need followers
             if( startsWith(argument, "-d")            ||
-                startsWith(argument, "-l")               ||
+                startsWith(argument, "-li")           ||
                 startsWith(argument, "-latex-header") ||
                 isEqual(argument, "-s")               ||
                 startsWith(argument, "-style")        ||
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     }
 
     // License template file
-    std::string licenseTemplate = liststartsWith(arguments, "-l");
+    std::string licenseTemplate = liststartsWith(arguments, "-li");
     licenseTemplate = licenseTemplate.substr(licenseTemplate.find(" ") + 1);
     if(!licenseTemplate.empty())
     {       

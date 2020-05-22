@@ -579,7 +579,6 @@ std::string ProtocolPacket::createUtilityFunctions(const std::string& spacing) c
  */
 void ProtocolPacket::createTopLevelInitializeFunction(void)
 {
-    // Output the constructor first
     if(hasInit() && (verifySource != nullptr) && (redefines == nullptr))
     {
         // In C++ this is part of the class declaration
@@ -590,9 +589,16 @@ void ProtocolPacket::createTopLevelInitializeFunction(void)
             verifyHeader->makeLineSeparator();
         }
 
-        verifySource->makeLineSeparator();
-        verifySource->write(getSetToInitialValueFunctionBody(false));
-        verifySource->makeLineSeparator();
+        // In C++ we do not output the constructor if we have no class members
+        // Notice that if we are not outputting structure functions, and this
+        // class won't be used by others, we will not have any data members and
+        // do not need a constructor.
+        if((support.language == ProtocolSupport::c_language) || ((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions)))
+        {
+            verifySource->makeLineSeparator();
+            verifySource->write(getSetToInitialValueFunctionBody(false));
+            verifySource->makeLineSeparator();
+        }
     }
 
 }// ProtocolPacket::createTopLevelInitializeFunction
