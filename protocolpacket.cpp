@@ -1042,7 +1042,12 @@ std::string ProtocolPacket::getStructurePacketEncodeBody(void) const
     ProtocolFile::makeLineSeparator(output);
     output += TAB_IN + "// complete the process of creating the packet\n";
     output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, _pg_byteindex, " + id + ");\n";
-    output += "}\n";
+
+    ProtocolFile::makeLineSeparator(output);
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// encode" + support.prefix + name + support.packetStructureSuffix + "\n";
+    else
+        output += "}// " + typeName + "::encode\n";
 
     return output;
 
@@ -1245,7 +1250,6 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
 
         ProtocolFile::makeLineSeparator(output);
         output += TAB_IN + "return " + getReturnCode(true) + ";\n";
-        output += "}\n";
 
     }// if fields to decode
     else
@@ -1276,9 +1280,14 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
         output += TAB_IN + TAB_IN + "return " + getReturnCode(false) + ";\n";
         output += TAB_IN + "else\n";
         output += TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n";
-        output += "}\n";
 
     }// else if no fields to decode
+
+    ProtocolFile::makeLineSeparator(output);
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// decode" + support.prefix + name + support.packetStructureSuffix + "\n";
+    else
+        output += "}// " + typeName + "::decode\n";
 
     return output;
 
@@ -1466,7 +1475,11 @@ std::string ProtocolPacket::getParameterPacketEncodeBody(void) const
         output += TAB_IN + "finish" + support.protoName + "Packet(_pg_pkt, 0, " + id + ");\n";
     }
 
-    output += "}\n";
+    ProtocolFile::makeLineSeparator(output);
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// encode" + support.prefix + name + support.packetParameterSuffix + "\n";
+    else
+        output += "}// " + typeName + "::encode\n";
 
     return output;
 
@@ -1684,7 +1697,11 @@ std::string ProtocolPacket::getParameterPacketDecodeBody(void) const
 
     }// If no fields to decode
 
-    output += "}\n";
+    ProtocolFile::makeLineSeparator(output);
+    if(support.language == ProtocolSupport::c_language)
+        output += "}// decode" + support.prefix + name + support.packetParameterSuffix + "\n";
+    else
+        output += "}// " + typeName + "::decode\n";
 
     return output;
 

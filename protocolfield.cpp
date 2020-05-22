@@ -4248,7 +4248,7 @@ std::string ProtocolField::getEncodeStringForStructure(bool isStructureMember) c
             else
                 output += spacing + "(static_cast<const " + typeName + "*>(" + access + "))->encode(_pg_data, &_pg_byteindex);\n";
         }
-        else if(isStructureMember)
+        else if(isStructureMember || isArray())
             output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
         else
             output += spacing + access + "->encode(_pg_data, &_pg_byteindex);\n";
@@ -4327,7 +4327,7 @@ std::string ProtocolField::getDecodeStringForStructure(bool isStructureMember) c
             else
                 output += spacing + "if((static_cast<" + typeName + "*>(" + access + "))->decode(_pg_data, &_pg_byteindex) == false)\n";
         }
-        else if(isStructureMember)
+        else if(isStructureMember || isArray())
             output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
         else
             output += spacing + "if(" + access + "->decode(_pg_data, &_pg_byteindex) == false)\n";

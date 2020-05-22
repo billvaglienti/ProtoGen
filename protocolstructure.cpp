@@ -254,7 +254,8 @@ std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, 
         output += spacing + "encode" + typeName + "(_pg_data, &_pg_byteindex, " + access + ");\n";
     else
     {
-        if(isStructureMember)
+        // Note that if we are an array the dereferencing is done by the array operator
+        if(isStructureMember || isArray())
             output += spacing + access + ".encode(_pg_data, &_pg_byteindex);\n";
         else
             output += spacing + access + "->encode(_pg_data, &_pg_byteindex);\n";
@@ -318,7 +319,8 @@ std::string ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, 
     }
     else
     {       
-        if(isStructureMember)
+        // Note that if we are an array the dereferencing is done by the array operator
+        if(isStructureMember || isArray())
             output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
         else
             output += spacing + "if(" + access + "->decode(_pg_data, &_pg_byteindex) == false)\n";
