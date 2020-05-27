@@ -202,13 +202,13 @@ void ProtocolStructureModule::parse(void)
             emitWarning("Redefine must be different from name");
         else
         {
-            redefines = parser->lookUpStructure(support.prefix + redefinename + "_t");
+            redefines = parser->lookUpStructure(support.prefix + redefinename + support.typeSuffix);
             if(redefines == NULL)
                 emitWarning("Could not find structure to redefine");
         }
 
         if(redefines != NULL)
-            structName = support.prefix + redefinename + "_t";
+            structName = support.prefix + redefinename + support.typeSuffix;
     }
 
     // Do the bulk of the file creation and setup
@@ -421,7 +421,7 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
     }
 
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
-    header.writeIncludeDirective(support.protoName + "Protocol.h");
+    header.writeIncludeDirective(support.protoName + "Protocol");
 
     // If we are using someone elses definition then we can't have a separate definition file
     if(redefines != NULL)
@@ -490,7 +490,6 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
         printHeader->writeIncludeDirective(structHeader->fileName());
         printHeader->writeIncludeDirective(header.fileName());        
         printHeader->writeIncludeDirective("string", std::string(), true, false);
-        printSource->writeIncludeDirective("fieldencode.h", std::string(), false, false);
         printSource->writeIncludeDirective("sstream", std::string(), true, false);
         printSource->writeIncludeDirective("iomanip", std::string(), true, false);
 
@@ -498,7 +497,10 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
         {
             // In C++ these function declarations are in the class declaration
             structHeader->writeIncludeDirective("string", std::string(), true, false);
+            printSource->writeIncludeDirective("fieldencode.hpp", std::string(), false);
         }
+        else
+            printSource->writeIncludeDirective("fieldencode.h", std::string(), false);
 
         list.clear();
         getPrintIncludeDirectives(list);
@@ -666,12 +668,12 @@ void ProtocolStructureModule::getIncludeDirectives(std::vector<std::string>& lis
 void ProtocolStructureModule::getSourceIncludeDirectives(std::vector<std::string>& list) const
 {
     if(support.specialFloat)
-        list.push_back("floatspecial.h");
+        list.push_back("floatspecial");
 
-    list.push_back("fielddecode.h");
-    list.push_back("fieldencode.h");
-    list.push_back("scaleddecode.h");
-    list.push_back("scaledencode.h");
+    list.push_back("fielddecode");
+    list.push_back("fieldencode");
+    list.push_back("scaleddecode");
+    list.push_back("scaledencode");
 
     // And any of our children's headers
     ProtocolStructure::getSourceIncludeDirectives(list);

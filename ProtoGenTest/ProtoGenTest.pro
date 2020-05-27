@@ -46,8 +46,8 @@ SOURCES += main.cpp \
 
 HEADERS += \
     base_types.h \
-    compare/base_compare.h \
-    compare/base_print.h \
+    compare/base_compare.hpp \
+    compare/base_print.hpp \
     globaldependson.h \
     indices.h \
     DemolinkProtocol.h \
@@ -56,7 +56,7 @@ HEADERS += \
     fieldencode.h \
     floatspecial.h \
     GPS.h \
-    map/base_map.h \
+    map/base_map.hpp \
     scaleddecode.h \
     scaledencode.h \
     TelemetryPacket.h \
@@ -68,9 +68,9 @@ HEADERS += \
     OtherDefinitions.h \
     translation.h \
     verify/dateverify.h \
-    compare/compareDemolink.h \
-    compare/printDemolink.h \
-    map/mapDemolink.h
+    compare/compareDemolink.hpp \
+    compare/printDemolink.hpp \
+    map/mapDemolink.hpp
 
 OTHER_FILES += \
     Doxyfile

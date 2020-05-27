@@ -37,23 +37,18 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    DemolinkProtocol.h \
-    Engine.h \
+    DemolinkProtocol.hpp \
+    Engine.hpp \
     EngineDefinitions.hpp \
-    GPS.h \
-    OtherDefinitions.h \
-    TelemetryPacket.h \
-    base_types.h \
-    bitfieldtest.h \
-    fielddecode.h \
-    fieldencode.h \
-    floatspecial.h \
-    globaldependson.h \
-    globalenum.h \
-    indices.h \
-    linkcode.h \
-    packetinterface.h \
-    scaleddecode.h \
-    scaledencode.h \
-    translation.h
+    OtherDefinitions.hpp \
+    TelemetryPacket.hpp \
+    base_types.hpp \
+    bitfieldtest.hpp \
+    fielddecode.hpp \
+    fieldencode.hpp \
+    floatspecial.hpp \
+    globaldependson.hpp \
+    linkcode.hpp \
+    scaleddecode.hpp \
+    scaledencode.hpp
 

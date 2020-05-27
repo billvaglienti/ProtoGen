@@ -8,8 +8,8 @@
 #include "TelemetryPacket.h"
 #include "packetinterface.h"
 #include "linkcode.h"
-#include "compareDemolink.h"
-#include "printDemolink.h"
+#include "compareDemolink.hpp"
+#include "printDemolink.hpp"
 #include "fieldencode.h"
 
 #define PI 3.141592653589793

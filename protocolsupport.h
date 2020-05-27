@@ -105,6 +105,7 @@ public:
     std::string packetParameterSuffix; //!< Name to use at end of encode/decode Packet parameter functions
     std::string protoName;             //!< Name of the protocol
     std::string prefix;                //!< Prefix name
+    std::string typeSuffix;            //!< Suffix on typedef structures
     std::string pointerType;           //!< Packet pointer type - default is "void*"
     std::string licenseText;           //!< License text to be added to each generated file
     std::string sourcefile;            //!< Source file name, used for warning outputs

@@ -399,6 +399,7 @@ ProtocolSupport::ProtocolSupport() :
     mapEncode(false),
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet"),
+    typeSuffix("_t"),
     enablelanguageoverride(false)
 {
 }
@@ -424,6 +425,7 @@ std::vector<std::string> ProtocolSupport::getAttriblist(void) const
     attribs.push_back("prefix");
     attribs.push_back("packetStructureSuffix");
     attribs.push_back("packetParameterSuffix");
+    attribs.push_back("typeSuffix");
     attribs.push_back("endian");
     attribs.push_back("pointer");
     attribs.push_back("supportBool");
@@ -520,6 +522,9 @@ void ProtocolSupport::parse(const XMLAttribute* map)
     // Packet name post fixes
     packetStructureSuffix = ProtocolParser::getAttribute("packetStructureSuffix", map, packetStructureSuffix);
     packetParameterSuffix = ProtocolParser::getAttribute("packetParameterSuffix", map, packetParameterSuffix);
+
+    // Typedef stucture and packet suffix
+    typeSuffix = ProtocolParser::getAttribute("typeSuffix", map, typeSuffix);
 
     if(contains(ProtocolParser::getAttribute("endian", map), "little"))
         bigendian = false;

@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C or C++ source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The generated code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 3.0. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 3.1. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -103,21 +103,23 @@ The Protocol tag supports the following attributes:
 
 - `prefix` : A string that can be used to prepend structure and file names to manage namespace collisions.
 
+- `typeSuffix` : A string that appends structure and class names. If not provided the suffix is "_t".
+
 - `cpp` : If this attribute is set to `true` the generated outputs will be in C++ language, unless the language is overridden from the command line.
 
 - `c` : If this attribute is set to `true` the generated outputs will be in C language (which is the default), unless the language is overridden from the command line.
 
 - `title` : The title of the protocol. This is used as the title for the first paragraph in the documentation output. If title is not given the title of the first paragraph will be `name` + "Protocol".
 
-- `file` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the encoding and decoding code output; except for the primary header file, and any objects which have their own `file` attribute.
+- `file` : Optional attribute that gives the name of the source and header file (.c and .h for C, .cpp and .hpp for C++) that will be used for the encoding and decoding code output; except for the primary header file, and any objects which have their own `file` attribute.
 
-- `verifyfile` : Optional attribute that gives the name of the source and header file (.c and .h) that will be used for the initilization and verification code output (if any); except for any objects which have their own `verifyfile` attribute.
+- `verifyfile` : Optional attribute that gives the name of the source and header file (.c and .h for C, .cpp and .hpp for C++) that will be used for the initilization and verification code output (if any); except for any objects which have their own `verifyfile` attribute.
 
-- `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
+- `comparefile` : Optional attribute that gives the name of the source and header file (.cpp and .hpp) that will be used for comparison code output; except for any objects which have their own `comparefile` attribute. Presence of the global comparefile attribute enables the compare output for all packets and structures.
 
-- `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for the text print and text read code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
+- `printfile` : Optional attribute that gives the name of the source and header file (.cpp and .hpp) that will be used for the text print and text read code output; except for any objects which have their own `printfile` attribute. Presence of the global printfile attribute enables the text print output for all packets and structures.
 
-- `mapfile` : Optional attribute that gives the name of the source and header file (.cpp and .h) that will be used for encoding and decoding structure objects to a key:value map; except for any objects which have their own `mapfile` attribute set. Presence of the global mapfile attribute enables the map output for all packets and structures.
+- `mapfile` : Optional attribute that gives the name of the source and header file (.cpp and .hpp) that will be used for encoding and decoding structure objects to a key:value map; except for any objects which have their own `mapfile` attribute set. Presence of the global mapfile attribute enables the map output for all packets and structures.
 
 - `compare` : If this attribute is set to `true` comparison code will be output for all packets and structures (except for those with `compare="false"` set). Using this attribute instead of `comparefile` generates the output using the default comparison file.
 
@@ -181,7 +183,7 @@ The reflow logic can be suspended by placing comment text between "\verbatim" es
 Files
 -----
 
-By default ProtoGen will output a protocol header file; and a header and source file for every Packet and Structure tag, with the file name matching the tag name. However every global object (Enum, Structure, Packet) supports an optional `file` attribute. In addition there is an optional global `file` attribute which applies if an object does not specify a `file` attribute. Typically an extension is not given, in which case ".h" will be added for header files, ".c" for C source files, and ".cpp" for C++ source files. If an extension is given ProtoGen will discard it unless it starts with ".h" (for headers) or ".c" (for sources). So for example if the `file` attribute of a packet has the extension ".cpp", the source file output by ProtoGen will use that extension, and the header file will use ".h".
+By default ProtoGen will output a protocol header file; and a header and source file for every Packet and Structure tag, with the file name matching the tag name. However every global object (Enum, Structure, Packet) supports an optional `file` attribute. In addition there is an optional global `file` attribute which applies if an object does not specify a `file` attribute. Typically an extension is not given, in which case ".h" and ".c" are used for C header and source files, and ".hpp" and ".cpp" are used C++ header and source files. If an extension is given ProtoGen will discard it unless it starts with ".h" (for headers) or ".c" (for sources). So for example if the `file` attribute of a packet has the extension ".cxx", the source file output by ProtoGen will use that extension, and the header file will use ".h" or ".hpp" depending on the language.
 
 The `file` attribute can include path information (for example "src/ProtoGen/filename"). If path information is provided it is assumed to be relative to the global output path, unless the path information is absolute. Path information is only used in the creation of the file; any include directive which references a file will not include the path information.
 
@@ -634,7 +636,7 @@ The generated packet code
 The packet structure
 --------------------
 
-Each packet defined in the protocol xml will produce code that defines a structure (C) or class (C++) to represent the data-in-memory that the packet transports. In some implementations you may write interface glue code to copy the actual in memory data to this structure before passing it to the generated routines. In other implementations the structures defined by ProtoGen will be used directly in the rest of the project. This is the intended use case and is the purpose of defining separate "in memory" and "encoded" data types. You can use whatever in memory data type best fits your use case without worrying (much) about the impact on the protocol efficiency. The structure defined by a packets generated code will have a name like "prefixPacket_t" where "prefix" is the protocol prefix (if any) given in the xml and "Packet" is the name of the packet from the xml.
+Each packet defined in the protocol xml will produce code that defines a structure (C) or class (C++) to represent the data-in-memory that the packet transports. In some implementations you may write interface glue code to copy the actual in memory data to this structure before passing it to the generated routines. In other implementations the structures defined by ProtoGen will be used directly in the rest of the project. This is the intended use case and is the purpose of defining separate "in memory" and "encoded" data types. You can use whatever in memory data type best fits your use case without worrying (much) about the impact on the protocol efficiency. The structure defined by a packets generated code will have a name like "prefixPacket_t" where "prefix" is the protocol prefix (if any) given in the xml, "Packet" is the name of the packet from the xml, and "_t" is the type suffix given in the xml.
 
 This is an example of the generated structure for the C language
 

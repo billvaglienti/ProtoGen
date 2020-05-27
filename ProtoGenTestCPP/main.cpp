@@ -1,14 +1,14 @@
 #include <QDateTime>
 #include <iostream>
 #include <math.h>
-#include "bitfieldtest.h"
-#include "floatspecial.h"
-#include "GPS.h"
-#include "Engine.h"
-#include "TelemetryPacket.h"
+#include "bitfieldtest.hpp"
+#include "floatspecial.hpp"
+#include "GPS.hpp"
+#include "Engine.hpp"
+#include "TelemetryPacket.hpp"
 #include "packetinterface.h"
-#include "linkcode.h"
-#include "fieldencode.h"
+#include "linkcode.hpp"
+#include "fieldencode.hpp"
 
 #define PI 3.141592653589793
 #define PIf 3.141592653589793f
@@ -20,16 +20,16 @@
 static int testLimits(void);
 static int testConstantPacket(void);
 static int testTelemetryPacket(void);
-static int verifyTelemetryData(Telemetry_t telemetry);
+static int verifyTelemetryData(Telemetry_c telemetry);
 static int testThrottleSettingsPacket(void);
 static int testEngineSettingsPacket(void);
 static int testEngineCommandPacket(void);
 static int testGPSPacket(void);
-static void fillOutGPSTest(GPS_t& gps);
-static int verifyGPSData(GPS_t gps);
+static void fillOutGPSTest(GPS_c& gps);
+static int verifyGPSData(GPS_c gps);
 static int testKeepAlivePacket(void);
 static int testVersionPacket(void);
-static int verifyVersionData(Version_t version);
+static int verifyVersionData(Version_c version);
 static int testZeroLengthPacket(void);
 static int testBitfieldGroupPacket(void);
 static int testMultiDimensionPacket(void);
@@ -138,8 +138,8 @@ int testLimits(void)
 
 int testConstantPacket(void)
 {
-    testPacket_t pkt;
-    Constant_t constant;
+    testPacket_c pkt;
+    Constant_c constant;
     unsigned constant5 = 0;
 
     constant.encode(&pkt, 127);
@@ -156,7 +156,7 @@ int testConstantPacket(void)
         return 0;
     }
 
-    if(Constant_t::decode(&pkt, constant.constant2, &constant.cos45, constant.sin45, &constant.constant3, &constant5, &constant.token))
+    if(Constant_c::decode(&pkt, constant.constant2, &constant.cos45, constant.sin45, &constant.constant3, &constant5, &constant.token))
     {
         constant.constant5 = constant5;
 
@@ -217,8 +217,8 @@ int testConstantPacket(void)
 
 int testTelemetryPacket(void)
 {
-    testPacket_t pkt;
-    Telemetry_t telemetry;
+    testPacket_c pkt;
+    Telemetry_c telemetry;
     memset(&telemetry, 0, sizeof(telemetry));
 
     telemetry.insMode = insModeRun;
@@ -311,7 +311,7 @@ int testTelemetryPacket(void)
 }
 
 
-int verifyTelemetryData(Telemetry_t telemetry)
+int verifyTelemetryData(Telemetry_c telemetry)
 {
     if(telemetry.insMode != insModeRun) return 0;
 
@@ -366,8 +366,8 @@ int verifyTelemetryData(Telemetry_t telemetry)
 
 int testThrottleSettingsPacket(void)
 {
-    testPacket_t pkt;
-    ThrottleSettings_t settings;
+    testPacket_c pkt;
+    ThrottleSettings_c settings;
 
     if(settings.minLength() != 4)
     {
@@ -468,8 +468,8 @@ int testThrottleSettingsPacket(void)
 
 int testEngineSettingsPacket(void)
 {
-    testPacket_t pkt;
-    EngineSettings_t settings;
+    testPacket_c pkt;
+    EngineSettings_c settings;
 
     if(settings.minLength() != 1)
     {
@@ -545,8 +545,8 @@ int testEngineSettingsPacket(void)
 
 int testEngineCommandPacket(void)
 {
-    testPacket_t pkt;
-    EngineCommand_t eng;
+    testPacket_c pkt;
+    EngineCommand_c eng;
 
     eng.command = 0.5678f;
 
@@ -592,12 +592,12 @@ int testEngineCommandPacket(void)
 
 int testGPSPacket(void)
 {
-    testPacket_t pkt;
-    GPS_t gps;
+    testPacket_c pkt;
+    GPS_c gps;
 
     memset(&gps, 0, sizeof(gps));
 
-    if(GPS_t::minLength() != 25)
+    if(GPS_c::minLength() != 25)
     {
         std::cout << "GPS minimum data length is wrong" << std::endl;
         return 0;
@@ -637,7 +637,7 @@ int testGPSPacket(void)
 }
 
 
-void fillOutGPSTest(GPS_t& gps)
+void fillOutGPSTest(GPS_c& gps)
 {
     // 5 days, 11 hours, 32 minutes, 59 seconds, 251 ms
     gps.ITOW = ((((5*24) + 11)*60 + 32)*60 + 59)*1000 + 251;
@@ -677,7 +677,7 @@ void fillOutGPSTest(GPS_t& gps)
     gps.svInfo[3].used = 0;
 }
 
-int verifyGPSData(GPS_t gps)
+int verifyGPSData(GPS_c gps)
 {
     if(gps.ITOW != ((((5*24) + 11)*60 + 32)*60 + 59)*1000 + 251) return 0;
     if(gps.Week != 1234) return 0;
@@ -746,8 +746,8 @@ int verifyGPSData(GPS_t gps)
 
 int testKeepAlivePacket(void)
 {
-    testPacket_t pkt;
-    KeepAlive_t keepalive;
+    testPacket_c pkt;
+    KeepAlive_c keepalive;
 
     if(keepalive.minLength() != 22)
     {
@@ -797,10 +797,10 @@ int testKeepAlivePacket(void)
 
 int testVersionPacket(void)
 {
-    testPacket_t pkt, pkt2;
-    Version_t version;
+    testPacket_c pkt, pkt2;
+    Version_c version;
 
-    if(Version_t::minLength() != 26)
+    if(Version_c::minLength() != 26)
     {
         std::cout << "Version packet minimum data length is wrong" << std::endl;
         return 0;
@@ -827,7 +827,7 @@ int testVersionPacket(void)
 
     // Two different interfaces for encoding
     version.encode(&pkt);
-    Version_t::encode(&pkt2, &version.board, version.major, version.minor, version.sub, version.patch, &version.date, version.description);
+    Version_c::encode(&pkt2, &version.board, version.major, version.minor, version.sub, version.patch, &version.date, version.description);
 
     if(pkt.length != (24 + strlen(version.description) + 1 + strlen(version.board.description) + 1))
     {
@@ -841,7 +841,7 @@ int testVersionPacket(void)
         return 0;
     }
 
-    std::string diff = Version_t::compare("Version", &pkt, &pkt2);
+    std::string diff = Version_c::compare("Version", &pkt, &pkt2);
     if(!diff.empty())
     {
         std::cout << "Structure encoded version packet is different than parameter encoded version packet: " << diff << std::endl;
@@ -864,7 +864,7 @@ int testVersionPacket(void)
     }
 
     memset(&version, 0, sizeof(version));
-    if(Version_t::decode(&pkt2, &version.board, &version.major, &version.minor, &version.sub, &version.patch, &version.date, version.description))
+    if(Version_c::decode(&pkt2, &version.board, &version.major, &version.minor, &version.sub, &version.patch, &version.date, version.description))
     {
         if(!verifyVersionData(version))
         {
@@ -884,7 +884,7 @@ int testVersionPacket(void)
 
     if((version.textRead("Version", textversion) != 18) || !verifyVersionData(version))
     {
-        std::cout << "textPrintVersion_t() to textReadVersion_t() yielded incorrect data" << std::endl;
+        std::cout << "textPrintVersion_c() to textReadVersion_c() yielded incorrect data" << std::endl;
         return 0;
     }
 
@@ -894,7 +894,7 @@ int testVersionPacket(void)
 
     if((version.textRead("Testing", textversion) != 18) || !verifyVersionData(version))
     {
-        std::cout << "textPrintVersionPacket() to textReadVersion_t() yielded incorrect data" << std::endl;
+        std::cout << "textPrintVersionPacket() to textReadVersion_c() yielded incorrect data" << std::endl;
         return 0;
     }
 
@@ -903,7 +903,7 @@ int testVersionPacket(void)
 }// testVersionPacket
 
 
-int verifyVersionData(Version_t version)
+int verifyVersionData(Version_c version)
 {
     if(version.major != 1) return 0;
     if(version.minor != 2) return 0;
@@ -930,16 +930,16 @@ int verifyVersionData(Version_t version)
 
 int testZeroLengthPacket(void)
 {
-    testPacket_t pkt;
+    testPacket_c pkt;
 
 
-    if(Zero_t::minLength() != 0)
+    if(Zero_c::minLength() != 0)
     {
         std::cout << "Zero length packet minimum data length is wrong" << std::endl;
         return 0;
     }
 
-    Zero_t::encode(&pkt);
+    Zero_c::encode(&pkt);
 
     if(pkt.length != 0)
     {
@@ -953,7 +953,7 @@ int testZeroLengthPacket(void)
         return 0;
     }
 
-    if(!Zero_t::decode(&pkt))
+    if(!Zero_c::decode(&pkt))
     {
         std::cout << "Zero length packet failed to decode" << std::endl;
         return 0;
@@ -966,8 +966,8 @@ int testZeroLengthPacket(void)
 
 int testBitfieldGroupPacket(void)
 {
-    BitfieldTester_t bits;
-    testPacket_t pkt;
+    BitfieldTester_c bits;
+    testPacket_c pkt;
 
     bits.field1 = 1111;
     bits.field2 = 1;
@@ -984,7 +984,7 @@ int testBitfieldGroupPacket(void)
         return 0;
     }
 
-    bits = BitfieldTester_t();
+    bits = BitfieldTester_c();
     bits.decode(&pkt);
 
     if( (bits.field1 != 1111) ||
@@ -1004,10 +1004,10 @@ int testBitfieldGroupPacket(void)
 
 int testMultiDimensionPacket(void)
 {
-    lowPrecisionMultiTable_t table;
-    MultiDimensionTable_t* hightable = &table;
-    testPacket_t highpkt;
-    testPacket_t lowpkt;
+    lowPrecisionMultiTable_c table;
+    MultiDimensionTable_c* hightable = &table;
+    testPacket_c highpkt;
+    testPacket_c lowpkt;
 
     table.numCols = table.numRows = 2;
     for(int row = 0; row < table.numRows; row++)
@@ -1032,19 +1032,19 @@ int testMultiDimensionPacket(void)
         return 0;
     }
 
-    if(highpkt.length != (2 + table.numCols*table.numRows*(4 + 2 + 2 + Date_t::minLength())))
+    if(highpkt.length != (2 + table.numCols*table.numRows*(4 + 2 + 2 + Date_c::minLength())))
     {
         std::cout << "Multi-dimensional packet size is wrong" << std::endl;
         return 0;
     }
 
-    if(lowpkt.length != (2 + table.numCols*table.numRows*(2 + 1 + 1 + smallDate_t::minLength())))
+    if(lowpkt.length != (2 + table.numCols*table.numRows*(2 + 1 + 1 + smallDate_c::minLength())))
     {
         std::cout << "Low precision multi-dimensional packet size is wrong" << std::endl;
         return 0;
     }
 
-    table = lowPrecisionMultiTable_t();
+    table = lowPrecisionMultiTable_c();
     if(!hightable->decode(&highpkt))
     {
         std::cout << "Multi-dimensional packet failed to decode" << std::endl;
@@ -1075,7 +1075,7 @@ int testMultiDimensionPacket(void)
         }
     }
 
-    table = lowPrecisionMultiTable_t();
+    table = lowPrecisionMultiTable_c();
     if(!table.decode(&lowpkt))
     {
         std::cout << "Low precision multi-dimensional packet failed to decode" << std::endl;
@@ -1113,8 +1113,8 @@ int testMultiDimensionPacket(void)
 
 int testDefaultStringsPacket(void)
 {
-    TestWeirdStuff_t test;
-    testPacket_t pkt;
+    TestWeirdStuff_c test;
+    testPacket_c pkt;
 
     test.Field0 = 0x12345678;
     pgstrncpy(test.Field3, "Field3", sizeof(test.Field3));
@@ -1128,7 +1128,7 @@ int testDefaultStringsPacket(void)
         return 0;
     }
 
-    test = TestWeirdStuff_t();
+    test = TestWeirdStuff_c();
     test.decode(&pkt);
     if( (test.Field0 != 0x12345678) ||
         (strcmp(test.Field3, "Field3") != 0) ||
@@ -1139,7 +1139,7 @@ int testDefaultStringsPacket(void)
     }
 
     // Now test the default functions
-    test = TestWeirdStuff_t();
+    test = TestWeirdStuff_c();
     pkt.length = 40;
     test.decode(&pkt);
     if(strcmp(test.Field4, "secondtest") != 0)
@@ -1148,7 +1148,7 @@ int testDefaultStringsPacket(void)
         return 0;
     }
 
-    test = TestWeirdStuff_t();
+    test = TestWeirdStuff_c();
     pkt.length = 39;
     test.decode(&pkt);
     if(strcmp(test.Field3, "test") != 0)
@@ -1157,7 +1157,7 @@ int testDefaultStringsPacket(void)
         return 0;
     }
 
-    test = TestWeirdStuff_t();
+    test = TestWeirdStuff_c();
     pkt.length = 43;
     test.decode(&pkt);
     if(strcmp(test.Field4, "Fi") != 0)

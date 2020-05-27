@@ -94,10 +94,10 @@ std::string TypeData::toTypeString(const std::string& structName) const
     {
         typeName = trimm(structName);
 
-        // Make sure it ends with "_t";
-        if(!endsWith(typeName, "_t"))
+        // Make sure it ends with the suffix;
+        if(!endsWith(typeName, support.typeSuffix))
         {
-            typeName += "_t";
+            typeName += support.typeSuffix;
         }
     }
     else

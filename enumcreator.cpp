@@ -191,7 +191,6 @@ void EnumCreator::parse(void)
     // The file attribute is only supported on global enumerations
     if(isglobal)
     {
-        std::string extension;
         filepath = support.outputpath;
 
         // If no file information is provided we use the global header name
@@ -200,15 +199,6 @@ void EnumCreator::parse(void)
 
         // This will separate all the path information
         ProtocolFile::separateModuleNameAndPath(file, filepath);
-
-        // Make sure the extension is correct (.h, .hpp, .hxx, etc)
-        ProtocolFile::extractExtension(file, extension);
-        if(!contains(extension, ".h"))
-            extension = ".h";
-
-        // Now put the (corrected) extension back
-        file += extension;
-
     }
     else if(!file.empty())
     {

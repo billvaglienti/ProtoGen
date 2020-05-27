@@ -36,10 +36,10 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
         source.write(" */\n");
         source.write("int testBitfield(void)\n");
         source.write("{\n");
-        source.write("    bitfieldtest_t test   = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
-        source.write("    bitfieldtest2_t test2 = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
+        source.write("    bitfieldtest" + support.typeSuffix + " test   = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
+        source.write("    bitfieldtest2" + support.typeSuffix + " test2 = {1, 2, 12, 0xABC, 0, 3, 4, 0xC87654321ULL};\n");
         source.write("\n");
-        source.write("    bitfieldtest3_t test3 = {12.5f, 12.5f, 3.14159, 0, 0, 50};\n");
+        source.write("    bitfieldtest3" + support.typeSuffix + " test3 = {12.5f, 12.5f, 3.14159, 0, 0, 50};\n");
         source.write("\n");
         source.write("    uint8_t data[20];\n");
         source.write("    int index = 0;\n");
@@ -141,9 +141,9 @@ void ProtocolBitfield::generatetest(ProtocolSupport support)
         source.write(" */\n");
         source.write("int testBitfield(void)\n");
         source.write("{\n");
-        source.write("    bitfieldtest_t test;\n");
-        source.write("    bitfieldtest2_t test2;\n");
-        source.write("    bitfieldtest3_t test3;\n");
+        source.write("    bitfieldtest" + support.typeSuffix + " test;\n");
+        source.write("    bitfieldtest2" + support.typeSuffix + " test2;\n");
+        source.write("    bitfieldtest3" + support.typeSuffix + " test3;\n");
         source.write("    uint8_t data[20];\n");
         source.write("    int index = 0;\n");
         source.write("\n");

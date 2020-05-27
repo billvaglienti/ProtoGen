@@ -92,7 +92,6 @@ return header.flush();
 bool ProtocolFloatSpecial::generateSource(void)
 {
     source.setModuleNameAndPath("floatspecial", support.outputpath);
-    source.writeIncludeDirective("floatspecial.h");
     source.writeIncludeDirective("math.h", "", true);
     source.makeLineSeparator();
 

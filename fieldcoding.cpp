@@ -215,7 +215,7 @@ bool FieldCoding::generateEncodeSource(void)
     source.setModuleNameAndPath("fieldencode", support.outputpath, support.language);
 
     if(support.specialFloat)
-        source.writeIncludeDirective("floatspecial.h");
+        source.writeIncludeDirective("floatspecial");
 
     source.makeLineSeparator();
 
@@ -724,7 +724,7 @@ bool FieldCoding::generateDecodeSource(void)
     source.setModuleNameAndPath("fielddecode", support.outputpath, support.language);
 
     if(support.specialFloat)
-        source.writeIncludeDirective("floatspecial.h");
+        source.writeIncludeDirective("floatspecial");
 
     source.makeLineSeparator();
 

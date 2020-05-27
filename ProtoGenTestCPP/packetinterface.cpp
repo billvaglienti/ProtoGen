@@ -1,25 +1,25 @@
 #include "packetinterface.h"
 
 //! Determine if a demolink packet is valid based on its checksum
-static int validateDemolinkPacket(const testPacket_t* pkt);
+static int validateDemolinkPacket(const testPacket_c* pkt);
 
 //! Compute the Fletcher 16 checksum on a hunk of bytes
 static uint16_t fletcher16( uint8_t const *data, int bytes );
 
 //! \return the packet data pointer from the packet
-uint8_t* getDemolinkPacketData(testPacket_t* pkt)
+uint8_t* getDemolinkPacketData(testPacket_c* pkt)
 {
-    return ((testPacket_t*)pkt)->data;
+    return ((testPacket_c*)pkt)->data;
 }
 
 //! \return the packet data pointer from the packet
-const uint8_t* getDemolinkPacketDataConst(const testPacket_t* pkt)
+const uint8_t* getDemolinkPacketDataConst(const testPacket_c* pkt)
 {
-    return ((testPacket_t*)pkt)->data;
+    return ((testPacket_c*)pkt)->data;
 }
 
 //! Complete a packet after the data have been encoded
-void finishDemolinkPacket(testPacket_t* pkt, int size, uint32_t packetID)
+void finishDemolinkPacket(testPacket_c* pkt, int size, uint32_t packetID)
 {
     uint16_t check;
 
@@ -36,13 +36,13 @@ void finishDemolinkPacket(testPacket_t* pkt, int size, uint32_t packetID)
 }
 
 //! \return the size of a packet from the packet header
-int getDemolinkPacketSize(const testPacket_t* pkt)
+int getDemolinkPacketSize(const testPacket_c* pkt)
 {
     return pkt->length;
 }
 
 //! \return the ID of a packet from the packet header
-uint32_t getDemolinkPacketID(const testPacket_t* pkt)
+uint32_t getDemolinkPacketID(const testPacket_c* pkt)
 {
     return pkt->pkttype;
 }
@@ -55,7 +55,7 @@ uint32_t getDemolinkPacketID(const testPacket_t* pkt)
  * \param byte is the next byte in the series to evaluate
  * \return 1 if a packet with a valid checksum is found, else 0.
  */
-int lookForDemolinkPacket(testPacket_t* pkt, uint8_t byte)
+int lookForDemolinkPacket(testPacket_c* pkt, uint8_t byte)
 {
     // Protect against packet bounds, this should never happen because of code
     // below, but in case pkt is uninitialized we include this.
@@ -120,7 +120,7 @@ int lookForDemolinkPacket(testPacket_t* pkt, uint8_t byte)
  * \param pkt is the packet to check.
  * \return 1 if the packet checksum is correct, else 0.
  */
-int validateDemolinkPacket(const testPacket_t* pkt)
+int validateDemolinkPacket(const testPacket_c* pkt)
 {
     uint16_t check = (pkt->data[pkt->length] << 8) | pkt->data[pkt->length+1];
 

@@ -197,7 +197,7 @@ void ProtocolPacket::parse(void)
             emitWarning("Redefine must be different from name");
         else
         {
-            redefines = parser->lookUpStructure(support.prefix + redefinename + "_t");
+            redefines = parser->lookUpStructure(support.prefix + redefinename + support.typeSuffix);
             if(redefines == nullptr)
             {
                 redefinename.clear();
@@ -206,7 +206,7 @@ void ProtocolPacket::parse(void)
         }
 
         if(redefines != nullptr)
-            structName = support.prefix + redefinename + "_t";
+            structName = support.prefix + redefinename + support.typeSuffix;
     }
 
     // If no ID is supplied use the packet name in upper case,

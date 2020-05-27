@@ -666,7 +666,7 @@ bool ProtocolScaling::generateEncodeSource(void)
 {
     source.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
-    source.writeIncludeDirective("fieldencode.h");
+    source.writeIncludeDirective("fieldencode");
     source.write("\n");
 
     bool ifdefopened = false;
@@ -1334,7 +1334,7 @@ bool ProtocolScaling::generateDecodeSource(void)
 {
     source.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
-    source.writeIncludeDirective("fielddecode.h");
+    source.writeIncludeDirective("fielddecode");
     source.write("\n");
 
     bool ifdefopened = false;

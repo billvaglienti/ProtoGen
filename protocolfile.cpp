@@ -199,7 +199,7 @@ void ProtocolFile::writeIncludeDirectives(const std::vector<std::string>& list)
  * \param include is the module name to include
  * \param comment is a trailing comment for the include directive, can be empty
  * \param global should be true to use brackets ("<>") instead of quotes.
- * \param autoextensions should be true to automatically append ".h" to the
+ * \param autoextensions should be true to automatically append ".h" or ".hpp" to the
  *        include name if it is not already included
  */
 void ProtocolFile::writeIncludeDirective(const std::string& include, const std::string& comment, bool global, bool autoextension)
@@ -211,7 +211,12 @@ void ProtocolFile::writeIncludeDirective(const std::string& include, const std::
 
     // Technically things other than .h* could be included, but not by ProtoGen
     if(!contains(directive, ".h") && autoextension)
-        directive += ".h";
+    {
+        if(support.language == ProtocolSupport::cpp_language)
+            directive += ".hpp";
+        else
+            directive += ".h";
+    }
 
     // Don't include ourselves
     if(directive == fileName())
@@ -455,6 +460,7 @@ void ProtocolFile::deleteModule(const std::string& moduleName)
 {
     deleteFile(moduleName + ".cpp");
     deleteFile(moduleName + ".c");
+    deleteFile(moduleName + ".hpp");
     deleteFile(moduleName + ".h");
 }
 
@@ -561,9 +567,14 @@ void ProtocolHeaderFile::extractExtension(std::string& name)
 {
     ProtocolFile::extractExtension(name);
 
-    // A head file extension must start with ".h" (.h, .hpp, .hxx, etc.)
+    // A header file extension must start with ".h" (.h, .hpp, .hxx, etc.)
     if(!contains(extension, ".h"))
-        extension = ".h";
+    {
+        if(support.language == ProtocolSupport::cpp_language)
+            extension = ".hpp";
+        else
+            extension = ".h";
+    }
 
 }// ProtocolHeaderFile::extractExtension
 
@@ -722,7 +733,11 @@ void ProtocolSourceFile::extractExtension(std::string& name)
     ProtocolFile::extractExtension(name);
 
     if(support.language == ProtocolSupport::cpp_language)
-        extension = ".cpp";
+    {
+        // We cannot allow the .c extension for c++
+        if(extension.empty() || endsWith(extension, ".c"))
+            extension = ".cpp";
+    }
     else
     {
         // A source file extension must start with ".c" (.c, .cpp, .cxx, etc.)
@@ -844,7 +859,7 @@ void ProtocolSourceFile::prepareToAppend(void)
         }
 
         // The source file includes the header
-        write("#include \"" + module + ".h\"\n");
+        writeIncludeDirective(module);
     }
 
 }// ProtocolSourceFile::prepareToAppend
