@@ -101,13 +101,21 @@ The Protocol tag supports the following attributes:
 
 - `name` : The name of the protocol. This will set the name of the primary header file for this protocol, and the generic packet utility functions. In this example (and elsewhere in this file) the name is "Demolink". This attribute is mandatory, all other attributes are optional.
 
-- `prefix` : A string that can be used to prepend structure and file names to manage namespace collisions.
-
-- `typeSuffix` : A string that appends structure and class names. If not provided the suffix is "_t".
-
 - `cpp` : If this attribute is set to `true` the generated outputs will be in C++ language, unless the language is overridden from the command line.
 
 - `c` : If this attribute is set to `true` the generated outputs will be in C language (which is the default), unless the language is overridden from the command line.
+
+- `prefix` : A string that can be used to prepend structure and file names to manage namespace collisions.
+
+- `prefixC` : The same as `prefix`, but applies only if the language target is C.
+
+- `prefixCPP` : The same as `prefix`, but applies only if the language target is C++.
+
+- `typeSuffix` : A string that appends structure and class names. If not provided the suffix is "_t".
+
+- `typeSuffixC` : The same as `typeSuffix`, but applies only if the language target is C.
+
+- `typeSuffixCPP` : The same as `typeSuffix`, but applies only if the language target is C++.
 
 - `title` : The title of the protocol. This is used as the title for the first paragraph in the documentation output. If title is not given the title of the first paragraph will be `name` + "Protocol".
 
@@ -156,6 +164,10 @@ The Protocol tag supports the following attributes:
 - `comment` : The comment for the Protocol tag will be placed at the top of the main header file as a multi-line doxygen comment with a \mainpage tag.
 
 - `pointer` : By default, the generated code does not know the details of the packet datatype, and uses generic pointers (`void*`) to reference packet data. This behaviour can be overridden by specifying the datatype of the packet. If this parameter is specified, the protocol file must include the header file where the packet is defined (or alternatively must define the packet structure itself).
+
+- `pointerC` : Same as `pointer` but applies only if the language target is C.
+
+- `pointerCPP` : Same as `pointer` but applies only if the language target is C++.
 
 - `limitOnEncode` : Set this attribute to "true" to engage functionality to limit the value of a field before encoding it. This value can be set on the `Protocol`, `Packet`, `Structure`, or `Data` tags and it will propagate to all sub elements (unless those elements specify `limitOnEncode="false"`. The limits come from the verify values that are optionally specified for protocol fields, see the section "Encoding Limits" for more details.
 

@@ -423,11 +423,17 @@ std::vector<std::string> ProtocolSupport::getAttriblist(void) const
     attribs.push_back("printfile");
     attribs.push_back("mapfile");
     attribs.push_back("prefix");
+    attribs.push_back("prefixC");
+    attribs.push_back("prefixCPP");
     attribs.push_back("packetStructureSuffix");
     attribs.push_back("packetParameterSuffix");
     attribs.push_back("typeSuffix");
+    attribs.push_back("typeSuffixC");
+    attribs.push_back("typeSuffixCPP");
     attribs.push_back("endian");
     attribs.push_back("pointer");
+    attribs.push_back("pointerC");
+    attribs.push_back("pointerCPP");
     attribs.push_back("supportBool");
     attribs.push_back("limitOnEncode");
     attribs.push_back("C");
@@ -512,8 +518,20 @@ void ProtocolSupport::parse(const XMLAttribute* map)
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);
 
+    // And it can be language specific
+    if(language == c_language)
+        prefix = ProtocolParser::getAttribute("prefixC", map, prefix);
+    else if(language == cpp_language)
+        prefix = ProtocolParser::getAttribute("prefixCPP", map, prefix);
+
     // Packet pointer type (default is 'void')
     pointerType = ProtocolParser::getAttribute("pointer", map, "void*");
+
+    // And it can be language specific
+    if(language == c_language)
+        pointerType = ProtocolParser::getAttribute("pointerC", map, pointerType);
+    else if(language == cpp_language)
+        pointerType = ProtocolParser::getAttribute("pointerCPP", map, pointerType);
 
     // Must be a pointer type
     if(pointerType.back() != '*')
@@ -525,6 +543,12 @@ void ProtocolSupport::parse(const XMLAttribute* map)
 
     // Typedef stucture and packet suffix
     typeSuffix = ProtocolParser::getAttribute("typeSuffix", map, typeSuffix);
+
+    // The type suffix can be language specific
+    if(language == c_language)
+        typeSuffix = ProtocolParser::getAttribute("typeSuffixC", map, typeSuffix);
+    else if(language == cpp_language)
+        typeSuffix = ProtocolParser::getAttribute("typeSuffixCPP", map, typeSuffix);
 
     if(contains(ProtocolParser::getAttribute("endian", map), "little"))
         bigendian = false;
