@@ -644,7 +644,7 @@ std::string ProtocolHeaderFile::getClosingStatement(void)
     }
 
     // close the opening #ifdef
-    close += "#endif // _" + toUpper(module) + "_H\n";
+    close += "#endif // _" + toUpper(module) + replace(toUpper(extension), ".", "_") + "\n";
 
     return close;
 }
@@ -698,7 +698,7 @@ void ProtocolHeaderFile::prepareToAppend(void)
         }
 
         // The opening #ifdef
-        std::string define = "_" + toUpper(module) + "_H";
+        std::string define = "_" + toUpper(module) + replace(toUpper(extension), ".", "_");
         write("#ifndef " + define + "\n");
         write("#define " + define + "\n");
 
