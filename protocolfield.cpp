@@ -6,6 +6,7 @@
 #include "protocolbitfield.h"
 #include "prebuiltSources/floatspecial.h"
 #include <math.h>
+#include <float.h>
 #include <iomanip>
 #include <sstream>
 #include <regex>
@@ -3619,7 +3620,7 @@ std::string ProtocolField::getLimitedArgument(std::string argument) const
             }
 
             // Now check if this max value is less than the in-Memory maximum. If it is then we must apply the max limit. We allow one lsb of fiddle.
-            if(std::nextafter(maxvalue, DBL_MAX) < inMemoryType.getMaximumFloatValue())
+            if(nextafter(maxvalue, DBL_MAX) < inMemoryType.getMaximumFloatValue())
                 skipmax = false;
 
         }// else if we can evaluate the verify value
@@ -3641,7 +3642,7 @@ std::string ProtocolField::getLimitedArgument(std::string argument) const
             }
 
             // Now check if this min value is more than the in-Memory minimum. If it is then we must apply the min limit. We allow one lsb of fiddle.
-            if(std::nextafter(minvalue, -DBL_MAX) > inMemoryType.getMinimumFloatValue())
+            if(nextafter(minvalue, -DBL_MAX) > inMemoryType.getMinimumFloatValue())
                 skipmin = false;
 
         }// else if we can evaluate the verify value

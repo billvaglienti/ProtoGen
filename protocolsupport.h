@@ -3,6 +3,7 @@
 
 #include "tinyxml2.h"
 #include <vector>
+#include <string>
 
 using namespace tinyxml2;
 
