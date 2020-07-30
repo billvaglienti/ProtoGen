@@ -335,7 +335,7 @@ std::string ProtocolPacket::getClassDeclaration_CPP(void) const
     else
         output += "class " + typeName + " : public " + redefines->typeName + "\n";
 
-        output += "{\n";
+    output += "{\n";
 
     // All members of the structure are public.
     output += "public:\n";

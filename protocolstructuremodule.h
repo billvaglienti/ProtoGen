@@ -136,6 +136,9 @@ protected:
     //! Write data to the source and header files for helper functions for this structure but not its children
     void createTopLevelStructureHelperFunctions(void);
 
+    //! Get the text used to print a formatted string function
+    static std::string getToFormattedStringFunction(void);
+
     //! Get the text used to extract text for text read functions
     static std::string getExtractTextFunction(void);
 

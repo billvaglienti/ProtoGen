@@ -366,6 +366,11 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
             compareHeader = &_compareHeader;
             compareSource = &_compareSource;
         }
+
+        // Make sure to provide the helper functions
+        compareSource->makeLineSeparator();
+        compareSource->writeOnce(getToFormattedStringFunction());
+        compareSource->makeLineSeparator();
     }
 
     if(mapEncode)
@@ -413,7 +418,9 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
             printSource = &_printSource;
         }
 
-        // Make sure to provide the extractText function
+        // Make sure to provide the helper functions
+        printSource->makeLineSeparator();
+        printSource->writeOnce(getToFormattedStringFunction());
         printSource->makeLineSeparator();
         printSource->writeOnce(getExtractTextFunction());
         printSource->makeLineSeparator();
@@ -471,6 +478,7 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
         compareHeader->writeIncludeDirective("string", std::string(), true, false);
         compareSource->writeIncludeDirective("sstream", std::string(), true, false);
         compareSource->writeIncludeDirective("iomanip", std::string(), true, false);
+        compareSource->writeIncludeDirective("cstring", std::string(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
@@ -492,6 +500,7 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
         printHeader->writeIncludeDirective("string", std::string(), true, false);
         printSource->writeIncludeDirective("sstream", std::string(), true, false);
         printSource->writeIncludeDirective("iomanip", std::string(), true, false);
+        printSource->writeIncludeDirective("cstring", std::string(), true, false);
 
         if(support.language == ProtocolSupport::cpp_language)
         {
@@ -1037,6 +1046,33 @@ void ProtocolStructureModule::createTopLevelStructureHelperFunctions(void)
     }
 
 }// ProtocolStructureModule::createTopLevelStructureFunctions
+
+
+//! Get the text used to print a formatted string function
+std::string ProtocolStructureModule::getToFormattedStringFunction(void)
+{
+    return R"(//! Create a numeric string with a specific number of decimal places
+static std::string to_formatted_string(double number, int precision);
+
+/*!
+ * Create a numeric string with a specific number of decimal places
+ * \param number is the number to convert to string
+ * \param precision is the number of decimal places to output
+ * \return the number as a string
+ */
+std::string to_formatted_string(double number, int precision)
+{
+    // This function exists becuase of a bug in GCC which prevents this from working correctly:
+    // string = (std::stringstream() << std::setprecision(7) << _pg_user1->indices[_pg_i]).str()
+
+    std::stringstream stream;
+    stream << std::setprecision(precision);
+    stream << number;
+    return stream.str();
+
+}// to_formatted_string)";
+
+}// ProtocolStructureModule::getToFormattedStringFunction
 
 
 //! Get the text used to extract text for text read functions

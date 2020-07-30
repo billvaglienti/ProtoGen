@@ -2739,11 +2739,11 @@ std::string ProtocolField::getComparisonString(void) const
 
             // And finally the values go into the _pg_report
             if(!printScalerString.empty())
-                output += " + \" '\" + (std::stringstream() << std::setprecision(16) << " + access1 + printScalerString + ").str() + \"' '\" + (std::stringstream() << std::setprecision(16) << " + access2 + printScalerString + ").str() + \"'\\n\";\n";
+                output += " + \" '\" + to_formatted_string(" + access1 + printScalerString + ", 16) + \"' '\" + to_formatted_string(" + access2 + printScalerString + ", 16) + \"'\\n\";\n";
             else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
-                output += " + \" '\" + (std::stringstream() << std::setprecision(16) << " + access1 + ").str() + \"' '\" + (std::stringstream() << std::setprecision(16) << " + access2 + ").str() + \"'\\n\";\n";
+                output += " + \" '\" + to_formatted_string(" + access1 + ", 16) + \"' '\" + to_formatted_string(" + access2 + ", 16) + \"'\\n\";\n";
             else if(inMemoryType.isFloat)
-                output += " + \" '\" + (std::stringstream() << std::setprecision(7) << " + access1 + ").str() + \"' '\" + (std::stringstream() << std::setprecision(7) << " + access2 + ").str() + \"'\\n\";\n";
+                output += " + \" '\" + to_formatted_string(" + access1 + ", 7) + \"' '\" + to_formatted_string(" + access2 + ", 7) + \"'\\n\";\n";
             else
                 output += " + \" '\" + std::to_string(" + access1 + ") + \"' '\" + std::to_string(" + access2 + ") + \"'\\n\";\n";
 
@@ -2844,11 +2844,11 @@ std::string ProtocolField::getTextPrintString(void) const
 
             // And finally the values go into the _pg_report
             if(!printScalerString.empty())
-                output += " + \" '\" +  (std::stringstream() << std::setprecision(16) << " + getEncodeFieldAccess(true) + printScalerString + ").str() + \"'\\n\";\n";
+                output += " + \" '\" +  to_formatted_string(" + getEncodeFieldAccess(true) + printScalerString + ", 16) + \"'\\n\";\n";
             else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
-                output += " + \" '\" +  (std::stringstream() << std::setprecision(16) << " + getEncodeFieldAccess(true) + ").str() + \"'\\n\";\n";
+                output += " + \" '\" +  to_formatted_string(" + getEncodeFieldAccess(true) + ", 16) + \"'\\n\";\n";
             else if(inMemoryType.isFloat)
-                output += " + \" '\" +  (std::stringstream() << std::setprecision(7) << " + getEncodeFieldAccess(true) + ").str() + \"'\\n\";\n";
+                output += " + \" '\" +  to_formatted_string(" + getEncodeFieldAccess(true) + ", 7) + \"'\\n\";\n";
             else
                 output += " + \" '\" + std::to_string(" + getEncodeFieldAccess(true) + ") + \"'\\n\";\n";
 
@@ -2883,11 +2883,17 @@ std::string ProtocolField::getTextReadString(void) const
         std::string spacing = TAB_IN;
 
         output += getDecodeArrayIterationCode(spacing, true);
-        if(isArray())
+
+        if(is2dArray())
         {
             spacing += TAB_IN;
-            if(is2dArray())
-                spacing += TAB_IN;
+            output += spacing + "{\n";
+            spacing += TAB_IN;
+        }
+        else if(isArray())
+        {
+            output += spacing + "{\n";
+            spacing += TAB_IN;
         }
 
         if(inMemoryType.isStruct)
@@ -2916,10 +2922,12 @@ std::string ProtocolField::getTextReadString(void) const
 
             // The array indices are part of the key text
             if(isArray())
+            {
                 output += " + \"[\" + std::to_string(_pg_i) + \"]\"";
 
-            if(is2dArray())
-                output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
+                if(is2dArray())
+                    output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
+            }
 
             output += ", _pg_source, &_pg_fieldcount);\n";
 
@@ -2950,6 +2958,13 @@ std::string ProtocolField::getTextReadString(void) const
             }
 
         }// else not a struct
+
+        // Close the block under the for loop(s)
+        if(isArray())
+        {
+            spacing = spacing.substr(0, spacing.length() - TAB_IN.length());
+            output += spacing + "}\n";
+        }
 
     }// else numeric output
 
@@ -3077,11 +3092,17 @@ std::string ProtocolField::getMapDecodeString(void) const
         std::string spacing = TAB_IN;
 
         output += getEncodeArrayIterationCode(spacing, true);
-        if(isArray())
+
+        if(is2dArray())
         {
             spacing += TAB_IN;
-            if(is2dArray())
-                spacing += TAB_IN;
+            output += spacing + "{\n";
+            spacing += TAB_IN;
+        }
+        else if(isArray())
+        {
+            output += spacing + "{\n";
+            spacing += TAB_IN;
         }
 
         if(inMemoryType.isStruct)
@@ -3149,6 +3170,13 @@ std::string ProtocolField::getMapDecodeString(void) const
             output += spacing + "}\n";
 
         }// else not a struct
+
+        // Close the block under the for loop(s)
+        if(isArray())
+        {
+            spacing = spacing.substr(0, spacing.length() - TAB_IN.length());
+            output += spacing + "}\n";
+        }
 
     }// else numeric output
 
@@ -4274,7 +4302,7 @@ std::string ProtocolField::getDecodeStringForStructure(bool isStructureMember) c
 {
     std::string output;
     std::string access;
-    std::string spacing = "    ";
+    std::string spacing = TAB_IN;
 
     if(encodedType.isNull)
         return output;
