@@ -1,5 +1,6 @@
 #include "protocolsupport.h"
 #include "protocolparser.h"
+#include <algorithm>
 
 //! Split a string into multiple sub strings spearated by a separator.
 static std::vector<std::string> _split(const std::string& text, const std::string& sep, bool keepemptyparts, bool anyof);

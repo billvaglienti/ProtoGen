@@ -299,7 +299,15 @@ std::string ProtocolBitfield::getInnerDecodeString(const std::string& dataname, 
     // This mask protects against any other bits we don't want. We don't
     // need the mask if we are grabbing the most significant bit of this byte
     if((numbits + right) < 8)
-        mask = " & 0x" + toUpper((std::stringstream() << std::hex << maxvalueoffield(numbits)).str());
+    {
+        // This exists because of a bug in GCC which prevents this from working correctly:
+        // mask = " & 0x" + toUpper((std::stringstream() << std::hex << maxvalueoffield(numbits)).str());
+
+        std::stringstream stream;
+        stream << std::hex;
+        stream << maxvalueoffield(numbits);
+        mask = " & 0x" + toUpper(stream.str());
+    }
 
     // The value of the bit count after moving all the bits
     int bitoffset = bitcount + numbits;
@@ -349,8 +357,12 @@ std::string ProtocolBitfield::getComplexDecodeString(const std::string& spacing,
         if(byteoffset)
             offset = " + " + std::to_string(byteoffset);
 
+        std::stringstream stream;
+        stream << std::hex;
+        stream << maxvalueoffield(leadingbits);
+
         // This mask protects against any other bits we don't want
-        std::string mask = " & 0x" + toUpper((std::stringstream() << std::hex << maxvalueoffield(leadingbits)).str());
+        std::string mask = " & 0x" + toUpper(stream.str());
 
         output += spacing + argument + " = (" + dataname + "[" + dataindex + offset + "]" + mask + ");\n\n";
 

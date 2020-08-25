@@ -5,11 +5,11 @@
 #include "protocolstructuremodule.h"
 #include "protocolbitfield.h"
 #include "prebuiltSources/floatspecial.h"
-#include <math.h>
-#include <float.h>
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <regex>
+#include <limits>
 
 TypeData::TypeData(ProtocolSupport sup) :
     isBool(false),
@@ -181,18 +181,18 @@ double TypeData::getMaximumFloatValue(void) const
         // Float encodings use float rules
         if(bits <= 16)
         {
-            return float16ToFloat32(float32ToFloat16( FLT_MAX, sigbits), sigbits);
+            return float16ToFloat32(float32ToFloat16( std::numeric_limits<float>::max(), sigbits), sigbits);
         }
         else if(bits <= 24)
         {
-            return float24ToFloat32(float32ToFloat24( FLT_MAX, sigbits), sigbits);
+            return float24ToFloat32(float32ToFloat24( std::numeric_limits<float>::max(), sigbits), sigbits);
         }
         else if(bits <= 32)
         {
-            return FLT_MAX;
+            return std::numeric_limits<float>::max();
         }
         else
-            return DBL_MAX;
+            return std::numeric_limits<double>::max();
     }
     else
     {
@@ -215,18 +215,19 @@ double TypeData::getMinimumFloatValue(void) const
         // Float encodings use float rules
         if(bits <= 16)
         {
-            return float16ToFloat32(float32ToFloat16(-FLT_MAX, sigbits), sigbits);
+            // Note that min() is the smallest positive number
+            return float16ToFloat32(float32ToFloat16(-1*std::numeric_limits<float>::max(), sigbits), sigbits);
         }
         else if(bits <= 24)
         {
-            return float24ToFloat32(float32ToFloat24(-FLT_MAX, sigbits), sigbits);
+            return float24ToFloat32(float32ToFloat24(-1*std::numeric_limits<float>::max(), sigbits), sigbits);
         }
         else if(bits <= 32)
         {
-            return -FLT_MAX;
+            return -1*std::numeric_limits<float>::max();
         }
         else
-            return -DBL_MAX;
+            return -1*std::numeric_limits<double>::max();
     }
     else
     {
@@ -3648,7 +3649,7 @@ std::string ProtocolField::getLimitedArgument(std::string argument) const
             }
 
             // Now check if this max value is less than the in-Memory maximum. If it is then we must apply the max limit. We allow one lsb of fiddle.
-            if(nextafter(maxvalue, DBL_MAX) < inMemoryType.getMaximumFloatValue())
+            if(nextafter(maxvalue, std::numeric_limits<double>::max()) < inMemoryType.getMaximumFloatValue())
                 skipmax = false;
 
         }// else if we can evaluate the verify value
@@ -3670,7 +3671,7 @@ std::string ProtocolField::getLimitedArgument(std::string argument) const
             }
 
             // Now check if this min value is more than the in-Memory minimum. If it is then we must apply the min limit. We allow one lsb of fiddle.
-            if(nextafter(minvalue, -DBL_MAX) > inMemoryType.getMinimumFloatValue())
+            if(nextafter(minvalue, -std::numeric_limits<double>::max()) > inMemoryType.getMinimumFloatValue())
                 skipmin = false;
 
         }// else if we can evaluate the verify value
@@ -5005,9 +5006,9 @@ std::string ProtocolField::getNumberString(double number, int bits) const
     // rounding, for example 65.534999999999997 instead of 65.535. Hence
     // use one less (which is what we used to have).
     if((bits <= 32) || !support.float64)
-        stream << std::setprecision(FLT_DECIMAL_DIG);
+        stream << std::setprecision(std::numeric_limits<float>::max_digits10);
     else
-        stream << std::setprecision(DBL_DECIMAL_DIG - 1);
+        stream << std::setprecision(std::numeric_limits<double>::max_digits10 - 1);
 
     // Now put the number in the stream
     stream << number;
@@ -5073,7 +5074,7 @@ std::string ProtocolField::getDisplayNumberString(double number)
         // Note DBL_DECIMAL_DIG is 17 in IEE-754. This results in unsightly
         // rounding, for example 65.534999999999997 instead of 65.535. Hence
         // use one less (which is what we used to have).
-        stream << std::setprecision(DBL_DECIMAL_DIG - 1);
+        stream << std::setprecision(std::numeric_limits<double>::max_digits10 - 1);
 
         // Now put the number in the stream
         stream << number;
