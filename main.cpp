@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
     parser.disableCSS(contains(arguments, "-no-css"));
     parser.enableTableOfContents(contains(arguments, "-table-of-contents"));
 
+    if(contains(arguments, "-lang-py"))
+        parser.setLanguageOverride(ProtocolSupport::python_language);
     if(contains(arguments, "-lang-c"))
         parser.setLanguageOverride(ProtocolSupport::c_language);
     else if(contains(arguments, "-lang-cpp"))
@@ -230,6 +232,8 @@ Usage: ProtoGen inputfile.xml <outputpath> <otherinputfiles.xml> -options
 
   -titlepage <file>  : Title page file with text at the beginning of the
                        markdown.
+  -lang-py           : Force the output language to Python, overriding the language
+                       specifier in the protocol file.
   -lang-c            : Force the output language to C, overriding the language
                        specifier in the protocol file.
   -lang-cpp          : Force the output language to C++, overriding the

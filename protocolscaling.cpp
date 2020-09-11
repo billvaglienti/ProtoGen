@@ -3,9 +3,13 @@
 
 /// TODO: make scalers positive
 
+//! ScalingInterface Constructor
+ScalingInterface::ScalingInterface(const ProtocolSupport &sup) : support(sup)
+{
+} // ScalingInterface:: ScalingInterface
 
 //! Determine if type is signed
-bool ProtocolScaling::isTypeSigned(inmemorytypes_t type) const
+bool ScalingInterface::isTypeSigned(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -21,7 +25,7 @@ bool ProtocolScaling::isTypeSigned(inmemorytypes_t type) const
 }
 
 //! Determine if type is signed
-bool ProtocolScaling::isTypeSigned(encodedtypes_t type) const
+bool ScalingInterface::isTypeSigned(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -43,7 +47,7 @@ bool ProtocolScaling::isTypeSigned(encodedtypes_t type) const
 }
 
 //! Determine if type is floating point
-bool ProtocolScaling::isTypeFloating(inmemorytypes_t type) const
+bool ScalingInterface::isTypeFloating(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -57,21 +61,21 @@ bool ProtocolScaling::isTypeFloating(inmemorytypes_t type) const
 }
 
 //! Determine if type is floating point
-bool ProtocolScaling::isTypeFloating(encodedtypes_t type) const
+bool ScalingInterface::isTypeFloating(encodedtypes_t type) const
 {
     (void)type;
     return false;
 }
 
 //! Determine if type is bitfield
-bool ProtocolScaling::isTypeBitfield(inmemorytypes_t type) const
+bool ScalingInterface::isTypeBitfield(inmemorytypes_t type) const
 {
     (void)type;
     return false;
 }
 
 //! Determine if type is bitfield
-bool ProtocolScaling::isTypeBitfield(encodedtypes_t type) const
+bool ScalingInterface::isTypeBitfield(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -85,7 +89,7 @@ bool ProtocolScaling::isTypeBitfield(encodedtypes_t type) const
 }
 
 //! Convert type to signed equivalent
-ProtocolScaling::inmemorytypes_t ProtocolScaling::convertTypeToSigned(inmemorytypes_t type) const
+ScalingInterface::inmemorytypes_t ScalingInterface::convertTypeToSigned(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -98,7 +102,7 @@ ProtocolScaling::inmemorytypes_t ProtocolScaling::convertTypeToSigned(inmemoryty
 }
 
 //! Convert type to signed equivalent
-ProtocolScaling::encodedtypes_t ProtocolScaling::convertTypeToSigned(encodedtypes_t type) const
+ScalingInterface::encodedtypes_t ScalingInterface::convertTypeToSigned(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -117,7 +121,7 @@ ProtocolScaling::encodedtypes_t ProtocolScaling::convertTypeToSigned(encodedtype
 }
 
 //! Convert type to unsigned equivalent
-ProtocolScaling::inmemorytypes_t ProtocolScaling::convertTypeToUnsigned(inmemorytypes_t type) const
+ScalingInterface::inmemorytypes_t ScalingInterface::convertTypeToUnsigned(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -130,7 +134,7 @@ ProtocolScaling::inmemorytypes_t ProtocolScaling::convertTypeToUnsigned(inmemory
 }
 
 //! Convert type to unsigned equivalent
-ProtocolScaling::encodedtypes_t ProtocolScaling::convertTypeToUnsigned(encodedtypes_t type) const
+ScalingInterface::encodedtypes_t ScalingInterface::convertTypeToUnsigned(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -147,7 +151,7 @@ ProtocolScaling::encodedtypes_t ProtocolScaling::convertTypeToUnsigned(encodedty
 }
 
 //! Determine the encoded length of type
-int ProtocolScaling::typeLength(inmemorytypes_t type) const
+int ScalingInterface::typeLength(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -173,7 +177,7 @@ int ProtocolScaling::typeLength(inmemorytypes_t type) const
 }
 
 //! Determine the encoded length of type
-int ProtocolScaling::typeLength(encodedtypes_t type) const
+int ScalingInterface::typeLength(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -222,7 +226,7 @@ int ProtocolScaling::typeLength(encodedtypes_t type) const
  * \param length is the type length in bytes.
  * \return The in-memory type enumeration
  */
-ProtocolScaling::inmemorytypes_t ProtocolScaling::createInMemoryType(bool issigned, bool isfloat, int length) const
+ScalingInterface::inmemorytypes_t ScalingInterface::createInMemoryType(bool issigned, bool isfloat, int length) const
 {
     if(isfloat)
     {
@@ -263,7 +267,7 @@ ProtocolScaling::inmemorytypes_t ProtocolScaling::createInMemoryType(bool issign
  * \param length is the type length in bytes.
  * \return The encoded type enumeration
  */
-ProtocolScaling::encodedtypes_t ProtocolScaling::createEncodedType(bool issigned, int length) const
+ScalingInterface::encodedtypes_t ScalingInterface::createEncodedType(bool issigned, int length) const
 {
     if(issigned)
     {
@@ -308,7 +312,7 @@ ProtocolScaling::encodedtypes_t ProtocolScaling::createEncodedType(bool issigned
 
 
 //! Return the name in code of this type
-std::string ProtocolScaling::typeName(inmemorytypes_t type) const
+std::string ScalingInterface::typeName(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -327,7 +331,7 @@ std::string ProtocolScaling::typeName(inmemorytypes_t type) const
 }
 
 //! Return the name in code of this type
-std::string ProtocolScaling::typeName(encodedtypes_t type) const
+std::string ScalingInterface::typeName(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -366,7 +370,7 @@ std::string ProtocolScaling::typeName(encodedtypes_t type) const
 }
 
 //! Return the name in function signature of this type
-std::string ProtocolScaling::typeSigName(inmemorytypes_t type) const
+std::string ScalingInterface::typeSigName(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -386,7 +390,7 @@ std::string ProtocolScaling::typeSigName(inmemorytypes_t type) const
 
 
 //! Return the name in function signature of this type
-std::string ProtocolScaling::typeSigName(encodedtypes_t type) const
+std::string ScalingInterface::typeSigName(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -412,8 +416,38 @@ std::string ProtocolScaling::typeSigName(encodedtypes_t type) const
     }
 }
 
+
+std::string ScalingInterface::ctypeName(encodedtypes_t type) const
+{
+    switch(type)
+    {
+    default:             return "unknown";
+    case longbitencoded: return "longBitfield";
+    case uint64encoded:  return "c_ulonglong";
+    case int64encoded:   return "c_longlong";
+    case uint56encoded:  return "c_ulonglong";;
+    case int56encoded:   return "c_longlong";
+    case uint48encoded:  return "c_ulonglong";
+    case int48encoded:   return "c_longlong";
+    case uint40encoded:  return "c_ulonglong";
+    case int40encoded:   return "c_longlong";
+    case bitencoded:     return "bitfield";
+    case uint32encoded:  return "c_uint";
+    case int32encoded:   return "c_int";
+    case uint24encoded:  return "c_uint";
+    case int24encoded:   return "c_int";
+    case uint16encoded:  return "c_ushort";
+    case int16encoded:   return "c_short";
+    case uint8encoded:   return "c_ubyte";
+    case int8encoded:    return "c_byte";
+    }
+
+
+}
+
+
 //! Determine if type is supported by this protocol
-bool ProtocolScaling::isTypeSupported(inmemorytypes_t type) const
+bool ScalingInterface::isTypeSupported(inmemorytypes_t type) const
 {
     switch(type)
     {
@@ -430,7 +464,7 @@ bool ProtocolScaling::isTypeSupported(inmemorytypes_t type) const
 }
 
 //! Determine if type is supported by this protocol
-bool ProtocolScaling::isTypeSupported(encodedtypes_t type) const
+bool ScalingInterface::isTypeSupported(encodedtypes_t type) const
 {
     switch(type)
     {
@@ -457,7 +491,7 @@ bool ProtocolScaling::isTypeSupported(encodedtypes_t type) const
 
 
 //! Determine if both types are supported by this protocol
-bool ProtocolScaling::areTypesSupported(inmemorytypes_t inmemory, encodedtypes_t encoded) const
+bool ScalingInterface::areTypesSupported(inmemorytypes_t inmemory, encodedtypes_t encoded) const
 {
     return isTypeSupported(inmemory) && isTypeSupported(encoded);
 }
@@ -488,47 +522,69 @@ ProtocolScaling::ProtocolScaling(ProtocolSupport sup) :
  */
 bool ProtocolScaling::generate(std::vector<std::string>& fileNameList, std::vector<std::string>& filePathList)
 {
-    if(generateEncodeHeader())
+
+   // Determine the output language
+   ScalingInterface* generator = nullptr;
+
+   if ( support.language == support.python_language)
+       generator = new PythonScaledCoding(support);
+   else
+       generator = new CandCppScaledCoding(support);
+
+
+    if(generator->generateEncodeHeader(header))
     {
         fileNameList.push_back(header.fileName());
         filePathList.push_back(header.filePath());
     }
     else
+    {
+        delete generator;
         return false;
+    }
 
-    if(generateEncodeSource())
+    if(generator->generateEncodeSource(source))
     {
         fileNameList.push_back(source.fileName());
         filePathList.push_back(source.filePath());
     }
     else
+    {
+        delete generator;
         return false;
+    }
 
-    if(generateDecodeHeader())
+    if(generator->generateDecodeHeader(header))
     {
         fileNameList.push_back(header.fileName());
         filePathList.push_back(header.filePath());
     }
     else
+    {
+        delete generator;
         return false;
-
-    if(generateDecodeSource())
+    }
+    if(generator->generateDecodeSource(source))
     {
         fileNameList.push_back(source.fileName());
         filePathList.push_back(source.filePath());
     }
     else
+    {
+        delete generator;
         return false;
+    }
 
+
+    delete generator;
     return true;
 }
-
 
 /*!
  * Generate the header file for protocols caling
  * \return true if the file is generated.
  */
-bool ProtocolScaling::generateEncodeHeader(void)
+bool CandCppScaledCoding::generateEncodeHeader(ProtocolHeaderFile &header)
 {
     header.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
@@ -662,7 +718,7 @@ bool ProtocolScaling::generateEncodeHeader(void)
  * Generate the source file for protocols caling
  * \return true if the file is generated.
  */
-bool ProtocolScaling::generateEncodeSource(void)
+bool CandCppScaledCoding::generateEncodeSource(ProtocolSourceFile &source)
 {
     source.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
@@ -734,7 +790,7 @@ bool ProtocolScaling::generateEncodeSource(void)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-std::string ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::briefEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string scalingtype;
 
@@ -788,7 +844,7 @@ std::string ProtocolScaling::briefEncodeComment(inmemorytypes_t inmemory, encode
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-std::string ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullEncodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string comment= ("/*!\n");
 
@@ -832,7 +888,7 @@ std::string ProtocolScaling::fullEncodeComment(inmemorytypes_t inmemory, encoded
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-std::string ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::encodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
     {
@@ -876,7 +932,7 @@ std::string ProtocolScaling::encodeSignature(inmemorytypes_t inmemory, encodedty
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-std::string ProtocolScaling::fullEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
         return fullBitfieldEncodeFunction(inmemory, encoded, bigendian);
@@ -894,7 +950,7 @@ std::string ProtocolScaling::fullEncodeFunction(inmemorytypes_t inmemory, encode
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-std::string ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullBitfieldEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string constantone;
 
@@ -970,7 +1026,7 @@ std::string ProtocolScaling::fullBitfieldEncodeFunction(inmemorytypes_t inmemory
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullFloatEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string function = encodeSignature(inmemory, encoded, bigendian) + "\n";
 
@@ -1090,7 +1146,7 @@ std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, e
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-std::string ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullIntegerEncodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string function = encodeSignature(inmemory, encoded, bigendian) + "\n";
 
@@ -1228,7 +1284,7 @@ std::string ProtocolScaling::fullIntegerEncodeFunction(inmemorytypes_t inmemory,
  * Generate the header file for protocols caling
  * \return true if the file is generated.
  */
-bool ProtocolScaling::generateDecodeHeader(void)
+bool CandCppScaledCoding::generateDecodeHeader(ProtocolHeaderFile &header)
 {
     header.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
@@ -1330,7 +1386,7 @@ bool ProtocolScaling::generateDecodeHeader(void)
  * Generate the source file for protocols caling
  * \return true if the file is generated.
  */
-bool ProtocolScaling::generateDecodeSource(void)
+bool CandCppScaledCoding::generateDecodeSource(ProtocolSourceFile &source)
 {
     source.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
@@ -1402,7 +1458,7 @@ bool ProtocolScaling::generateDecodeSource(void)
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the one line function comment.
  */
-std::string ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::briefDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string scalingtype;
 
@@ -1456,7 +1512,7 @@ std::string ProtocolScaling::briefDecodeComment(inmemorytypes_t inmemory, encode
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the full multi-line function comment.
  */
-std::string ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullDecodeComment(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string comment= ("/*!\n");
 
@@ -1531,7 +1587,7 @@ std::string ProtocolScaling::fullDecodeComment(inmemorytypes_t inmemory, encoded
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return The string that represents the function signature, without a trailing semicolon
  */
-std::string ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::decodeSignature(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     if(isTypeBitfield(encoded))
     {
@@ -1585,7 +1641,7 @@ std::string ProtocolScaling::decodeSignature(inmemorytypes_t inmemory, encodedty
  * \param bigendian should be true if the function outputs big endian byte order.
  * \return the function as a string
  */
-std::string ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
+std::string CandCppScaledCoding::fullDecodeFunction(inmemorytypes_t inmemory, encodedtypes_t encoded, bool bigendian) const
 {
     std::string function = decodeSignature(inmemory, encoded, bigendian) + "\n";
     function += "{\n";
@@ -1631,3 +1687,860 @@ std::string ProtocolScaling::fullDecodeFunction(inmemorytypes_t inmemory, encode
     return function;
 
 }// ProtocolScaling::fullDecodeFunction
+
+
+
+
+/*!
+ *  Generate the encode header file - return since python does not have headers
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return true
+ */
+bool PythonScaledCoding::generateEncodeHeader(ProtocolHeaderFile &header)
+{
+    (void) header;
+    return true;
+
+} // PythonScaledCoding::generateEncodeHeader
+
+/*!
+ *  Generate the encode source file
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return true is the file is successfully written
+ */
+bool PythonScaledCoding::generateEncodeSource(ProtocolSourceFile &source)
+{
+    source.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
+
+    source.writeIncludeDirective("fieldencode");
+    source.write("\n");
+
+    bool ifdefopened = false;
+
+    // Iterate all inmemorys to all encodings.
+    for(int i = (int)float64inmemory; i <= (int)int8inmemory; i++)
+    {
+        inmemorytypes_t inmemorytype = (inmemorytypes_t)i;
+        for(int j = (int)longbitencoded; j <= (int)int8encoded; j++)
+        {
+            encodedtypes_t encodedtype = (encodedtypes_t)j;
+
+            // Key concept: the encoded cannot be larger than the inmemory
+            if(typeLength(encodedtype) > typeLength(inmemorytype))
+                continue;
+
+            // Key concept: the types must be supported in the protocol
+            if(!areTypesSupported(inmemorytype, encodedtype))
+                continue;
+
+            // If the inmemory or encoded type requires 64-bit support we have
+            // to protect it against compilers that cannot handle that
+            if((ifdefopened == false) && ((typeLength(encodedtype) > 4) || (typeLength(inmemorytype) > 4)))
+            {
+                ifdefopened = true;
+                source.write("\n#ifdef UINT64_MAX\n");
+            }
+            else if((ifdefopened == true) && (typeLength(encodedtype) <= 4) && (typeLength(inmemorytype) <= 4))
+            {
+                ifdefopened = false;
+                source.write("\n#endif // UINT64_MAX\n");
+            }
+
+            // big endian
+            source.write("\n");
+            source.write(fullEncodeFunction(inmemorytype, encodedtype, true) + "\n");
+
+            // little endian
+            if((typeLength(encodedtype) > 1) && !isTypeBitfield(encodedtype))
+            {
+                source.write("\n");
+                source.write(fullEncodeFunction(inmemorytype, encodedtype, false) + "\n");
+            }
+
+        }// for all output byte counts
+
+    }// for all input types
+
+    source.write("\n");
+
+    if(ifdefopened)
+        source.write("\n#endif // UINT64_MAX\n");
+
+    return source.flush();
+
+    return true;
+
+} // PythonScaledCoding::generateEncodeSource
+
+
+/*!
+ *  Generate the one line brief comment for the encode function
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the summary as a string
+ */
+std::string PythonScaledCoding::briefEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std::string scalingtype;
+
+    if(isTypeFloating(source))
+        scalingtype = "floating point";
+    else
+        scalingtype = "integer";
+
+    if(isTypeBitfield(encoded))
+    {
+        if(typeLength(encoded) > 4)
+            return std::string("Scale a " + typeName(source) + " using " + scalingtype + " scaling to the base integer type used for long bitfields.");
+        else
+            return std::string("Scale a " + typeName(source) + " using " + scalingtype + " scaling to the base integer type used for bitfields.");
+    }
+    else
+    {
+        if(typeLength(encoded) == 1)
+        {
+            // No endian concerns if using only 1 byte
+            if(isTypeSigned(encoded))
+                return std::string("Encode a " + typeName(source) + " on a byte stream by " + scalingtype + " scaling to fit in 1 signed byte.");
+            else
+                return std::string("Encode a " + typeName(source) + " on a byte stream by " + scalingtype + " scaling to fit in 1 unsigned byte.");
+        }
+        else
+        {
+            std::string byteLength = std::to_string(typeLength(encoded));
+            std::string endian;
+
+            if(bigendian)
+                endian = "big";
+            else
+                endian = "little";
+
+            if(isTypeSigned(encoded))
+                return std::string("Encode a " + typeName(source) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " signed bytes in " + endian +" endian order.");
+            else
+                return std::string("Encode a " + typeName(source) + " on a byte stream by " + scalingtype + " scaling to fit in " + byteLength + " unsigned bytes in " + endian + " endian order.");
+
+        }// If multi-byte
+    }
+} // PythonScaledCoding::briefEncodeComment
+
+
+/*!
+ *  Generate the full comment for the encode function
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the docstring as a string
+ */
+std::string PythonScaledCoding::fullEncodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+
+    std::string summary = briefEncodeComment(source, encoded, bigendian);
+    std::string args = "    Args:\n";
+    std::string returns = "    Return:\n";
+
+    /// TODO: index type? does bit field return something?
+
+    if(isTypeBitfield(encoded))
+    {
+        args += "        value (?): the number to scale.\n";
+        args += "        minimum (float): the minimum value that can be encoded.\n";
+        args += "        scaler (float): when multiplied by value creates the encoded integer.\n";
+        args += "        bits (int): the number of bits in the bitfield, used to limit the returned value.\n";
+        returns += "        (value-min)*scaler.\n";
+    }
+    else
+    {
+        if (isTypeFloating(encoded))
+            args += "        value (float): the number to encode.\n";
+        else
+            args += "        value (int): the number to encode.\n";
+
+        args += "        byteA (bytearray): the byte stream which receives the encoded data.\n";
+        args += "        index (int): gives the location of the first byte in the byte stream, and\n";
+        args += "                will be incremented by " + std::to_string(typeLength(encoded)) + " when this function is complete.\n";
+
+        if(isTypeSigned(encoded))
+            args += "        scaler (float): when multiplied by value creates the encoded integer: encoded = value*scaler.\n";
+        else
+        {
+            args += "        minimum (float): the minimum value that can be encoded.\n";
+            args += "        scaler (float): when multiplied by value createss the encoded integer: encoded = (value-min)*scaler.\n";
+        }
+
+        returns += "        index (int): the updated index\n";
+    }
+
+    std::string quotes = R"(    """)";
+    std::string comment = quotes + summary + args + returns + quotes + "\n";
+
+    return comment;
+} // PythonScaledCoding::fullEncodeComment
+
+
+/*!
+ *  Generate the encode function signature including argument annotations
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the signature as a string
+ */
+std::string PythonScaledCoding::encodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std:: string type ="";
+
+    if (contains(typeName(source), "float"))
+        type = "float";
+    else
+        type = "int";
+
+    if(isTypeBitfield(encoded))
+    {
+        if(typeLength(encoded) > 4)
+            return std::string("def " + typeSigName(source) + "ScaledToLongBitfield(value: " + type + ", minimum: float, scaler: float, bits: int) -> int:\n");
+        else
+            return std::string("def " + typeSigName(source) + "ScaledToBitfield(value: " + type + ", minimum: float, scaler: float, bits: int) -> int:\n");
+    }
+    else if(typeLength(encoded) == 1)
+    {
+        // No endian concerns if using only 1 byte
+        if(isTypeSigned(encoded))
+            return std::string("def " + typeSigName(source) + "ScaledTo1SignedByte(value: " + type + ", byteA: bytearray, index: int, scaler: float) -> int:\n");
+
+        else
+            return std::string("def " + typeSigName(source) + "ScaledTo1UnsignedByte(value: " + type + ", byteA: bytearray, index: int, minimum: float, scaler: float) -> int:\n");
+
+    }
+    else
+    {
+        std::string byteLength = std::to_string(typeLength(encoded));
+        std::string endian;
+
+        if(bigendian)
+            endian = "Be";
+        else
+            endian = "Le";
+
+        if(isTypeSigned(encoded))
+            return std::string("def "  + typeSigName(source) + "ScaledTo" + byteLength + "Signed" + endian + "Bytes(value: " + type + ", byteA: bytearray, index: int, scaler: float) -> int:\n");
+
+        else
+            return std::string("def "  + typeSigName(source) + "ScaledTo" + byteLength + "Unsigned" + endian + "Bytes(value: " + type + ", byteA: bytearray, index: int, minimum: float, scaler: float) -> int:\n");
+
+
+    }// If multi-byte
+} // PythonScaledCoding::encodeSignature
+
+
+/*!
+ *  Generate the full encode function either bitfield, int or float
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the function as a string
+ */
+std::string PythonScaledCoding::fullEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    if(isTypeBitfield(encoded))
+        return fullBitfieldEncodeFunction(source, encoded, bigendian);
+    else if(isTypeFloating(source))
+        return fullFloatEncodeFunction(source, encoded, bigendian);
+    else
+        return fullIntegerEncodeFunction(source, encoded, bigendian);
+
+} // PythonScaledCoding::fullEncodeFunction
+
+
+/*!
+ *  Finds the maximim value based of an encoded type
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \return the max as a string
+ */
+std::string PythonScaledCoding::findMax(encodedtypes_t encoded) const
+{
+
+    std::string max;
+
+    if(isTypeSigned(encoded))
+    {
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: max = "127"; break;
+        case 2: max = "32767"; break;
+        case 3: max = "8388607"; break;
+        case 4: max = "2147483647"; break;
+        case 5: max = "549755813887"; break;
+        case 6: max = "140737488355327"; break;
+        case 7: max = "36028797018963967"; break;
+        case 8: max = "9223372036854775807"; break;
+        }
+    }
+    else
+    {
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: max = "255"; break;
+        case 2: max = "65535"; break;
+        case 3: max = "16777215"; break;
+        case 4: max = "4294967295"; break;
+        case 5: max = "1099511627775"; break;
+        case 6: max = "281474976710655"; break;
+        case 7: max = "72057594037927935"; break;
+        case 8: max = "18446744073709551615"; break;
+        }
+
+    }
+
+    return max;
+} // PythonScaledCoding::findMax
+
+
+/*!
+ *  Finds the minimum value based of an encoded type
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \return the min as a string
+ */
+std::string PythonScaledCoding::findMin(encodedtypes_t encoded) const
+{
+
+    std::string min;
+
+    if(isTypeSigned(encoded))
+    {
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: min = "-128"; break;
+        case 2: min = "-32768"; break;
+        case 3: min = "-8388608"; break;
+        case 4: min = "-2147483648"; break;
+        case 5: min = "-549755813888"; break;
+        case 6: min = "-140737488355328"; break;
+        case 7: min = "-36028797018963968"; break;
+        case 8: min = "-9223372036854775808"; break;
+        }
+    }
+    else
+       min = "0";
+
+    return min;
+} // PythonScaledCoding::findMin
+
+
+/*!
+ *  Generate the full encode function for bitfield scaling
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the bitfield function as a string
+ */
+std::string PythonScaledCoding::fullBitfieldEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+
+    std::string signature = encodeSignature(source, encoded, bigendian);
+    std::string comment = fullEncodeComment(source, encoded, bigendian);
+    std::string body = "    return\n\n";
+
+    std::string function = signature + comment + body;
+
+    return function;
+
+} // PythonScaledCoding::fullBitfieldEncodeFunction
+
+
+/*!
+ *  Generate the full encode function for floating point scaling
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the floating point function as a string
+ */
+std::string PythonScaledCoding::fullFloatEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std::string signature = encodeSignature(source, encoded, bigendian);
+    std::string comment = fullEncodeComment(source, encoded, bigendian);
+    std::string body = "";
+
+    std::string bitCount = std::to_string(typeLength(encoded)*8);
+    std::string max = findMax(encoded);
+    std::string min = findMin(encoded);
+
+    std::string endian;
+    if(typeLength(encoded) > 1)
+    {
+        if(bigendian)
+            endian = "Be";
+        else
+            endian = "Le";
+    }
+
+    if(isTypeSigned(encoded))
+    {
+        body += "    # scale the number\n";
+        body += "    scaledvalue = value * scaler\n\n";
+
+        body += "    # Make sure number fits in the range\n";
+        body += "    if scaledvalue >= 0:\n";
+        body += "        if scaledvalue >= " + max + ":\n";
+        body += "            number = " + max + "\n";
+        body += "        else:\n";
+        body += "            number = scaledvalue\n\n";
+
+        body += "    else:\n";
+        body += "        if scaledvalue <= " + min + ":\n";
+        body += "            number = " + min + "\n";
+        body += "        else:\n";
+        body += "            number = scaledvalue\n\n";
+
+        body += "    number = " + ctypeName(encoded) + "(round(scaledvalue))\n";
+        body += "    index = int" + bitCount + "To" + endian + "Bytes" + "(byteA, index, number.value);\n";
+        body += "    return index\n\n";
+    }
+    else
+    {
+        body += "    # scale the number\n";
+        body += "    scaledvalue = (value - minimum) * scaler\n\n";
+
+        body += "    # Make sure number fits in the range\n";
+        body += "    if scaledvalue >= " + max + ":\n";
+        body += "        number = " + max + "\n";
+        body += "    elif scaledvalue <= 0:\n";
+        body += "        number = 0\n";
+        body += "    else:\n";
+        body += "        number = scaledvalue\n\n";
+        body += "\n";
+
+        body += "    number = " + ctypeName(encoded) + "(round(scaledvalue))\n";
+        body += "    index = uint" + bitCount + "To" + endian + "Bytes" + "(byteA, index, number.value);\n";
+        body += "    return index\n\n";
+    }
+
+    std::string function = signature + comment + body;
+    return function;
+
+} // PythonScaledCoding::fullFloatEncodeFunction
+
+
+/*!
+ *  Generate the full encode function for integer scaling
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the interger function as a string
+ */
+std::string PythonScaledCoding::fullIntegerEncodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std::string signature = encodeSignature(source, encoded, bigendian);
+    std::string comment = fullEncodeComment(source, encoded, bigendian);
+    std::string body = "";
+
+    std::string bitCount = std::to_string(typeLength(encoded)*8);
+    std::string max = findMax(encoded);
+    std::string min = findMin(encoded);
+
+    std::string endian;
+    if(typeLength(encoded) > 1)
+    {
+        if(bigendian)
+            endian = "Be";
+        else
+            endian = "Le";
+    }
+
+    // We need a local type which has the same sign as the encoding, but uses the longer length of the encoding or in-memory
+    int longestlength = typeLength(source);
+    if(typeLength(encoded) > longestlength)
+        longestlength = typeLength(encoded);
+
+    inmemorytypes_t local = createInMemoryType(isTypeSigned(encoded), false, longestlength);
+
+    if(isTypeSigned(encoded))
+    {
+        body += "    # scale the number\n";
+        body += "    number = " + ctypeName(encoded) + "(round(value * scaler))\n";
+
+        // We don't need to test the range of the local number if it is the
+        // same length as the encoding - by definition it cannot exceed the range
+        if(typeLength(local) > typeLength(encoded))
+        {
+            body += "\n";
+            body += "    # Make sure number fits in the range\n";
+            body += "    if number.value > " + max + ":\n";
+            body += "        number.value = " + max + "\n";
+
+            if(isTypeSigned(local))
+            {
+                body += "\n";
+                body += "    elif number.value < " + min + ":\n";
+                body += "        number.value = " + min + "\n";
+            }
+            body += "\n";
+        }
+
+        body += "    index = int" + bitCount + "To" + endian + "Bytes" + "(byteA, index, number.value)\n";
+        body += "    return index\n\n";
+    }
+    else
+    {
+        /// TODO: fix for else case where number = zero and you cant pass number.value
+        body += "    if value > minimum:\n";
+        body += "        number = " + ctypeName(encoded) + "(round((value - minimum) * scaler))\n";
+
+        // We don't need to test the range of the local number if it is the
+        // same length as the encoding - by definition it cannot exceed the range
+        if(typeLength(local) > typeLength(encoded))
+        {
+            body += "        if number.value > " + max + ":\n";
+            body += "            number.value = " + max + "\n";
+        }
+        body += "\n";
+        body += "        index = uint" + bitCount + "To" + endian + "Bytes" + "(byteA, index, number.value)\n";
+        body += "        return index\n\n";
+        body += "    else:\n";
+        body += "        number = 0\n";
+        body += "        index = uint" + bitCount + "To" + endian + "Bytes" + "(byteA, index, number)\n";
+        body += "        return index\n\n";
+
+
+    }
+
+    std::string function = signature + comment + body;
+    return function;
+} // PythonScaledCoding::fullIntegerEncodeFunction
+
+
+/*!
+ *  Generate the decode header file
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return true
+ */
+bool PythonScaledCoding::generateDecodeHeader(ProtocolHeaderFile &header)
+{
+    (void) header;
+    return true;
+} // PythonScaledCoding::generateDecodeHeader
+
+
+/*!
+ *  Generate the decode source file
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return true if the source file is written successfully
+ */
+bool PythonScaledCoding::generateDecodeSource(ProtocolSourceFile &source)
+{
+    source.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
+    source.writeIncludeDirective("fielddecode");
+    source.write("\n");
+
+    bool ifdefopened = false;
+
+    // Iterate all inmemorys to all encodings.
+    for(int i = (int)float64inmemory; i <= (int)int8inmemory; i++)
+    {
+        inmemorytypes_t inmemorytype = (inmemorytypes_t)i;
+        for(int j = (int)longbitencoded; j <= (int)int8encoded; j++)
+        {
+            encodedtypes_t encodedtype = (encodedtypes_t)j;
+
+            // Key concept: the encoded cannot be larger than the inmemory
+            if(typeLength(encodedtype) > typeLength(inmemorytype))
+                continue;
+
+            // Key concept: the types must be supported in the protocol
+            if(!areTypesSupported(inmemorytype, encodedtype))
+                continue;
+
+            // If the inmemory or encoded type requires 64-bit support we have
+            // to protect it against compilers that cannot handle that
+            if((ifdefopened == false) && ((typeLength(encodedtype) > 4) || (typeLength(inmemorytype) > 4)))
+            {
+                ifdefopened = true;
+                source.write("\n#ifdef UINT64_MAX\n");
+            }
+            else if((ifdefopened == true) && (typeLength(encodedtype) <= 4) && (typeLength(inmemorytype) <= 4))
+            {
+                ifdefopened = false;
+                source.write("\n#endif // UINT64_MAX\n");
+            }
+
+            // big endian
+            source.write("\n");
+            source.write(fullDecodeFunction(inmemorytype, encodedtype, true) + "\n");
+
+            // little endian
+            if((typeLength(encodedtype) > 1) && !isTypeBitfield(encodedtype))
+            {
+                source.write("\n");
+                source.write(fullDecodeFunction(inmemorytype, encodedtype, false) + "\n");
+            }
+
+        }// for all output byte counts
+
+    }// for all input types
+
+    source.write("\n");
+
+    if(ifdefopened)
+        source.write("\n#endif // UINT64_MAX\n");
+
+    return source.flush();
+
+} // PythonScaledCoding::generateDecodeSource
+
+
+/*!
+ * Generate the one line brief comment for the decode function
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the summary as a string
+ */
+std::string PythonScaledCoding::briefDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std::string scalingtype;
+
+    if(isTypeFloating(source))
+        scalingtype = "floating point";
+    else
+        scalingtype = "integer";
+
+    if(isTypeBitfield(encoded))
+    {
+        if(typeLength(encoded) > 4)
+            return std::string("Compute a " + typeName(source) + " using invese " + scalingtype + " scaling from the base integer type used for long bitfields.\n");
+        else
+            return std::string("Compute a " + typeName(source) + " using inverse " + scalingtype + " scaling from the base integer type used for bitfields.\n");
+    }
+    else
+    {
+        if(typeLength(encoded) == 1)
+        {
+            // No endian concerns if using only 1 byte
+            if(isTypeSigned(encoded))
+                return std::string("Decode a " + typeName(source) + " from a byte stream by inverse " + scalingtype + " scaling from 1 signed byte.\n");
+            else
+                return std::string("Decode a " + typeName(source) + " from a byte stream by inverse " + scalingtype + " scaling from 1 unsigned byte.\n");
+        }
+        else
+        {
+            std::string byteLength = std::to_string(typeLength(encoded));
+            std::string endian;
+
+            if(bigendian)
+                endian = "big";
+            else
+                endian = "little";
+
+            if(isTypeSigned(encoded))
+                return std::string("Decode a " + typeName(source) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " signed bytes in " + endian +" endian order.\n");
+            else
+                return std::string("Decode a " + typeName(source) + " from a byte stream by inverse " + scalingtype + " scaling from " + byteLength + " unsigned bytes in " + endian + " endian order.\n");
+
+        }// If multi-byte
+    }
+
+} // PythonScaledCoding::briefDecodeComment
+
+
+/*!
+ * Generate the full comment for the decode function
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return the docstring as a string
+ */
+std::string PythonScaledCoding::fullDecodeComment(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+    std::string summary = briefDecodeComment(source, encoded, bigendian);
+    std::string args = "        Args:\n";
+    std::string returns = "        Return:\n";
+
+    /// TODO: For bitfield cause of return - make index a list like decode
+
+    if(isTypeBitfield(encoded))
+    {
+        args += "            value (float): the number to scale.\n";
+        args += "            minimum (float): the minimum value that can be encoded.\n";
+
+        if(isTypeFloating(source))
+        {
+            args += "            invscaler (float): is multiplied by the integer to create the return value.\n";
+            args += "                Invscaler should be the inverse of the scaler given to the scaling function.\n";
+            returns += "            The correctly scaled decoded value: return = min + value*invscaler.\n";
+        }
+        else
+        {
+            args += "            divisor (int): is divided into the encoded integer to create the return value.\n";
+            returns += "            The correctly scaled decoded value: return = min + encoded/divisor.\n";
+        }
+    }
+    else
+    {
+        args += "            byteA (bytearray): the byte stream to decode.\n";
+        args += "            index (list): the first element of the list is the location of the first byte in the byte stream, and\n";
+        args += "                will be incremented by " + std::to_string(typeLength(encoded)) + " when this function is complete.\n";
+
+        if(isTypeFloating(source))
+        {
+            if(!isTypeSigned(encoded))
+            {
+                args += "            invscaler (float): is multiplied by the decoded integer to create the return value.\n";
+                args += "                invscaler should be the inverse of the scaler given to the encode function.\n";
+                returns += "            The correctly scaled decoded value: return = encoded*invscaler.\n";
+            }
+            else
+            {
+                args += "            minimum (float): is the minimum value that can be decoded.\n";
+                args += "            invscaler (float): is multiplied by the decoded integer to create the return value.\n";
+                args += "                invscaler should be the inverse of the scaler given to the encode function.\n";
+                returns += "            The correctly scaled decoded value: return = min + encoded*invscaler.\n";
+            }
+        }
+        else
+        {
+            if(isTypeSigned(encoded))
+            {
+                args += "            divisor (int): is divided into the encoded integer to create the return value.\n";
+                returns += "            The correctly scaled decoded value: return = encoded/divisor.\n";
+            }
+            else
+            {
+                args += "            minimum (int) is the minimum value that can be decoded.\n";
+                args += "            divisor(int): is divided into the encoded integer to create the return value.\n";
+                returns += "            The correctly scaled decoded value: return = min + encoded/divisor.\n";
+            }
+        }
+    }
+
+    std::string quotes = R"(    """)";
+    std::string comment = quotes + summary + args + returns + quotes + "\n";
+
+    return comment;
+
+
+} // PythonScaledCoding::fullDecodeComment
+
+
+/*!
+ * Generate the decode function signature including parameter annotations
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return as a string
+ */
+std::string PythonScaledCoding::decodeSignature(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+
+    if(isTypeBitfield(encoded))
+    {
+        std::string longbit;
+
+        if(typeLength(encoded) > 4)
+            longbit = "Long";
+
+        if(isTypeFloating(source))
+            return "def " + typeSigName(source) + "ScaledFrom" + longbit + "Bitfield(value: int, minimum: float, invscaler: float) -> float:\n";
+        else
+            return "def " + typeSigName(source) + "ScaledFrom" + longbit + "Bitfield(value: int, minimum: float,  divisor:int) -> int:\n";
+    }
+    else
+    {
+        std::string byteLength = std::to_string(typeLength(encoded));
+        std::string endian;
+
+        if(typeLength(encoded) > 1)
+        {
+            if(bigendian)
+                endian = "Be";
+            else
+                endian = "Le";
+        }
+
+        if(isTypeFloating(source))
+        {
+            if(isTypeSigned(encoded))
+                return "def " + typeSigName(source) + "ScaledFrom" + byteLength + "Signed"   + endian + "Bytes(byteA: bytearray, index: list, invscaler: float) -> float:\n";
+            else
+                return "def " + typeSigName(source) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(byteA: bytearray, index: list, minimum: float, invscaler: float) -> float:\n";
+        }
+        else
+        {
+            if(isTypeSigned(encoded))
+                return "def " + typeSigName(source) + "ScaledFrom" + byteLength + "Signed"   + endian + "Bytes(byteA: bytearray, index: list, divisor: int) -> int:\n";
+            else
+                return "def " + typeSigName(source) + "ScaledFrom" + byteLength + "Unsigned" + endian + "Bytes(byteA: bytearray, index: list, minimum: int, divisor: int) -> int:\n";
+        }
+
+    }// If multi-byte
+
+
+
+} // PythonScaledCoding::decodeSignature
+
+
+/*!
+ * Generate the full decode function of bitfield, floating point and integer functions
+ * \param inmemory is the type information for the inmemory (in-memory) data.
+ * \param encoded is the type information for the encoded (encoded) data.
+ * \param bigendian should be true if the function outputs big endian byte order.
+ * \return function as a string
+ */
+std::string PythonScaledCoding::fullDecodeFunction(inmemorytypes_t source, encodedtypes_t encoded, bool bigendian) const
+{
+
+    std::string signature = decodeSignature(source, encoded, bigendian);
+    std::string comment = fullDecodeComment(source, encoded, bigendian);
+    std::string body = "";
+
+    if(isTypeBitfield(encoded))
+    {
+        if(isTypeFloating(source))
+            body += "    return minimum + (invscaler * value)\n";
+        else
+            body += "    return minimum + (value // divisor)\n";
+    }
+    else
+    {
+        std::string endian;
+        if(typeLength(encoded) > 1)
+        {
+            if(bigendian)
+                endian = "Be";
+            else
+                endian = "Le";
+        }
+
+        std::string bitCount = std::to_string(typeLength(encoded)*8);
+
+        if(isTypeFloating(source))
+        {
+            if(isTypeSigned(encoded))
+                body += "    return invscaler * int" + bitCount + "From" + endian + "Bytes(byteA, index)\n";
+            else
+                body += "    return minimum + (invscaler * uint" + bitCount + "From" + endian + "Bytes(byteA, index))\n";
+        }
+        else
+        {
+            if(isTypeSigned(encoded))
+                body += "    return int" + bitCount + "From" + endian + "Bytes(byteA, index) // divisor\n";
+            else
+                body += "    return minimum + uint" + bitCount + "From" + endian + "Bytes(byteA, index) // divisor\n";
+        }
+    }
+
+    std::string function = signature + comment + body + "\n";
+    return function;
+
+} // PythonScaledCoding::fullDecodeFunction
+

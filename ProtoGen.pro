@@ -110,6 +110,7 @@ OTHER_FILES += \
 
 DISTFILES += \
     dependson_cpp.xml \
+    eficomms_protogenTest.xml \
     exampleprotocol_cpp.xml \
     moredocsfile.txt \
     dependson.xml \
