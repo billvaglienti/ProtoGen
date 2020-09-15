@@ -3044,6 +3044,11 @@ std::string ProtocolField::getMapEncodeString(void) const
             // Numeric values are automatically converted to correct QVariant types
             if(inMemoryType.isFloat || !printScalerString.empty())
                 output += getEncodeFieldAccess(true) + printScalerString;
+            else if (inMemoryType.isBool && (support.language == ProtocolSupport::c_language || support.language == ProtocolSupport::cpp_language))
+            {
+                // Ensure that boolean types are encoded as unsigned chars
+                output += "(unsigned char) " + getEncodeFieldAccess(true);
+            }
             else
                 output += getEncodeFieldAccess(true);
 
