@@ -214,6 +214,14 @@ void ProtocolPacket::parse(void)
     if(ids.size() <= 0)
         ids.push_back(toUpper(name));
 
+    // Don't output if hidden and we are omitting hidden items
+    if(isHidden() && !neverOmit && support.omitIfHidden)
+    {
+        std::cout << "Skipping code output for hidden packet " << getHierarchicalName() << std::endl;
+        clear();
+        return;
+    }
+
     // Most of the file setup work. This will also declare the structure if
     // warranted (note the details of the structure declaration will reflect
     // back to this class via virtual functions).

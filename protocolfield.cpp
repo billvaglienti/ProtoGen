@@ -506,6 +506,7 @@ ProtocolField::ProtocolField(ProtocolParser* parse, std::string parent, Protocol
     encodedType(supported),
     prevField(0),
     hidden(false),
+    neverOmit(false),
     mapOptions(MAP_BOTH)
 {
     attriblist = {"name",
@@ -534,6 +535,7 @@ ProtocolField::ProtocolField(ProtocolParser* parse, std::string parent, Protocol
                   "Notes",
                   "bitfieldGroup",
                   "hidden",
+                  "neverOmit",
                   "initialValue",
                   "verifyMinValue",
                   "verifyMaxValue",
@@ -569,6 +571,7 @@ void ProtocolField::clear(void)
     extraInfoNames.clear();
     extraInfoValues.clear();
     hidden = false;
+    neverOmit = false;
     initialValueString.clear();
     verifyMinString.clear();
     verifyMaxString.clear();
@@ -1079,6 +1082,7 @@ void ProtocolField::parse(void)
     verifyMinString = ProtocolParser::getAttribute("verifyMinValue", map);
     verifyMaxString = ProtocolParser::getAttribute("verifyMaxValue", map);
     hidden = ProtocolParser::isFieldSet("hidden", map);
+    neverOmit = ProtocolParser::isFieldSet("neverOmit", map);
     checkConstant = ProtocolParser::isFieldSet("checkConstant", map);
 
     extraInfoValues.push_back(ProtocolParser::getAttribute("Units", map));
@@ -1161,6 +1165,28 @@ void ProtocolField::parse(void)
         // in memory type is
         if(overridesPrevious)
             inMemoryType = encodedType;
+    }
+
+    // If we have a hidden field, and we are not supposed to omit code for that
+    // field, we treat it as null. This is because we *must* omit the code in
+    // order to adhere to the encoding packet rules. This may break some code
+    // if other fields depend on the hidden field.
+    if(hidden && !neverOmit && support.omitIfHidden)
+    {
+        comment = "Hidden field skipped";
+        inMemoryType.clear();
+        inMemoryType.isNull = true;
+
+        // No scaling
+        scalerString.clear();
+        maxString.clear();
+        minString.clear();
+        verifyMaxString.clear();
+        verifyMinString.clear();
+        printScalerString.clear();
+
+        // This is not a warning, just useful information
+        std::cout << "Skipping code output for hidden field " << getHierarchicalName() << std::endl;
     }
 
     if(inMemoryType.isNull)

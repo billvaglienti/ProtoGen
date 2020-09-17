@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
     parser.disableHelperFiles(contains(arguments, "-no-helper-files"));
     parser.disableAboutSection(contains(arguments, "-no-about-section"));
     parser.showHiddenItems(contains(arguments, "-show-hidden"));
+    parser.omitHiddenItems(contains(arguments, "-omit-hidden"));
     parser.disableUnrecognizedWarnings(contains(arguments, "-no-unrecognized"));
     parser.setLaTeXSupport(contains(arguments, "-latex"));
     parser.disableCSS(contains(arguments, "-no-css"));

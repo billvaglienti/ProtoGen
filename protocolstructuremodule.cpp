@@ -211,6 +211,13 @@ void ProtocolStructureModule::parse(void)
             structName = support.prefix + redefinename + support.typeSuffix;
     }
 
+    // Don't output if hidden and we are omitting hidden items
+    if(isHidden() && !neverOmit && support.omitIfHidden)
+    {
+        std::cout << "Skipping code output for hidden global structure " << getHierarchicalName() << std::endl;
+        return;
+    }
+
     // Do the bulk of the file creation and setup
     setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, true, true);
 

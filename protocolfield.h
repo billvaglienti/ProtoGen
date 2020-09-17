@@ -402,6 +402,9 @@ protected:
     //! Indicates if this field is hidden from documentation
     bool hidden;
 
+    //! Indicates this field should never be omitted, even if hidden and -omit-hidden is set
+    bool neverOmit;
+
     //! Indicates the map encode / decode settings for this field
     int mapOptions;
 

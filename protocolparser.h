@@ -55,7 +55,10 @@ public:
     bool hasAboutSection() const { return !noAboutSection; }
 
     //! Option to force documentation for hidden items
-    void showHiddenItems(bool show) {showAllItems = show;}
+    void showHiddenItems(bool show) {support.showAllItems = show;}
+
+    //! Option to skip code generation for hidden items
+    void omitHiddenItems(bool omit) {support.omitIfHidden = omit;}
 
     //! Option to disable unrecognized warnings
     void disableUnrecognizedWarnings(bool disable) {support.disableunrecognized = disable;}
@@ -195,7 +198,7 @@ protected:
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
     bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
-    bool showAllItems;  //!< Generate documentation even for elements with 'hidden="true"'
+
     std::string inlinecss;  //!< CSS used for markdown output
     bool nocss;         //!< Disable all CSS output
     bool tableOfContents;//!< Enable table of contents

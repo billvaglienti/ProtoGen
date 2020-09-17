@@ -303,6 +303,7 @@ protected:
     bool defaults;                      //!< True if this structure uses default values
     bool strings;                       //!< True if this structure uses strings
     bool hidden;                        //!< True if this structure is to be hidden from the documentation
+    bool neverOmit;                     //!< True if this structure should never be omitted, even if hidden and -omit-hidden is set
     bool hasinit;                       //!< True if this structure or its children have initialization data
     bool hasverify;                     //!< True if this structure or its children have verify data
     std::string structName;             //!< Name of the structure (usually the same as typeName)
