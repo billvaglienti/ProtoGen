@@ -218,7 +218,6 @@ void ProtocolPacket::parse(void)
     if(isHidden() && !neverOmit && support.omitIfHidden)
     {
         std::cout << "Skipping code output for hidden packet " << getHierarchicalName() << std::endl;
-        clear();
         return;
     }
 
