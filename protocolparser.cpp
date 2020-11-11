@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.2.c";
+const std::string ProtocolParser::genVersion = "3.2.d";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1408,7 +1408,7 @@ std::string ProtocolParser::getTableOfContents(const std::string& filecontents)
 
             // In this case the reference name is contained within quotes
             std::size_t start = line.find("\"") + 1;
-            refname = line.substr(start, line.find("\"", start) - start - 1);
+            refname = line.substr(start, line.find("\"", start) - start);
         }
         else
         {
