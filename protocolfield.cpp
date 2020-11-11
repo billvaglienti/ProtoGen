@@ -2976,27 +2976,26 @@ std::string ProtocolField::getTextReadString(void) const
             // Check the text and get a result if it is not empty
             output += spacing + "if(!_pg_text.empty())\n";
 
+            // Prefer std::strtox instead of std::stox because the former does not throw and exception and we can tell it to automatically interpret the base
             if(!readScalerString.empty())
-                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stod(_pg_text)" + readScalerString + ");\n";
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::strtod(_pg_text.c_str(), 0)" + readScalerString + ");\n";
             else if(inMemoryType.isFloat && (inMemoryType.bits > 32))
-                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::stod(_pg_text);\n";
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::strtod(_pg_text.c_str(), 0);\n";
             else if(inMemoryType.isFloat)
-                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::stof(_pg_text);\n";
+                output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = std::strtof(_pg_text.c_str(), 0);\n";
             else if(inMemoryType.isSigned)
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoll(_pg_text));\n";
-                if(inMemoryType.bits > 16)
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stol(_pg_text));\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::strtoll(_pg_text.c_str(), 0, 0));\n";
                 else
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoi(_pg_text));\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::strtol(_pg_text.c_str(), 0, 0));\n";
             }
             else
             {
                 if(inMemoryType.bits > 32)
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoull(_pg_text));\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::strtoull(_pg_text.c_str(), 0, 0));\n";
                 else
-                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::stoul(_pg_text));\n";
+                    output += spacing + TAB_IN + getDecodeFieldAccess(true) + " = (" + typeName + ")(std::strtoul(_pg_text.c_str(), 0, 0));\n";
             }
 
         }// else not a struct
