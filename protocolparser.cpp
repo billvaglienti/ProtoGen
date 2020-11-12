@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.2.d";
+const std::string ProtocolParser::genVersion = "3.2.e";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -158,8 +158,6 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     }
 
     title = getAttribute("title", docElem->FirstAttribute());
-    api = getAttribute("api", docElem->FirstAttribute());
-    version = getAttribute("version", docElem->FirstAttribute());
     comment = getAttribute("comment", docElem->FirstAttribute());
     support.parse(docElem->FirstAttribute());
 
@@ -536,7 +534,7 @@ bool ProtocolParser::parseFile(std::string xmlFilename)
         }
         else if( nodename == "struct" || nodename == "structure" )
         {
-            ProtocolStructureModule* module = new ProtocolStructureModule( this, localsupport, api, version );
+            ProtocolStructureModule* module = new ProtocolStructureModule( this, localsupport );
 
             // Remember the XML
             module->setElement(element);
@@ -555,7 +553,7 @@ bool ProtocolParser::parseFile(std::string xmlFilename)
         // Define a packet
         else if( nodename == "packet" || nodename == "pkt" )
         {
-            ProtocolPacket* packet = new ProtocolPacket( this, localsupport, api, version );
+            ProtocolPacket* packet = new ProtocolPacket( this, localsupport );
 
             packet->setElement(element);
 
@@ -599,26 +597,24 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     std::string filecomment = "\\mainpage " + name + " protocol stack\n\n" + comment + "\n\n";
 
     // The protocol enumeration API, which can be empty
-    if(!api.empty())
+    if(!support.api.empty())
     {
         // Make sure this is only a number
         bool ok = false;
-        int64_t number = ShuntingYard::toInt(api, &ok);
+        int64_t number = ShuntingYard::toInt(support.api, &ok);
         if(ok && number > 0)
         {
             // Turn it back into a string
-            api = std::string(api);
+            support.api = std::string(support.api);
 
-            filecomment += "The protocol API enumeration is incremented anytime the protocol is changed in a way that affects compatibility with earlier versions of the protocol. The protocol enumeration for this version is: " + api + "\n\n";
+            filecomment += "The protocol API enumeration is incremented anytime the protocol is changed in a way that affects compatibility with earlier versions of the protocol. The protocol enumeration for this version is: " + support.api + "\n\n";
         }
-        else
-            api.clear();
 
     }// if we have API enumeration
 
     // The protocol version string, which can be empty
-    if(!version.empty())
-        filecomment += "The protocol version is " + version + "\n\n";
+    if(!support.version.empty())
+        filecomment += "The protocol version is " + support.version + "\n\n";
 
     // A long comment that should be wrapped at 80 characters in the \file block
     header->setFileComment(filecomment);
@@ -637,19 +633,19 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
     header->makeLineSeparator();
 
     // API macro
-    if(!api.empty())
+    if(!support.api.empty())
     {
         header->makeLineSeparator();
         header->write("//! \\return the protocol API enumeration\n");
-        header->write("#define get" + name + "Api() " + api + "\n");
+        header->write("#define get" + name + "Api() " + support.api + "\n");
     }
 
     // Version macro
-    if(!version.empty())
+    if(!support.version.empty())
     {
         header->makeLineSeparator();
         header->write("//! \\return the protocol version string\n");
-        header->write("#define get" + name + "Version() \""  + version + "\"\n");
+        header->write("#define get" + name + "Version() \""  + support.version + "\"\n");
     }
 
     // Translation macro
@@ -1246,12 +1242,22 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
         if(!comment.empty())
             filecontents += outputLongComment("", comment) + "\n\n";
 
-        if(!version.empty())
-            filecontents += title + " Protocol version is " + version + ".\n\n";
+        if(title.empty())
+        {
+            if(!support.version.empty())
+                filecontents += name + " protocol version is " + support.version + ".\n\n";
 
-        if(!api.empty())
-            filecontents += title + " Protocol API is " + api + ".\n\n";
+            if(!support.api.empty())
+                filecontents += name + " protocol API is " + support.api + ".\n\n";
+        }
+        else
+        {
+            if(!support.version.empty())
+                filecontents += title + " version is " + support.version + ".\n\n";
 
+            if(!support.api.empty())
+                filecontents += title + " API is " + support.api + ".\n\n";
+        }
     }
 
     for(std::size_t i = 0; i < alldocumentsinorder.size(); i++)

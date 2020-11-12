@@ -98,6 +98,8 @@ public:
     bool mapEncode;                    //!< True if the mapEncode and mapDecode function is output for all structures
     bool showAllItems;                 //!< Generate documentation even for elements marked hidden
     bool omitIfHidden;                 //!< Omit code generation for items marked hidden
+    std::string api;                   //!< The protocol API enumeration
+    std::string version;               //!< The protocol version string
     std::string globalFileName;        //!< File name to be used if a name is not given
     std::string globalVerifyName;      //!< Verify file name to be used if a name is not given
     std::string globalCompareName;     //!< Comparison file name to be used if a name is not given

@@ -12,7 +12,7 @@ class ProtocolStructureModule : public ProtocolStructure
 public:
 
     //! Construct the structure parsing object, with details about the overall protocol
-    ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const std::string& protocolApi, const std::string& protocolVersion);
+    ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported);
 
     //! Parse a packet from the DOM
     void parse(void) override;
@@ -167,9 +167,6 @@ protected:
     ProtocolHeaderFile* printHeader;    //!< Pointer to the header file for print code (*.h)
     ProtocolSourceFile* mapSource;      //!< Pointer to the source file for map code (*.cpp)
     ProtocolHeaderFile* mapHeader;      //!< Pointer to the header file for map code (*.h)
-
-    std::string api;                    //!< The protocol API enumeration
-    std::string version;                //!< The version string
 };
 
 #endif // PROTOCOLSTRUCTUREMODULE_H
