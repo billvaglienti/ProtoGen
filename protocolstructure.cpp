@@ -29,6 +29,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, std::string parent, 
     needs2ndVerifyIterator(false),
     defaults(false),
     hidden(false),
+    neverOmit(false),
     hasinit(supported.language == ProtocolSupport::cpp_language),
     hasverify(false),
     encode(true),
@@ -39,7 +40,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, std::string parent, 
     redefines(nullptr)
 {
     // List of attributes understood by ProtocolStructure
-    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "limitOnEncode"};
+    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "neverOmit", "limitOnEncode"};
 
 }
 
@@ -84,6 +85,7 @@ void ProtocolStructure::clear(void)
     needs2ndVerifyIterator = false;
     defaults = false;
     hidden = false;
+    neverOmit = false;
     hasinit = (support.language == ProtocolSupport::cpp_language);
     hasverify = false;
     encode = decode = true;
@@ -114,6 +116,20 @@ void ProtocolStructure::parse(void)
     dependsOnCompare = ProtocolParser::getAttribute("dependsOnCompare", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
+    neverOmit = ProtocolParser::isFieldSet("neverOmit", map);
+
+    /*
+     * This logic is handled by my parents. This may not be the correct thing
+     * to do: someone might create a structure as a sub of another structure
+     * and hide it. In which case this won't be omitted. Not sure how best to
+     * deal with that case.
+    if(hidden && !neverOmit && support.omitIfHidden)
+    {
+        std::cout << "Skipping code output for hidden structure " << getHierarchicalName() << std::endl;
+        clear();
+        return;
+    }
+    */
 
     if(title.empty())
         title = name;
@@ -701,7 +717,11 @@ void ProtocolStructure::parseEnumerations(const XMLNode* node)
     for(const XMLElement* child = node->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
         if(contains(child->Name(), "enum"))
-            enumList.push_back(parser->parseEnumeration(getHierarchicalName(), child));
+        {
+            const EnumCreator* Enum = parser->parseEnumeration(getHierarchicalName(), child);
+            if(Enum != nullptr)
+                enumList.push_back(Enum);
+        }
 
     }// for all my enum tags
 

@@ -11,7 +11,7 @@ macx{
     CONFIG   += app_bundle
 }
 
-CONFIG += c++17
+CONFIG += c++1z
 
 SOURCES += main.cpp \
     prebuiltSources/floatspecial.c \

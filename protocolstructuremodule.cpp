@@ -211,6 +211,13 @@ void ProtocolStructureModule::parse(void)
             structName = support.prefix + redefinename + support.typeSuffix;
     }
 
+    // Don't output if hidden and we are omitting hidden items
+    if(isHidden() && !neverOmit && support.omitIfHidden)
+    {
+        std::cout << "Skipping code output for hidden global structure " << getHierarchicalName() << std::endl;
+        return;
+    }
+
     // Do the bulk of the file creation and setup
     setupFiles(moduleName, defheadermodulename, verifymodulename, comparemodulename, printmodulename, mapmodulename, true, true);
 
@@ -1092,13 +1099,15 @@ std::string extractText(const std::string& key, const std::string& source, int* 
 {
     std::string text;
 
-    std::string::size_type index = source.find(key);
+    // All fields follow the key with " '". Use that as part of the search; to
+    // prevent detecting shorter keys that are repeated within longer keys
+    std::string::size_type index = source.find(key + " '");
 
-    if(index < source.size())
+    // This is the location of the first character after the key
+    std::string::size_type first = index + key.size() + 2;
+
+    if(first < source.size())
     {
-        // This is the location of the first character after the key
-        std::string::size_type first = index + key.size();
-
         // The location of the next linefeed after the key
         std::string::size_type linefeed = source.find("\n", first);
 
@@ -1113,10 +1122,6 @@ std::string extractText(const std::string& key, const std::string& source, int* 
 
             // Extract the text between the key and the linefeed
             text = source.substr(first, length);
-
-            // Remove the first " '" from the string
-            if((text.size() > 1) && (text.at(0) == ' ') && (text.at(1) == '\''))
-                text.erase(0, 2);
 
             // Remove the last "'" from the string
             if((text.size() > 0) && (text.back() == '\''))

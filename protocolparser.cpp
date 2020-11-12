@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.1.e";
+const std::string ProtocolParser::genVersion = "3.2.d";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -30,7 +30,6 @@ ProtocolParser::ProtocolParser() :
     nohelperfiles(false),
     nodoxygen(false),
     noAboutSection(false),
-    showAllItems(false),
     nocss(false),
     tableOfContents(false)
 {
@@ -230,6 +229,14 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         EnumCreator* module = globalEnums.at(i);
 
         module->parseGlobal();
+
+        // Don't output if hidden and we are omitting hidden items
+        if(module->isHidden() && !module->isNeverOmit() && support.omitIfHidden)
+        {
+            std::cout << "Skipping code output for hidden global enumeration " << module->getHierarchicalName() << std::endl;
+            continue;
+        }
+
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
 
         if(support.supportbool && (support.language == ProtocolSupport::c_language))
@@ -916,7 +923,7 @@ void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode*
  * lookUpEnumeration().
  * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param element is the DomElement that represents this enumeration
- * \return a pointer to the newly created enumeration object.
+ * \return a pointer to the newly created enumeration object. This pointer could be null.
  */
 const EnumCreator* ProtocolParser::parseEnumeration(const std::string& parent, const XMLElement* element)
 {
@@ -924,7 +931,21 @@ const EnumCreator* ProtocolParser::parseEnumeration(const std::string& parent, c
 
     Enum->setElement(element);
     Enum->parse();
-    enums.push_back(Enum);
+
+    // If we have a hidden field, and we are not supposed to omit code for that
+    // field, we treat it as null. This is because we *must* omit the code in
+    // order to adhere to the encoding packet rules. This may break some code
+    // if other fields depend on the hidden field.
+    if(Enum->isHidden() && !Enum->isNeverOmit() && support.omitIfHidden)
+    {
+        // This is not a warning, just useful information
+        std::cout << "Skipping code output for enumeration " << Enum->getHierarchicalName() << std::endl;
+
+        delete Enum;
+        Enum = nullptr;
+    }
+    else
+        enums.push_back(Enum);
 
     return Enum;
 
@@ -1239,7 +1260,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
             continue;
 
         // If the particular documention is to be hidden
-        if(alldocumentsinorder.at(i)->isHidden() && !showAllItems)
+        if(alldocumentsinorder.at(i)->isHidden() && !support.showAllItems)
             continue;
 
         filecontents += alldocumentsinorder.at(i)->getTopLevelMarkdown(true, packetids);
@@ -1387,7 +1408,7 @@ std::string ProtocolParser::getTableOfContents(const std::string& filecontents)
 
             // In this case the reference name is contained within quotes
             std::size_t start = line.find("\"") + 1;
-            refname = line.substr(start, line.find("\"", start) - start - 1);
+            refname = line.substr(start, line.find("\"", start) - start);
         }
         else
         {

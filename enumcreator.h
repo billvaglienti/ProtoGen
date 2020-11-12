@@ -119,6 +119,9 @@ public:
     //! Return true if this enumeration is hidden from the documentation
     bool isHidden (void) const override {return hidden;}
 
+    //! Return true if this enumeration is never omitted
+    bool isNeverOmit (void) const {return neverOmit;}
+
     //! The hierarchical name of this object
     std::string getHierarchicalName(void) const override {return parent + ":" + name;}
 
@@ -168,6 +171,9 @@ protected:
 
     //! Determines if this enum will be hidden from the documentation
     bool hidden;
+
+    //! Indicates this enumeration should never be omitted, even if hidden and -omit-hidden is set
+    bool neverOmit;
 
     //! Determines if this enumeration will support revese-lookup of label (based on value)
     bool lookup;

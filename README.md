@@ -3,7 +3,7 @@ Introduction
 
 ProtoGen is short for "protocol generation". ProtoGen owes its provenance to an often repeated problem: how to efficiently and in a cross platform way communicate information from one computer to another. This problem appears in many places, but most commonly in connecting microcontroller-based peripheral devices (GPSs, Autopilots, IMUs, etc) together. These devices maintain a sophisticated internal state representation in memory; and communicating this data efficiently and in a cross platform way is non-obvious. By efficient I mean: efficient in the amount of bandwidth used. By cross platform I mean: different computer architectures, memory order, compilers, and register bit widths should not cause problems for the communication.
 
-The naive way of doing this is to copy the data in memory into a packet which is sent to the other computer. As an example consider a GPS: it outputs a three dimensional position estimate. Internally the position is represented as three double precision numbers (latitude, longitude, altitude, or perhaps ECEF x, y, z), occupying a total of 24 bytes of memory. When using LLA or ECEF the position number needs enough dynamic range to represent the position to a resolution which is better than the GPS accuracy. If we want ECEF position resolution of 0.01 meters, then we need approximately log2(7,000,000/0.01) ~ 30 bits. This is why double precision is required, since single precision only gives 23 bits of resolution.
+The naive way of doing this is to copy the data in memory into a packet which is sent to the other computer. As an example consider a GPS which outputs a three dimensional position estimate. Internally the position is represented as three double precision numbers (latitude, longitude, altitude, or perhaps ECEF x, y, z), occupying a total of 24 bytes of memory. When using LLA or ECEF the position number needs enough dynamic range to represent the position to a resolution which is better than the GPS accuracy. If we want ECEF position resolution of 0.01 meters, then we need approximately log2(7,000,000/0.01) ~ 30 bits. This is why double precision is required, since single precision only gives 23 bits of resolution.
 
 If one were to simply `memcpy()` the double precision representation into a packet there are a number of negative consequences:
 
@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C or C++ source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The generated code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 3.1. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 3.2. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -40,11 +40,13 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 
 - `-lang-c` forces the generated code to be C, overriding the language specified in the Protocol.xml file. If no language is specified C is the default choice.
 
-- `-license <file>` is a template file contains license information that will be added verbatim to the top of each generated file.
+- `-license <file>` is a file that contains license information that will be added verbatim to the top of each generated file.
 
 - `-docs <dir>` specifies a separate directory for the documentation markdown to be written. If `-docs dir` is not specified, documentation markdown will be written to the same directory as `Outputpath`.
 
 - `-show-hidden` will cause documentation to be generated for **all** elements, even if the element has the *hidden="true"* attribute
+
+- `-omit-hidden` will cause hidden elements to be excluded from the code as well as the documentation. This is useful for generating public SDKs.
 
 - `-latex` will cause ProtoGen to generate LaTeX style markdown (if multimarkdown is installed and in the PATH).
 
@@ -272,7 +274,9 @@ Enum tag attributes:
 
 - `description` : If provided, a long-form description can be prepended to the given enumeration (in the documentation markdown). This allows for a more verbose description of the particular enumeration to be added to the docs. This description will *not* appear in the generated code.
 
-- `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. This enumeration will still appear in the generated code.
+- `hidden` : is used to specify that this particular enumeration will *not* appear in the generated documentation markdown. This enumeration will still appear in the generated code unless -omit-hidden was used on the command line.
+
+- `neverOmit` : is used to specify that this enumeration must *not* be omitted, even if it is hidden and the `-omit-hidden` flag was used on the command line.
 
 - `lookup` : is used to specify that this enumeration allows lookup of label text based on enum values. If enabled, the label for a particular enum value can be returned as a string.
 
@@ -296,7 +300,7 @@ The Enum tag supports Value subtags; which are used to name individual elements 
 
 - `ignoreLookup` : is used to specify that this particular enumeration element will *not* be included in the enumeration label text lookup. This is useful for duplicate enumeration values.
 
-- `hidden` : is used to specify that this particular enumeration element will *not* appear in the generated markdown documentation.
+- `hidden` : is used to specify that this particular enumeration element will *not* appear in the generated markdown documentation. Hidden enumeration elements are always output in code, even if -omit-hidden was used on the command line.
 
 In the above example the enumeration support is used to create a list of packet ID values. Although this is the most common use case for this feature, it is not limited to this case. Named enumerations can also be part of the data in a packet. A packet ID enumeration is not required (though it is encouraged as a best practice). Enumerations are also a good choice when creating arrays. If an array length is given by an enumeration that is defined in the protocol xml ProtoGen will attempt to compute the enumeration value, and use that to compute the length of the array in bytes. This substantially improves the protocol documentation that ProtoGen will output.
 
@@ -370,7 +374,7 @@ Structure tag Attributes:
 
 - `title` : The name of the structure in the documentation output. If title is not given `prefix + name + _t` is used.
 
-- `file` : Gives the name of the source and header file name. If this is ommitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) the relevant data are appended to that file.
+- `file` : Gives the name of the source and header file name. If this is omitted the structure will be written to the name given by the global `file` attribute or, if that is not provided, the `prefix + name` module. If the same file is specified for multiple structures (or packets) the relevant data are appended to that file.
 
 - `deffile` : Optional attribute used to specify a definition file which receives the structure definition (and any enumeration which is a child of the structure), in place of the normal file location for the structure definition. As with other file attributes the definition file will be correctly appended if it is used multiple times. Any extension to the `deffile` attribute will be ignored. The `deffile` attribute will be ignored if `redefine` is used.
 
@@ -441,7 +445,9 @@ Packet tag attributes beyond Structure tag attributes:
 
 - `parameterInterface` : If this attribute is set to `true` a parameter based interface to the packet functions will be created. This is useful for simpler packets that do not have too many parameters and using a structure as the interface method is unwieldy. If neither `structureInterface` or `parameterInterface` are specified as `true` ProtoGen will output parameter based interfaces if the number of fields in the packet is 1 or less, otherwise it will output structure based interfaces.
 
-- `hidden` : If set to `true` this attribute specifies that this packet will NOT appear in the documentation markdown.
+- `hidden` : If set to `true` this attribute specifies that this packet will *not* appear in the documentation markdown.
+
+- `neverOmit` : is used to specify that this packet must *not* be omitted, even if it is hidden and the `-omit-hidden` flag was used on the command line.
 
 - `useInOtherPackets` : If set to `true` this attribute specifies that this packet will generate extra outputs as though it were a top level structure in addition to being a packet. This makes it possible to use this packet as a sub-structure of another packet. 
 
@@ -559,6 +565,8 @@ Data subtag attributes:
 - `checkConstant` : If set to "true" this attribute affects the interpretation of `constant` in the decode function. When checkConstant is set the decode function evaluates the decoded data and returns a fail state if the value is not equal to the supplied constant.
 
 - `hidden` : is used to specify that this particular data field will *not* appear in the generated documentation markdown.
+
+- `neverOmit` : is used to specify that this particular data field must *not* be omitted, even if it is hidden and the `-omit-hidden` flag was used on the command line.
 
 - `verifyMinValue` : is used to specify the lowest value that this in-memory field should hold. This is used in the verify function. If the value of this field is less than `verifyMinValue` the verify function will change the value of the field and return false to indicate there was a problem.  As with `constant` or `default` you can use mathematical expresions including the special strings "pi and "e". in addition you can use the string "auto", in which case ProtoGen will compute the minimum value based on this fields encoding rules.
 

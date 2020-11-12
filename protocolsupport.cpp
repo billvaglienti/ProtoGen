@@ -398,6 +398,8 @@ ProtocolSupport::ProtocolSupport() :
     compare(false),
     print(false),
     mapEncode(false),
+    showAllItems(false),
+    omitIfHidden(false),
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet"),
     typeSuffix("_t"),

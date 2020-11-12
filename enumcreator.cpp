@@ -90,12 +90,13 @@ EnumCreator::EnumCreator(ProtocolParser* parse, const std::string& parent, Proto
     minbitwidth(0),
     maxvalue(0),
     hidden(false),
+    neverOmit(false),
     lookup(false),
     lookupTitle(false),
     lookupComment(false),
     isglobal(false)
 {
-    attriblist = {"name", "title", "comment", "description", "hidden", "lookup", "lookupTitle", "lookupComment", "prefix", "file"};
+    attriblist = {"name", "title", "comment", "description", "hidden", "neverOmit", "lookup", "lookupTitle", "lookupComment", "prefix", "file"};
 }
 
 EnumCreator::~EnumCreator(void)
@@ -120,6 +121,7 @@ void EnumCreator::clear(void)
     minbitwidth = 0;
     maxvalue = 0;
     hidden = false;
+    neverOmit = false;
     lookup = false;
     lookupTitle = false;
     lookupComment = false;
@@ -183,6 +185,7 @@ void EnumCreator::parse(void)
     prefix = ProtocolParser::getAttribute("prefix", map);
     comment = ProtocolParser::reflowComment(ProtocolParser::getAttribute("comment", map));
     hidden = ProtocolParser::isFieldSet("hidden", map);
+    neverOmit = ProtocolParser::isFieldSet("neverOmit", map);
     lookup = ProtocolParser::isFieldSet("lookup", map);
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
     lookupComment = ProtocolParser::isFieldSet("lookupComment", map);

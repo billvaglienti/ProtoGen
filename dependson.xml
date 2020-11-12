@@ -30,7 +30,7 @@
         <Data name="length" inMemoryType="unsigned8" comment="Number of data bytes in the packet"/>
         <Data name="pkttype" inMemoryType="unsigned8" comment="Packet type identifier"/>
         <Data name="data" inMemoryType="unsigned8" array="TEST_PKT_MAX_DATA+2" comment="Packet data space, plus 2 bytes checksum"/>
-        <Data name="rxstate" inMemoryType="unsigned16" hidden="true" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
+        <Data name="rxstate" inMemoryType="unsigned16" hidden="true" neverOmit="true" comment="Receive state for processing a receive packet byte by byte, not part of the transmission"/>
     </Structure>
 
     <Packet name="KlvUserData" structureInterface="true" parameterInterface="true" comment="This packet is used to set and query the values of user-configurable KLV tags"
@@ -38,9 +38,9 @@
         <Data name="Key" inMemoryType="unsigned8" comment="UAS Local Set key" />
         <Data name="SubKey" inMemoryType="unsigned8" comment="UAS Local Set sub-key, if applicable (e.g., security metadata)"/>
         <Data name="Value" inMemoryType="string" array="128" default="null" comment="Variable-length value string"/>
-        </Packet>
+    </Packet>
 
-        <Structure name="PositionLLA" file="base_types" comparefile="compare/base_compare" printfile="compare/base_print" mapfile="map/base_map" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
+    <Structure name="PositionLLA" file="base_types" comparefile="compare/base_compare" printfile="compare/base_print" mapfile="map/base_map" comment="Position in latitude, longitude, and altitude with respect to the WGS-84 ellipsoid">
         <Data name="latitude" inMemoryType="float64" encodedType="signed32" max="pi/2" comment="The latitude of the position in radians, positive North"/>
         <Data name="longitude" inMemoryType="float64" encodedType="signed32" max="pi" comment="The longitude of the position in radians, positive East"/>
         <Data name="altitude" inMemoryType="float64" encodedType="unsigned24" min="-1000" scaler="1000" comment="The altitude above the WGS-84 ellipsoid of the position in meters"/>

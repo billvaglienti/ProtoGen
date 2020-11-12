@@ -47,6 +47,8 @@ int main(int argc, char *argv[])
                 startsWith(argument, "-style")        ||
                 startsWith(argument, "-ti") )
                 arguments.push_back(argument + " " + trimm(argv[++i]));
+            else
+                arguments.push_back(argument);
         }
         else
             arguments.push_back(argument);
@@ -118,6 +120,7 @@ int main(int argc, char *argv[])
     parser.disableHelperFiles(contains(arguments, "-no-helper-files"));
     parser.disableAboutSection(contains(arguments, "-no-about-section"));
     parser.showHiddenItems(contains(arguments, "-show-hidden"));
+    parser.omitHiddenItems(contains(arguments, "-omit-hidden"));
     parser.disableUnrecognizedWarnings(contains(arguments, "-no-unrecognized"));
     parser.setLaTeXSupport(contains(arguments, "-latex"));
     parser.disableCSS(contains(arguments, "-no-css"));
@@ -220,6 +223,10 @@ Usage: ProtoGen inputfile.xml <outputpath> <otherinputfiles.xml> -options
 
   -no-about-section  : Skip generation of "About this ICD" section in
                        documentation output.
+  -show-hidden       : Output documentation for all items, even if hidden.
+
+  -omit-hidden       : Skip the output of code for items marked hidden.
+
   -no-helper-files   : Skip creation of helper files not directly specifed by
                        protocol .xml files.
   -style path        : Specify a css file to override the default style for
