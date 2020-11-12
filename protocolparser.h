@@ -187,10 +187,8 @@ protected:
     std::string name;   //!< Base name of the protocol
     std::string title;  //!< Title name of the protocol used in documentation
     std::string comment;//!< Comment description of the protocol
-    std::string version;//!< The version string
-    std::string api;    //!< The protocol API enumeration
 
-    std::string docsDir;    //!< Directory target for storing documentation markdown
+    std::string docsDir;//!< Directory target for storing documentation markdown
 
     int latexHeader;    //!< Top heading level for LaTeX output
     bool latexEnabled;  //!< Generate LaTeX markdown automagically

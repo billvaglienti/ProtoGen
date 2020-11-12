@@ -6,10 +6,8 @@
  * Construct the object that parses structure descriptions
  * \param parse points to the global protocol parser that owns everything
  * \param supported gives the supported features of the protocol
- * \param protocolApi is the API string of the protocol
- * \param protocolVersion is the version string of the protocol
  */
-ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported, const std::string& protocolApi, const std::string& protocolVersion) :
+ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported) :
     ProtocolStructure(parse, supported.protoName, supported),
     source(supported),
     header(supported),
@@ -30,9 +28,7 @@ ProtocolStructureModule::ProtocolStructureModule(ProtocolParser* parse, Protocol
     printSource(nullptr),
     printHeader(nullptr),
     mapSource(nullptr),
-    mapHeader(nullptr),
-    api(protocolApi),
-    version(protocolVersion)
+    mapHeader(nullptr)
 {
     // In the C language these files must have their modules, because they use
     // c++ features, in c++ they can output to the source and header files

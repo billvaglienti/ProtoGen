@@ -1842,6 +1842,14 @@ std::string ProtocolField::handleNumericConstants(std::string& input) const
         // better reflow the resulting text
         replaceinplace(display, "*", " &times; ");
     }
+    else
+    {
+        // There are two non-numeric cases we can handle: the get API string and the get version string
+        if(!support.api.empty() && (display == "get" + support.protoName + "Api()"))
+            display = support.api;
+        else if(!support.version.empty() && (display == "get" + support.protoName + "Version()"))
+            display = support.version;
+    }
 
     return display;
 
@@ -2392,7 +2400,7 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
         }
 
         if(!defaultString.empty())
-            description += "<br>This field is optional. If it is not included then the value is assumed to be " + defaultStringForDisplay + ".";
+            description += "<br>This field is optional. If it is not included the value is assumed to be " + defaultStringForDisplay + ".";
 
         if(overridesPrevious)
             description += "<br>This field overrides the previous field of the same name, if the packet is long enough.";

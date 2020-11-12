@@ -444,6 +444,8 @@ std::vector<std::string> ProtocolSupport::getAttriblist(void) const
     attribs.push_back("compare");
     attribs.push_back("print");
     attribs.push_back("map");
+    attribs.push_back("api");
+    attribs.push_back("version");
 
     return attribs;
 }
@@ -520,6 +522,12 @@ void ProtocolSupport::parse(const XMLAttribute* map)
 
     // Prefix is not required
     prefix = ProtocolParser::getAttribute("prefix", map);
+
+    // api is not required
+    api = ProtocolParser::getAttribute("api", map);
+
+    // version is not required
+    version = ProtocolParser::getAttribute("version", map);
 
     // And it can be language specific
     if(language == c_language)

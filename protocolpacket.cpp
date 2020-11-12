@@ -14,12 +14,11 @@
  * \param parse points to the global protocol parser that owns everything
  * \param supported gives the supported features of the protocol
  * \param protocolApi is the API string of the protocol
- * \param protocolVersion is the version string of the protocol
  * \param bigendian should be true to encode multi-byte fields with the most
  *        significant byte first.
  */
-ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported, const std::string& protocolApi, const std::string& protocolVersion) :
-    ProtocolStructureModule(parse, supported, protocolApi, protocolVersion),
+ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported) :
+    ProtocolStructureModule(parse, supported),
     useInOtherPackets(false),
     parameterFunctions(false),
     structureFunctions(true)

@@ -10,7 +10,7 @@ class ProtocolPacket : public ProtocolStructureModule
 {
 public:
     //! Construct the packet parsing object, with details about the overall protocol
-    ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported, const std::string& protocolApi, const std::string& protocolVersion);
+    ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported);
 
     ~ProtocolPacket();
 
