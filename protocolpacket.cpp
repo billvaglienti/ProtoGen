@@ -1998,13 +1998,13 @@ std::string ProtocolPacket::getTopLevelMarkdown(bool global, const std::vector<s
         output += spacedString(comments.at(0), commentColumn);
         output += " |\n";
 
-        // Underscore the header
-        output +=  "| ";
-        for(std::size_t i = 0; i < byteColumn; i++)
+        // Underscore the header, first two columns left aligned
+        output +=  "| :";
+        for(std::size_t i = 1; i < byteColumn; i++)
             output += "-";
 
-        output +=  " | ";
-        for(std::size_t i = 0; i < nameColumn; i++)
+        output +=  " | :";
+        for(std::size_t i = 1; i < nameColumn; i++)
             output += "-";
 
         // Encoding column is centered

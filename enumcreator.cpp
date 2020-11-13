@@ -652,9 +652,9 @@ std::string EnumCreator::getTopLevelMarkdown(bool global, const std::vector<std:
         output += spacedString("Description", thirdColumnSpacing);
         output += " |\n";
 
-        // Underscore the header
-        output += "| ";
-        for(std::size_t i = 0; i < firstColumnSpacing; i++)
+        // Underscore the header. The first column is left aligned, and the second column is centered
+        output += "| :";
+        for(std::size_t i = 1; i < firstColumnSpacing; i++)
             output += "-";
         output += " | :";
         for(std::size_t i = 1; i < secondColumnSpacing-1; i++)
