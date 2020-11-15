@@ -1099,11 +1099,11 @@ std::string extractText(const std::string& key, const std::string& source, int* 
     // prevent detecting shorter keys that are repeated within longer keys
     std::string::size_type index = source.find(key + " '");
 
-    // This is the location of the first character after the key
-    std::string::size_type first = index + key.size() + 2;
-
-    if(first < source.size())
+    if(index < source.size())
     {
+        // This is the location of the first character after the key
+        std::string::size_type first = index + key.size() + 2;
+
         // The location of the next linefeed after the key
         std::string::size_type linefeed = source.find("\n", first);
 
