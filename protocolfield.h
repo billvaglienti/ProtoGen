@@ -168,6 +168,9 @@ public:
     //! Return the include directives needed for this encodable
     void getIncludeDirectives(std::vector<std::string>& list) const override;
 
+    //! Append the include directives in source code for this encodable
+    void getSourceIncludeDirectives(std::vector<std::string>& list) const override;
+
     //! Return the include directives needed for this encodable's init and verify functions
     void getInitAndVerifyIncludeDirectives(std::vector<std::string>& list) const override;
 

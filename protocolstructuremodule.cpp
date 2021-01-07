@@ -329,9 +329,6 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
         source.setModuleNameAndPath(moduleName, support.outputpath);
     }
 
-    if(support.supportbool && (support.language == ProtocolSupport::c_language))
-        header.writeIncludeDirective("stdbool.h", "", true);
-
     if(verifymodulename.empty())
         verifymodulename = support.globalVerifyName;
 
@@ -433,32 +430,27 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
     // Include the protocol top level module. This module may already be included, but in that case it won't be included twice
     header.writeIncludeDirective(support.protoName + "Protocol");
 
+    std::vector<std::string> list;
+
     // If we are using someone elses definition then we can't have a separate definition file
     if(redefines != NULL)
     {
-        std::vector<std::string> list;
         redefines->getIncludeDirectives(list);
         header.writeIncludeDirectives(list);
     }
-    else if(!defheadermodulename.empty())
+    else
     {
-        // Handle the idea that the structure might be defined in a different file
-        _structHeader.setModuleNameAndPath(defheadermodulename, support.outputpath, support.language);
-        structHeader = &_structHeader;
+        if(!defheadermodulename.empty())
+        {
+            // Handle the idea that the structure might be defined in a different file
+            _structHeader.setModuleNameAndPath(defheadermodulename, support.outputpath, support.language);
+            structHeader = &_structHeader;
+        }
 
-        if(support.supportbool && (support.language == ProtocolSupport::c_language))
-            structHeader->writeIncludeDirective("stdbool.h", "", true);
-
-        // The structHeader might need stdint.h. It's an open question if this is
-        // the best answer, or if we should just include the main protocol file
-        structHeader->writeIncludeDirective("stdint.h", std::string(), true);
-
-        // In this instance we know that the normal header file needs to include
-        // the file with the structure definition
-        header.writeIncludeDirective(structHeader->fileName());
+        getIncludeDirectives(list);
+        header.writeIncludeDirectives(list);
     }
 
-    std::vector<std::string> list;
     if(hasVerify() || hasInit())
     {
         verifyHeader->writeIncludeDirective(structHeader->fileName());

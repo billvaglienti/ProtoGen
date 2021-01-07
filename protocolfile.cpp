@@ -719,6 +719,12 @@ void ProtocolHeaderFile::prepareToAppend(void)
         write(" * \\file\n");
         write(" */\n");
         write("\n");
+
+        if((support.language == ProtocolSupport::c_language) || (support.language == ProtocolSupport::cpp_language))
+            writeIncludeDirective("stdint.h", "", true);
+
+        if(support.supportbool && (support.language == ProtocolSupport::c_language))
+            writeIncludeDirective("stdbool.h", "", true);
     }
 
 }// ProtocolHeaderFile::prepareToAppend

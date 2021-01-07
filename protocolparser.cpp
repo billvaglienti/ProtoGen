@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.2.g";
+const std::string ProtocolParser::genVersion = "3.2.h";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1008,11 +1008,44 @@ void ProtocolParser::outputIncludes(const std::string& parent, ProtocolFile& fil
 
 
 /*!
- * Find the include name for a specific global structure type or enumeration type
+ * Find the include filename for the implementation of a specific global structure
+ * type.
+ * \param typeName is the type to lookup
+ * \return the file name to be included to reference this structures implementation
+ */
+std::string ProtocolParser::lookUpIncludeFilenameForImplementation(const std::string& typeName) const
+{
+    for(std::size_t i = 0; i < structures.size(); i++)
+    {
+        if(structures.at(i)->typeName == typeName)
+        {
+            return structures.at(i)->getHeaderFileName();
+        }
+    }
+
+    for(std::size_t i = 0; i < packets.size(); i++)
+    {
+        if(packets.at(i)->typeName == typeName)
+        {
+            return packets.at(i)->getHeaderFileName();
+        }
+    }
+
+    return std::string();
+
+}// ProtocolParser::lookUpIncludeFilenameForImplementation
+
+
+/*!
+ * Find the include filename for the definition of a specific global structure
+ * type or enumeration type. Note that for structures this will return the name
+ * of the file that defines the structure, but not necessarily the name of the
+ * file that implements the structure interfaces. lookUpIncludeFilenameForImplementation()
+ * will return the filename that defines the implementation.
  * \param typeName is the type to lookup
  * \return the file name to be included to reference this global structure type
  */
-std::string ProtocolParser::lookUpIncludeName(const std::string& typeName) const
+std::string ProtocolParser::lookUpIncludeFilenameForDefinition(const std::string& typeName) const
 {
     for(std::size_t i = 0; i < structures.size(); i++)
     {
