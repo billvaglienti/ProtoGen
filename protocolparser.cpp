@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.2.h";
+const std::string ProtocolParser::genVersion = "3.3.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -647,13 +647,6 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
         header->write("//! \\return the protocol version string\n");
         header->write("#define get" + name + "Version() \""  + support.version + "\"\n");
     }
-
-    // Translation macro
-    header->makeLineSeparator();
-    header->write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
-    header->write("#ifndef translate" + name + "\n");
-    header->write("    #define translate" + name + "(x) x\n");
-    header->write("#endif");
 
     header->makeLineSeparator();
 

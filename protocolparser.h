@@ -27,6 +27,9 @@ public:
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
 
+    //! Set the translation override option
+    void setTranslationOverride(std::string translate) {support.setTranslationOverride(translate);}
+
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 

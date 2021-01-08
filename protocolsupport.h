@@ -81,6 +81,9 @@ public:
     //! Set the language override option, call this before the parse function
     void setLanguageOverride(LanguageType lang) {enablelanguageoverride = true; language = lang;}
 
+    //! Set the translation override option, call this before the parse function
+    void setTranslationOverride(std::string translate)  {enabletranslationoverride = true; globaltranslate = translate;}
+
     LanguageType language;             //!< Enumerator specifying the language type
     int maxdatasize;                   //!< Maximum number of data bytes in a packet, 0 if no limit
     bool int64;                        //!< true if support for integers greater than 32 bits is included
@@ -114,11 +117,15 @@ public:
     std::string pointerType;           //!< Packet pointer type - default is "void*"
     std::string licenseText;           //!< License text to be added to each generated file
     std::string sourcefile;            //!< Source file name, used for warning outputs
+    std::string globaltranslate;       //!< Name of function used for translation of strings, empty if none.
 
 protected:
 
     //! Set to true to enable the language override feature
     bool enablelanguageoverride;
+
+    //! Set to true to enable the translation override feature
+    bool enabletranslationoverride;
 };
 
 #endif // PROTOCOLSUPPORT_H

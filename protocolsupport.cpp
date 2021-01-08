@@ -141,7 +141,7 @@ bool contains(const std::vector<std::string>& list, const std::string& test, boo
 
 
 /*!
- * Return the string from a list that startsWith another string.
+ * Return the string from a list that starts with another string.
  * \param list is the list of strings to search.
  * \param test is the start string to test against.
  * \param casesensitive should be true to do the search case sensitive.
@@ -403,7 +403,8 @@ ProtocolSupport::ProtocolSupport() :
     packetStructureSuffix("PacketStructure"),
     packetParameterSuffix("Packet"),
     typeSuffix("_t"),
-    enablelanguageoverride(false)
+    enablelanguageoverride(false),
+    enabletranslationoverride(false)
 {
 }
 
@@ -446,6 +447,7 @@ std::vector<std::string> ProtocolSupport::getAttriblist(void) const
     attribs.push_back("map");
     attribs.push_back("api");
     attribs.push_back("version");
+    attribs.push_back("translate");
 
     return attribs;
 }
@@ -563,6 +565,13 @@ void ProtocolSupport::parse(const XMLAttribute* map)
 
     if(contains(ProtocolParser::getAttribute("endian", map), "little"))
         bigendian = false;
+
+    // If the translation override is on then we don't allow reading the translation macro from the xml
+    if(!enabletranslationoverride)
+    {
+        globaltranslate = ProtocolParser::getAttribute("translate", map);
+        enabletranslationoverride = true;
+    }
 
 }// ProtocolSupport::parse
 

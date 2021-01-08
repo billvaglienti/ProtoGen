@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
                 startsWith(argument, "-latex-header") ||
                 isEqual(argument, "-s")               ||
                 startsWith(argument, "-style")        ||
-                startsWith(argument, "-ti") )
+                startsWith(argument, "-ti")           ||
+                startsWith(argument, "-tr") )
                 arguments.push_back(argument + " " + trimm(argv[++i]));
             else
                 arguments.push_back(argument);
@@ -169,7 +170,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::string titlePage = liststartsWith(arguments, "-title");
+    std::string titlePage = liststartsWith(arguments, "-ti");
     titlePage = titlePage.substr(titlePage.find(" ") + 1);
     if(!titlePage.empty())
     {
@@ -185,6 +186,11 @@ int main(int argc, char *argv[])
             std::cerr << "warning: Failed to open '" << titlePage << "', skipping title page output" << std::endl;
         }
     }
+
+    std::string translate = liststartsWith(arguments, "-tr");
+    translate = translate.substr(translate.find(" ") + 1);
+    if(!translate.empty())
+        parser.setTranslationOverride(translate);
 
     if (parser.parse(filename, path, otherfiles))
     {
@@ -227,7 +233,7 @@ Usage: ProtoGen inputfile.xml <outputpath> <otherinputfiles.xml> -options
 
   -no-helper-files   : Skip creation of helper files not directly specifed by
                        protocol .xml files.
-  -style path        : Specify a css file to override the default style for
+  -style <file>      : Specify a css file to override the default style for
                        HTML documentation.
   -no-css            : Skip generation of any css data in documentation files.
 
@@ -241,6 +247,8 @@ Usage: ProtoGen inputfile.xml <outputpath> <otherinputfiles.xml> -options
                        specifier in the protocol file.
   -lang-cpp          : Force the output language to C++, overriding the
                        language specifier in the protocol file.
+  -translate <macro> : Set macro as the name of the global translation macro
+                       for string lookups in emitted code.
   -version           : Prints just the version information.
 
 )===";

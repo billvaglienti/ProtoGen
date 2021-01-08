@@ -96,7 +96,7 @@ EnumCreator::EnumCreator(ProtocolParser* parse, const std::string& parent, Proto
     lookupComment(false),
     isglobal(false)
 {
-    attriblist = {"name", "title", "comment", "description", "hidden", "neverOmit", "lookup", "lookupTitle", "lookupComment", "prefix", "file"};
+    attriblist = {"name", "title", "comment", "description", "hidden", "neverOmit", "lookup", "lookupTitle", "lookupComment", "prefix", "file", "translate"};
 }
 
 EnumCreator::~EnumCreator(void)
@@ -130,6 +130,7 @@ void EnumCreator::clear(void)
     description.clear();
     output.clear();
     prefix.clear();
+    translate.clear();
 
     // Delete all the objects in the list
     for(std::size_t i = 0; i < documentList.size(); i++)
@@ -190,6 +191,7 @@ void EnumCreator::parse(void)
     lookupTitle = ProtocolParser::isFieldSet("lookupTitle", map);
     lookupComment = ProtocolParser::isFieldSet("lookupComment", map);
     file = ProtocolParser::getAttribute("file", map);
+    translate = ProtocolParser::getAttribute("translate", map, support.globaltranslate);
 
     // The file attribute is only supported on global enumerations
     if(isglobal)
@@ -296,6 +298,21 @@ void EnumCreator::parse(void)
     output += name;
     output += ";\n";
 
+
+    // If we have a translate macro then we add the special case to keep code compiling if the macro is not included
+    if(!translate.empty() && (lookup || lookupComment || lookupTitle))
+    {
+        // Translation macro in the source file
+        sourceOutput += "\n";
+        sourceOutput += "// Translation provided externally as a preprocesso macro. The \n";
+        sourceOutput += "// macro should take a `const char *` and return a `const char *.`\n";
+        sourceOutput += "// This macro is to keep the code compiling if you don't provide the real one.\n";
+        sourceOutput += "#ifndef " + translate + "\n";
+        sourceOutput += TAB_IN + "#define " + translate + "(x) x\n";
+        sourceOutput += "#endif";
+        sourceOutput += "\n";
+    }
+
     if (lookup)
     {
         output += "\n";
@@ -330,7 +347,10 @@ void EnumCreator::parse(void)
                 continue;
 
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
-            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + element.getName() + "\");\n";
+            if(translate.empty())
+                sourceOutput += TAB_IN + TAB_IN + "return \"" + element.getName() + "\";\n";
+            else
+                sourceOutput += TAB_IN + TAB_IN + "return " + translate + "(\"" + element.getName() + "\");\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
@@ -374,16 +394,19 @@ void EnumCreator::parse(void)
             sourceOutput += TAB_IN + "case " + element.getName() + ":\n";
 
             // Title takes first preference, if supplied
-            std::string title = element.title;
+            std::string _title = element.title;
 
             // Comment takes second preference, if supplied
-            if (title.empty())
-                title = element.comment;
+            if (_title.empty())
+                _title = element.comment;
 
-            if (title.empty())
-                title = element.getLookupName();
+            if (_title.empty())
+                _title = element.getLookupName();
 
-            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + title + "\");\n";
+            if(translate.empty())
+                sourceOutput += TAB_IN + TAB_IN + "return \"" + _title + "\";\n";
+            else
+                sourceOutput += TAB_IN + TAB_IN + "return " + translate + "(\"" + _title + "\");\n";
         }
 
         sourceOutput += TAB_IN + "}\n";
@@ -436,7 +459,10 @@ void EnumCreator::parse(void)
             if (_comment.empty())
                 _comment = element.getLookupName();
 
-            sourceOutput += TAB_IN + TAB_IN + "return translate" + support.protoName + "(\"" + _comment + "\");\n";
+            if(translate.empty())
+                sourceOutput += TAB_IN + TAB_IN + "return \"" + _comment + "\";\n";
+            else
+                sourceOutput += TAB_IN + TAB_IN + "return " + translate + "(\"" + _comment + "\");\n";
         }
 
         sourceOutput += TAB_IN + "}\n";

@@ -160,6 +160,9 @@ protected:
     //! A prefix can be specified for each element in the enum
     std::string prefix;
 
+    //! The name of the function used for string translation
+    std::string translate;
+
     //! The header file output string of the enumeration
     std::string output;
 

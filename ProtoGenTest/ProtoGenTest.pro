@@ -30,6 +30,7 @@ SOURCES += main.cpp \
     floatspecial.c \
     GPS.c \
     globaldependson.c \
+    globalenum.c \
     map/base_map.cpp \
     scaleddecode.c \
     scaledencode.c \
