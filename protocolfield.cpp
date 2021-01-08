@@ -340,7 +340,7 @@ std::string TypeData::applyTypeToConstant(const std::string& number) const
     bool ok;
     double value = ShuntingYard::toNumber(output, &ok);
     if(!ok)
-        return "(" + toTypeString() + ")" + number;
+        return "(" + toTypeString() + ")(" + number + ")";
 
     // Add the correct suffix for the numeric type
     if(isFloat)
@@ -2074,14 +2074,14 @@ void ProtocolField::getIncludeDirectives(std::vector<std::string>& list) const
     // Array sizes could be enumerations that need an include directive
     if(!array.empty())
     {
-        include = parser->lookUpIncludeName(array);
+        include = parser->lookUpIncludeFilenameForDefinition(array);
         if(!include.empty())
             list.push_back(include);
 
         // Array sizes could be enumerations that need an include directive
         if(!array2d.empty())
         {
-            include = parser->lookUpIncludeName(array2d);
+            include = parser->lookUpIncludeFilenameForDefinition(array2d);
             if(!include.empty())
                 list.push_back(include);
         }
@@ -2089,7 +2089,7 @@ void ProtocolField::getIncludeDirectives(std::vector<std::string>& list) const
 
     if(inMemoryType.isEnum || inMemoryType.isStruct)
     {
-        include = parser->lookUpIncludeName(typeName);
+        include = parser->lookUpIncludeFilenameForDefinition(typeName);
         if(include.empty())
         {
             // we don't warn for enumeration include failures, they are (potentially) less serious
@@ -2105,6 +2105,27 @@ void ProtocolField::getIncludeDirectives(std::vector<std::string>& list) const
     removeDuplicates(list);
 
 }// ProtocolField::getIncludeDirectives
+
+
+/*!
+ * Append the include directives in source code for this encodable. Mostly this is empty,
+ * but if the definition and implementation are in different modules this may not be.
+ * \param list is appended with any directives this encodable requires.
+ */
+void ProtocolField::getSourceIncludeDirectives(std::vector<std::string>& list) const
+{
+    if(inMemoryType.isStruct)
+    {
+        std::string include = parser->lookUpIncludeFilenameForImplementation(typeName);
+        if(!include.empty())
+            list.push_back(include);
+
+    }// if enum or struct
+
+    // Only need one of each include
+    removeDuplicates(list);
+
+}// ProtocolField::getSourceIncludeDirectives
 
 
 /*!
@@ -2621,7 +2642,7 @@ std::string ProtocolField::getVerifyString(void) const
         {
             output += spacing + arrayspacing + "if(" + access + " < " + verifyMinString + ")\n";
             output += spacing + arrayspacing + "{\n";
-            output += spacing + arrayspacing + TAB_IN + access + " = " + verifyMinString + ";\n";
+            output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMinString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
             output += spacing + arrayspacing + "}\n";
         }
@@ -2634,7 +2655,7 @@ std::string ProtocolField::getVerifyString(void) const
 
             output += spacing + arrayspacing + choice + access + " > " + verifyMaxString + ")\n";
             output += spacing + arrayspacing + "{\n";
-            output += spacing + arrayspacing + TAB_IN + access + " = " + verifyMaxString + ";\n";
+            output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMaxString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
             output += spacing + arrayspacing + "}\n";
         }

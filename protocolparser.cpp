@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.2.g";
+const std::string ProtocolParser::genVersion = "3.3.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -236,10 +236,6 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         }
 
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
-
-        if(support.supportbool && (support.language == ProtocolSupport::c_language))
-            enumfile.writeIncludeDirective("stdbool.h", "", true);
-
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();
@@ -648,13 +644,6 @@ void ProtocolParser::createProtocolHeader(const XMLElement* docElem)
         header->write("#define get" + name + "Version() \""  + support.version + "\"\n");
     }
 
-    // Translation macro
-    header->makeLineSeparator();
-    header->write("// Translation provided externally. The macro takes a `const char *` and returns a `const char *`\n");
-    header->write("#ifndef translate" + name + "\n");
-    header->write("    #define translate" + name + "(x) x\n");
-    header->write("#endif");
-
     header->makeLineSeparator();
 
     // We need to flush this to disk now, because others may try to open this file and append it
@@ -1008,11 +997,44 @@ void ProtocolParser::outputIncludes(const std::string& parent, ProtocolFile& fil
 
 
 /*!
- * Find the include name for a specific global structure type or enumeration type
+ * Find the include filename for the implementation of a specific global structure
+ * type.
+ * \param typeName is the type to lookup
+ * \return the file name to be included to reference this structures implementation
+ */
+std::string ProtocolParser::lookUpIncludeFilenameForImplementation(const std::string& typeName) const
+{
+    for(std::size_t i = 0; i < structures.size(); i++)
+    {
+        if(structures.at(i)->typeName == typeName)
+        {
+            return structures.at(i)->getHeaderFileName();
+        }
+    }
+
+    for(std::size_t i = 0; i < packets.size(); i++)
+    {
+        if(packets.at(i)->typeName == typeName)
+        {
+            return packets.at(i)->getHeaderFileName();
+        }
+    }
+
+    return std::string();
+
+}// ProtocolParser::lookUpIncludeFilenameForImplementation
+
+
+/*!
+ * Find the include filename for the definition of a specific global structure
+ * type or enumeration type. Note that for structures this will return the name
+ * of the file that defines the structure, but not necessarily the name of the
+ * file that implements the structure interfaces. lookUpIncludeFilenameForImplementation()
+ * will return the filename that defines the implementation.
  * \param typeName is the type to lookup
  * \return the file name to be included to reference this global structure type
  */
-std::string ProtocolParser::lookUpIncludeName(const std::string& typeName) const
+std::string ProtocolParser::lookUpIncludeFilenameForDefinition(const std::string& typeName) const
 {
     for(std::size_t i = 0; i < structures.size(); i++)
     {

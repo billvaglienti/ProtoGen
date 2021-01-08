@@ -22,7 +22,7 @@ std::string& ShuntingYard::replacePie(std::string& input)
  * Given a raw (untokenized) mathematical expression in infix notation, compute
  * the result. Allowable operators are " ( ) + - * / ^ ".
  * \param infix is the infix expresions to compute
- * \param ok is set to true if the computation is god. ok can point to NULL.
+ * \param ok is set to true if the computation is good. ok can point to NULL.
  * \return the computational result, or 0 if the computation cannot be performed.
  */
 double ShuntingYard::computeInfix(const std::string& infix, bool* ok)

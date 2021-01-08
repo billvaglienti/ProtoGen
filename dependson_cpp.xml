@@ -1,6 +1,6 @@
 <Protocol file="globaldependson" comment="This is an example of a protocol description file another file depends on">
 
-    <Enum name="GPSConstants" file="globalenum" comment="Constants used with GPS systems">
+    <Enum name="GPSConstants" file="globalenum" lookupTitle="true" translate="aspecialtranslation" comment="Constants used with GPS systems">
         <Value name="GPS_BAND_L1" value="0"/>
         <Value name="GPS_BAND_L2" value="1"/>
         <Value name="GPS_BAND_L5" value="2"/>

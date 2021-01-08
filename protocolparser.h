@@ -27,6 +27,9 @@ public:
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
 
+    //! Set the translation override option
+    void setTranslationOverride(std::string translate) {support.setTranslationOverride(translate);}
+
     //! Set LaTeX support
     void setLaTeXSupport(bool on) {latexEnabled = on;}
 
@@ -102,8 +105,11 @@ public:
     //! Take a comment line and reflow it for our needs.
     static std::string reflowComment(const std::string& text, const std::string& prefix = std::string(), std::size_t charlimit = 0);
 
-    //! Find the include name for a specific type
-    std::string lookUpIncludeName(const std::string& typeName) const;
+    //! Find the include filename for the implementation of a specific type
+    std::string lookUpIncludeFilenameForImplementation(const std::string& typeName) const;
+
+    //! Find the include filename for the definition of a specific type
+    std::string lookUpIncludeFilenameForDefinition(const std::string& typeName) const;
 
     //! Find the enumeration creator for this enum
     const EnumCreator* lookUpEnumeration(const std::string& enumName) const;

@@ -1148,7 +1148,7 @@ void ProtocolStructure::getIncludeDirectives(std::vector<std::string>& list) con
     // Array sizes could be enumerations that need an include directive
     if(!array.empty())
     {
-        std::string include = parser->lookUpIncludeName(array);
+        std::string include = parser->lookUpIncludeFilenameForDefinition(array);
         if(!include.empty())
             list.push_back(include);
     }
@@ -1156,7 +1156,7 @@ void ProtocolStructure::getIncludeDirectives(std::vector<std::string>& list) con
     // Array sizes could be enumerations that need an include directive
     if(!array2d.empty())
     {
-        std::string include = parser->lookUpIncludeName(array2d);
+        std::string include = parser->lookUpIncludeFilenameForDefinition(array2d);
         if(!include.empty())
             list.push_back(include);
     }
@@ -2774,7 +2774,7 @@ std::string ProtocolStructure::getMapDecodeFunctionPrototype(const std::string& 
 
 /*!
  * Get the string that gives the function used to decode this structure from a map
- * \param includeChildren should be true to include the function prototypes of
+ * \param includeChildren should be true to include the function bodies of
  *        the children structures of this structure
  * \return the function string, which may be empty
  */
@@ -2801,6 +2801,19 @@ std::string ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) co
         ProtocolFile::makeLineSeparator(output);
     }
 
+    // We need to know if any of our encodables are primitives (versus structures),
+    // because that requires an "ok" local parameter
+    bool containsprimitives = false;
+    for(std::size_t i = 0; i < encodables.size(); i++)
+    {
+        ProtocolField* field = dynamic_cast<ProtocolField*>(encodables.at(i));
+        if((field != nullptr) && field->isPrimitive())
+        {
+            containsprimitives = true;
+            break;
+        }
+    }
+
     // My mapDecode function
     output += "/*!\n";
     output += " * Decode the contents of a " + typeName + " from a Key:Value string map\n";
@@ -2812,7 +2825,10 @@ std::string ProtocolStructure::getMapDecodeFunctionBody(bool includeChildren) co
     output += getMapDecodeFunctionSignature(true) + "\n";
     output += "{\n";
     output += TAB_IN + "QString key;\n";
-    output += TAB_IN + "bool ok = false;\n";
+
+    // We only need the "ok" variable if this structure contains primitive types.
+    if(containsprimitives)
+        output += TAB_IN + "bool ok = false;\n";
 
     if(needsDecodeIterator)
         output += TAB_IN + "unsigned _pg_i = 0;\n";

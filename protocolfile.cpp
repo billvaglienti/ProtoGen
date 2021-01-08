@@ -130,7 +130,11 @@ void ProtocolFile::separateModuleNameAndPath(std::string& name, std::string& fil
     // Remove the path from the name and add it to the file path
     if(namepath.has_parent_path())
     {
-        filepath += std::filesystem::path::preferred_separator;
+        // Only add the directory separator if the filepath is not empty,
+        // cause if it is empty this will refer to the root of the file system
+        if(!filepath.empty())
+            filepath += std::filesystem::path::preferred_separator;
+
         filepath += namepath.parent_path().string();
         name = namepath.filename().string();
     }
@@ -560,6 +564,35 @@ void ProtocolHeaderFile::setFileComment(const std::string& comment)
 
 
 /*!
+ * Add the #define __STDC_CONSTANT_MACROS before stdnint.h is included. If
+ * stdint.h is not yet included then add the define to the end of the file.
+ * If the #define is already present, do nothing.
+ */
+void ProtocolHeaderFile::defineStdC_Constant_Macros(void)
+{
+    std::string match;
+    std::string filecomment;
+
+    // Only do the definition once
+    if(contains(contents, "#define __STDC_CONSTANT_MACROS"))
+        return;
+
+    // We need to insert "#define __STDC_CONSTANT_MACROS" before the include to stdint.h
+    match += "#include <stdint.h>";
+    if(contains(contents, match))
+        replaceinplace(contents, match, "#define __STDC_CONSTANT_MACROS\n#include <stdint.h>");
+    else
+    {
+        makeLineSeparator();
+        write("#define __STDC_CONSTANT_MACROS\n");
+    }
+
+    makeLineSeparator();
+
+}// ProtocolHeaderFile::defineStdC_Constant_Macros
+
+
+/*!
  * Get the extension information for this name, and remove it from the name.
  * \param name has its extension (if any) logged and removed
  */
@@ -719,6 +752,14 @@ void ProtocolHeaderFile::prepareToAppend(void)
         write(" * \\file\n");
         write(" */\n");
         write("\n");
+
+        if((support.language == ProtocolSupport::c_language) || (support.language == ProtocolSupport::cpp_language))
+            writeIncludeDirective("stdint.h", "", true);
+
+        if(support.supportbool && (support.language == ProtocolSupport::c_language))
+            writeIncludeDirective("stdbool.h", "", true);
+
+        makeLineSeparator();
     }
 
 }// ProtocolHeaderFile::prepareToAppend

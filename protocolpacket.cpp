@@ -235,7 +235,7 @@ void ProtocolPacket::parse(void)
     for(std::size_t i = 0; i < ids.size(); i++)
     {
         // The ID may be a value defined somewhere else
-        std::string include = parser->lookUpIncludeName(ids.at(i));
+        std::string include = parser->lookUpIncludeFilenameForDefinition(ids.at(i));
         if(!include.empty())
             header.writeIncludeDirective(include);
     }

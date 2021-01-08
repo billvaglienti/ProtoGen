@@ -25,6 +25,7 @@ SOURCES += \
         fieldencode.cpp \
         floatspecial.cpp \
         globaldependson.cpp \
+        globalenum.cpp \
         linkcode.cpp \
         main.cpp \
         packetinterface.cpp \
@@ -50,5 +51,6 @@ HEADERS += \
     globaldependson.hpp \
     linkcode.hpp \
     scaleddecode.hpp \
-    scaledencode.hpp
+    scaledencode.hpp \
+    translation.h
 

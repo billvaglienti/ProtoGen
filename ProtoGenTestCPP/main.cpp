@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
     int Return = 1;
 
-    std::cerr << "The next line should say: \"" << translateDemolink("") << "\"" << std::endl;
+    std::cerr << "The next line should say: \"" << translatefordemolink("") << "\"" << std::endl;
     std::cerr << packetIds_EnumComment(ENGINESETTINGS) << std::endl << std::endl;
 
     if(testLimits() == 0)

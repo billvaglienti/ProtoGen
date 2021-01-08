@@ -142,6 +142,8 @@ bool CandCppCoding::generateEncodeHeader(ProtocolHeaderFile &header)
 
     header.setModuleNameAndPath("fieldencode", support.outputpath, support.language);
 
+    header.defineStdC_Constant_Macros();
+
 // Raw string magic
 header.setFileComment(R"(fieldencode provides routines to place numbers into a byte stream.
 
@@ -173,13 +175,6 @@ byte first and the least significant last. If the computer and the protocol
 have the same endianness then encoding data from memory into a byte stream
 is a simple copy. However if the endianness is not the same then bytes must
 be re-ordered for the data to be interpreted correctly.)");
-
-    header.makeLineSeparator();
-    header.write("\n#define __STDC_CONSTANT_MACROS\n");
-    header.write("#include <stdint.h>\n");
-
-    if(support.supportbool)
-        header.writeIncludeDirective("stdbool.h", "", true);
 
     header.makeLineSeparator();
 
@@ -423,6 +418,8 @@ bool CandCppCoding::generateDecodeHeader(ProtocolHeaderFile &header)
 {
     header.setModuleNameAndPath("fielddecode", support.outputpath, support.language);
 
+    header.defineStdC_Constant_Macros();
+
 // Top level comment
 header.setFileComment(R"(fielddecode provides routines to pull numbers from a byte stream.
 
@@ -456,13 +453,6 @@ compiler. For example if a int16_t is assigned to an int32_t the compiler
 in our case we can decode signed 24-bit numbers (for example) which are
 returned to the caller as int32_t. In this instance fielddecode performs the
 sign extension.)");
-
-    header.write("\n");
-    header.write("#define __STDC_CONSTANT_MACROS\n");
-    header.write("#include <stdint.h>\n");
-
-    if(support.supportbool)
-        header.writeIncludeDirective("stdbool.h", "", true);
 
     header.makeLineSeparator();
 
