@@ -1406,7 +1406,7 @@ std::string PythonCoding::getReadableTypeName(int type)
 /*!
  * Generate the function name
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return function name
  */
 std::string PythonCoding::pySignature(int type, bool bigendian, bool encode)
@@ -1433,7 +1433,7 @@ std::string PythonCoding::pySignature(int type, bool bigendian, bool encode)
 /*!
  * generate the format string for based on size and signed value
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return format string
  */
 std::string PythonCoding::pyFormat(int type, bool bigendian)
@@ -1512,7 +1512,7 @@ std::string PythonCoding::pyFormat(int type, bool bigendian)
 /*!
  * Generate the type promoted format string for non standard sizes
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param fullsize is the type promotion of non standard sizes
  * \return type promoted format string
  */
@@ -1559,7 +1559,7 @@ std::string PythonCoding::secondFormat(int fullSize, bool bigendian, bool unSign
 /*!
  * generate the encode functions and all the peices
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return entire encode function for size and endian
  */
 std::string PythonCoding::fullPyEncodeFunction(int type, bool bigendian)
@@ -1579,7 +1579,7 @@ std::string PythonCoding::fullPyEncodeFunction(int type, bool bigendian)
 /*!
  * Write the encode python docstring including summary, args, and return
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return docstring
  */
 std::string PythonCoding::pyEncodeComment(int type, bool bigendian)
@@ -1610,7 +1610,7 @@ std::string PythonCoding::pyEncodeComment(int type, bool bigendian)
 /*!
  * Generate the encode function
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param signature is the function name
  * \param comment is the docstring for the python function
  * \param format is the string that specifies the type to be packed orunpacked
@@ -1678,7 +1678,7 @@ std::string PythonCoding::pyEncodeFunction(std::string signature, std::string co
 
     if (contains(typeSigNames[type], "float"))
     {
-        if (contains(typeSigNames[type], "float16") or contains(typeSigNames[type], "float24"))
+        if (contains(typeSigNames[type], "float16") || contains(typeSigNames[type], "float24"))
         {
             function += "float, sigbits: int) -> int:\n" + comment;
             function = pyEncodeSpecialFloat(function, type, bigendian);
@@ -1715,7 +1715,7 @@ std::string PythonCoding::pyEncodeFunction(std::string signature, std::string co
 /*!
  * encode the non standard size floats including 16, 24, 40, 48, and 56
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param format is the string that specifies the type to be packed orunpacked
  * \param function is the whole function up to this point
  * \return special size function based on size and endian
@@ -1759,7 +1759,7 @@ std::string PythonCoding::pyEncodeSpecialSize(std::string function, int type, bo
 /*!
  * encode the non standard size floats including 16 and 24
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param function is the whole function up to this point
  * \return special float function based on size and endian
  */
@@ -1791,7 +1791,7 @@ std::string PythonCoding::pyEncodeSpecialFloat(std::string function, int type, b
 /*!
  * Generate the whole decode funcion and the peices
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return decode function based of size and endian
  */
 std::string PythonCoding::fullPyDecodeFunction(int type, bool bigendian)
@@ -1811,7 +1811,7 @@ std::string PythonCoding::fullPyDecodeFunction(int type, bool bigendian)
 /*!
  * Creates the decode function from its peices
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param signature is the function name
  * \param comment is the docstring for the python function
  * \param format is the string that specifies the type to be packed orunpacked
@@ -1827,7 +1827,7 @@ std::string PythonCoding::pyDecodeFunction(std::string signature, std::string co
     if (contains(typeSigNames[type], "float"))
     {
 
-        if (contains(typeSigNames[type], "float16") or contains(typeSigNames[type], "float24"))
+        if (contains(typeSigNames[type], "float16") || contains(typeSigNames[type], "float24"))
         {
             function += ", sigbits: int) -> float:\n" + comment;
             function = pyDecodeSpecialFloat(function, type, bigendian);
@@ -1869,7 +1869,7 @@ std::string PythonCoding::pyDecodeFunction(std::string signature, std::string co
 /*!
  * Decode non standard size types including 16, 24, 40, 48, and 56
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param format is the string that specifies the type to be packed orunpacked
  * \param function is the whole function up to this point
  * \return decode function for non standard size
@@ -1882,7 +1882,7 @@ std::string PythonCoding::pyDecodeSpecialSize(std::string function, int type, bo
 
     if (size == 3)
         fullSize = 4;               ///TODO: check that if fits for the usigned case or promote to 8
-    if ( size > 4 and size < 8)
+    if ( size > 4 && size < 8)
         fullSize = 8;
 
     // determine the format of the in memory type
@@ -1898,8 +1898,8 @@ std::string PythonCoding::pyDecodeSpecialSize(std::string function, int type, bo
     function += "    full_bytes = bytearray(" + s_fullSize + ")\n\n";
 
     // if signed perform sign extenstion
-    if(!typeUnsigneds[type]) {
-
+    if(!typeUnsigneds[type])
+    {
         // based on the endian determine if the sign is the 0th byte or the final byte extracted
         if (bigendian)
             extention_byte = "0";
@@ -1954,7 +1954,7 @@ std::string PythonCoding::pyDecodeSpecialSize(std::string function, int type, bo
 /*!
  * Decode the non standard size floats including 16 and 24
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \param function is the whole function up to this point
  * \return decode function for non standard float sizes
  */
@@ -1979,7 +1979,7 @@ std::string PythonCoding::pyDecodeSpecialFloat(std::string function, int type, b
 /*!
  * Create the python docstring with summary, args, and return
  * \param type is the type enumeration
- * \param bigendian is a boolian which determines big or little endian
+ * \param bigendian is a boolean which determines big or little endian
  * \return return python docstring for decode functions
  */
 std::string PythonCoding::pyDecodeComment(int type, bool bigendian)

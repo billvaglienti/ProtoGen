@@ -144,7 +144,6 @@ protected:
     //! decode the non standard size floats including 16 and 24
     std::string pyDecodeSpecialFloat(std::string function, int type, bool bigendian);
 
-
 private:
     //! true if the size is non standard
     bool specialSize;
