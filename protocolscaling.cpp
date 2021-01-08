@@ -532,73 +532,67 @@ bool ProtocolScaling::generateEncodeHeader(void)
 {
     header.setModuleNameAndPath("scaledencode", support.outputpath, support.language);
 
+    header.defineStdC_Constant_Macros();
+
     // Top level comment
-    header.write(
-"/*!\n\
- * \\file\n\
- * scaledencode routines place scaled numbers into a byte stream.\n\
- *\n\
- * scaledencode routines place scaled values into a big or little endian byte\n\
- * stream. The values can be any legitimate type (double, float, uint32_t,\n\
- * uint16_t, uint8_t, int32_t, int16_t, int8_t), and are encoded as either a\n\
- * unsigned or signed integer from 1 to 8 bytes in length. Unsigned encodings\n\
- * allow the caller to specify a minimum and a maximum value, with the only\n\
- * limitation that the maximum value must be more than the minimum. Signed\n\
- * encodings only allow the caller to specify a maximum value which gives\n\
- * maximum absolute value that can be encoded.\n\
- *\n\
- * An example encoding would be: take a float that represents speed in meters\n\
- * per second and encode it in two bytes from -200 to 200 meters per second.\n\
- * In that example the encoding function would be:\n\
- *\n\
- * float32ScaledTo2SignedBeBytes(speed, bytestream, &index, 200);\n\
- *\n\
- * This would scale the speed according to (32767/200), and copy the resulting\n\
- * two bytes to bytestream[index] as a signed 16 bit number in big endian\n\
- * order. This would result in a velocity resolution of 0.006 m/s.\n\
- *\n\
- * Another example encoding is: take a double that represents altitude in\n\
- * meters and encode it in three bytes from -1000 to 49000 meters:\n\
- *\n\
- * float64ScaledTo3UnsignedLeBytes(alt, bytestream, &index, -1000, 49000);\n\
- *\n\
- * This would transform the altitude according to (alt *(16777215/50000) + 1000)\n\
- * and copy the resulting three bytes to bytestream[index] as an unsigned 24\n\
- * bit number in little endian order. This would result in an altitude\n\
- * resolution of 0.003 meters.\n\
- * \n\
- * scaledencode does not include routines that increase the resolution of the\n\
- * inmemory value. For example the function floatScaledTo5UnsignedBeBytes() does\n\
- * not exist, because expanding a float to 5 bytes does not make any resolution\n\
- * improvement over encoding it in 4 bytes. In general the encoded format\n\
- * must be equal to or less than the number of bytes of the raw data.\n\
- *\n");
+    std::string filecomment = R"(scaledencode routines place scaled numbers into a byte stream.
+
+scaledencode routines place scaled values into a big or little endian byte
+stream. The values can be any legitimate type (double, float, uint32_t,
+uint16_t, uint8_t, int32_t, int16_t, int8_t), and are encoded as either a
+unsigned or signed integer from 1 to 8 bytes in length. Unsigned encodings
+allow the caller to specify a minimum and a maximum value, with the only
+limitation that the maximum value must be more than the minimum. Signed
+encodings only allow the caller to specify a maximum value which gives
+maximum absolute value that can be encoded.
+
+An example encoding would be: take a float that represents speed in meters
+per second and encode it in two bytes from -200 to 200 meters per second.
+In that example the encoding function would be:
+
+float32ScaledTo2SignedBeBytes(speed, bytestream, &index, 200);
+
+This would scale the speed according to (32767/200), and copy the resulting
+two bytes to bytestream[index] as a signed 16 bit number in big endian
+order. This would result in a velocity resolution of 0.006 m/s.
+
+Another example encoding is: take a double that represents altitude in
+meters and encode it in three bytes from -1000 to 49000 meters:
+
+float64ScaledTo3UnsignedLeBytes(alt, bytestream, &index, -1000, 49000);
+
+This would transform the altitude according to (alt *(16777215/50000) + 1000)
+and copy the resulting three bytes to bytestream[index] as an unsigned 24
+bit number in little endian order. This would result in an altitude
+resolution of 0.003 meters.
+
+scaledencode does not include routines that increase the resolution of the
+inmemory value. For example the function floatScaledTo5UnsignedBeBytes() does
+not exist, because expanding a float to 5 bytes does not make any resolution
+improvement over encoding it in 4 bytes. In general the encoded format
+must be equal to or less than the number of bytes of the raw data.)";
 
     // Document the protocol generation options
-    header.write(" * Code generation for this module was affected by these global flags:\n");
+    filecomment += "\n\nCode generation for this module was affected by these global flags:\n\n";
 
     if(support.int64)
-        header.write(" * 64-bit integers are supported.\n");
+        filecomment += "- 64-bit integers are supported.\n\n";
     else
-        header.write(" * 64-bit integers are not supported.\n");
+        filecomment += "- 64-bit integers are not supported.\n\n";
 
     if(support.bitfield && support.longbitfield && support.int64)
-        header.write(" * Normal and long bitfields are supported.\n");
+        filecomment += "- Normal and long bitfields are supported.\n\n";
     else if(support.bitfield)
-        header.write(" * Normal bitfields are supported, long bitfields are not.\n");
+        filecomment += "- Normal bitfields are supported, long bitfields are not.\n\n";
     else
-        header.write(" * Bitfields are not supported.\n");
+        filecomment += "- Bitfields are not supported.\n\n";
 
     if(support.float64)
-        header.write(" * Double precision floating points are supported.\n");
+        filecomment += "- Double precision floating points are supported.\n\n";
     else
-        header.write(" * Double precision floating points are not supported.\n");
+        filecomment += "- Double precision floating points are not supported.\n\n";
 
-    header.write(" */\n");
-
-    header.write("\n");
-    header.write("#define __STDC_CONSTANT_MACROS\n");
-    header.write("#include <stdint.h>\n");
+    header.setFileComment(filecomment);
 
     bool ifdefopened = false;
 
@@ -1232,41 +1226,35 @@ bool ProtocolScaling::generateDecodeHeader(void)
 {
     header.setModuleNameAndPath("scaleddecode", support.outputpath, support.language);
 
+    header.defineStdC_Constant_Macros();
+
     // Top level comment
-    header.write(
-"/*!\n\
- * \\file\n\
- * scaleddecode routines extract scaled numbers from a byte stream.\n\
- *\n\
- * scaleddecode routines extract scaled numbers from a byte stream. The routines\n\
- * in this module are the reverse operation of the routines in scaledencode.\n\
- *\n");
+    std::string filecomment = R"(scaleddecode routines extract scaled numbers from a byte stream.
+
+scaleddecode routines extract scaled numbers from a byte stream. The routines
+in this module are the reverse operation of the routines in scaledencode.)";
 
     // Document the protocol generation options
-    header.write(" * Code generation for this module was affected by these global flags:\n");
+    filecomment += "\n\nCode generation for this module was affected by these global flags:\n\n";
 
     if(support.int64)
-        header.write(" * 64-bit integers are supported.\n");
+        filecomment += "- 64-bit integers are supported.\n\n";
     else
-        header.write(" * 64-bit integers are not supported.\n");
+        filecomment += "- 64-bit integers are not supported.\n\n";
 
     if(support.bitfield && support.longbitfield && support.int64)
-        header.write(" * Normal and long bitfields are supported.\n");
+        filecomment += "- Normal and long bitfields are supported.\n\n";
     else if(support.bitfield)
-        header.write(" * Normal bitfields are supported, long bitfields are not.\n");
+        filecomment += "- Normal bitfields are supported, long bitfields are not.\n\n";
     else
-        header.write(" * Bitfields are not supported.\n");
+        filecomment += "- Bitfields are not supported.\n\n";
 
     if(support.float64)
-        header.write(" * Double precision floating points are supported.\n");
+        filecomment += "- Double precision floating points are supported.\n\n";
     else
-        header.write(" * Double precision floating points are not supported.\n");
+        filecomment += "- Double precision floating points are not supported.\n\n";
 
-    header.write(" */\n");
-
-    header.write("\n");
-    header.write("#define __STDC_CONSTANT_MACROS\n");
-    header.write("#include <stdint.h>\n");
+    header.setFileComment(filecomment);
 
     bool ifdefopened = false;
 

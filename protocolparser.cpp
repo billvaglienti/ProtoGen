@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.3.a";
+const std::string ProtocolParser::genVersion = "3.3.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -236,10 +236,6 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         }
 
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
-
-        if(support.supportbool && (support.language == ProtocolSupport::c_language))
-            enumfile.writeIncludeDirective("stdbool.h", "", true);
-
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();

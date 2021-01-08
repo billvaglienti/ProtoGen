@@ -341,7 +341,7 @@ std::string TypeData::applyTypeToConstant(const std::string& number) const
     bool ok;
     double value = ShuntingYard::toNumber(output, &ok);
     if(!ok)
-        return "(" + toTypeString() + ")" + number;
+        return "(" + toTypeString() + ")(" + number + ")";
 
     // Add the correct suffix for the numeric type
     if(isFloat)
@@ -2643,7 +2643,7 @@ std::string ProtocolField::getVerifyString(void) const
         {
             output += spacing + arrayspacing + "if(" + access + " < " + verifyMinString + ")\n";
             output += spacing + arrayspacing + "{\n";
-            output += spacing + arrayspacing + TAB_IN + access + " = " + verifyMinString + ";\n";
+            output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMinString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
             output += spacing + arrayspacing + "}\n";
         }
@@ -2656,7 +2656,7 @@ std::string ProtocolField::getVerifyString(void) const
 
             output += spacing + arrayspacing + choice + access + " > " + verifyMaxString + ")\n";
             output += spacing + arrayspacing + "{\n";
-            output += spacing + arrayspacing + TAB_IN + access + " = " + verifyMaxString + ";\n";
+            output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMaxString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
             output += spacing + arrayspacing + "}\n";
         }

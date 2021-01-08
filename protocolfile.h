@@ -49,10 +49,10 @@ public:
     void setModuleNameAndPath(std::string prefix, std::string name, std::string filepath, ProtocolSupport::LanguageType languageoverride);
 
     //! Return the path
-    virtual std::string filePath(void) const {return path;}
+    std::string filePath(void) const {return path;}
 
     //! Return the filename
-    virtual std::string fileName(void) const {return module+extension;}
+    std::string fileName(void) const {return module+extension;}
 
     //! Return the module name
     std::string moduleName(void) const {return module;}
@@ -128,6 +128,9 @@ public:
 
     //! Write a comment for the entire file in the \file block
     void setFileComment(const std::string& comment);
+
+    //! Add the #define __STDC_CONSTANT_MACROS before stdnint.h is included
+    void defineStdC_Constant_Macros(void);
 
 protected:
 

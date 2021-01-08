@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     if(css.empty())
         css = liststartsWith(arguments, "-s ");
 
-    css = css.substr(docs.find(" ") + 1);
+    css = css.substr(css.find(" ") + 1);
     if(!css.empty() && endsWith(css, ".css"))
     {
         std::fstream file(css, std::ios_base::in);
