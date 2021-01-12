@@ -720,7 +720,11 @@ void ProtocolStructure::parseEnumerations(const XMLNode* node)
         {
             const EnumCreator* Enum = parser->parseEnumeration(getHierarchicalName(), child);
             if(Enum != nullptr)
+            {
+                // Inform this enumeration what it's header is
+
                 enumList.push_back(Enum);
+            }
         }
 
     }// for all my enum tags
@@ -1141,6 +1145,10 @@ int ProtocolStructure::getNumberInMemory(void) const
  */
 void ProtocolStructure::getIncludeDirectives(std::vector<std::string>& list) const
 {
+    // Includes needed by our enumerations
+    for(std::size_t i = 0; i < enumList.size(); i++)
+        enumList.at(i)->getIncludeDirectives(list);
+
     // Includes that our encodable members may need
     for(std::size_t i = 0; i < encodables.size(); i++)
         encodables.at(i)->getIncludeDirectives(list);
@@ -1235,6 +1243,41 @@ void ProtocolStructure::getPrintIncludeDirectives(std::vector<std::string>& list
 
     removeDuplicates(list);
 }
+
+
+/*!
+ * Determine if this structure (or its children) defines an enumeration name
+ * \param name is the name of the enumeration element to look for
+ * \return true if name is an enumeration element defined by this structure
+ */
+bool ProtocolStructure::definesEnumerationName(const std::string& name) const
+{
+    for(std::size_t i = 0; i < enumList.size(); i++)
+    {
+        if((enumList.at(i)->getName() == name) || enumList.at(i)->isEnumerationValue(name))
+            return true;
+    }
+
+    if(redefines == nullptr)
+    {
+        for(std::size_t i = 0; i < encodables.size(); i++)
+        {
+            // Is this encodable a structure?
+            ProtocolStructure* structure = dynamic_cast<ProtocolStructure*>(encodables.at(i));
+
+            if(structure == nullptr)
+                continue;
+
+            if(structure->definesEnumerationName(name))
+                return true;
+
+        }// for all children
+
+    }// if not redefining
+
+    return false;
+
+}// ProtocolStructure::definesEnumerationName
 
 
 /*!

@@ -242,9 +242,6 @@ public:
     //! Return the include directives needed for this encodable's print functions
     void getPrintIncludeDirectives(std::vector<std::string>& list) const override;
 
-
-
-
     //! Get details needed to produce documentation for this encodable.
     void getDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const override;
 
@@ -259,6 +256,9 @@ public:
 
     //! True if this encodable has initialization data
     bool hasInit(void) const override {return hasinit;}
+
+    //! Determine if this structure (or its children) defines an enumeration name
+    bool definesEnumerationName(const std::string& name) const;
 
 protected:
 

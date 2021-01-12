@@ -148,7 +148,7 @@ void EnumCreator::clear(void)
 
 
 /*!
- * Parse the DOM to fill out the enumeration list for a global enum. This sill
+ * Parse the DOM to fill out the enumeration list for a global enum. This will
  * also set the header reference file name that others need to include to use
  * this enum.
  */
@@ -575,6 +575,33 @@ void EnumCreator::computeNumberList(void)
         minbitwidth = 8;
 
 }// EnumCreator::computeNumberList
+
+
+/*!
+ * Return the include directives needed for this encodable. It is possible that
+ * an enumeration value could be coming from another enumeration which will
+ * require an include directive.
+ * \param list receives include directives needed for this enumeration.
+ */
+void EnumCreator::getIncludeDirectives(std::vector<std::string>& list) const
+{
+    std::string include = getHeaderFileName();
+    if(!include.empty())
+        list.push_back(include);
+
+    for(std::size_t i = 0; i < elements.size(); i++)
+    {
+        if(!elements.at(i).value.empty())
+        {
+            include = parser->lookUpIncludeFilenameForDefinition(elements.at(i).value);
+            if(!include.empty())
+                list.push_back(include);
+        }
+    }
+
+    removeDuplicates(list);
+
+}// EnumCreator::getIncludeDirectives
 
 
 /*!
