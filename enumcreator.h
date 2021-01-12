@@ -80,6 +80,9 @@ public:
     //! Check names against the list of C keywords
     void checkAgainstKeywords(void) override;
 
+    //! Return the include directives needed for this encodable
+    void getIncludeDirectives(std::vector<std::string>& list) const;
+
     //! Get the markdown documentation for this enumeration
     std::string getTopLevelMarkdown(bool global = false, const std::vector<std::string>& ids = std::vector<std::string>()) const override;
 

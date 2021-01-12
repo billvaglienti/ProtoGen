@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.3.b";
+const std::string ProtocolParser::genVersion = "3.3.c";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -235,7 +235,11 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
             continue;
         }
 
+        std::vector<std::string> list;
+        module->getIncludeDirectives(list);
+
         enumfile.setModuleNameAndPath(module->getHeaderFileName(), module->getHeaderFilePath());
+        enumfile.writeIncludeDirectives(list);
         enumfile.write(module->getOutput());
         enumfile.makeLineSeparator();
         enumfile.flush();
@@ -1036,9 +1040,17 @@ std::string ProtocolParser::lookUpIncludeFilenameForImplementation(const std::st
  */
 std::string ProtocolParser::lookUpIncludeFilenameForDefinition(const std::string& typeName) const
 {
+    for(std::size_t i = 0; i < globalEnums.size(); i++)
+    {
+        if((globalEnums.at(i)->getName() == typeName) || globalEnums.at(i)->isEnumerationValue(typeName))
+        {
+            return globalEnums.at(i)->getHeaderFileName();
+        }
+    }
+
     for(std::size_t i = 0; i < structures.size(); i++)
     {
-        if(structures.at(i)->typeName == typeName)
+        if((structures.at(i)->typeName == typeName) || structures.at(i)->definesEnumerationName(typeName))
         {
             return structures.at(i)->getDefinitionFileName();
         }
@@ -1046,17 +1058,9 @@ std::string ProtocolParser::lookUpIncludeFilenameForDefinition(const std::string
 
     for(std::size_t i = 0; i < packets.size(); i++)
     {
-        if(packets.at(i)->typeName == typeName)
+        if((packets.at(i)->typeName == typeName) || packets.at(i)->definesEnumerationName(typeName))
         {
             return packets.at(i)->getDefinitionFileName();
-        }
-    }
-
-    for(std::size_t i = 0; i < globalEnums.size(); i++)
-    {
-        if((globalEnums.at(i)->getName() == typeName) || globalEnums.at(i)->isEnumerationValue(typeName))
-        {
-            return globalEnums.at(i)->getHeaderFileName();
         }
     }
 
