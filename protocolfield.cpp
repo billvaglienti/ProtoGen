@@ -2641,7 +2641,7 @@ std::string ProtocolField::getVerifyString(void) const
 
         if(!verifyMinString.empty())
         {
-            output += spacing + arrayspacing + "if(" + access + " < " + verifyMinString + ")\n";
+            output += spacing + arrayspacing + "if(" + access + " < " + inMemoryType.applyTypeToConstant(verifyMinString) + ")\n";
             output += spacing + arrayspacing + "{\n";
             output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMinString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
@@ -2654,7 +2654,7 @@ std::string ProtocolField::getVerifyString(void) const
             if(verifyMinString.empty())
                 choice = "if(";
 
-            output += spacing + arrayspacing + choice + access + " > " + verifyMaxString + ")\n";
+            output += spacing + arrayspacing + choice + access + " > " + inMemoryType.applyTypeToConstant(verifyMaxString) + ")\n";
             output += spacing + arrayspacing + "{\n";
             output += spacing + arrayspacing + TAB_IN + access + " = " + inMemoryType.applyTypeToConstant(verifyMaxString) + ";\n";
             output += spacing + arrayspacing + TAB_IN + "_pg_good = " + failedvalue + ";\n";
