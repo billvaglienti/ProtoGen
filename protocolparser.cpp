@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.3.c";
+const std::string ProtocolParser::genVersion = "3.3.d";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
