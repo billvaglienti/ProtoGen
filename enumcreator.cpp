@@ -238,7 +238,7 @@ void EnumCreator::parse(void)
         elements.push_back(elem);
 
         // Track the longest declaration
-        std::size_t length = elem.getDeclaration().length();
+        std::size_t length = (TAB_IN + elem.getDeclaration()).length();
         if(length > maxLength)
             maxLength = length;
 
@@ -259,9 +259,6 @@ void EnumCreator::parse(void)
 
     // Account for 1 character we will add below
     maxLength += 1;
-
-    // We want maxLength to be a multiple of 4
-    maxLength += 4 - (maxLength % 4);
 
     // Declare the enumeration
     output += "typedef enum\n";
