@@ -13,7 +13,7 @@ If one were to simply `memcpy()` the double precision representation into a pack
 4. The receiver may have different memory alignment rules than the sender.
 5. The receiver's definition of floating point numbers may be different from the sender. (To be fair, most systems now use [IEEE-754 for floating point](http://grouper.ieee.org/groups/754/), so this is unlikely).
 
-These problems can be averted if the internal data representation is converted to a common representation as given by an interface control document (ICD) before transmission. The receiver then un-converts the received data according to the same ICD. The conversion can account for all of the problems of simple copying. Most peripheral devices use some version of this idea: the device comes with an ICD that defines how to interpret the transmitted data. Software is then written according to this ICD to implement the encoding/decoding rules. However this creates new problems:
+These problems can be averted if the internal data representation is converted to a common representation as given by an interface control document (ICD) before transmission. The receiver then un-converts the received data according to the same ICD. The conversion can account for all of the problems of simple copying. Most peripheral devices use some version of this idea: the device comes with an ICD that defines how to interpret the transmitted data. Software is written according to this ICD to implement the encoding/decoding rules. However this creates new problems:
 
 1. Implementing communications now requires a lot more software development. You cannot just `memcpy()` to or from the packet data buffer.
 2. CPU time is spent at both the receiver and transmitter to perform the ICD interpretation.
@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C or C++ source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The generated code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 3.2. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 3.4. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 

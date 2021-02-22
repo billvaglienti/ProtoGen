@@ -49,10 +49,10 @@ public:
     void setModuleNameAndPath(std::string prefix, std::string name, std::string filepath, ProtocolSupport::LanguageType languageoverride);
 
     //! Return the path
-    std::string filePath(void) const {return path;}
+    virtual std::string filePath(bool eveniftrivial = false) const {(void)eveniftrivial; return path;}
 
     //! Return the filename
-    std::string fileName(void) const {return module+extension;}
+    virtual std::string fileName(bool eveniftrivial = false) const {(void)eveniftrivial; return module+extension;}
 
     //! Return the module name
     std::string moduleName(void) const {return module;}
@@ -95,6 +95,9 @@ public:
 
 protected:
 
+    //! Append to the current contents of the file
+    void writeInternal(const std::string& text);
+
     //! Prepare to do an append operation
     virtual void prepareToAppend(void) {}
 
@@ -104,15 +107,33 @@ protected:
     //! Return the correct on disk name
     std::string fileNameAndPathOnDisk(void) const;
 
-    ProtocolSupport support;//!< Protocol wide support details
-    std::string extension;      //!< The file extension
-    std::string path;           //!< Output path for the file
-    std::string module;         //!< The module name, not including the file extension
-    std::string contents;       //!< The contents, not including the prologue or epilogue
+    //! Protocol wide support details
+    ProtocolSupport support;
 
-    bool dirty;             //!< Flag set to indicate that the file contents are dirty and need to be flushed
-    bool appending;         //!< Flag set if an append operation is in progress
-    bool temporary;         //!< Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
+    //! The file extension
+    std::string extension;
+
+    //! Output path for the file
+    std::string path;
+
+    //! The module name, not including the file extension
+    std::string module;
+
+    //! The contents, not including the prologue or epilogue
+    std::string contents;
+
+    //! Flag set to indicate that the file contents are dirty and need to be flushed
+    bool dirty;
+
+    //! Flag set if an append operation is in progress
+    bool appending;
+
+    //! Flag to indicate this is a temporary file with "temporarydeleteme_" preceding the name
+    bool temporary;
+
+    //! Flag indicating if this file has any nontrivial content
+    bool hasNontrivialContent;
+
 };
 
 
@@ -122,6 +143,9 @@ public:
 
     //! Construct the protocol header file
     ProtocolHeaderFile(ProtocolSupport supported) : ProtocolFile(supported){}
+
+    //! Destructor that performs the actual file write
+    ~ProtocolHeaderFile() override;
 
     //! Write the file to disc, including any prologue/epilogue
     bool flush(void) override;
@@ -151,6 +175,15 @@ public:
 
     //! Construct the protocol header file
     ProtocolSourceFile(ProtocolSupport supported) : ProtocolFile(supported){}
+
+    //! Destructor that performs the actual file write
+    ~ProtocolSourceFile() override;
+
+    //! Return the path
+    std::string filePath(bool eveniftrivial = false) const override;
+
+    //! Return the filename
+    std::string fileName(bool eveniftrivial = false) const override;
 
     //! Write the file to disc, including any prologue/epilogue
     bool flush(void) override;
