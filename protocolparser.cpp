@@ -16,7 +16,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.4.a";
+const std::string ProtocolParser::genVersion = "3.4.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1364,7 +1364,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
     std::cout << "Writing HTML documentation to " << htmlfile << std::endl;
     #if defined(__APPLE__) && defined(__MACH__)
     std::system(("/usr/local/bin/MultiMarkdown " + filename + " > " + htmlfile).c_str());
-    #else    
+    #else
     std::system(("multimarkdown " + filename + " > " + htmlfile).c_str());
     #endif
 
