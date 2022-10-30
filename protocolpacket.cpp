@@ -183,8 +183,10 @@ void ProtocolPacket::parse(void)
         // If the user gave us no guidance (or turned both off, which is the
         // same as no guidance), make a choice based on the size of the
         // encodable list. If we only have 1 parameter, there is no sense in
-        // wrapping it in a structure
+        // wrapping it in a structure, if we are the C language
         if((getNumberOfEncodeParameters() > 1) && (getNumberOfDecodeParameters() > 1))
+            structureFunctions = true;
+        else if((support.language != ProtocolSupport::c_language) && ((getNumberOfEncodeParameters() > 1) || (getNumberOfDecodeParameters() > 1)))
             structureFunctions = true;
         else
             parameterFunctions = true;
@@ -350,10 +352,12 @@ std::string ProtocolPacket::getClassDeclaration_CPP(void) const
     // Notice that if we are not outputting structure functions, and this
     // class won't be used by others, we will not have any data members and
     // do not need a constructor.
-    if((redefines == nullptr) && (getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
+    if((getNumberInMemory() > 0) && (useInOtherPackets || structureFunctions))
     {
         ProtocolFile::makeLineSeparator(output);
         output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+        output += getSecondSetToInitialValueFunctionPrototype(TAB_IN, false);
         ProtocolFile::makeLineSeparator(output);
     }
 
@@ -585,13 +589,15 @@ std::string ProtocolPacket::createUtilityFunctions(const std::string& spacing) c
  */
 void ProtocolPacket::createTopLevelInitializeFunction(void)
 {
-    if(hasInit() && (verifySource != nullptr) && (redefines == nullptr))
+    if(hasInit() && (verifySource != nullptr))
     {
         // In C++ this is part of the class declaration
         if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
         {
             verifyHeader->makeLineSeparator();
             verifyHeader->write(getSetToInitialValueFunctionPrototype(std::string(), false));
+            verifyHeader->makeLineSeparator();
+            verifyHeader->write(getSecondSetToInitialValueFunctionPrototype(std::string(), false));
             verifyHeader->makeLineSeparator();
         }
 
@@ -603,6 +609,8 @@ void ProtocolPacket::createTopLevelInitializeFunction(void)
         {
             verifySource->makeLineSeparator();
             verifySource->write(getSetToInitialValueFunctionBody(false));
+            verifySource->makeLineSeparator();
+            verifySource->write(getSecondSetToInitialValueFunctionBody(false));
             verifySource->makeLineSeparator();
         }
     }
@@ -1304,7 +1312,7 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
  * Create the functions for encoding and decoding the packet to/from parameters
  */
 void ProtocolPacket::createPacketFunctions(void)
-{    
+{
     // The prototypes in the header file are only needed for C,
     // in C++ these prototypes are part of the class declaration.
     if(support.language == ProtocolSupport::c_language)
