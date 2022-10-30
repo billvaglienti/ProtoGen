@@ -21,7 +21,7 @@ These problems can be averted if the internal data representation is converted t
 
 ProtoGen is a tool that takes a xml protocol description and generates html for documentation, and C or C++ source code for encoding and decoding the data. This alleviates much of the challenge and bugs in protocol development. The generated code is highly portable, readable, efficient, and well commented. It is suitable for inclusion in almost any C/C++ compiler environment.
 
-This document refers to ProtoGen version 3.4. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
+This document refers to ProtoGen version 3.5. Source code for ProtoGen is available on [github](https://github.com/billvaglienti/ProtoGen).
 
 ---
 
@@ -464,7 +464,7 @@ Packet tag attributes beyond Structure tag attributes:
 ### Packet : Data subtags
 
 The Packet and Structure tags support Data subtags. The Data tag is the most complex part of the definition. Each Data tag represents one property of the packet structure definition, and one hunk of data in the packet encoded format. Packets can be created without any Data tags, in which case the packet is empty. Some example Data tags:
-	        
+
     <Data name="numCurvePoints" inMemoryType="bitfield4" comment="Number of points in the throttle curve"/>
     <Data name="reserved" inMemoryType="bitfield3"/>
     <Data name="enableCurve" inMemoryType="bitfield1" comment="Set to enable the throttle curve"/>

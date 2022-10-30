@@ -2235,7 +2235,7 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
     std::string description;
     std::string maxEncodedLength = encodedLength.maxEncodedLength;
 
-    if(encodedType.isNull || hidden)
+    if(encodedType.isNull)
         return;
 
     // See if we can replace any enumeration names with values
@@ -2243,6 +2243,13 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
 
     // The byte after this one
     std::string nextStartByte = EncodedLength::collapseLengthString(startByte + "+" + maxEncodedLength);
+
+    if(hidden)
+    {
+        // Update startByte for following encodables
+        startByte = nextStartByte;
+        return;
+    }
 
     // The length data
     if(encodedType.isBitfield)
@@ -2979,7 +2986,7 @@ std::string ProtocolField::getTextReadString(void) const
             if(is2dArray())
                 output += " + \"[\" + std::to_string(_pg_j) + \"]\"";
 
-            // Structure read, we need to pass the address of the structure, not the object        
+            // Structure read, we need to pass the address of the structure, not the object
             if(support.language == ProtocolSupport::c_language)
                 output += ", _pg_source, " + getDecodeFieldAccess(true) + ");\n";
             else
@@ -3047,7 +3054,7 @@ std::string ProtocolField::getTextReadString(void) const
  * \return the string used to read this field as text, which may be empty
  */
 std::string ProtocolField::getMapEncodeString(void) const
-{  
+{
     std::string output;
 
     // Cannot encode to a null memory type
@@ -3312,7 +3319,7 @@ std::string ProtocolField::getSetInitialValueString(bool isStructureMember) cons
     else if(!isNotInMemory())
     {
         if(support.language == ProtocolSupport::c_language)
-        {            
+        {
             if(!initialValueString.empty())
             {
                 if(!comment.empty())
@@ -3980,7 +3987,7 @@ std::string ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStru
         // Nothing to do in this case, it all gets handled when the bitfield terminates
     }
     else
-    {        
+    {
         std::string argument;
         std::string cast;
 
@@ -4106,7 +4113,7 @@ std::string ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStru
         }// else not bool
 
         if(checkConstant)
-        {            
+        {
             std::string constantstring = getConstantString();
 
             // Verify the constant value

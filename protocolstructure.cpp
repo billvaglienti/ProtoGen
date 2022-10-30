@@ -334,7 +334,7 @@ std::string ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, 
         output += spacing + TAB_IN + "return 0;\n";
     }
     else
-    {       
+    {
         // Note that if we are an array the dereferencing is done by the array operator
         if(isStructureMember || isArray())
             output += spacing + "if(" + access + ".decode(_pg_data, &_pg_byteindex) == false)\n";
@@ -745,7 +745,7 @@ void ProtocolStructure::parseChildren(const XMLElement* field)
     {
         Encodable* encodable = generateEncodable(parser, getHierarchicalName(), support, child);
         if(encodable != NULL)
-        {            
+        {
             // If the encodable is null, then none of the metadata
             // matters, its not going to end up in the output
             if(!encodable->isNotEncoded())
@@ -1407,10 +1407,12 @@ std::string ProtocolStructure::getClassDeclaration_CPP(void) const
     output += "public:\n";
 
     // Function prototypes, in C++ these are part of the class definition
-    if((getNumberInMemory() > 0) && (redefines == nullptr))
+    if(getNumberInMemory() > 0)
     {
         ProtocolFile::makeLineSeparator(output);
         output += getSetToInitialValueFunctionPrototype(TAB_IN, false);
+        ProtocolFile::makeLineSeparator(output);
+        output += getSecondSetToInitialValueFunctionPrototype(TAB_IN, false);
         ProtocolFile::makeLineSeparator(output);
     }
 
@@ -1920,6 +1922,30 @@ std::string ProtocolStructure::getSetToInitialValueFunctionSignature(bool insour
 
 
 /*!
+ * Get the signature of the second function that sets initial values of this structure.
+ * This is just the constructor for C++
+ * \param insource should be true to indicate this signature is in source code.
+ * \return the signature of the set to initial value function.
+ */
+std::string ProtocolStructure::getSecondSetToInitialValueFunctionSignature(bool insource) const
+{
+    std::string output;
+
+    if((support.language == ProtocolSupport::cpp_language) && (redefines != nullptr))
+    {
+        // For C++ this function is the constructor
+        if(insource)
+            output = typeName + "::" + typeName + "(const " + redefines->typeName + "& _pg_user)";
+        else
+            output = typeName + "(const " + redefines->typeName + "& user)";
+    }
+
+    return output;
+
+}// ProtocolStructure::getSecondSetToInitialValueFunctionSignature
+
+
+/*!
  * Return the string that gives the prototypes of the functions used to set
  * this structure to initial values.
  * \param spacing gives the spacing to offset each line.
@@ -1961,6 +1987,31 @@ std::string ProtocolStructure::getSetToInitialValueFunctionPrototype(const std::
     return output;
 
 }// ProtocolStructure::getSetToInitialValueFunctionPrototype
+
+
+/*!
+ * Return the string that gives the prototypes of the second function used to set
+ * this structure to initial values.
+ * \param spacing gives the spacing to offset each line.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+std::string ProtocolStructure::getSecondSetToInitialValueFunctionPrototype(const std::string& spacing, bool includeChildren) const
+{
+    (void)includeChildren;
+    std::string output;
+
+    // My set to initial values function
+    if((support.language == ProtocolSupport::cpp_language) && (redefines != nullptr))
+    {
+        output += spacing + "//! Construct a " + typeName + "\n";
+
+        output += spacing + getSecondSetToInitialValueFunctionSignature(false) + ";\n";
+    }
+
+    return output;
+
+}// ProtocolStructure::getSecondSetToInitialValueFunctionPrototype
 
 
 /*!
@@ -2030,13 +2081,21 @@ std::string ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChil
         // member that is not itself another class (they take care of themselves).
         std::string initializerlist;
 
-        for(std::size_t i = 0; i < encodables.size(); i++)
+        if(redefines == nullptr)
         {
-            // Structures (classes really) take care of themselves
-            if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
-                continue;
+            for(std::size_t i = 0; i < encodables.size(); i++)
+            {
+                // Structures (classes really) take care of themselves
+                if(!encodables.at(i)->isPrimitive() || encodables.at(i)->isNotInMemory())
+                    continue;
 
-            initializerlist += encodables.at(i)->getSetInitialValueString(true);
+                initializerlist += encodables.at(i)->getSetInitialValueString(true);
+            }
+        }
+        else
+        {
+            // If we are redefining a different class the initializer list is simpler
+            initializerlist += TAB_IN + redefines->typeName + "()\n";
         }
 
         // Get rid of the comma on the last member of the initializer list
@@ -2060,6 +2119,50 @@ std::string ProtocolStructure::getSetToInitialValueFunctionBody(bool includeChil
     return output;
 
 }// ProtocolStructure::getSetToInitialValueFunctionBody
+
+
+/*!
+ * Return the string that gives the function used to this structure to initial
+ * values. This is NOT the call that sets this structure to initial values, this
+ * is the actual code that is in that call.
+ * \param includeChildren should be true to output the children's functions.
+ * \return The string including the comments and code with linefeeds and semicolons
+ */
+std::string ProtocolStructure::getSecondSetToInitialValueFunctionBody(bool includeChildren) const
+{
+    (void)includeChildren;
+    std::string output;
+
+    if((support.language == ProtocolSupport::cpp_language) && (redefines != nullptr))
+    {
+        // Set to initial values is just the constructor. We initialize every
+        // member that is not itself another class (they take care of themselves).
+        std::string initializerlist;
+
+        // If we are redefining a different class the initializer list is simpler
+        initializerlist += TAB_IN + redefines->typeName + "(_pg_user)\n";
+
+        // Get rid of the comma on the last member of the initializer list
+        if(endsWith(initializerlist, ",\n"))
+            initializerlist = initializerlist.erase(initializerlist.rfind(",\n")) + "\n";
+
+        if(initializerlist.empty())
+            initializerlist = "\n";
+        else
+            initializerlist = " :\n" + initializerlist;
+
+        output += "/*!\n";
+        output += " * Construct a " + typeName + "\n";
+        output += " */\n";
+        output += getSecondSetToInitialValueFunctionSignature(true) + initializerlist;
+        output += "{\n";
+        output += "}// " + typeName + "::" + typeName + "\n";
+
+    }// else if C++ language
+
+    return output;
+
+}// ProtocolStructure::getSecondSetToInitialValueFunctionBody
 
 
 /*!

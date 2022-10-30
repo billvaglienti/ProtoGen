@@ -221,7 +221,7 @@ void ProtocolStructureModule::parse(void)
     createStructureFunctions();
 
     // Write to disk, note that duplicate flush() calls are OK
-    header.flush();    
+    header.flush();
     structHeader->flush();
     source.flush();
 
@@ -491,7 +491,7 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
     if(print)
     {
         printHeader->writeIncludeDirective(structHeader->fileName());
-        printHeader->writeIncludeDirective(header.fileName());        
+        printHeader->writeIncludeDirective(header.fileName());
         printHeader->writeIncludeDirective("string", std::string(), true, false);
         printSource->writeIncludeDirective("sstream", std::string(), true, false);
         printSource->writeIncludeDirective("iomanip", std::string(), true, false);
@@ -579,7 +579,7 @@ void ProtocolStructureModule::setupFiles(std::string moduleName,
 
     // The encoded size of this structure as a macro that others can access
     if(((encode != false) || (decode != false)) && outputUtilities && (support.language == ProtocolSupport::c_language))
-    {        
+    {
         // White space is good
         header.makeLineSeparator();
 
@@ -798,6 +798,8 @@ void ProtocolStructureModule::createSubStructureFunctions()
             {
                 source.makeLineSeparator();
                 source.write(structure->getSetToInitialValueFunctionBody());
+                source.makeLineSeparator();
+                source.write(structure->getSecondSetToInitialValueFunctionBody());
             }
         }
         else if(hasInit() && (verifyHeader != nullptr) && (verifySource != nullptr))
@@ -910,7 +912,7 @@ void ProtocolStructureModule::createSubStructureFunctions()
 void ProtocolStructureModule::createTopLevelStructureFunctions()
 {
     // Output the constructor first
-    if(hasInit() && (verifySource != nullptr) && (redefines == nullptr))
+    if(hasInit() && (verifySource != nullptr))
     {
         // In C++ this is part of the class declaration
         if((support.language == ProtocolSupport::c_language) && (verifyHeader != nullptr))
@@ -918,10 +920,14 @@ void ProtocolStructureModule::createTopLevelStructureFunctions()
             verifyHeader->makeLineSeparator();
             verifyHeader->write(getSetToInitialValueFunctionPrototype(std::string(), false));
             verifyHeader->makeLineSeparator();
+            verifyHeader->write(getSecondSetToInitialValueFunctionPrototype(std::string(), false));
+            verifyHeader->makeLineSeparator();
         }
 
         verifySource->makeLineSeparator();
         verifySource->write(getSetToInitialValueFunctionBody(false));
+        verifySource->makeLineSeparator();
+        verifySource->write(getSecondSetToInitialValueFunctionBody(false));
         verifySource->makeLineSeparator();
     }
 

@@ -212,6 +212,17 @@ public:
     //! Return the string that gives the function used to initialize this structure
     virtual std::string getSetToInitialValueFunctionBody(bool includeChildren = true) const;
 
+
+    //! Return the string that gives the signature of the second function used to initialize this structure
+    virtual std::string getSecondSetToInitialValueFunctionSignature(bool insource) const;
+
+    //! Return the string that gives the prototype of the second function used to initialize this structure
+    virtual std::string getSecondSetToInitialValueFunctionPrototype(const std::string& spacing = std::string(), bool includeChildren = true) const;
+
+    //! Return the string that gives the second function used to initialize this structure
+    virtual std::string getSecondSetToInitialValueFunctionBody(bool includeChildren = true) const;
+
+
     //! Get the number of fields that are encoded
     int getNumberOfEncodes(void) const;
 
