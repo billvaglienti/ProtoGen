@@ -2033,7 +2033,16 @@ std::string ProtocolField::getDeclaration(void) const
     if(isNotInMemory())
         return output;
 
-    output = "    " + typeName + " " + name;
+    output = TAB_IN + typeName + " " + name;
+
+    // It is possible that this structure name is a redefined structure,
+    // in which case we have to lookup the base structure name.
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+        if(mystruct != nullptr)
+            output = TAB_IN + mystruct->getStructName() + " " + name;
+    }
 
     if(inMemoryType.isBitfield)
         output += " : " + std::to_string(inMemoryType.bits);
