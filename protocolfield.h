@@ -186,6 +186,9 @@ public:
     //! Return the signature of this field in an encode function signature
     std::string getEncodeSignature(void) const override;
 
+    //! Return the signature of this field in an encode function signature
+    std::string getDecodeSignature(void) const override;
+
     //! Get details needed to produce documentation for this encodable.
     void getDocumentationDetails(std::vector<int>& outline, std::string& startByte, std::vector<std::string>& bytes, std::vector<std::string>& names, std::vector<std::string>& encodings, std::vector<std::string>& repeats, std::vector<std::string>& comments) const override;
 

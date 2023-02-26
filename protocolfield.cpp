@@ -2217,16 +2217,57 @@ void ProtocolField::getPrintIncludeDirectives(std::vector<std::string>& list) co
  */
 std::string ProtocolField::getEncodeSignature(void) const
 {
+    std::string signame = typeName;
+
+    // It is possible that this structure name is a redefined structure,
+    // in which case we have to lookup the base structure name.
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+        if(mystruct != nullptr)
+            signame = mystruct->getStructName();
+    }
+
     if(isNotEncoded() || isNotInMemory() || isConstant())
         return "";
     else if(is2dArray())
-        return ", const " + typeName + " " + name + "[" + array + "][" + array2d + "]";
+        return ", const " + signame + " " + name + "[" + array + "][" + array2d + "]";
     else if(isArray())
-        return ", const " + typeName + " " + name + "[" + array + "]";
+        return ", const " + signame + " " + name + "[" + array + "]";
     else if(!inMemoryType.isStruct)
-        return ", " + typeName + " " + name;
+        return ", " + signame + " " + name;
     else
-        return ", const " + typeName + "* " + name;
+        return ", const " + signame + "* " + name;
+}
+
+
+/*!
+ * Return the signature of this field in a decode function signature. The
+ * string will start with ", " assuming this field is not the first part of
+ * the function signature.
+ * \return the string that provides this fields decode function signature
+ */
+std::string ProtocolField::getDecodeSignature(void) const
+{
+    std::string signame = typeName;
+
+    // It is possible that this structure name is a redefined structure,
+    // in which case we have to lookup the base structure name.
+    if(inMemoryType.isStruct)
+    {
+        const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+        if(mystruct != nullptr)
+            signame = mystruct->getStructName();
+    }
+
+    if(isNotEncoded() || isNotInMemory())
+        return "";
+    else if(is2dArray())
+        return ", " + signame + " " + name + "[" + array + "][" + array2d + "]";
+    else if(isArray())
+        return ", " + signame + " " + name + "[" + array + "]";
+    else
+        return ", " + signame + "* " + name;
 }
 
 
