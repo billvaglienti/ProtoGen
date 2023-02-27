@@ -2943,7 +2943,15 @@ std::string ProtocolField::getTextPrintString(void) const
         if(inMemoryType.isStruct)
         {
             if(support.language == ProtocolSupport::c_language)
-                output += spacing + "_pg_report += textPrint" + typeName + "(_pg_prename + \":" + name + "\"";
+            {
+                // In case of a structure redefines
+                std::string signame = typeName;
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    signame = mystruct->getStructName();
+
+                output += spacing + "_pg_report += textPrint" + signame + "(_pg_prename + \":" + name + "\"";
+            }
             else
                 output += spacing + "_pg_report += " + getEncodeFieldAccess(true) + ".textPrint(_pg_prename + \":" + name + "\"";
 
@@ -3027,7 +3035,15 @@ std::string ProtocolField::getTextReadString(void) const
         if(inMemoryType.isStruct)
         {
             if(support.language == ProtocolSupport::c_language)
-                output += spacing + "_pg_fieldcount += textRead" + typeName + "(_pg_prename + \":" + name + "\"";
+            {
+                // In case of a structure redefines
+                std::string signame = typeName;
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    signame = mystruct->getStructName();
+
+                output += spacing + "_pg_fieldcount += textRead" + signame + "(_pg_prename + \":" + name + "\"";
+            }
             else
                 output += spacing + "_pg_fieldcount += " + getDecodeFieldAccess(true) + ".textRead(_pg_prename + \":" + name + "\"";
 
@@ -3141,7 +3157,15 @@ std::string ProtocolField::getMapEncodeString(void) const
         if(inMemoryType.isStruct)
         {
             if(support.language == ProtocolSupport::c_language)
-                output += spacing + "mapEncode" + typeName + "(_pg_prename + \":" + name + "\"";
+            {
+                // In case of a structure redefines
+                std::string signame = typeName;
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    signame = mystruct->getStructName();
+
+                output += spacing + "mapEncode" + signame + "(_pg_prename + \":" + name + "\"";
+            }
             else
                 output += spacing + getEncodeFieldAccess(true) + ".mapEncode(_pg_prename + \":" + name + "\"";
 
@@ -3240,7 +3264,15 @@ std::string ProtocolField::getMapDecodeString(void) const
         if(inMemoryType.isStruct)
         {
             if(support.language == ProtocolSupport::c_language)
-                output += spacing + "mapDecode" + typeName + "(_pg_prename + \":" + name + "\"";
+            {
+                // In case of a structure redefines
+                std::string signame = typeName;
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    signame = mystruct->getStructName();
+
+                output += spacing + "mapDecode" + signame + "(_pg_prename + \":" + name + "\"";
+            }
             else
                 output += spacing + getDecodeFieldAccess(true) + ".mapDecode(_pg_prename + \":" + name + "\"";
 
