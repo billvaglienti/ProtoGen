@@ -382,6 +382,43 @@ std::vector<std::string>& removeDuplicates(std::vector<std::string>& list, bool 
 }
 
 
+/*!
+ * Remove sentences to get a string to fit in a sizelimit
+ * \param text is the text which is too large
+ * \param sizelimit is the character limit
+ * \return a new string filled with text sentences, that fits in sizelimit
+ */
+std::string truncateSentences(const std::string& text, std::size_t sizelimit)
+{
+    std::string output = text;
+
+    if(sizelimit <= 0)
+        return output;
+
+    // There is a 255 character limit to the comment. We could easily exceed that, so try to truncate at the first sentence if we do.
+    while(output.size() > sizelimit)
+    {
+        // Find the last '.', as long as it is not the last character.
+        size_t pos = output.find_last_of('.', output.size()-2);
+
+        if(pos != std::string::npos)
+        {
+            // If we find it, throwaway the characters after the '.'.
+            output.resize(pos+1);
+        }
+        else
+        {
+            // Otherwise we just have to discard characters
+            output.resize(sizelimit-1);
+        }
+    }
+
+    return output;
+
+}// truncateSentences
+
+
+
 ProtocolSupport::ProtocolSupport() :
     language(c_language),
     maxdatasize(0),

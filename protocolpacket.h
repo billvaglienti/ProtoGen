@@ -26,11 +26,23 @@ public:
     //! Return top level markdown documentation for this packet
     std::string getTopLevelMarkdown(bool global = false, const std::vector<std::string>& ids = std::vector<std::string>()) const override;
 
+    //! Get the string which identifies this encodable in a CAN DBC file
+    std::string getDBCMessageString(uint32_t baseid, uint8_t typeshift) const;
+
+    //! Get the string which comments this encodable in a CAN DBC file
+    std::string getDBCMessageComment(uint32_t baseid, uint8_t typeshift) const;
+
+    //! Get the string which comments this encodables enumerations in a CAN DBC file
+    std::string getDBCMessageEnum(uint32_t baseid, uint8_t typeshift) const;
+
     //! Get all the ID strings of this packet
     void appendIds(std::vector<std::string>& list) const {list.insert(list.end(), ids.begin(), ids.end());}
 
     //! Return the extended packet name
     std::string extendedName() const { return support.prefix + this->name + support.packetStructureSuffix; }
+
+    //! Return the flag indicating if this packet has DBC output turned on
+    bool dbc(void) const {return dbcon;}
 
 protected:
 
@@ -116,6 +128,9 @@ protected:
 
     //! Flag to output structure functions
     bool structureFunctions;
+
+    //! Flag for DBC outputs turned on
+    bool dbcon;
 
     //! Packet identifier string
     std::vector<std::string> ids;

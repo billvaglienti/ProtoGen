@@ -749,6 +749,30 @@ std::string EnumCreator::getTopLevelMarkdown(bool global, const std::vector<std:
 
 
 /*!
+ * Get the line of text that documents the enumeration elements in a DBC file.
+ * \param localname is the name to place in the DBC file for the enumeration.
+ * \param ID is the message ID that this enumeration belongs to,
+ * \return the "VAL_" string to add to the DBC file.
+ */
+std::string EnumCreator::getDBCEnumVal(std::string localname, uint32_t ID) const
+{
+    std::string output;
+    output = "VAL_ " + std::to_string(ID) + " " + localname;
+    for (const auto& element : elements )
+    {
+        if(!element.isHidden())
+            output += " " + element.number + " \"" + element.name + "\"";
+    }
+
+    if(!output.empty())
+        output += " ;\n";
+
+    return output;
+
+}// EnumCreator::getDBCEnumVal
+
+
+/*!
  * Replace any text that matches an enumeration name with the value of that enumeration
  * \param text is modified to replace names with numbers
  * \return a reference to text

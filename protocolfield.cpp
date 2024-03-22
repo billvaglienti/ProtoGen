@@ -10,6 +10,7 @@
 #include <sstream>
 #include <regex>
 #include <limits>
+#include <iostream>
 
 TypeData::TypeData(ProtocolSupport sup) :
     isBool(false),
@@ -25,25 +26,6 @@ TypeData::TypeData(ProtocolSupport sup) :
     sigbits(0),
     enummax(0),
     support(sup)
-{
-}
-
-
-TypeData::TypeData(const TypeData& that) :
-    isBool(that.isBool),
-    isStruct(that.isStruct),
-    isSigned(that.isSigned),
-    isBitfield(that.isBitfield),
-    isFloat(that.isFloat),
-    isEnum(that.isEnum),
-    isString(that.isString),
-    isFixedString(that.isFixedString),
-    isNull(that.isNull),
-    bits(that.bits),
-    sigbits(that.sigbits),
-    enummax(that.enummax),
-    enumName(that.enumName),
-    support(that.support)
 {
 }
 
@@ -540,7 +522,8 @@ ProtocolField::ProtocolField(ProtocolParser* parse, std::string parent, Protocol
                   "verifyMinValue",
                   "verifyMaxValue",
                   "map",
-                  "limitOnEncode"};
+                  "limitOnEncode",
+                  "dbc"};
 }
 
 
@@ -3585,6 +3568,346 @@ std::string ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
 }// ProtocolField::getInitialAndVerifyDefines
 
 
+/*!
+ * Get the string which identifies this encodable in a CAN DBC file. This could
+ * be more than one line if this is an array or a structure.
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param isBigEndian true for big endian encodings.
+ * \param bitcount the start bit of this encoding (0 being the first bit in the message).
+ * \return the string which starts with SG_ and identifies this signal.
+ */
+std::string ProtocolField::getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const
+{
+    std::string output;
+    std::string localname;
+
+    // bitcount is the true start bit (0 being the first data bit in the message)
+    if((*bitcount) < 0)
+        (*bitcount) = 0;
+
+    uint32_t numarray1d = 1;
+    uint32_t numarray2d = 1;
+    uint32_t stringlen = 1;
+    uint32_t firstd, secondd;
+
+    // To handle arrays we need the actual number. There is no way to handle
+    // variable length arrays. Strings are are not treated as arrays.
+    if(isString())
+    {
+        bool ok;
+        stringlen = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array), &ok);
+        if((stringlen <= 0) || (ok == false))
+            stringlen = 1;
+    }
+    else if(isArray())
+    {
+        bool ok;
+        numarray1d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array), &ok);
+        if((numarray1d <= 0) || (ok == false))
+            numarray1d = 1;
+
+        if(is2dArray())
+        {
+            numarray2d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array2d), &ok);
+            if((numarray2d <= 0) || (ok == false))
+                numarray2d = 1;
+        }
+    }
+
+    for(firstd = 0; firstd < numarray1d; firstd++)
+    {
+        for(secondd = 0; secondd < numarray2d; secondd++)
+        {
+            // If we are a sub structure we need to include our parent's name
+            if(!prename.empty())
+                localname = prename + "_" + name;
+            else
+                localname = name;
+
+            if(numarray1d > 1)
+                localname += "_" + std::to_string(firstd);
+
+            if(numarray2d > 1)
+                localname += "_" + std::to_string(secondd);
+
+            if(inMemoryType.isStruct)
+            {
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    output += mystruct->getDBCSignalString(localname, isBigEndian, bitcount);
+            }
+            else
+            {
+                uint32_t start = (*bitcount);
+
+                // If this is not a bitfield it must be on a byte boundary.
+                if(!encodedType.isBitfield)
+                {
+                    uint32_t rem = start % 8;
+                    if(rem > 0)
+                    {
+                        start += 8 - rem;
+                        (*bitcount) = start;
+                    }
+                }
+
+                // Must have in-memory data as well as encoded data
+                if(!inMemoryType.isNull && !encodedType.isNull && !isHidden())
+                {
+                    output += " SG_ " + localname + " : ";
+
+                    // DBC uses a weird concept for the start bit. For little endian the start
+                    // bit is the least significant bit. For big endian the start bit is the
+                    // most significant bit. But it gets even weirder: the bits are numbered
+                    // strangely:
+                    // [ 7 6 5 4 3 2 1 0 ] [ 15 14 13 12 11 10 9 8 ] [ 23 22 21 20 …
+                    // `----- Byte 0 ----´ `------- Byte 1 --------´ `----- Byte 2 …
+
+                    // If little endian adjust start to the least significant bit
+                    if(!isBigEndian)
+                        start += encodedType.bits-1;
+
+                    // The zero based byte number
+                    uint32_t byte = start/8;
+
+                    // The zero based number of bits into the byte, 0 is msb)
+                    uint32_t rem = start - byte*8;
+
+                    // Reflect the bit number, so msb is 7
+                    rem = 7 - rem;
+
+                    // Finally, recomput the start number as DBC undertands it
+                    start = 8*byte + rem;
+
+                    // Start bit and length
+                    output += std::to_string(start) + "|" + std::to_string(encodedType.bits*stringlen);
+
+                    // Endianness
+                    if(isBigEndian)
+                        output += "@0";
+                    else
+                        output += "@1";
+
+                    // Signedness
+                    if(encodedType.isSigned)
+                        output += "-";
+                    else
+                        output += "+";
+
+                    // Scale and offset
+                    if(isFloatScaling() || isIntegerScaling())
+                    {
+                        // The DBC scaler is inversed from our definition
+                        if(scaler != 0)
+                            output += " (" + std::to_string(1.0/scaler);
+                        else
+                            output += " (0";
+
+                        // The offset is zero if signed, or not specified
+                        if(encodedType.isSigned || minString.empty())
+                            output += ",0)";
+                        else
+                            output += "," + std::to_string(encodedMin) + ")";
+                    }
+                    else
+                    {
+                        output += " (1,0)";
+                    }
+
+                    /// TODO: add float support
+
+                    if(isString())
+                    {
+                        // No such thing as min and max values for a string
+                        output += " [0|0]";
+                    }
+                    else
+                    {
+                        // Min and max values
+                        output += " [";
+
+                        if((support.limitonencode == false) || verifyMinString.empty() || (hasVerifyMinValue && (verifyMinValue <= limitMinValue)))
+                            output += limitMinStringForComment;
+                        else
+                            output += verifyMinString;
+
+                        output += "|";
+
+                        if((support.limitonencode == false) || verifyMaxString.empty() || (hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue)))
+                            output += limitMaxStringForComment;
+                        else
+                            output += verifyMaxString;
+
+                        output += "]";
+                    }
+
+                    // Units data
+                    if((extraInfoNames.size() > 0) && (extraInfoValues.size() > 0) && (extraInfoNames.at(0) == "Units"))
+                    {
+                        // Units are in quotes
+                        output += " \"" + extraInfoValues.at(0) + "\"";
+                    }
+                    else
+                        output += " \"\"";
+
+                    // Finish the line
+                    output += " Vector__XXX\n";
+
+                }// If something to describe
+
+                // Move the start position
+                (*bitcount) += encodedType.bits*stringlen;
+
+            }// else if not a struct
+
+        }// second array dimension
+
+    }// first array dimension
+
+    return output;
+
+}// ProtocolField::getDBCSignalString
+
+
+/*!
+ * Get the comment string for this encodable in a DBC file
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param ID is the message ID that this encodable belongs to
+ * \return the string which starts with "CM_ SG_" and comments this signal.
+ */
+std::string ProtocolField::getDBCSignalComment(std::string prename, uint32_t ID) const
+{
+    std::string output;
+    std::string localname;
+    uint32_t numarray1d = 1;
+    uint32_t numarray2d = 1;
+    uint32_t firstd, secondd;
+
+    // To handle arrays we need the actual number. There is no way to handle the variable length arrays
+    if(isArray() && !isString())
+    {
+        bool ok;
+        numarray1d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array), &ok);
+        if((numarray1d <= 0) || (ok == false))
+            numarray1d = 1;
+
+        if(is2dArray())
+        {
+            numarray2d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array2d), &ok);
+            if((numarray2d <= 0) || (ok == false))
+                numarray2d = 1;
+        }
+    }
+
+    for(firstd = 0; firstd < numarray1d; firstd++)
+    {
+        for(secondd = 0; secondd < numarray2d; secondd++)
+        {
+            // If we are a sub structure we need to include our parent's name
+            if(!prename.empty())
+                localname = prename + "_" + name;
+            else
+                localname = name;
+
+            if(numarray1d > 1)
+                localname += "_" + std::to_string(firstd);
+
+            if(numarray2d > 1)
+                localname += "_" + std::to_string(secondd);
+
+            if(inMemoryType.isStruct)
+            {
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    output += mystruct->getDBCSignalComment(localname, ID);
+            }
+            else if(!inMemoryType.isNull && !encodedType.isNull && !comment.empty() && !isHidden())
+            {
+                output += "CM_ SG_ " + std::to_string(ID) + " " + localname + " \"" + truncateSentences(comment, 255) + "\";\n";
+            }
+
+        }// second array dimension
+
+    }// first array dimension
+
+    return output;
+
+}// ProtocolField::getDBCSignalComment
+
+
+/*!
+ * Get the string which comments this encodables enumerations in a CAN DBC file
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param ID is the message ID that this encodable belongs to
+ * \return the string which starts with "BA_ "FieldType" SG_" and documents this enumeration.
+ */
+std::string ProtocolField::getDBCSignalEnum(std::string prename, uint32_t ID) const
+{
+    std::string output;
+    std::string localname;
+    uint32_t numarray1d = 1;
+    uint32_t numarray2d = 1;
+    uint32_t firstd, secondd;
+
+    const EnumCreator* enumor = nullptr;
+    if(inMemoryType.isEnum)
+        enumor = parser->lookUpEnumeration(inMemoryType.enumName);
+
+    // To handle arrays we need the actual number. There is no way to handle the variable length arrays
+    if(isArray() && !isString())
+    {
+        bool ok;
+        numarray1d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array), &ok);
+        if((numarray1d <= 0) || (ok == false))
+            numarray1d = 1;
+
+        if(is2dArray())
+        {
+            numarray2d = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(array2d), &ok);
+            if((numarray2d <= 0) || (ok == false))
+                numarray2d = 1;
+        }
+    }
+
+    for(firstd = 0; firstd < numarray1d; firstd++)
+    {
+        for(secondd = 0; secondd < numarray2d; secondd++)
+        {
+            // If we are a sub structure we need to include our parent's name
+            if(!prename.empty())
+                localname = prename + "_" + name;
+            else
+                localname = name;
+
+            if(numarray1d > 1)
+                localname += "_" + std::to_string(firstd);
+
+            if(numarray2d > 1)
+                localname += "_" + std::to_string(secondd);
+
+            if(inMemoryType.isStruct)
+            {
+                const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
+                if(mystruct != nullptr)
+                    output += mystruct->getDBCSignalEnum(localname, ID);
+            }
+            else if((enumor != nullptr) && !isHidden())
+            {
+                /* it appears this line is not needed and seems to make some thing snot work
+                output += "BA_ \"FieldType\" SG_ " + std::to_string(ID) + " " + localname + " \"" + localname + "\";\n"; */
+
+                output += enumor->getDBCEnumVal(localname, ID);
+            }
+
+        }// for second dimension
+
+    }// for first dimension
+
+    return output;
+
+}// ProtocolField::getDBCSignalEnum
+
+
 //! True if this encodable has a direct child that uses bitfields
 bool ProtocolField::usesBitfields(void) const
 {
@@ -4251,9 +4574,6 @@ std::string ProtocolField::getCloseBitfieldString(int* bitcount) const
 
     if(*bitcount != 0)
     {
-        // The number of bytes that the previous sequence of bit fields used up
-        int length = *bitcount / 8;
-
         // Get the spacing right
         spacing += "    ";
 
@@ -4262,7 +4582,6 @@ std::string ProtocolField::getCloseBitfieldString(int* bitcount) const
         if((*bitcount) % 8)
         {
             output += spacing + "bitcount = 0; _pg_byteindex++; // close bit field, go to next byte\n";
-            length++;
         }
         else
         {
@@ -4272,7 +4591,7 @@ std::string ProtocolField::getCloseBitfieldString(int* bitcount) const
         output += "\n";
 
         // Reset bit counter
-        *bitcount = 0;
+        (*bitcount) = 0;
     }
 
     return output;
@@ -4718,7 +5037,7 @@ std::string ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStru
 
         }// else not float scaling
 
-        // More of the encode function name includuing number of bytes
+        // More of the encode function name including number of bytes
         output += "ScaledTo" + std::to_string(length);
 
         // Signed or unsigned

@@ -1,7 +1,6 @@
 #ifndef PROTOCOLPARSER_H
 #define PROTOCOLPARSER_H
 
-#include <iostream>
 #include "protocolfile.h"
 #include "protocolsupport.h"
 #include "tinyxml2.h"
@@ -23,6 +22,9 @@ public:
 
     //! Configure a documentation path separate to the main protocol output directory
     void setDocsPath(std::string path);
+
+    //! Set the options for DBC outputs
+    void setDBCOptions(std::string dbcfile, std::string dbcid, std::string dbctypeshift);
 
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
@@ -166,6 +168,9 @@ protected:
     //! Parses a single XML file handling any require tags to flatten a file
     bool parseFile(std::string xmlFilename);
 
+    //! Create DBC file
+    void outputDBC(void);
+
     //! Create markdown documentation
     void outputMarkdown(bool isBigEndian, std::string inlinecss);
 
@@ -217,6 +222,10 @@ protected:
     std::vector<EnumCreator*> globalEnums;
     std::string inputpath;
     std::string inputfile;
+
+    uint32_t dbcid;
+    uint32_t dbcshift;
+    std::string dbcfile;
 
 private:
 

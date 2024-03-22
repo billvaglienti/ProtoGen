@@ -72,6 +72,12 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 
 - `-translate <macro>` Set macro as the name of the global translation macro for string lookups in emitted code. This will override the global translate attribute in the protocol xml
 
+- `-dbc <file>` specifies a file for the output of DBC formatted documentation for CAN bus description. If `-dbc file` is not specified dbc output will not be generated. Only packets with the `dbc="true"` attribute will generate DBC outputs.
+
+- `-dbcid <ID>` specifies a base ID value to use for the DBC messages. The actual ID of each message comes from the base ID and the packet type. Set the MSB for extended identifiers (e.g. 0x9F000000 is extended identifier 0x1F000000).
+
+- `-dbcshift <shift>` specifies a left shift value to use for generating the ID of the DBC messages. The actual ID of each message comes from the base ID ORed with the packet type left shifted by this amount.
+
 Dependencies
 ------------
 
@@ -460,6 +466,8 @@ Packet tag attributes beyond Structure tag attributes:
 - `compare` AND `comparefile` : When used within the context of a packet these attributes trigger the output of an additional comparison function that uses packet pointers (rather than structure pointers) to do the comparison. The structure comparison function is still output.
 
 - `print` AND `printfile` : When used within the context of a packet these attributes trigger the output of an additional print function that uses packet pointers (rather than structure pointers) to do the print. The structure print function is still output.
+
+- `dbc` : If set to `true` this attribute specifies that this packet will generate DBC outputs if a dbc file was specified on the command line.
 
 ### Packet : Data subtags
 

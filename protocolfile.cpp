@@ -2,6 +2,7 @@
 #include "protocolparser.h"
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 
 std::string ProtocolFile::tempprefix = "temporarydeleteme_";
 
@@ -263,7 +264,7 @@ void ProtocolFile::writeIncludeDirective(const std::string& include, const std::
     {
         // Find the end of the line
         index = contents.find("\n", index);
-        if(index >= 0)
+        if(index != std::string::npos)
         {
             contents.insert(index+1, directive);
             dirty = true;
@@ -712,7 +713,7 @@ std::string ProtocolHeaderFile::getClosingStatement(void)
  * removed so append can be performed
  */
 void ProtocolHeaderFile::prepareToAppend(void)
-{    
+{
     std::error_code ec;
 
     if(std::filesystem::exists(fileNameAndPathOnDisk(), ec))
@@ -935,7 +936,7 @@ void ProtocolSourceFile::prepareToAppend(void)
             return;
         }
 
-        // Read the entire file, and store as existing text string data 
+        // Read the entire file, and store as existing text string data
         contents = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         // Close the file, we don't need it anymore

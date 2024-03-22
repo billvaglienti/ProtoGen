@@ -1,7 +1,5 @@
 #include "protocolpacket.h"
-#include "protocolfield.h"
 #include "enumcreator.h"
-#include "protocolfield.h"
 #include "protocolstructure.h"
 #include "protocolparser.h"
 #include "protocoldocumentation.h"
@@ -21,7 +19,8 @@ ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported)
     ProtocolStructureModule(parse, supported),
     useInOtherPackets(false),
     parameterFunctions(false),
-    structureFunctions(true)
+    structureFunctions(true),
+    dbcon(false)
 {
     // These are attributes on top of the normal structureModule that we support
     std::vector<std::string> newattribs({"structureInterface", "parameterInterface", "ID", "useInOtherPackets"});
@@ -34,7 +33,7 @@ ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported)
 
 ProtocolPacket::~ProtocolPacket(void)
 {
-    clear();
+    ProtocolPacket::clear();
 }
 
 /*!
@@ -47,6 +46,7 @@ void ProtocolPacket::clear(void)
     useInOtherPackets = false;
     parameterFunctions = false;
     structureFunctions = true;
+    dbcon = false;
 
     // Delete all the objects in the list
     for(std::size_t i = 0; i < documentList.size(); i++)
@@ -96,6 +96,9 @@ void ProtocolPacket::parse(void)
 
     encode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("encode", map));
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
+
+    // DBC outputs have to be turned on in the packet
+    dbcon = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("dbc", map));
 
     // It is possible to suppress the globally specified compare output
     if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("compare", map)))
@@ -2084,3 +2087,80 @@ std::string ProtocolPacket::getTopLevelMarkdown(bool global, const std::vector<s
 
 }// ProtocolPacket::getTopLevelMarkdown
 
+
+/*!
+ * Get the string which identifies this encodable in a CAN DBC file
+ * \param baseid is the base identifier to use, set the MSB for 29-bit IDs
+ * \param typeshift is the number of bits to shift the type before OR-ing to the baseid
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolPacket::getDBCMessageString(uint32_t baseid, uint8_t typeshift) const
+{
+    uint32_t ID = baseid;
+
+    if(ids.size() > 0)
+    {
+        bool ok;
+
+        // Get the value of the packet type
+        uint32_t type = (uint32_t)(0.5 + ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(ids.at(0)), &ok));
+
+        if(ok)
+            ID |= (type << typeshift);
+    }
+
+    return ProtocolStructureModule::getDBCMessageString(ID);
+
+}// ProtocolPacket::getDBCMessageString
+
+
+/*!
+ * Get the string which comments this encodable in a CAN DBC file. This is the "CM_" string which follows the message definitions.
+ * \param baseid is the base identifier to use, set the MSB for 29-bit IDs
+ * \param typeshift is the number of bits to shift the type before OR-ing to the baseid
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolPacket::getDBCMessageComment(uint32_t baseid, uint8_t typeshift) const
+{
+    uint32_t ID = baseid;
+
+    if(ids.size() > 0)
+    {
+        bool ok;
+
+        // Get the value of the packet type
+        uint32_t type = (uint32_t)(0.5 + ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(ids.at(0)), &ok));
+
+        if(ok)
+            ID |= (type << typeshift);
+    }
+
+    return ProtocolStructureModule::getDBCMessageComment(ID);
+
+}// ProtocolPacket::getDBCMessageComment
+
+
+/*!
+ * Get the string which comments this encodables enumerations in a CAN DBC file
+ * \param baseid is the base identifier to use, set the MSB for 29-bit IDs
+ * \param typeshift is the number of bits to shift the type before OR-ing to the baseid
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolPacket::getDBCMessageEnum(uint32_t baseid, uint8_t typeshift) const
+{
+    uint32_t ID = baseid;
+
+    if(ids.size() > 0)
+    {
+        bool ok;
+
+        // Get the value of the packet type
+        uint32_t type = (uint32_t)(0.5 + ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(ids.at(0)), &ok));
+
+        if(ok)
+            ID |= (type << typeshift);
+    }
+
+    return ProtocolStructureModule::getDBCMessageEnum(ID);
+
+}// ProtocolPacket::getDBCMessageEnum

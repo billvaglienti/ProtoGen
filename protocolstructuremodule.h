@@ -3,8 +3,6 @@
 
 #include "protocolstructure.h"
 #include "protocolfile.h"
-#include "enumcreator.h"
-#include "protocolbitfield.h"
 #include <string>
 
 class ProtocolStructureModule : public ProtocolStructure
@@ -40,6 +38,15 @@ public:
 
     //! Return the include directives needed for this encodable's print functions
     void getPrintIncludeDirectives(std::vector<std::string>& list) const override;
+
+    //! Get the string which identifies this encodable in a CAN DBC file
+    std::string getDBCMessageString(uint32_t ID) const;
+
+    //! Get the string which comments this encodable in a CAN DBC file
+    std::string getDBCMessageComment(uint32_t ID) const;
+
+    //! Get the string which comments this encodables enumerations in a CAN DBC file
+    std::string getDBCMessageEnum(uint32_t ID) const;
 
     //! Get the name of the header file that encompasses this structure definition
     std::string getDefinitionFileName(void) const {return structHeader->fileName();}

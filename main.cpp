@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     std::string licenseTemplate = liststartsWith(arguments, "-li");
     licenseTemplate = licenseTemplate.substr(licenseTemplate.find(" ") + 1);
     if(!licenseTemplate.empty())
-    {       
+    {
         std::fstream file(licenseTemplate, std::ios_base::in);
 
         if (file.is_open())
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     }
 
     // Documentation directory
-    std::string docs = liststartsWith(arguments, "-d");
+    std::string docs = liststartsWith(arguments, "-do");
     docs = docs.substr(docs.find(" ") + 1);
     if (!docs.empty() && !contains(arguments, "-no-markdown"))
         parser.setDocsPath(ProtocolFile::sanitizePath(docs));
@@ -191,6 +191,18 @@ int main(int argc, char *argv[])
     translate = translate.substr(translate.find(" ") + 1);
     if(!translate.empty())
         parser.setTranslationOverride(translate);
+
+    // Details for the DBC output
+    std::string dbcfile = liststartsWith(arguments, "-dbcfile");
+    dbcfile = dbcfile.substr(dbcfile.find(" ") + 1);
+
+    std::string dbcid = liststartsWith(arguments, "-dbcid");
+    dbcid = dbcid.substr(dbcid.find(" ") + 1);
+
+    std::string dbctypeshift = liststartsWith(arguments, "-dbcshift");
+    dbctypeshift = dbctypeshift.substr(dbctypeshift.find(" ") + 1);
+
+    parser.setDBCOptions(dbcfile, dbcid, dbctypeshift);
 
     if (parser.parse(filename, path, otherfiles))
     {

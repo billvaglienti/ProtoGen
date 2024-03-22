@@ -1,6 +1,7 @@
 #include "protocoldocumentation.h"
 #include "protocolparser.h"
 #include <fstream>
+#include <iostream>
 
 // Initialize convenience strings
 const std::string ProtocolDocumentation::TAB_IN = "    ";

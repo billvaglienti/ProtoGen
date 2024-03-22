@@ -755,6 +755,62 @@ void ProtocolStructureModule::getPrintIncludeDirectives(std::vector<std::string>
 
 
 /*!
+ * Get the string which identifies this encodable in a CAN DBC file. This is the "BO_" string and the signals that go with it.
+ * \param ID is the identifier to use, with the MSB set as needed for 29-bit identifiers
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolStructureModule::getDBCMessageString(uint32_t ID) const
+{
+    int bitcount = 0;
+
+    // Everything but the length
+    std::string output = "BO_ " + std::to_string(ID) + " " + name + ": ";
+
+    // The signal information, and the length
+    std::string signals = getDBCSignalString(std::string(), support.bigendian, &bitcount);
+
+    // Finish the output - number of bytes
+    output += std::to_string((bitcount+7)/8) + " Vector__XXX\n";
+
+    return output + signals;
+}
+
+
+/*!
+ * Get the string which comments this encodable in a CAN DBC file. This is the
+ * "CM_" string which follows the message definitions.
+ * \param ID is the identifier to use, with the MSB set as needed for 29-bit identifiers
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolStructureModule::getDBCMessageComment(uint32_t ID) const
+{
+    std::string output;
+
+    if(!comment.empty())
+        output += "CM_ BO_ " + std::to_string(ID) + " \"" + truncateSentences(comment, 255) + "\";\n";
+
+    output += getDBCSignalComment(std::string(), ID);
+
+    return output;
+}
+
+
+/*!
+ * Get the string which comments this encodables enumerations in a CAN DBC file
+ * \param ID is the identifier to use, with the MSB set as needed for 29-bit identifiers
+ * \return the string to add to the DBC file
+ */
+std::string ProtocolStructureModule::getDBCMessageEnum(uint32_t ID) const
+{
+    std::string output;
+
+    output += getDBCSignalEnum(std::string(), ID);
+
+    return output;
+}
+
+
+/*!
  * Write data to the source and header files to encode and decode this structure
  * and all its children.
  */

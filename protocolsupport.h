@@ -55,6 +55,8 @@ std::string join(const std::vector<std::string> list, const std::string& joiner 
 //! Remove duplicate strings
 std::vector<std::string>& removeDuplicates(std::vector<std::string>& list, bool casesensitive = false);
 
+//! Remove sentences to get a string to fit in a sizelimit
+std::string truncateSentences(const std::string& text, std::size_t sizelimit);
 
 class ProtocolSupport
 {

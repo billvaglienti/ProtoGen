@@ -86,6 +86,9 @@ public:
     //! Get the markdown documentation for this enumeration
     std::string getTopLevelMarkdown(bool global = false, const std::vector<std::string>& ids = std::vector<std::string>()) const override;
 
+    //! Get the line of text that documents the enumeration elements in a DBC file
+    std::string getDBCEnumVal(std::string localname, uint32_t ID) const;
+
     //! Return the enumeration name
     std::string getName(void) const {return name;}
 

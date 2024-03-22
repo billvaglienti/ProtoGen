@@ -100,7 +100,7 @@ efficiently encode data for little or big endian architectures.">
 
     <Packet name="GPS" file="GPS" useInOtherPackets="true" comment="Information from a GPS including the position, velocity, and quality data.
                                            This is a generic GPS description that should suffice for most GPS devices">
-		
+
         <Data name="PosLLA" struct="PositionLLA" comment="Position in geographic coordinates with respect to the WGS-84 ellipsoid"/>
 
         <Structure name="VelocityNED" comment="Velocity in North, East, Down">
@@ -132,13 +132,13 @@ efficiently encode data for little or big endian architectures.">
             see the EngineSettings packet.">
 
         <Documentation name="Engine command details" comment="You can have documentation specific to a packet if you like."/>
-	
+
         <Data name="command" inMemoryType="float32" comment="The engine command, which is a throttle or an RPM depending on the engine control mode"/>
         <Data name="field0" inMemoryType="bitfield1" default="1" comment="An extra bitfield to do whatever you want"/>
         <Data name="field1" inMemoryType="bitfield1" default="0" comment="An extra bitfield to do whatever you want"/>
 
     </Packet>
-   
+
     <Packet name="TestWeirdStuff" ID="100">
         <Data name="Field0" inMemoryType="unsigned32"/>
         <Data name="Field1" inMemoryType="bitfield1" default="0"/>
@@ -172,13 +172,13 @@ efficiently encode data for little or big endian architectures.">
             mode and feedback gains. Engine settings are stored non-volatilely each
             time this packet is received. Send this packet with zero length to
             request the current engine settings.">
-    
+
         <Enum name="engineModes" comment="Modes of operation for the engine">
             <Value name="openLoop" comment="Engine control using direct throttle command with no feedback"/>
             <Value name="throttleToRPM" comment="Throttle command is mapped to an RPM command"/>
             <Value name="directRPM" comment="RPM is commanded directly by the user"/>
         </Enum>
-            
+
         <Data name="mode" enum="engineModes" encodedType="unsigned8" comment="Engine control mode of operation"/>
         <Data name="gain" inMemoryType="float32" array="3" comment="proportional, integral, derivative gains from RPM error to throttle" default = "0.1"/>
         <Data name="maxRPM" inMemoryType="float32" encodedType="unsigned16" min="0" max="16000" comment="maximum RPM that can be commanded" default="10000"/>
@@ -189,15 +189,15 @@ efficiently encode data for little or big endian architectures.">
     <Packet name="ThrottleSettings" file="Engine" deffile="definitions/EngineDefinitions.hpp" ID="THROTTLESETTINGS"
             comment="Change the throttle control settings. The engine control
             laws output a throttle command signal from 0 to 1. The data in this
-            packet are used to determine what pulse width to send to the servo 
-            for that throttle. The throttle to pulse width mapping can be a 
+            packet are used to determine what pulse width to send to the servo
+            for that throttle. The throttle to pulse width mapping can be a
             straight line, or a linearly interpolated table with up to 10 points.">
-        
+
         <Data name="numCurvePoints" inMemoryType="bitfield4" initialValue="0" verifyMinValue="auto" verifyMaxValue="10" limitOnEncode="true" comment="Number of points in the throttle curve"/>
         <!-- Enable this to demonstrate the bug I need to fix <Code name="CodeShouldNotInterruptBitFields" encode=";"/> -->
         <Data name="reserved" inMemoryType="null" constant="0" encodedType="bitfield27"/>
         <Data name="enableCurve" inMemoryType="bitfield1" initialValue="0" comment="Set to enable the throttle curve"/>
-        
+
         <Structure name="curvePoint" array="10" variableArray="numCurvePoints" comment="table for throttle calibration">
             <Data name="throttle" inMemoryType="float32" encodedType="unsigned8" initialValue="0" verifyMinValue="auto" verifyMaxValue="auto" min="0.0" max="1.0"
                   comment="Throttle for this curve point, from 0.0 to 1.0"/>
@@ -210,15 +210,15 @@ efficiently encode data for little or big endian architectures.">
         <Data name="highPWM" inMemoryType="unsigned16" default="1900" initialValue="1900" verifyMinValue="900" verifyMaxValue="2100"
               comment="PWM in microseconds for 100% throttle"/>
         <Data name="defaultBitfield" inMemoryType="bitfield5" default="0" comment="A demonstration of a default bitfield"/>
-        
+
     </Packet>
-            
+
     <Structure name="Date" deffile="OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" verifyMinValue="2000" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" verifyMaxValue="12" comment="month of the year, from 1 to 12"/>
         <Data name="day" inMemoryType="unsigned8" verifyMaxValue="31" comment="day of the month, from 1 to 31"/>
     </Structure>
-    
+
     <Structure name="smallDate" redefine="Date" deffile="OtherDefinitions" verifyfile="verify/dateverify" comment="Calendar date information">
         <Data name="year" inMemoryType="unsigned16" encodedType="bitfield7" min="2000" comment="year of the date"/>
         <Data name="month" inMemoryType="unsigned8" encodedType="bitfield4" comment="month of the year, from 1 to 12"/>
@@ -230,14 +230,14 @@ efficiently encode data for little or big endian architectures.">
         <Data name="calibratedDate" struct="Date" comment="The date this board was calibrated and tested"/>
         <Data name="serialNumber" inMemoryType="unsigned32" comment="serial number of the board"/>
         <Data name="assemblyNumber" inMemoryType="bitfield31" comment="serial number of the assembly"/>
-        <Data name="isCalibrated" inMemoryType="bitfield1" comment="set if the board has been calibrated"/>        
+        <Data name="isCalibrated" inMemoryType="bitfield1" comment="set if the board has been calibrated"/>
         <Data name="description" inMemoryType="string" array="32" comment="The board description"/>
     </Structure>
 
-    <Packet name="Version" parameterInterface="true" structureInterface="true"
+    <Packet name="Version" parameterInterface="true" structureInterface="true" dbc="true"
             comment="Version information for the software and hardware. Send
             this packet with zero length to request the version information.">
-        
+
         <Data name="board" struct="Board" comment="details about this boards provenance"/>
         <Data name="major" inMemoryType="unsigned8" comment="major version of the software"/>
         <Data name="minor" inMemoryType="unsigned8" comment="minor version of the software"/>
@@ -245,11 +245,11 @@ efficiently encode data for little or big endian architectures.">
         <Data name="patch" inMemoryType="unsigned8" comment="patch version of the software"/>
         <Data name="date" struct="Date" comment="the release date of the software"/>
         <Data name="description" inMemoryType="string" array = "64" comment="description of the software version"/>
-        
+
     </Packet>
-    
+
     <Packet name="Telemetry" comment="GPS and other position telemetry. This packet is transmitted spontaneously 4 times a second.">
-        
+
         <Enum name="insMode_t" comment="Enumeration for the inertial navigation operational mode">
             <Value name="insModeInit1" comment="Awaiting first IMU measurement"/>
             <Value name="insModeInit2" comment="Awaiting IMU stabilization"/>
@@ -284,7 +284,7 @@ efficiently encode data for little or big endian architectures.">
         <Data name="fuel" inMemoryType="override" encodedType="float24"/>
 
     </Packet>
-    
+
     <Packet name="Constant" file="TelemetryPacket" comment="This packet demonstrates all the different ways that a constant value can be used." structureInterface="true" parameterInterface="true">
         <Data name="constant1" inMemoryType="null" constant="0x1234" encodedType="uint16_t" checkConstant="true"/>
         <Data name="constant2" inMemoryType="string" array="24" constant="To be or not to be" comment="encoding a string constant"/>

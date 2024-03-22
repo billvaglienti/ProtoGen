@@ -12,9 +12,6 @@ public:
     //! Construct empty type data
     TypeData(ProtocolSupport sup);
 
-    //! Construct type data by copying another type
-    TypeData(const TypeData& that);
-
     //! Reset all members to default except the protocol support
     void clear(void);
 
@@ -237,6 +234,15 @@ public:
     //! Return the strings that #define initial and variable values
     std::string getInitialAndVerifyDefines(bool includeComment = true) const override;
 
+    //! Get the string which identifies this encodable in a CAN DBC file
+    std::string getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const override;
+
+    //! Get the string which comments this encodable in a CAN DBC file
+    std::string getDBCSignalComment(std::string prename, uint32_t ID) const override;
+
+    //! Get the string which comments this encodables enumerations in a CAN DBC file
+    std::string getDBCSignalEnum(std::string prename, uint32_t ID) const override;
+
     //! Make this primitive not a default
     void clearDefaults(void) override {defaultString.clear();}
 
@@ -350,7 +356,7 @@ protected:
     //! The minimum verify value
     double verifyMinValue;
 
-    //! The minimum value of the encoding, or the verifyMin value, whichever is min
+    //! The minimum value of the encoding
     double limitMinValue;
 
     //! The string for the limit min value
@@ -371,7 +377,7 @@ protected:
     //! The maximum verify value
     double verifyMaxValue;
 
-    //! The maximum value of the encoding, or the verifyMax value, whichever is less
+    //! The maximum value of the encoding
     double limitMaxValue;
 
     //! The string for the limit max value

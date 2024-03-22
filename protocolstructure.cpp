@@ -3,7 +3,6 @@
 #include "protocolparser.h"
 #include "protocolfield.h"
 #include <string>
-#include <iostream>
 
 /*!
  * Construct a protocol structure
@@ -40,7 +39,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, std::string parent, 
     redefines(nullptr)
 {
     // List of attributes understood by ProtocolStructure
-    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "neverOmit", "limitOnEncode"};
+    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "neverOmit", "limitOnEncode", "dbc"};
 
 }
 
@@ -454,6 +453,65 @@ std::string ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) c
     return output;
 
 }// ProtocolStructure::getInitialAndVerifyDefines
+
+
+/*!
+ * Get the string which identifies this encodable in a CAN DBC file.
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param isBigEndian true for big endian encodings.
+ * \param bitcount the start bit of this encoding (0 being the first bit in the message).
+ * \return the string which starts with SG_ and identifies this signal.
+ */
+std::string ProtocolStructure::getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const
+{
+    std::string output;
+
+    // bitcount is the true start bit (0 being the first data bit in the message)
+    if((*bitcount) < 0)
+        (*bitcount) = 0;
+
+    for(std::size_t i = 0; i < encodables.size(); i++)
+        output += encodables.at(i)->getDBCSignalString(prename, isBigEndian, bitcount);
+
+    return output;
+
+}// ProtocolStructure::getDBCSignalString
+
+
+/*!
+ * Get the comment string for this encodable in a DBC file
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param ID is the message ID that this encodable belongs to
+ * \return the string which starts with "CM_ SG_" and comments this signal.
+ */
+std::string ProtocolStructure::getDBCSignalComment(std::string prename, uint32_t ID) const
+{
+    std::string output;
+
+    for(std::size_t i = 0; i < encodables.size(); i++)
+        output += encodables.at(i)->getDBCSignalComment(prename, ID);
+
+    return output;
+
+}// ProtocolStructure::getDBCSignalComment
+
+
+/*!
+ * Get the string which comments this encodables enumerations in a CAN DBC file
+ * \param prename is the name of the previous structure that this may be a member of.
+ * \param ID is the message ID that this encodable belongs to
+ * \return the string which starts with "BA_ "FieldType" SG_" and documents this enumeration.
+ */
+std::string ProtocolStructure::getDBCSignalEnum(std::string prename, uint32_t ID) const
+{
+    std::string output;
+
+    for(std::size_t i = 0; i < encodables.size(); i++)
+        output += encodables.at(i)->getDBCSignalEnum(prename, ID);
+
+    return output;
+
+}// ProtocolStructure::getDBCSignalEnum
 
 
 /*!

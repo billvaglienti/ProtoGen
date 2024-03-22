@@ -4,7 +4,6 @@
 #include "protocolsupport.h"
 #include <vector>
 #include <string>
-#include <cstdio>
 
 class ProtocolFile
 {

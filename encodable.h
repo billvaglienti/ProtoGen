@@ -47,6 +47,15 @@ public:
     //! Return the strings that #define initial and variable values
     virtual std::string getInitialAndVerifyDefines(bool includeComment = true) const {(void)includeComment; return std::string();}
 
+    //! Get the string which identifies this encodable in a CAN DBC file
+    virtual std::string getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const {(void)prename; (void)isBigEndian; (void)bitcount; return std::string();}
+
+    //! Get the string which comments this encodable in a CAN DBC file
+    virtual std::string getDBCSignalComment(std::string prename, uint32_t ID) const {(void)prename; (void)ID; return std::string();}
+
+    //! Get the string which comments this encodables enumerations in a CAN DBC file
+    virtual std::string getDBCSignalEnum(std::string prename, uint32_t ID) const {(void)prename; (void)ID; return std::string();}
+
     //! Get the string used for comparing this field.
     virtual std::string getComparisonString(void) const {return std::string();}
 

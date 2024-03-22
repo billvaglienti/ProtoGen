@@ -11,12 +11,11 @@
 #include "shuntingyard.h"
 #include <string>
 #include <iostream>
-#include <algorithm>
 #include <filesystem>
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.5.d";
+const std::string ProtocolParser::genVersion = "3.6.a";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -31,7 +30,9 @@ ProtocolParser::ProtocolParser() :
     nodoxygen(false),
     noAboutSection(false),
     nocss(false),
-    tableOfContents(false)
+    tableOfContents(false),
+    dbcid(0),
+    dbcshift(0)
 {
 }
 
@@ -72,6 +73,7 @@ ProtocolParser::~ProtocolParser()
  * \param filenames is the list of files to read the xml contents from. The
  *        first file is the master file that sets the protocol options
  * \param path is the output path for generated files
+ * \param otherfiles are input files that assist the main file, they are parsed first
  * \return true if something was written to a file
  */
 bool ProtocolParser::parse(std::string filename, std::string path, std::vector<std::string> otherfiles)
@@ -400,6 +402,9 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
 
     if(!nomarkdown)
         outputMarkdown(support.bigendian, inlinecss);
+
+    if(!dbcfile.empty())
+        outputDBC();
 
     #ifndef _DEBUG
     if(!nodoxygen)
@@ -1235,6 +1240,84 @@ void ProtocolParser::getStructureSubDocumentationDetails(std::string typeName, s
 }
 
 
+//! Create DBC file
+void ProtocolParser::outputDBC(void)
+{
+    std::string filecontents;
+
+    for(std::size_t i = 0; i < packets.size(); i++)
+    {
+        if(packets.at(i)->dbc())
+        {
+            filecontents += "\n";
+            filecontents += packets.at(i)->getDBCMessageString(dbcid, dbcshift);
+        }
+    }
+
+    if(!filecontents.empty())
+    {
+        std::string basepath = support.outputpath;
+
+        if (!docsDir.empty())
+            basepath = docsDir;
+
+        if(!endsWith(dbcfile, ".dbc", false))
+            dbcfile += ".dbc";
+
+        std::string filename = basepath + dbcfile;
+        ProtocolFile file(filename, support, false);
+
+        file.write("VERSION \"");
+        file.write(title);
+
+        if(!support.version.empty())
+            file.write(" " + support.version);
+        else if(!support.api.empty())
+            file.write(" " + support.api);
+
+        file.write("\"\n");
+        file.write(filecontents);
+        filecontents.clear();
+
+        // Now get any comments for the DBC strings
+        for(std::size_t i = 0; i < packets.size(); i++)
+        {
+            if(packets.at(i)->dbc())
+            {
+                filecontents += "\n";
+                filecontents += packets.at(i)->getDBCMessageComment(dbcid, dbcshift);
+            }
+        }
+
+        if(!filecontents.empty())
+        {
+            file.write("\n");
+            file.write(filecontents);
+            filecontents.clear();
+        }
+
+        // Now get any enumerations for the DBC strings
+        for(std::size_t i = 0; i < packets.size(); i++)
+        {
+            if(packets.at(i)->dbc())
+            {
+                filecontents += "\n";
+                filecontents += packets.at(i)->getDBCMessageEnum(dbcid, dbcshift);
+            }
+        }
+
+        if(!filecontents.empty())
+        {
+            file.write("\n");
+            file.write(filecontents);
+        }
+
+        std::cout << "Writing DBC documentation to " << filename << std::endl;
+    }
+
+}// ProtocolParser::outputDBC
+
+
 /*!
  * Ouptut documentation for the protocol as a markdown file
  * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
@@ -1790,6 +1873,21 @@ void ProtocolParser::setDocsPath(std::string path)
         docsDir = path;
     else
         docsDir = "";
+}
+
+
+
+/*!
+ * Set the options for DBC outputs. This will only do something if packets have the dbc=true attribute
+ * \param _dbcfile is the file to output to
+ * \param _dbcid is the base identifier to sue for the dbc
+ * \param _dbctypeshift is the shift value to apply to the packet type before ORing with the base identifier
+ */
+void ProtocolParser::setDBCOptions(std::string _dbcfile, std::string _dbcid, std::string _dbctypeshift)
+{
+    dbcfile = _dbcfile;
+    dbcid = ShuntingYard::toUint(_dbcid);
+    dbcshift = ShuntingYard::toUint(_dbctypeshift);
 }
 
 

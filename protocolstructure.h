@@ -44,6 +44,15 @@ public:
     //! Return the strings that #define initial and variable values
     std::string getInitialAndVerifyDefines(bool includeComment = true) const override;
 
+    //! Get the string which identifies this encodable in a CAN DBC file.
+    std::string getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const override;
+
+    //! Get the string which comments this encodable in a CAN DBC file
+    std::string getDBCSignalComment(std::string prename, uint32_t ID) const override;
+
+    //! Get the string which comments this encodables enumerations in a CAN DBC file
+    std::string getDBCSignalEnum(std::string prename, uint32_t ID) const override;
+
     //! Get the string used for comparing this structure.
     std::string getComparisonString(void) const override;
 
