@@ -41,8 +41,11 @@ public:
     //! Return the extended packet name
     std::string extendedName() const { return support.prefix + this->name + support.packetStructureSuffix; }
 
-    //! Return the flag indicating if this packet has DBC output turned on
-    bool dbc(void) const {return dbcon;}
+    //! Return the flag indicating if this packet has DBC transmit turned on
+    bool dbctx(void) const {return dbctxon;}
+
+    //! Return the flag indicating if this packet has DBC receive turned on
+    bool dbcrx(void) const {return dbcrxon;}
 
 protected:
 
@@ -129,8 +132,11 @@ protected:
     //! Flag to output structure functions
     bool structureFunctions;
 
-    //! Flag for DBC outputs turned on
-    bool dbcon;
+    //! Flag for DBC transmit turned on
+    bool dbctxon;
+
+    //! Flag for DBC receive turned on
+    bool dbcrxon;
 
     //! Packet identifier string
     std::vector<std::string> ids;

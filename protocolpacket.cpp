@@ -20,7 +20,8 @@ ProtocolPacket::ProtocolPacket(ProtocolParser* parse, ProtocolSupport supported)
     useInOtherPackets(false),
     parameterFunctions(false),
     structureFunctions(true),
-    dbcon(false)
+    dbctxon(false),
+    dbcrxon(false)
 {
     // These are attributes on top of the normal structureModule that we support
     std::vector<std::string> newattribs({"structureInterface", "parameterInterface", "ID", "useInOtherPackets"});
@@ -46,7 +47,8 @@ void ProtocolPacket::clear(void)
     useInOtherPackets = false;
     parameterFunctions = false;
     structureFunctions = true;
-    dbcon = false;
+    dbctxon = false;
+    dbcrxon = false;
 
     // Delete all the objects in the list
     for(std::size_t i = 0; i < documentList.size(); i++)
@@ -98,7 +100,10 @@ void ProtocolPacket::parse(void)
     decode = !ProtocolParser::isFieldClear(ProtocolParser::getAttribute("decode", map));
 
     // DBC outputs have to be turned on in the packet
-    dbcon = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("dbc", map));
+    dbctxon = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("dbctx", map));
+
+    // DBC outputs have to be turned on in the packet
+    dbcrxon = ProtocolParser::isFieldSet(ProtocolParser::getAttribute("dbcrx", map));
 
     // It is possible to suppress the globally specified compare output
     if(ProtocolParser::isFieldClear(ProtocolParser::getAttribute("compare", map)))

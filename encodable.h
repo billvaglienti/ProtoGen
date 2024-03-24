@@ -48,7 +48,7 @@ public:
     virtual std::string getInitialAndVerifyDefines(bool includeComment = true) const {(void)includeComment; return std::string();}
 
     //! Get the string which identifies this encodable in a CAN DBC file
-    virtual std::string getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const {(void)prename; (void)isBigEndian; (void)bitcount; return std::string();}
+    virtual std::string getDBCSignalString(std::string prename, int* bitcount) const {(void)prename; (void)bitcount; return std::string();}
 
     //! Get the string which comments this encodable in a CAN DBC file
     virtual std::string getDBCSignalComment(std::string prename, uint32_t ID) const {(void)prename; (void)ID; return std::string();}

@@ -39,7 +39,7 @@ ProtocolStructure::ProtocolStructure(ProtocolParser* parse, std::string parent, 
     redefines(nullptr)
 {
     // List of attributes understood by ProtocolStructure
-    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "neverOmit", "limitOnEncode", "dbc"};
+    attriblist = {"name",  "title",  "array",  "variableArray",  "array2d",  "variable2dArray",  "dependsOn",  "comment",  "hidden",  "neverOmit", "limitOnEncode", "dbctx", "dbcrx"};
 
 }
 
@@ -458,11 +458,10 @@ std::string ProtocolStructure::getInitialAndVerifyDefines(bool includeComment) c
 /*!
  * Get the string which identifies this encodable in a CAN DBC file.
  * \param prename is the name of the previous structure that this may be a member of.
- * \param isBigEndian true for big endian encodings.
  * \param bitcount the start bit of this encoding (0 being the first bit in the message).
  * \return the string which starts with SG_ and identifies this signal.
  */
-std::string ProtocolStructure::getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const
+std::string ProtocolStructure::getDBCSignalString(std::string prename, int* bitcount) const
 {
     std::string output;
 
@@ -471,7 +470,7 @@ std::string ProtocolStructure::getDBCSignalString(std::string prename, bool isBi
         (*bitcount) = 0;
 
     for(std::size_t i = 0; i < encodables.size(); i++)
-        output += encodables.at(i)->getDBCSignalString(prename, isBigEndian, bitcount);
+        output += encodables.at(i)->getDBCSignalString(prename, bitcount);
 
     return output;
 

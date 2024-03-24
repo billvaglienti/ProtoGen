@@ -767,7 +767,7 @@ std::string ProtocolStructureModule::getDBCMessageString(uint32_t ID) const
     std::string output = "BO_ " + std::to_string(ID) + " " + name + ": ";
 
     // The signal information, and the length
-    std::string signals = getDBCSignalString(std::string(), support.bigendian, &bitcount);
+    std::string signals = getDBCSignalString(std::string(), &bitcount);
 
     // Finish the output - number of bytes
     output += std::to_string((bitcount+7)/8) + " Vector__XXX\n";

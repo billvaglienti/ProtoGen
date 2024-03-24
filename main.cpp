@@ -196,13 +196,16 @@ int main(int argc, char *argv[])
     std::string dbcfile = liststartsWith(arguments, "-dbcfile");
     dbcfile = dbcfile.substr(dbcfile.find(" ") + 1);
 
-    std::string dbcid = liststartsWith(arguments, "-dbcid");
-    dbcid = dbcid.substr(dbcid.find(" ") + 1);
+    std::string dbcidtx = liststartsWith(arguments, "-dbcidtx");
+    dbcidtx = dbcidtx.substr(dbcidtx.find(" ") + 1);
+
+    std::string dbcidrx = liststartsWith(arguments, "-dbcidrx");
+    dbcidrx = dbcidrx.substr(dbcidrx.find(" ") + 1);
 
     std::string dbctypeshift = liststartsWith(arguments, "-dbcshift");
     dbctypeshift = dbctypeshift.substr(dbctypeshift.find(" ") + 1);
 
-    parser.setDBCOptions(dbcfile, dbcid, dbctypeshift);
+    parser.setDBCOptions(dbcfile, dbcidtx, dbcidrx, dbctypeshift);
 
     if (parser.parse(filename, path, otherfiles))
     {

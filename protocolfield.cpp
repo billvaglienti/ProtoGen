@@ -522,8 +522,7 @@ ProtocolField::ProtocolField(ProtocolParser* parse, std::string parent, Protocol
                   "verifyMinValue",
                   "verifyMaxValue",
                   "map",
-                  "limitOnEncode",
-                  "dbc"};
+                  "limitOnEncode"};
 }
 
 
@@ -840,7 +839,7 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
 
             if(startsWith(type, "f"))
             {
-                // we want to handle the cas where the user types "float16:10" to specify the number of significands
+                // we want to handle the case where the user types "float16:10" to specify the number of significands
                 if(type.find(':') != std::string::npos)
                 {
                     std::vector<std::string> list = split(type, ":");
@@ -3572,11 +3571,10 @@ std::string ProtocolField::getInitialAndVerifyDefines(bool includeComment) const
  * Get the string which identifies this encodable in a CAN DBC file. This could
  * be more than one line if this is an array or a structure.
  * \param prename is the name of the previous structure that this may be a member of.
- * \param isBigEndian true for big endian encodings.
  * \param bitcount the start bit of this encoding (0 being the first bit in the message).
  * \return the string which starts with SG_ and identifies this signal.
  */
-std::string ProtocolField::getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const
+std::string ProtocolField::getDBCSignalString(std::string prename, int* bitcount) const
 {
     std::string output;
     std::string localname;
@@ -3634,13 +3632,16 @@ std::string ProtocolField::getDBCSignalString(std::string prename, bool isBigEnd
             {
                 const ProtocolStructure* mystruct = parser->lookUpStructure(typeName);
                 if(mystruct != nullptr)
-                    output += mystruct->getDBCSignalString(localname, isBigEndian, bitcount);
+                    output += mystruct->getDBCSignalString(localname, bitcount);
             }
-            else
+            else if(!encodedType.isNull)
             {
                 uint32_t start = (*bitcount);
 
-                // If this is not a bitfield it must be on a byte boundary.
+                // For strings we use the stringlen to handle the fact that this is multiple bytes, but not handled as an array
+                uint32_t numbits = encodedType.bits*stringlen;
+
+                // If this is not a bitfield it must start on a byte boundary.
                 if(!encodedType.isBitfield)
                 {
                     uint32_t rem = start % 8;
@@ -3651,107 +3652,107 @@ std::string ProtocolField::getDBCSignalString(std::string prename, bool isBigEnd
                     }
                 }
 
-                // Must have in-memory data as well as encoded data
-                if(!inMemoryType.isNull && !encodedType.isNull && !isHidden())
+                if(!inMemoryType.isNull && !isHidden())
                 {
-                    output += " SG_ " + localname + " : ";
-
-                    // DBC uses a weird concept for the start bit. For little endian the start
-                    // bit is the least significant bit. For big endian the start bit is the
-                    // most significant bit. But it gets even weirder: the bits are numbered
-                    // strangely:
-                    // [ 7 6 5 4 3 2 1 0 ] [ 15 14 13 12 11 10 9 8 ] [ 23 22 21 20 …
-                    // `----- Byte 0 ----´ `------- Byte 1 --------´ `----- Byte 2 …
-
-                    // If little endian adjust start to the least significant bit
-                    if(!isBigEndian)
-                        start += encodedType.bits-1;
-
-                    // The zero based byte number
-                    uint32_t byte = start/8;
-
-                    // The zero based number of bits into the byte, 0 is msb)
-                    uint32_t rem = start - byte*8;
-
-                    // Reflect the bit number, so msb is 7
-                    rem = 7 - rem;
-
-                    // Finally, recomput the start number as DBC undertands it
-                    start = 8*byte + rem;
-
-                    // Start bit and length
-                    output += std::to_string(start) + "|" + std::to_string(encodedType.bits*stringlen);
-
-                    // Endianness
-                    if(isBigEndian)
-                        output += "@0";
-                    else
-                        output += "@1";
-
-                    // Signedness
-                    if(encodedType.isSigned)
-                        output += "-";
-                    else
-                        output += "+";
-
-                    // Scale and offset
-                    if(isFloatScaling() || isIntegerScaling())
-                    {
-                        // The DBC scaler is inversed from our definition
-                        if(scaler != 0)
-                            output += " (" + std::to_string(1.0/scaler);
-                        else
-                            output += " (0";
-
-                        // The offset is zero if signed, or not specified
-                        if(encodedType.isSigned || minString.empty())
-                            output += ",0)";
-                        else
-                            output += "," + std::to_string(encodedMin) + ")";
-                    }
-                    else
-                    {
-                        output += " (1,0)";
-                    }
-
-                    /// TODO: add float support
-
                     if(isString())
                     {
-                        // No such thing as min and max values for a string
-                        output += " [0|0]";
+                        output += " SG_ " + localname + " : " + getDBCBitWidthString(numbits, start, false, support.bigendian) + " (1,0) [0|0] \"\" Vector__XXX\n";
+                    }
+                    else if(encodedType.isFloat && support.bigendian)
+                    {
+                        // For big endian float encodings we break the encoding apart into three sections:
+                        // a) first bit is sign
+                        output += " SG_ " + localname + "_sign : " + getDBCBitWidthString(1, start, true, support.bigendian) + " (1,0) [0|0] \"\" Vector__XXX\n";
+                        start++;
+
+                        uint32_t exponentbits = 0;
+                        uint32_t sigbits = 0;
+                        if(encodedType.bits == 64)
+                            exponentbits = 11;
+                        else if(encodedType.bits == 32)
+                            exponentbits = 8;
+                        else
+                            exponentbits = encodedType.bits - encodedType.sigbits - 1;
+
+                        sigbits = encodedType.bits - exponentbits - 1;
+
+                        // b) next bits are exponent - notice the offset, which is the "bias" in float world
+
+                        int bias = (0x1<<(exponentbits-1)) - 1;
+                        output += " SG_ " + localname + "_exp2 : " + getDBCBitWidthString(exponentbits, start, false, support.bigendian) + " (1," + std::to_string(-1*bias) + ") [" + std::to_string(-1*bias) + "|" + std::to_string(1+bias) + "] \"\" Vector__XXX\n";
+                        start += exponentbits;
+
+                        // c) lasts bits are significand - with implied leading one, range is from 1.0 to 2.0, so offset is 1, and scaler is 1.0/2^sigbits
+                        output += " SG_ " + localname + " : " + getDBCBitWidthString(sigbits, start, false, support.bigendian) + " (" + std::to_string(1.0/(0x1<<sigbits)) + ",1) [" + std::to_string(1.0) + "|" + std::to_string(2.0) + "]";
+
+                        // Units data appears on the significand line
+                        if((extraInfoNames.size() > 0) && (extraInfoValues.size() > 0) && (extraInfoNames.at(0) == "Units"))
+                        {
+                            // Units are in quotes
+                            output += " \"" + extraInfoValues.at(0) + "\" Vector__XXX\n";
+                        }
+                        else
+                            output += " \"\" Vector__XXX\n";
                     }
                     else
                     {
-                        // Min and max values
-                        output += " [";
+                        output += " SG_ " + localname + " : " + getDBCBitWidthString(numbits, start, encodedType.isSigned, support.bigendian);
 
-                        if((support.limitonencode == false) || verifyMinString.empty() || (hasVerifyMinValue && (verifyMinValue <= limitMinValue)))
-                            output += limitMinStringForComment;
+                        // Scale and offset
+                        if(isFloatScaling() || isIntegerScaling())
+                        {
+                            // The DBC scaler is inversed from our definition
+                            if(scaler != 0)
+                                output += " (" + std::to_string(1.0/scaler);
+                            else
+                                output += " (0";
+
+                            // The offset is zero if signed, or not specified
+                            if(encodedType.isSigned || minString.empty())
+                                output += ",0)";
+                            else
+                                output += "," + std::to_string(encodedMin) + ")";
+                        }
                         else
-                            output += verifyMinString;
+                        {
+                            output += " (1,0)";
+                        }
 
-                        output += "|";
-
-                        if((support.limitonencode == false) || verifyMaxString.empty() || (hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue)))
-                            output += limitMaxStringForComment;
+                        if(isString())
+                        {
+                            // No such thing as min and max values for a string
+                            output += " [0|0]";
+                        }
                         else
-                            output += verifyMaxString;
+                        {
+                            // Min and max values
+                            output += " [";
 
-                        output += "]";
-                    }
+                            if((support.limitonencode == false) || verifyMinString.empty() || (hasVerifyMinValue && (verifyMinValue <= limitMinValue)))
+                                output += limitMinStringForComment;
+                            else
+                                output += verifyMinString;
 
-                    // Units data
-                    if((extraInfoNames.size() > 0) && (extraInfoValues.size() > 0) && (extraInfoNames.at(0) == "Units"))
-                    {
-                        // Units are in quotes
-                        output += " \"" + extraInfoValues.at(0) + "\"";
-                    }
-                    else
-                        output += " \"\"";
+                            output += "|";
 
-                    // Finish the line
-                    output += " Vector__XXX\n";
+                            if((support.limitonencode == false) || verifyMaxString.empty() || (hasVerifyMaxValue && (verifyMaxValue >= limitMaxValue)))
+                                output += limitMaxStringForComment;
+                            else
+                                output += verifyMaxString;
+
+                            output += "]";
+                        }
+
+                        // Units data
+                        if((extraInfoNames.size() > 0) && (extraInfoValues.size() > 0) && (extraInfoNames.at(0) == "Units"))
+                        {
+                            // Units are in quotes
+                            output += " \"" + extraInfoValues.at(0) + "\" Vector__XXX\n";
+                        }
+                        else
+                            output += " \"\" Vector__XXX\n";
+
+                    }// else if integer encoding
 
                 }// If something to describe
 
@@ -3767,6 +3768,61 @@ std::string ProtocolField::getDBCSignalString(std::string prename, bool isBigEnd
     return output;
 
 }// ProtocolField::getDBCSignalString
+
+
+/*!
+ * Get the string that describes the bit start position and width
+ * \param numbits is the number of encoded bits
+ * \param start is the start bit number. MSB for big endian, LSB for little endian.
+ * \param isSigned should be true for a signed encoding
+ * \param isBigEndian should be true for big endian encoding
+ * \return the string describing the bit start position and width
+ */
+std::string ProtocolField::getDBCBitWidthString(uint32_t numbits, uint32_t start, bool isSigned, bool isBigEndian)
+{
+    std::string output;
+
+    // DBC uses a weird concept for the start bit. For little endian the start
+    // bit is the least significant bit. For big endian the start bit is the
+    // most significant bit. But it gets even weirder: the bits are numbered
+    // strangely:
+    // [ 7 6 5 4 3 2 1 0 ] [ 15 14 13 12 11 10 9 8 ] [ 23 22 21 20 …
+    // `----- Byte 0 ----´ `------- Byte 1 --------´ `----- Byte 2 …
+
+    // If little endian adjust start to the least significant bit
+    if(!isBigEndian)
+        start += numbits-1;
+
+    // The zero based byte number
+    uint32_t byte = start/8;
+
+    // The zero based number of bits into the byte, 0 is msb)
+    uint32_t rem = start - byte*8;
+
+    // Reflect the bit number, so msb is 7
+    rem = 7 - rem;
+
+    // Finally, recomput the start number as DBC undertands it
+    start = 8*byte + rem;
+
+    // Start bit and length
+    output += std::to_string(start) + "|" + std::to_string(numbits);
+
+    // Endianness
+    if(isBigEndian)
+        output += "@0";
+    else
+        output += "@1";
+
+    // Signedness
+    if(isSigned)
+        output += "-";
+    else
+        output += "+";
+
+    return output;
+
+}// ProtocolField::getDBCBitWidthString
 
 
 /*!
@@ -3823,7 +3879,14 @@ std::string ProtocolField::getDBCSignalComment(std::string prename, uint32_t ID)
             }
             else if(!inMemoryType.isNull && !encodedType.isNull && !comment.empty() && !isHidden())
             {
-                output += "CM_ SG_ " + std::to_string(ID) + " " + localname + " \"" + truncateSentences(comment, 255) + "\";\n";
+                if(encodedType.isFloat && support.bigendian)
+                {
+                    output += "CM_ SG_ " + std::to_string(ID) + " " + localname + "_sign \"Sign bit, negative if set\";\n";
+                    output += "CM_ SG_ " + std::to_string(ID) + " " + localname + "_exp2 \"Multiply significand by 2 raised to this power\";\n";
+                    output += "CM_ SG_ " + std::to_string(ID) + " " + localname + " \"" + truncateSentences("Significand. " + comment, 255) + "\";\n";
+                }
+                else
+                    output += "CM_ SG_ " + std::to_string(ID) + " " + localname + " \"" + truncateSentences(comment, 255) + "\";\n";
             }
 
         }// second array dimension

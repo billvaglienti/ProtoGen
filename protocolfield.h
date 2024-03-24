@@ -235,7 +235,7 @@ public:
     std::string getInitialAndVerifyDefines(bool includeComment = true) const override;
 
     //! Get the string which identifies this encodable in a CAN DBC file
-    std::string getDBCSignalString(std::string prename, bool isBigEndian, int* bitcount) const override;
+    std::string getDBCSignalString(std::string prename, int* bitcount) const override;
 
     //! Get the string which comments this encodable in a CAN DBC file
     std::string getDBCSignalComment(std::string prename, uint32_t ID) const override;
@@ -479,6 +479,9 @@ protected:
 
     //! Check to see if we should be doing integer scaling on this field
     bool isIntegerScaling(void) const;
+
+    //! Get the string that describes the bit start position and width
+    static std::string getDBCBitWidthString(uint32_t numbits, uint32_t start, bool isSigned, bool isBigEndian);
 
 };
 

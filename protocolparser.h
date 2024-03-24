@@ -24,7 +24,7 @@ public:
     void setDocsPath(std::string path);
 
     //! Set the options for DBC outputs
-    void setDBCOptions(std::string dbcfile, std::string dbcid, std::string dbctypeshift);
+    void setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift);
 
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
@@ -223,7 +223,8 @@ protected:
     std::string inputpath;
     std::string inputfile;
 
-    uint32_t dbcid;
+    uint32_t dbcidtx;
+    uint32_t dbcidrx;
     uint32_t dbcshift;
     std::string dbcfile;
 

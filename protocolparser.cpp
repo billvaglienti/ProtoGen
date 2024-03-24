@@ -15,7 +15,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.6.a";
+const std::string ProtocolParser::genVersion = "3.6.b";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -31,7 +31,8 @@ ProtocolParser::ProtocolParser() :
     noAboutSection(false),
     nocss(false),
     tableOfContents(false),
-    dbcid(0),
+    dbcidtx(0),
+    dbcidrx(0),
     dbcshift(0)
 {
 }
@@ -1247,10 +1248,15 @@ void ProtocolParser::outputDBC(void)
 
     for(std::size_t i = 0; i < packets.size(); i++)
     {
-        if(packets.at(i)->dbc())
+        if(packets.at(i)->dbctx())
         {
             filecontents += "\n";
-            filecontents += packets.at(i)->getDBCMessageString(dbcid, dbcshift);
+            filecontents += packets.at(i)->getDBCMessageString(dbcidtx, dbcshift);
+        }
+        else if(packets.at(i)->dbcrx())
+        {
+            filecontents += "\n";
+            filecontents += packets.at(i)->getDBCMessageString(dbcidrx, dbcshift);
         }
     }
 
@@ -1282,10 +1288,15 @@ void ProtocolParser::outputDBC(void)
         // Now get any comments for the DBC strings
         for(std::size_t i = 0; i < packets.size(); i++)
         {
-            if(packets.at(i)->dbc())
+            if(packets.at(i)->dbctx())
             {
                 filecontents += "\n";
-                filecontents += packets.at(i)->getDBCMessageComment(dbcid, dbcshift);
+                filecontents += packets.at(i)->getDBCMessageComment(dbcidtx, dbcshift);
+            }
+            else if(packets.at(i)->dbcrx())
+            {
+                filecontents += "\n";
+                filecontents += packets.at(i)->getDBCMessageComment(dbcidrx, dbcshift);
             }
         }
 
@@ -1299,10 +1310,15 @@ void ProtocolParser::outputDBC(void)
         // Now get any enumerations for the DBC strings
         for(std::size_t i = 0; i < packets.size(); i++)
         {
-            if(packets.at(i)->dbc())
+            if(packets.at(i)->dbctx())
             {
                 filecontents += "\n";
-                filecontents += packets.at(i)->getDBCMessageEnum(dbcid, dbcshift);
+                filecontents += packets.at(i)->getDBCMessageEnum(dbcidtx, dbcshift);
+            }
+            else if(packets.at(i)->dbcrx())
+            {
+                filecontents += "\n";
+                filecontents += packets.at(i)->getDBCMessageEnum(dbcidrx, dbcshift);
             }
         }
 
@@ -1876,17 +1892,18 @@ void ProtocolParser::setDocsPath(std::string path)
 }
 
 
-
 /*!
  * Set the options for DBC outputs. This will only do something if packets have the dbc=true attribute
  * \param _dbcfile is the file to output to
- * \param _dbcid is the base identifier to sue for the dbc
+ * \param _dbcidtx is the base identifier to use for the dbc transmit frames
+ * \param _dbcidrx is the base identifier to use for the dbc receive frames
  * \param _dbctypeshift is the shift value to apply to the packet type before ORing with the base identifier
  */
-void ProtocolParser::setDBCOptions(std::string _dbcfile, std::string _dbcid, std::string _dbctypeshift)
+void ProtocolParser::setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift)
 {
     dbcfile = _dbcfile;
-    dbcid = ShuntingYard::toUint(_dbcid);
+    dbcidtx = ShuntingYard::toUint(_dbcidtx);
+    dbcidrx = ShuntingYard::toUint(_dbcidrx);
     dbcshift = ShuntingYard::toUint(_dbctypeshift);
 }
 

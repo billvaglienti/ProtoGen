@@ -74,7 +74,9 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 
 - `-dbc <file>` specifies a file for the output of DBC formatted documentation for CAN bus description. If `-dbc file` is not specified dbc output will not be generated. Only packets with the `dbc="true"` attribute will generate DBC outputs.
 
-- `-dbcid <ID>` specifies a base ID value to use for the DBC messages. The actual ID of each message comes from the base ID and the packet type. Set the MSB for extended identifiers (e.g. 0x9F000000 is extended identifier 0x1F000000).
+- `-dbctxid <ID>` specifies a base ID value to use for the DBC messages with the dbctx attribute set. The actual ID of each message comes from the base ID and the packet type. Set the MSB for extended identifiers (e.g. 0x9F000000 is extended identifier 0x1F000000).
+
+- `-dbcrxid <ID>` specifies a base ID value to use for the DBC messages with the dbcrx attribute set. The actual ID of each message comes from the base ID and the packet type. Set the MSB for extended identifiers (e.g. 0x9E000000 is extended identifier 0x1E000000).
 
 - `-dbcshift <shift>` specifies a left shift value to use for generating the ID of the DBC messages. The actual ID of each message comes from the base ID ORed with the packet type left shifted by this amount.
 
@@ -467,7 +469,9 @@ Packet tag attributes beyond Structure tag attributes:
 
 - `print` AND `printfile` : When used within the context of a packet these attributes trigger the output of an additional print function that uses packet pointers (rather than structure pointers) to do the print. The structure print function is still output.
 
-- `dbc` : If set to `true` this attribute specifies that this packet will generate DBC outputs if a dbc file was specified on the command line.
+- `dbctx` : If set to `true` this attribute specifies that this packet will generate DBC outputs, using the dbctxid, if a dbc file was specified on the command line.
+
+- `dbcrx` : If set to `true` this attribute specifies that this packet will generate DBC outputs, using the dbcrxid, if a dbc file was specified on the command line.
 
 ### Packet : Data subtags
 
