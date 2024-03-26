@@ -54,6 +54,8 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 
 - `-yes-doxygen` will cause ProtoGen to output developer level html documentation from doxygen. This step can add significant time and may not be appropriate when using ProtoGen as a build step.
 
+- `-no-code` will cause ProtoGen to skip the output of the generated code. This is useful for cases where you only want documentation. 
+
 - `-no-markdown` will cause ProtoGen to skip the output of the user level markdown and html documentation. 
 
 - `-no-about-section` will cause ProtoGen to skip the output of extra preface and postface information in the generated documentation.
@@ -79,6 +81,8 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 - `-dbcrxid <ID>` specifies a base ID value to use for the DBC messages with the dbcrx attribute set. The actual ID of each message comes from the base ID and the packet type. Set the MSB for extended identifiers (e.g. 0x9E000000 is extended identifier 0x1E000000).
 
 - `-dbcshift <shift>` specifies a left shift value to use for generating the ID of the DBC messages. The actual ID of each message comes from the base ID ORed with the packet type left shifted by this amount.
+
+- `-dbcbaud <baud>` specifies a baud rate value to add to the DBC file. If not included no baud rate is added to the file.
 
 Dependencies
 ------------

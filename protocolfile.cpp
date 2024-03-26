@@ -835,7 +835,7 @@ std::string ProtocolSourceFile::filePath(bool eveniftrivial) const
 
 /*!
  * Return the file name, or an empty string if this file has no non-trivial content
- * \return the file , or an empty string
+ * \return the file, or an empty string
  */
 std::string ProtocolSourceFile::fileName(bool eveniftrivial) const
 {

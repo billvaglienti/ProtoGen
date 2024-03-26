@@ -15,7 +15,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.6.b";
+const std::string ProtocolParser::genVersion = "3.6.c";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -26,6 +26,7 @@ ProtocolParser::ProtocolParser() :
     latexHeader(1),
     latexEnabled(false),
     nomarkdown(false),
+    nocode(false),
     nohelperfiles(false),
     nodoxygen(false),
     noAboutSection(false),
@@ -33,7 +34,8 @@ ProtocolParser::ProtocolParser() :
     tableOfContents(false),
     dbcidtx(0),
     dbcidrx(0),
-    dbcshift(0)
+    dbcshift(0),
+    dbcbaud(0)
 {
 }
 
@@ -187,11 +189,14 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     std::vector<std::string> filePathList;
 
     // Build the top level module
-    createProtocolHeader(docElem);
+    if(!nocode)
+    {
+        createProtocolHeader(docElem);
 
-    // And record its file name
-    fileNameList.push_back(header->fileName());
-    filePathList.push_back(header->filePath());
+        // And record its file name
+        fileNameList.push_back(header->fileName());
+        filePathList.push_back(header->filePath());
+    }
 
     // Now parse the contents of all the files. We do other files first since
     // we expect them to be helpers that the main file may depend on.
@@ -202,7 +207,7 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     parseFile(filename);
 
     // This is a resource file for bitfield testing
-    if(support.bitfieldtest && support.bitfield)
+    if(support.bitfieldtest && support.bitfield && !nocode)
     {
         std::fstream btestfile("bitfieldtester.xml", std::ios_base::out);
 
@@ -229,7 +234,11 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     {
         EnumCreator* module = globalEnums.at(i);
 
-        module->parseGlobal();
+        module->parseGlobal(nocode);
+
+        // If nocode is active, we still parse, we just don't generate
+        if(nocode)
+            continue;
 
         // Don't output if hidden and we are omitting hidden items
         if(module->isHidden() && !module->isNeverOmit() && support.omitIfHidden)
@@ -273,7 +282,11 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         ProtocolStructureModule* module = structures[i];
 
         // Parse its XML and generate the output
-        module->parse();
+        module->parse(nocode);
+
+        // If nocode is active, we still parse, we just don't generate
+        if(nocode)
+            continue;
 
         // Keep a list of all the file names
         fileNameList.push_back(module->getDefinitionFileName());
@@ -312,11 +325,15 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
             continue;
 
         // Parse its XML
-        packet->parse();
+        packet->parse(nocode);
 
         // The structures have been parsed, adding this packet to the list
         // makes it available for other packets to find as structure reference
         structures.push_back(packet);
+
+        // If nocode is active, we still parse, we just don't generate
+        if(nocode)
+            continue;
 
         // Keep a list of all the file names
         fileNameList.push_back(packet->getDefinitionFileName());
@@ -353,7 +370,11 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
             continue;
 
         // Parse its XML
-        packet->parse();
+        packet->parse(nocode);
+
+        // If nocode is active, we still parse, we just don't generate
+        if(nocode)
+            continue;
 
         // Keep a list of all the file names
         fileNameList.push_back(packet->getDefinitionFileName());
@@ -389,20 +410,20 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
         doc->parse();
     }
 
-    if(!nohelperfiles)
+    if(!nohelperfiles && !nocode)
     {
         // Auto-generated files for coding
         ProtocolScaling(support).generate(fileNameList, filePathList);
         FieldCoding(support).generate(fileNameList, filePathList);
         ProtocolFloatSpecial(support).generate(fileNameList, filePathList);
+
+        // Code for testing bitfields
+        if(support.bitfieldtest && support.bitfield)
+            ProtocolBitfield::generatetest(support);
     }
 
-    // Code for testing bitfields
-    if(support.bitfieldtest && support.bitfield)
-        ProtocolBitfield::generatetest(support);
-
     if(!nomarkdown)
-        outputMarkdown(support.bigendian, inlinecss);
+        outputMarkdown(inlinecss);
 
     if(!dbcfile.empty())
         outputDBC();
@@ -413,7 +434,8 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     #endif
 
     // The last bit of the protocol header
-    finishProtocolHeader();
+    if(!nocode)
+        finishProtocolHeader();
 
     // This is fun...replace all the temporary files with real ones if needed
     for(std::size_t i = 0; i < fileNameList.size(); i++)
@@ -423,7 +445,10 @@ bool ProtocolParser::parse(std::string filename, std::string path, std::vector<s
     if(path.empty())
         path = "./";
 
-    std::cout << "Generated protocol files in " << path << std::endl;
+    if(nocode)
+        std::cout << "Code generation skipped" << std::endl;
+    else
+        std::cout << "Generated protocol files in " << path << std::endl;
 
     return true;
 
@@ -893,8 +918,9 @@ std::string ProtocolParser::getAttribute(const std::string &name, const XMLAttri
  * enumerations will be stored in the global list
  * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param node is parent node
+ * \param nocode should be true to prevent code outputs for the enumerations
  */
-void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode* node)
+void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode* node, bool nocode)
 {
     const XMLElement* element = node->ToElement();
 
@@ -906,7 +932,7 @@ void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode*
     {
         // Look at those which are tagged "enum"
         if(toLower(e->Name()) == "enum")
-            parseEnumeration(parent, e);
+            parseEnumeration(parent, e, nocode);
     }
 
 }// ProtocolParser::parseEnumerations
@@ -918,14 +944,15 @@ void ProtocolParser::parseEnumerations(const std::string& parent, const XMLNode*
  * lookUpEnumeration().
  * \param parent is the hierarchical name of the object which owns the new enumeration
  * \param element is the DomElement that represents this enumeration
+ * \param nocode should be true to prevent code outputs for this enumeration.
  * \return a pointer to the newly created enumeration object. This pointer could be null.
  */
-const EnumCreator* ProtocolParser::parseEnumeration(const std::string& parent, const XMLElement* element)
+const EnumCreator* ProtocolParser::parseEnumeration(const std::string& parent, const XMLElement* element, bool nocode)
 {
     EnumCreator* Enum = new EnumCreator(this, parent, support);
 
     Enum->setElement(element);
-    Enum->parse();
+    Enum->parse(nocode);
 
     // If we have a hidden field, and we are not supposed to omit code for that
     // field, we treat it as null. This is because we *must* omit the code in
@@ -1276,12 +1303,19 @@ void ProtocolParser::outputDBC(void)
         file.write("VERSION \"");
         file.write(title);
 
-        if(!support.version.empty())
-            file.write(" " + support.version);
+        if(!support.version.empty() && !support.api.empty())
+            file.write(" version " + support.version + ", api " + support.api);
+        else if(!support.version.empty())
+            file.write(" version " + support.version);
         else if(!support.api.empty())
-            file.write(" " + support.api);
+            file.write(" api " + support.api);
 
-        file.write("\"\n");
+        file.write(". Generated by ProtoGen version " + ProtocolParser::genVersion + "\"\n");
+
+        // Output the baud rate, but only if we have it
+        if(dbcbaud > 0)
+            file.write("\nBS_: " + std::to_string(dbcbaud) + " : 0,0\n");
+
         file.write(filecontents);
         filecontents.clear();
 
@@ -1336,10 +1370,9 @@ void ProtocolParser::outputDBC(void)
 
 /*!
  * Ouptut documentation for the protocol as a markdown file
- * \param isBigEndian should be true for big endian documentation, else the documentation is little endian.
  * \param inlinecss is the css to use for the markdown output, if blank use default.
  */
-void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
+void ProtocolParser::outputMarkdown(std::string inlinecss)
 {
     std::string basepath = support.outputpath;
 
@@ -1399,7 +1432,7 @@ void ProtocolParser::outputMarkdown(bool isBigEndian, std::string inlinecss)
     }
 
     if (hasAboutSection())
-        filecontents += getAboutSection(isBigEndian);
+        filecontents += getAboutSection();
 
     // The title attribute, remove any emphasis characters. We only put this
     // out if we have a title page, this preserves the behavior before 2.14,
@@ -1572,10 +1605,9 @@ std::string ProtocolParser::getTableOfContents(const std::string& filecontents)
 
 /*!
  * Return the string that describes the about section
- * \param isBigEndian should be true to describe a big endian protocol
  * \return the about section contents
  */
-std::string ProtocolParser::getAboutSection(bool isBigEndian)
+std::string ProtocolParser::getAboutSection(void)
 {
     std::string output;
 
@@ -1592,7 +1624,7 @@ most of the work of encoding data from memory to the wire, and vice versa.\n";
     output += "## Encodings\n";
     output += "\n";
 
-    if(isBigEndian)
+    if(support.bigendian)
         output += "Data for this protocol are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last.\n\n";
     else
         output += "Data for this protocol are sent in LITTLE endian format. Any field larger than one byte is sent with the least signficant byte first, and the most significant byte last. However bitfields are always sent most significant bits first.\n\n";
@@ -1898,13 +1930,15 @@ void ProtocolParser::setDocsPath(std::string path)
  * \param _dbcidtx is the base identifier to use for the dbc transmit frames
  * \param _dbcidrx is the base identifier to use for the dbc receive frames
  * \param _dbctypeshift is the shift value to apply to the packet type before ORing with the base identifier
+ * \param _dbcbaud is the baud rate to put in the packet
  */
-void ProtocolParser::setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift)
+void ProtocolParser::setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift, std::string _dbcbaud)
 {
     dbcfile = _dbcfile;
     dbcidtx = ShuntingYard::toUint(_dbcidtx);
     dbcidrx = ShuntingYard::toUint(_dbcidrx);
     dbcshift = ShuntingYard::toUint(_dbctypeshift);
+    dbcbaud = ShuntingYard::toUint(_dbcbaud);
 }
 
 

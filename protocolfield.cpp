@@ -1013,9 +1013,11 @@ void ProtocolField::extractType(TypeData& data, const std::string& typeString, b
 
 /*!
  * Parse the DOM to determine the details of this ProtocolField
+ * \param nocode should be true to not output any code
  */
-void ProtocolField::parse(void)
+void ProtocolField::parse(bool nocode)
 {
+    (void)nocode;
     std::string memoryTypeString;
     std::string encodedTypeString;
     std::string structName;
@@ -2488,7 +2490,6 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
 
 /*!
  * Get the next lines(s) of source coded needed to encode this field
- * \param isBigEndian should be true for big endian encoding.
  * \param bitcount points to the running count of bits in a bitfields and should persist between calls
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
@@ -2496,7 +2497,7 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
  * \param enforcelimit should be true to perform limiting (if verify limits are provided) as part of the encode.
  * \return The string to add to the source file that encodes this field.
  */
-std::string ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
+std::string ProtocolField::getEncodeString(int* bitcount, bool isStructureMember) const
 {
     std::string output;
 
@@ -2511,7 +2512,7 @@ std::string ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool
         else if(inMemoryType.isStruct)
             output += getEncodeStringForStructure(isStructureMember);
         else
-            output += getEncodeStringForField(isBigEndian, isStructureMember);
+            output += getEncodeStringForField(isStructureMember);
     }
 
     return output;
@@ -2521,7 +2522,6 @@ std::string ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool
 
 /*!
  * Get the next lines(s) of source coded needed to decode this field
- * \param isBigEndian should be true for big endian encoding.
  * \param bitcount points to the running count of bits in a bitfields and should persist between calls
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
@@ -2529,7 +2529,7 @@ std::string ProtocolField::getEncodeString(bool isBigEndian, int* bitcount, bool
  * \param defaultEnabled should be true to handle defaults
  * \return The string to add to the source file that encodes this field.
  */
-std::string ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolField::getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
     std::string output;
 
@@ -2540,7 +2540,7 @@ std::string ProtocolField::getDecodeString(bool isBigEndian, int* bitcount, bool
     else if(inMemoryType.isStruct)
         output += getDecodeStringForStructure(isStructureMember);
     else
-        output += getDecodeStringForField(isBigEndian, isStructureMember, defaultEnabled);
+        output += getDecodeStringForField(isStructureMember, defaultEnabled);
 
     return output;
 }
@@ -4960,13 +4960,12 @@ std::string ProtocolField::getConstantString(void) const
 /*!
  * Get the next lines(s) of source coded needed to encode this field, which
  * is not a bitfield or a string
- * \param isBigEndian should be true for big endian encoding.
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
  * \return The string to add to the source file that encodes this field.
  */
-std::string ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStructureMember) const
+std::string ProtocolField::getEncodeStringForField(bool isStructureMember) const
 {
     std::string output;
     std::string endian;
@@ -5000,7 +4999,7 @@ std::string ProtocolField::getEncodeStringForField(bool isBigEndian, bool isStru
     // endian only applies to multi-byte fields
     if(length > 1)
     {
-        if(isBigEndian)
+        if(support.bigendian)
             endian += "Be";
         else
             endian += "Le";
@@ -5253,14 +5252,13 @@ bool ProtocolField::isIntegerScaling(void) const
 /*!
  * Get the next lines(s) of source coded needed to decode this field, which
  * is not a bitfield or a string
- * \param isBigEndian should be true if the protocol uses big endian ordering.
  * \param isStructureMember should be true if the left hand side is a
  *        member of a user structure, else the left hand side is a pointer
  *        to the inMemoryType
  * \param defaultEnabled should be true to enable default handling
  * \return The string to add to the source file that decodes this field.
  */
-std::string ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolField::getDecodeStringForField(bool isStructureMember, bool defaultEnabled) const
 {
     std::string output;
     std::string endian;
@@ -5281,7 +5279,7 @@ std::string ProtocolField::getDecodeStringForField(bool isBigEndian, bool isStru
     // endian only applies to multi-byte fields
     if(length > 1)
     {
-        if(isBigEndian)
+        if(support.bigendian)
             endian += "Be";
         else
             endian += "Le";

@@ -13,7 +13,7 @@ public:
     ProtocolStructureModule(ProtocolParser* parse, ProtocolSupport supported);
 
     //! Parse a packet from the DOM
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! Reset our data contents
     void clear(void) override;

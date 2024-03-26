@@ -98,7 +98,7 @@ void ProtocolStructure::clear(void)
 /*!
  * Parse the DOM data for this structure
  */
-void ProtocolStructure::parse(void)
+void ProtocolStructure::parse(bool nocode)
 {
     if(e == nullptr)
         return;
@@ -178,7 +178,7 @@ void ProtocolStructure::parse(void)
     checkAgainstKeywords();
 
     // Get any enumerations
-    parseEnumerations(e);
+    parseEnumerations(e, nocode);
 
     // At this point a structure cannot be default, null, or reserved.
     parseChildren(e);
@@ -225,14 +225,12 @@ std::string ProtocolStructure::getDeclaration(void) const
 
 /*!
  * Return the string that is used to encode *this* structure
- * \param isBigEndian should be true for big endian encoding, ignored
  * \param bitcount points to the running count of bits in a bitfields and should persist between calls, ignored
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to encode this structure
  */
-std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
+std::string ProtocolStructure::getEncodeString(int* bitcount, bool isStructureMember) const
 {
-    (void)isBigEndian;
     (void)bitcount;
 
     std::string output;
@@ -287,14 +285,12 @@ std::string ProtocolStructure::getEncodeString(bool isBigEndian, int* bitcount, 
 
 /*!
  * Return the string that is used to decode this structure
- * \param isBigEndian should be true for big endian encoding.
  * \param bitcount points to the running count of bits in a bitfields and should persist between calls
  * \param isStructureMember is true if this encodable is accessed by structure pointer
  * \return the string to add to the source to decode this structure
  */
-std::string ProtocolStructure::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolStructure::getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
-    (void)isBigEndian;
     (void)bitcount;
     (void)defaultEnabled;
 
@@ -767,19 +763,19 @@ std::string ProtocolStructure::getMapDecodeString(void) const
 
 /*!
  * Parse all enumerations which are direct children of a DomNode
- * \param node is parent node
+ * \param node is parent node.
+ * \param nocode is used to prevent code outputs.
  */
-void ProtocolStructure::parseEnumerations(const XMLNode* node)
+void ProtocolStructure::parseEnumerations(const XMLNode* node, bool nocode)
 {
     for(const XMLElement* child = node->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
     {
         if(contains(child->Name(), "enum"))
         {
-            const EnumCreator* Enum = parser->parseEnumeration(getHierarchicalName(), child);
+            const EnumCreator* Enum = parser->parseEnumeration(getHierarchicalName(), child, nocode);
             if(Enum != nullptr)
             {
                 // Inform this enumeration what it's header is
-
                 enumList.push_back(Enum);
             }
         }
@@ -1702,11 +1698,10 @@ std::string ProtocolStructure::getEncodeFunctionPrototype(const std::string& spa
 /*!
  * Return the string that gives the function used to encode this structure and
  * all its children to a simple byte array.
- * \param isBigEndian should be true for big endian encoding.
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons.
  */
-std::string ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool includeChildren) const
+std::string ProtocolStructure::getEncodeFunctionBody(bool includeChildren) const
 {
     std::string output;
 
@@ -1721,7 +1716,7 @@ std::string ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool incl
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += structure->getEncodeFunctionBody(isBigEndian, includeChildren);
+            output += structure->getEncodeFunctionBody(includeChildren);
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -1764,7 +1759,7 @@ std::string ProtocolStructure::getEncodeFunctionBody(bool isBigEndian, bool incl
     for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
-        output += encodables[i]->getEncodeString(isBigEndian, &bitcount, true);
+        output += encodables[i]->getEncodeString(&bitcount, true);
     }
 
     ProtocolFile::makeLineSeparator(output);
@@ -1860,11 +1855,10 @@ std::string ProtocolStructure::getDecodeFunctionPrototype(const std::string& spa
 /*!
  * Return the string that gives the function used to decode this structure.
  * The decoding is from a simple byte array.
- * \param isBigEndian should be true for big endian decoding.
  * \param includeChildren should be true to output the children's functions.
  * \return The string including the comments and code with linefeeds and semicolons.
  */
-std::string ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool includeChildren) const
+std::string ProtocolStructure::getDecodeFunctionBody(bool includeChildren) const
 {
     std::string output;
 
@@ -1879,7 +1873,7 @@ std::string ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool incl
                 continue;
 
             ProtocolFile::makeLineSeparator(output);
-            output += structure->getDecodeFunctionBody(isBigEndian);
+            output += structure->getDecodeFunctionBody();
         }
         ProtocolFile::makeLineSeparator(output);
     }
@@ -1922,7 +1916,7 @@ std::string ProtocolStructure::getDecodeFunctionBody(bool isBigEndian, bool incl
     for(std::size_t i = 0; i < encodables.size(); i++)
     {
         ProtocolFile::makeLineSeparator(output);
-        output += encodables[i]->getDecodeString(isBigEndian, &bitcount, true);
+        output += encodables[i]->getDecodeString(&bitcount, true);
     }
 
     ProtocolFile::makeLineSeparator(output);

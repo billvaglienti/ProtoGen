@@ -1,7 +1,6 @@
 #ifndef PROTOCOLCODE_H
 #define PROTOCOLCODE_H
 
-#include <stdint.h>
 #include <string>
 #include "encodable.h"
 
@@ -16,16 +15,16 @@ class ProtocolCode : public Encodable
     void clear(void) override;
 
     //! Parse the DOM element
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! The hierarchical name of this object
     std::string getHierarchicalName(void) const override {return parent + ":" + name;}
 
     //! Return the string that is used to encode this encodable
-    std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const override;
+    std::string getEncodeString(int* bitcount, bool isStructureMember) const override;
 
     //! Return the string that is used to decode this encoable
-    std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
+    std::string getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
 
     //! Return the string that is used to declare this encodable
     std::string getDeclaration(void) const override {return std::string();}

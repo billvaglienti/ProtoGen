@@ -18,7 +18,7 @@ public:
     void clear(void) override;
 
     //! Parse the DOM data for this structure
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! Return the struct name, which may be different from typeName
     const std::string& getStructName(void) const {return structName;}
@@ -30,10 +30,10 @@ public:
     std::string getDeclaration(void) const override;
 
     //! Return the string that is used to encode this encodable
-    std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const override;
+    std::string getEncodeString(int* bitcount, bool isStructureMember) const override;
 
     //! Return the string that is used to decode this encoable
-    std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
+    std::string getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
 
     //! Get the string used for verifying this field.
     std::string getVerifyString(void) const override;
@@ -139,7 +139,7 @@ public:
     virtual std::string getEncodeFunctionPrototype(const std::string& spacing = std::string(), bool includeChildren = true) const;
 
     //! Return the string that gives the function used to encode this encodable, may be empty
-    virtual std::string getEncodeFunctionBody(bool isBigEndian, bool includeChildren = true) const;
+    virtual std::string getEncodeFunctionBody(bool includeChildren = true) const;
 
 
     //! Return the string that is used to prototype the decode routine for this encodable
@@ -149,7 +149,7 @@ public:
     virtual std::string getDecodeFunctionPrototype(const std::string& spacing = std::string(), bool includeChildren = true) const;
 
     //! Return the string that gives the function used to decode this encodable, may be empty
-    virtual std::string getDecodeFunctionBody(bool isBigEndian, bool includeChildren = true) const;
+    virtual std::string getDecodeFunctionBody(bool includeChildren = true) const;
 
 
     //! Return the string that gives the signature of the function used to initialize this structure
@@ -298,7 +298,7 @@ protected:
     std::string alignStructureData(const std::string& structure) const;
 
     //! Parse all enumerations which are direct children of a DomNode
-    void parseEnumerations(const XMLNode* node);
+    void parseEnumerations(const XMLNode* node, bool nocode = false);
 
     //! This list of all children encodables
     std::vector<Encodable*> encodables;

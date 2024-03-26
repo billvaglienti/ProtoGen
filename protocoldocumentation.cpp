@@ -25,8 +25,10 @@ ProtocolDocumentation::ProtocolDocumentation(ProtocolParser* parse, std::string 
 
 
 //! Parse the document from the DOM
-void ProtocolDocumentation::parse(void)
+void ProtocolDocumentation::parse(bool nocode)
 {
+    (void)nocode;
+
     if(e == nullptr)
         return;
 

@@ -24,7 +24,7 @@ public:
     void setDocsPath(std::string path);
 
     //! Set the options for DBC outputs
-    void setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift);
+    void setDBCOptions(std::string _dbcfile, std::string _dbcidtx, std::string _dbcidrx, std::string _dbctypeshift, std::string _dbcbaud);
 
     //! Set the language override option
     void setLanguageOverride(ProtocolSupport::LanguageType lang) {support.setLanguageOverride(lang);}
@@ -40,6 +40,9 @@ public:
 
     //! Option to disable markdown output
     void disableMarkdown(bool disable) {nomarkdown = disable;}
+
+    //! Option to disable markdown output
+    void disableCode(bool disable) {nocode = disable;}
 
     //! Option to disable helper file output
     void disableHelperFiles(bool disable) {nohelperfiles = disable;}
@@ -87,10 +90,10 @@ public:
     static void outputLongComment(ProtocolFile& file, const std::string& prefix, const std::string& comment);
 
     //! Parse all enumerations which are direct children of a node
-    void parseEnumerations(const std::string& parent, const XMLNode* node);
+    void parseEnumerations(const std::string& parent, const XMLNode* node, bool nocode = false);
 
     //! Parse all enumerations which are direct children of an element
-    const EnumCreator* parseEnumeration(const std::string& parent, const XMLElement* element);
+    const EnumCreator* parseEnumeration(const std::string& parent, const XMLElement* element, bool nocode = false);
 
     //! Output all includes which are direct children of a node
     void outputIncludes(const std::string& parent, ProtocolFile& file, const XMLNode* node) const;
@@ -172,13 +175,13 @@ protected:
     void outputDBC(void);
 
     //! Create markdown documentation
-    void outputMarkdown(bool isBigEndian, std::string inlinecss);
+    void outputMarkdown(std::string inlinecss);
 
     //! Get the table of contents, based on the file contents
     std::string getTableOfContents(const std::string& filecontents);
 
     //! Get the "About this ICD" section to file
-    std::string getAboutSection(bool isBigEndian);
+    std::string getAboutSection(void);
 
     //! Output the doxygen HTML documentation
     void outputDoxygen(void);
@@ -204,6 +207,7 @@ protected:
     int latexHeader;    //!< Top heading level for LaTeX output
     bool latexEnabled;  //!< Generate LaTeX markdown automagically
     bool nomarkdown;    //!< Disable markdown output
+    bool nocode;        //!< Disable code output
     bool nohelperfiles; //!< Disable helper file output
     bool nodoxygen;     //!< Disable doxygen output
     bool noAboutSection;//!< Disable extra 'about' section in the generated documentation
@@ -226,6 +230,7 @@ protected:
     uint32_t dbcidtx;
     uint32_t dbcidrx;
     uint32_t dbcshift;
+    uint32_t dbcbaud;
     std::string dbcfile;
 
 private:

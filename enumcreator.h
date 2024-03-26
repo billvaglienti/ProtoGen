@@ -18,7 +18,7 @@ public:
     EnumElement(ProtocolParser* parse, EnumCreator* creator, const std::string& Parent, ProtocolSupport supported);
 
     //! Parse an enumeration element
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! Check the enumeration element against C keywords
     void checkAgainstKeywords(void) override;
@@ -72,10 +72,10 @@ public:
     void clear(void);
 
     //! Parse the DOM to fill out the enumeration list
-    void parse() override;
+    void parse(bool nocode = false) override;
 
     //! Parse the DOM to fill out the enumeration list for a global enum
-    void parseGlobal(void);
+    void parseGlobal(bool nocode = false);
 
     //! Check names against the list of C keywords
     void checkAgainstKeywords(void) override;

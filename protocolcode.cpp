@@ -1,6 +1,5 @@
 #include "protocolcode.h"
 #include "protocolparser.h"
-#include <iostream>
 
 /*!
  * Construct a blank protocol field
@@ -33,8 +32,10 @@ void ProtocolCode::clear(void)
 /*!
  * Parse the DOM to determine the details of this ProtocolCode
  */
-void ProtocolCode::parse(void)
+void ProtocolCode::parse(bool nocode)
 {
+    (void)nocode;
+
     clear();
 
     if(e == nullptr)
@@ -66,7 +67,6 @@ void ProtocolCode::parse(void)
 
 /*!
  * Get the next lines(s) of source coded needed to add this code to the encode function
- * \param isBigEndian should be true for big endian encoding, ignored.
  * \param bitcount points to the running count of bits in a bitfields and
  *        should persist between calls, ignored.
  * \param isStructureMember should be true if the left hand side is a
@@ -74,9 +74,8 @@ void ProtocolCode::parse(void)
  *        to the inMemoryType, ignored.
  * \return The string to add to the source file for this code.
  */
-std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const
+std::string ProtocolCode::getEncodeString(int* bitcount, bool isStructureMember) const
 {
-    (void)isBigEndian;
     (void)bitcount;
     (void)isStructureMember;
 
@@ -104,7 +103,6 @@ std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool 
 
 /*!
  * Get the next lines(s) of source coded needed to add this code to the decode function.
- * \param isBigEndian should be true for big endian encoding, ignored.
  * \param bitcount points to the running count of bits in a bitfields and
  *        should persist between calls, ignored.
  * \param isStructureMember should be true if the left hand side is a
@@ -113,9 +111,8 @@ std::string ProtocolCode::getEncodeString(bool isBigEndian, int* bitcount, bool 
  * \param defaultEnabled should be true to handle defaults, ignored.
  * \return The string to add to the source file for this code.
  */
-std::string ProtocolCode::getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled) const
+std::string ProtocolCode::getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled) const
 {
-    (void)isBigEndian;
     (void)bitcount;
     (void)isStructureMember;
     (void)defaultEnabled;

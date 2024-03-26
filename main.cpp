@@ -112,12 +112,13 @@ int main(int argc, char *argv[])
     // Documentation directory
     std::string docs = liststartsWith(arguments, "-do");
     docs = docs.substr(docs.find(" ") + 1);
-    if (!docs.empty() && !contains(arguments, "-no-markdown"))
+    if(!docs.empty())
         parser.setDocsPath(ProtocolFile::sanitizePath(docs));
 
     // Process the optional arguments
     parser.disableDoxygen(!contains(arguments, "-yes-doxygen"));
     parser.disableMarkdown(contains(arguments, "-no-markdown"));
+    parser.disableCode(contains(arguments, "-no-code"));
     parser.disableHelperFiles(contains(arguments, "-no-helper-files"));
     parser.disableAboutSection(contains(arguments, "-no-about-section"));
     parser.showHiddenItems(contains(arguments, "-show-hidden"));
@@ -205,7 +206,10 @@ int main(int argc, char *argv[])
     std::string dbctypeshift = liststartsWith(arguments, "-dbcshift");
     dbctypeshift = dbctypeshift.substr(dbctypeshift.find(" ") + 1);
 
-    parser.setDBCOptions(dbcfile, dbcidtx, dbcidrx, dbctypeshift);
+    std::string dbcbaud = liststartsWith(arguments, "-dbcbaud");
+    dbcbaud = dbcbaud.substr(dbcbaud.find(" ") + 1);
+
+    parser.setDBCOptions(dbcfile, dbcidtx, dbcidrx, dbctypeshift, dbcbaud);
 
     if (parser.parse(filename, path, otherfiles))
     {

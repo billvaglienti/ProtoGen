@@ -69,9 +69,10 @@ void ProtocolPacket::clear(void)
 
 
 /*!
- * Create the source and header files that represent a packet
+ * Parse the information for a packet and create the code files
+ * \parma nocode should be true to not output any code
  */
-void ProtocolPacket::parse(void)
+void ProtocolPacket::parse(bool nocode)
 {
     // Initialize metadata
     clear();
@@ -85,7 +86,7 @@ void ProtocolPacket::parse(void)
     // Me and all my children, which may themselves be structures, notice we
     // are not parsing ProtocolStructureModule. This class is basically a
     // re-implementation of ProtocolStructureModule with different rules.
-    ProtocolStructure::parse();
+    ProtocolStructure::parse(nocode);
 
     const XMLAttribute* map = e->FirstAttribute();
 
@@ -222,6 +223,10 @@ void ProtocolPacket::parse(void)
     // assuming that the user will define it elsewhere
     if(ids.size() <= 0)
         ids.push_back(toUpper(name));
+
+    // Don't output anything if caller asked us not to
+    if(nocode)
+        return;
 
     // Don't output if hidden and we are omitting hidden items
     if(isHidden() && !neverOmit && support.omitIfHidden)
@@ -646,7 +651,7 @@ void ProtocolPacket::createTopLevelStructureFunctions(void)
             }
 
             source.makeLineSeparator();
-            source.write(getEncodeFunctionBody(support.bigendian, false));
+            source.write(getEncodeFunctionBody(false));
         }
 
         if(decode)
@@ -659,7 +664,7 @@ void ProtocolPacket::createTopLevelStructureFunctions(void)
             }
 
             source.makeLineSeparator();
-            source.write(getDecodeFunctionBody(support.bigendian, false));
+            source.write(getDecodeFunctionBody(false));
         }
 
         header.makeLineSeparator();
@@ -1050,7 +1055,7 @@ std::string ProtocolPacket::getStructurePacketEncodeBody(void) const
     for(std::size_t i = 0; i < encodables.size(); i++)
     {
         output += "\n";
-        output += encodables[i]->getEncodeString(support.bigendian, &bitcount, true);
+        output += encodables[i]->getEncodeString(&bitcount, true);
     }
 
     std::string id;
@@ -1249,7 +1254,7 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
             if(encodables[i]->isDefault())
                 break;
 
-            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true);
+            output += encodables[i]->getDecodeString(&bitcount, true, true);
         }
 
         // Before we write out the decodes for default fields we need to check
@@ -1267,7 +1272,7 @@ std::string ProtocolPacket::getStructurePacketDecodeBody(void) const
         for(; i < encodables.size(); i++)
         {
             ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, true, true);
+            output += encodables[i]->getDecodeString(&bitcount, true, true);
         }
 
         ProtocolFile::makeLineSeparator(output);
@@ -1483,7 +1488,7 @@ std::string ProtocolPacket::getParameterPacketEncodeBody(void) const
         for(i = 0; i < encodables.size(); i++)
         {
             ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getEncodeString(support.bigendian, &bitcount, false);
+            output += encodables[i]->getEncodeString(&bitcount, false);
         }
 
         ProtocolFile::makeLineSeparator(output);
@@ -1672,7 +1677,7 @@ std::string ProtocolPacket::getParameterPacketDecodeBody(void) const
             if(encodables[i]->isDefault())
                 break;
 
-            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true);
+            output += encodables[i]->getDecodeString(&bitcount, false, true);
         }
 
         // Before we write out the decodes for default fields we need to check
@@ -1690,7 +1695,7 @@ std::string ProtocolPacket::getParameterPacketDecodeBody(void) const
         for(; i < encodables.size(); i++)
         {
             ProtocolFile::makeLineSeparator(output);
-            output += encodables[i]->getDecodeString(support.bigendian, &bitcount, false, true);
+            output += encodables[i]->getDecodeString(&bitcount, false, true);
         }
 
         ProtocolFile::makeLineSeparator(output);

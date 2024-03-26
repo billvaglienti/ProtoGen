@@ -33,10 +33,10 @@ public:
     virtual std::string getDeclaration(void) const = 0;
 
     //! Return the string that is used to encode this encodable
-    virtual std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const = 0;
+    virtual std::string getEncodeString(int* bitcount, bool isStructureMember) const = 0;
 
     //! Return the string that is used to decode this encoable
-    virtual std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
+    virtual std::string getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled = false) const = 0;
 
     //! Get the string used for verifying this field.
     virtual std::string getVerifyString(void) const {return std::string();}

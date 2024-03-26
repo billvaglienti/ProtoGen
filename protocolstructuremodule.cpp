@@ -132,9 +132,10 @@ void ProtocolStructureModule::issueWarnings(const XMLAttribute* map)
 
 
 /*!
- * Create the source and header files that represent a packet
+ * Parse the information for a structure and create the code files
+ * \parma nocode should be true to not output any code
  */
-void ProtocolStructureModule::parse(void)
+void ProtocolStructureModule::parse(bool nocode)
 {
     // Initialize metadata
     clear();
@@ -206,6 +207,10 @@ void ProtocolStructureModule::parse(void)
         if(redefines != NULL)
             structName = support.prefix + redefinename + support.typeSuffix;
     }
+
+    // Don't output anything if caller asked us not to
+    if(nocode)
+        return;
 
     // Don't output if hidden and we are omitting hidden items
     if(isHidden() && !neverOmit && support.omitIfHidden)
@@ -997,7 +1002,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions()
         }
 
         source.makeLineSeparator();
-        source.write(getEncodeFunctionBody(support.bigendian, false));
+        source.write(getEncodeFunctionBody(false));
     }
 
     if(decode)
@@ -1010,7 +1015,7 @@ void ProtocolStructureModule::createTopLevelStructureFunctions()
         }
 
         source.makeLineSeparator();
-        source.write(getDecodeFunctionBody(support.bigendian, false));
+        source.write(getDecodeFunctionBody(false));
     }
 
     header.makeLineSeparator();

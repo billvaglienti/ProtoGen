@@ -127,7 +127,7 @@ public:
     void clear(void) override;
 
     //! Parse the DOM element
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! Check names against the list of C keywords
     void checkAgainstKeywords(void) override;
@@ -199,10 +199,10 @@ public:
     bool hasInit(void) const override;
 
     //! Return the string that is used to encode this encodable
-    std::string getEncodeString(bool isBigEndian, int* bitcount, bool isStructureMember) const override;
+    std::string getEncodeString(int* bitcount, bool isStructureMember) const override;
 
     //! Return the string that is used to decode this encoable
-    std::string getDecodeString(bool isBigEndian, int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
+    std::string getDecodeString(int* bitcount, bool isStructureMember, bool defaultEnabled = false) const override;
 
     //! Return the string that sets this encodable to its default value in code
     std::string getSetToDefaultsString(bool isStructureMember) const override;
@@ -457,7 +457,7 @@ protected:
     std::string getEncodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to encode a field, which is not a bitfield or a string
-    std::string getEncodeStringForField(bool isBigEndian, bool isStructureMember) const;
+    std::string getEncodeStringForField(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a bitfield field
     std::string getDecodeStringForBitfield(int* bitcount, bool isStructureMember, bool defaultEnabled) const;
@@ -469,7 +469,7 @@ protected:
     std::string getDecodeStringForStructure(bool isStructureMember) const;
 
     //! Get the next lines(s, bool isStructureMember) of source coded needed to decode a field, which is not a bitfield or a string
-    std::string getDecodeStringForField(bool isBigEndian, bool isStructureMember, bool defaultEnabled) const;
+    std::string getDecodeStringForField(bool isStructureMember, bool defaultEnabled) const;
 
     //! Get the source needed to close out a string of bitfields in the encode function.
     std::string getCloseBitfieldString(int* bitcount) const;

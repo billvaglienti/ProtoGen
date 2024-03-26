@@ -15,7 +15,7 @@ public:
     ~ProtocolPacket();
 
     //! Parse a packet from the DOM
-    void parse(void) override;
+    void parse(bool nocode = false) override;
 
     //! Clear out any data
     void clear(void) override;

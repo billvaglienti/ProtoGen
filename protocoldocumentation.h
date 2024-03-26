@@ -24,7 +24,7 @@ public:
     const XMLElement* getElement(void) {return e;}
 
     //! Parse the document from the DOM
-    virtual void parse(void);
+    virtual void parse(bool nocode = false);
 
     //! Return top level markdown documentation for this packet
     virtual std::string getTopLevelMarkdown(bool global = false, const std::vector<std::string>& ids = std::vector<std::string>()) const;

@@ -3,7 +3,6 @@
 #include "shuntingyard.h"
 #include "encodedlength.h"
 #include <math.h>
-#include <iostream>
 #include <algorithm>
 
 EnumElement::EnumElement(ProtocolParser *parse, EnumCreator *creator, const std::string& parent, ProtocolSupport supported) :
@@ -31,8 +30,10 @@ void EnumElement::checkAgainstKeywords()
     }
 }
 
-void EnumElement::parse()
+void EnumElement::parse(bool nocode)
 {
+    (void)nocode;
+
     if(e == nullptr)
         return;
 
@@ -152,11 +153,11 @@ void EnumCreator::clear(void)
  * also set the header reference file name that others need to include to use
  * this enum.
  */
-void EnumCreator::parseGlobal(void)
+void EnumCreator::parseGlobal(bool nocode)
 {
     isglobal = true;
 
-    parse();
+    parse(nocode);
 
     isglobal = false;
 }
@@ -165,8 +166,10 @@ void EnumCreator::parseGlobal(void)
 /*!
  * Parse an Enum tag from the xml to create an enumeration.
  */
-void EnumCreator::parse(void)
+void EnumCreator::parse(bool nocode)
 {
+    (void)nocode;
+
     clear();
 
     const XMLAttribute* map = e->FirstAttribute();
@@ -211,7 +214,6 @@ void EnumCreator::parse(void)
         emitWarning("Enumeration must be global to support file attribute");
     }
 
-
     // Put the top level comment in
     if(!comment.empty())
     {
@@ -244,13 +246,6 @@ void EnumCreator::parse(void)
 
     }// for all enum entries
 
-    // If we have no entries there is nothing to do
-    if(elements.size() <= 0)
-    {
-        output.clear();
-        return;
-    }
-
     // Check for keywords that will cause compilation problems
     checkAgainstKeywords();
 
@@ -259,6 +254,13 @@ void EnumCreator::parse(void)
 
     // Account for 1 character we will add below
     maxLength += 1;
+
+    // If we have no entries there is nothing to do
+    if((elements.size() <= 0) || nocode)
+    {
+        output.clear();
+        return;
+    }
 
     // Declare the enumeration
     output += "typedef enum\n";
@@ -294,7 +296,6 @@ void EnumCreator::parse(void)
     output += "} ";
     output += name;
     output += ";\n";
-
 
     // If we have a translate macro then we add the special case to keep code compiling if the macro is not included
     if(!translate.empty() && (lookup || lookupComment || lookupTitle))
