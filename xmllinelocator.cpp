@@ -16,7 +16,7 @@ void XMLContent::setXMLContents(const QString& text, int& startindex, int& linen
     // Remember my starting line number
     mylinenumber = linenumber;
 
-    while((startindex < (text.count()-1)) && (startindex >= 0))
+    while((startindex < (text.length()-1)) && (startindex >= 0))
     {
         // Search character by character
         QChar character = text.at(startindex++);
@@ -51,7 +51,7 @@ void XMLContent::setXMLContents(const QString& text, int& startindex, int& linen
                 linenumber += countLines(text, startindex, endindex);
 
                 if(endindex > 0)
-                {                
+                {
                     // Skip past the '>'
                     startindex = endindex + 1;
 
@@ -143,9 +143,9 @@ int XMLContent::countLines(const QString& text, int startindex, int endindex)
     int lines = 0;
 
     if(endindex < 0)
-        endindex = (text.count() -1) - startindex;
+        endindex = (text.length() -1) - startindex;
 
-    while((startindex <= endindex) && (startindex < text.count()))
+    while((startindex <= endindex) && (startindex < text.length()))
     {
         if(text.at(startindex++) == '\n')
             lines++;
@@ -260,7 +260,7 @@ void XMLLineLocator::setXMLContents(std::string _text, std::string _path, std::s
     // Convert the line endings
     text.replace("\r\n", "\n");
 
-    while(startindex < text.count())
+    while(startindex < text.length())
     {
         QChar character = text.at(startindex++);
 

@@ -5,8 +5,6 @@
 #include "protocolsupport.h"
 #include "tinyxml2.h"
 
-using namespace tinyxml2;
-
 // Forward declarations
 class ProtocolDocumentation;
 class ProtocolStructure;
@@ -190,10 +188,10 @@ protected:
     ProtocolSupport support;
 
     //! The list of xml documents we created by loading files
-    std::vector<XMLDocument*> xmldocs;
+    std::vector<tinyxml2::XMLDocument*> xmldocs;
 
     //! The document currently being parsed
-    XMLDocument* currentxml;
+    tinyxml2::XMLDocument* currentxml;
 
     //! The protocol header file (*.h)
     ProtocolHeaderFile* header;
