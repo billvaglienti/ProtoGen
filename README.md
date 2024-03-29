@@ -87,7 +87,7 @@ ProtoGen is a C++ compiled command line application, suitable for inclusion as a
 Dependencies
 ------------
 
-ProtoGen is entirely standard C++ so the only external dependency is the compiler runtime library (ProtoGen is statically linked with [TinyXML](http://www.grinninglizard.com/tinyxml2/) which provides the XML parsing.
+ProtoGen is entirely standard C++ so the only external dependency is the compiler runtime library (ProtoGen is statically linked with [TinyXML](https://github.com/leethomason/tinyxml2?tab=readme-ov-file) which provides the XML parsing).
 
 ProtoGen outputs documentation for protocol users in [MultiMarkdown](http://fletcherpenney.net/multimarkdown/) format. The host system must have MultiMarkdown installed for ProtoGen to create the html output. On windows and linux MultiMarkdown is invoked simply as "multimarkdown". On mac it is invoked as "/usr/local/bin/MultiMarkdown".
 

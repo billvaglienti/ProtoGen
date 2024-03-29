@@ -1,6 +1,7 @@
 #include "shuntingyard.h"
 #include "protocolsupport.h"
 #include <math.h>
+#include <list>
 
 
 /*!
@@ -197,7 +198,7 @@ double ShuntingYard::computePostfix(const std::string& postfix, bool* ok)
 
             if(o1.find('^') != std::string::npos)
             {
-                arguments.push_back(pow(arg1, arg2) != std::string::npos);
+                arguments.push_back(pow(arg1, arg2));
             }
             else if(o1.find('*') != std::string::npos)
             {
