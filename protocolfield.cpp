@@ -623,7 +623,13 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
                 // The length of the old and new packets is the same (2 bytes)
                 // which means the default value for the augmented bit will
                 // always be overwritten with zero.
-                emitWarning("Bitfield with non-zero default which does not start a new byte; default may not be obeyed");
+
+                // It is possible that the default is an enumeration which evaluates to zero
+                bool ok;
+                double defaultvalue = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(defaultString), &ok);
+
+                if(!ok || (defaultvalue != 0))
+                    emitWarning("Bitfield with non-zero default which does not start a new byte; default may not be obeyed");
             }
 
         }
