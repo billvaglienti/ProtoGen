@@ -587,54 +587,91 @@ void ProtocolField::setPreviousEncodable(Encodable* prev)
     }
 
     if(prevField == NULL)
+    {
+        if(encodedType.isBitfield)
+            bitfieldData.needsDefaultSizeCheck = 1;
+
         return;
+    }
 
     // Are we the start of part of a new bitfield group (or are we not a bitfield at all)?
     // Which means the previous field terminates that group (if any)
     if(bitfieldData.groupStart || !encodedType.isBitfield)
         prevField->setTerminatesBitfield(true);
 
-    if(prevField->isBitfield() && (encodedType.isBitfield))
+    if(encodedType.isBitfield)
     {
-        // Are we part of a bitfield group?
-        if(!bitfieldData.groupStart)
+        if(prevField->isBitfield())
         {
-            // We did not start a group, we might be a member of a previous group
-            bitfieldData.groupMember = prevField->bitfieldData.groupMember;
-
-            // Previous bitfield does not terminate the bitfields
-            prevField->setTerminatesBitfield(false);
-
-            // We start at some nonzero bitcount that continues from the previous
-            setStartingBitCount(prevField->getEndingBitCount());
-
-            // Now that we know our starting bitcount we can apply the bitfield defaults warning
-            if(!defaultString.empty() && (defaultString != "0") && (bitfieldData.startingBitCount != 0) && !bitfieldCrossesByteBoundary())
+            // Are we part of a bitfield group?
+            if(!bitfieldData.groupStart)
             {
-                // The key concept is this: bitfields can have defaults, but if
-                // the bitfield does not start a new byte it is possible (not
-                // guaranteed) that the default will be overwritten because the
-                // previous bitfield will have caused the packet length to
-                // satisfy the length requirement. As an example:
-                //
-                // Old packet = 1 byte + 1 bit.
-                // New augmented packet = 1 byte + 2 bits (second bit has a default).
-                //
-                // The length of the old and new packets is the same (2 bytes)
-                // which means the default value for the augmented bit will
-                // always be overwritten with zero.
+                // We did not start a group, we might be a member of a previous group
+                bitfieldData.groupMember = prevField->bitfieldData.groupMember;
 
-                // It is possible that the default is an enumeration which evaluates to zero
-                bool ok;
-                double defaultvalue = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(defaultString), &ok);
+                // Previous bitfield does not terminate the bitfields
+                prevField->setTerminatesBitfield(false);
 
-                if(!ok || (defaultvalue != 0))
-                    emitWarning("Bitfield with non-zero default which does not start a new byte; default may not be obeyed");
-            }
+                // We start at some nonzero bitcount that continues from the previous
+                setStartingBitCount(prevField->getEndingBitCount());
 
-        }
+                if(!bitfieldData.groupMember)
+                {
+                    // If this starts or crosses a byte boundary we need to do the size check
+                    if(((bitfieldData.startingBitCount%8) == 0) || bitfieldCrossesByteBoundary())
+                        bitfieldData.needsDefaultSizeCheck = 1;
 
-    }// if previous and us are bitfields
+                    // Interesting concept, if our previous field needed the default size
+                    // check, but it is null, then we can skip that default size check
+                    // and apply it to this field.
+                    if(prevField->bitfieldData.needsDefaultSizeCheck)
+                    {
+                        if(prevField->inMemoryType.isNull)
+                        {
+                            prevField->bitfieldData.needsDefaultSizeCheck = 0;
+                            bitfieldData.needsDefaultSizeCheck = 1;
+                        }
+                    }
+
+                }// If not part of a bitfield group
+
+                // Now that we know our starting bitcount we can apply the bitfield defaults warning
+                if(!defaultString.empty() && (defaultString != "0") && ((bitfieldData.startingBitCount%8) != 0) && !bitfieldCrossesByteBoundary())
+                {
+                    // The key concept is this: bitfields can have defaults, but if
+                    // the bitfield does not start a new byte it is possible (not
+                    // guaranteed) that the default will be overwritten because the
+                    // previous bitfield will have caused the packet length to
+                    // satisfy the length requirement. As an example:
+                    //
+                    // Old packet = 1 byte + 1 bit.
+                    // New augmented packet = 1 byte + 2 bits (second bit has a default).
+                    //
+                    // The length of the old and new packets is the same (2 bytes)
+                    // which means the default value for the augmented bit will
+                    // always be overwritten with zero.
+
+                    // It is possible that the default is an enumeration which evaluates to zero
+                    bool ok;
+                    double defaultvalue = ShuntingYard::computeInfix(parser->replaceEnumerationNameWithValue(defaultString), &ok);
+
+                    if(!ok || (defaultvalue != 0))
+                        emitWarning("Bitfield with non-zero default which does not start a new byte; default may not be obeyed");
+                }
+
+            }// if not the start of bitfield group
+            else
+                bitfieldData.needsDefaultSizeCheck = 1; // start of group - needs default size check
+
+        }// if previous field was bitfield
+        else
+        {
+            // First bit field - needs default size check
+            bitfieldData.needsDefaultSizeCheck = 1;
+
+        }// else previous field not a bit field
+
+    }// if we are bitfield
 
     computeEncodedLength();
 
@@ -1181,11 +1218,7 @@ void ProtocolField::parse(bool nocode)
 
     if(inMemoryType.isNull)
     {
-        // Null types are not in memory, therefore cannot have defaults or variable arrays
-        /// TODO: is this strictly true? It seems we could relax this requirement somewhat
-        variableArray.clear();
-        variable2dArray.clear();
-        defaultString.clear();
+        // Null types are not in memory, therefore cannot override previous
         overridesPrevious = false;
 
         // A special case, where we use the encoded type data in place of the
@@ -3344,6 +3377,9 @@ std::string ProtocolField::getMapDecodeString(void) const
  */
 std::string ProtocolField::getSetToDefaultsString(bool isStructureMember) const
 {
+    if(inMemoryType.isNull)
+        return std::string();
+
     return getSetToValueString(isStructureMember, defaultString);
 }
 
@@ -4397,31 +4433,23 @@ std::string ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStru
         return output;
 
     // If this field has a default value, or overrides a previous value
-    if(defaultEnabled && (!defaultString.empty() || overridesPrevious))
+    if(defaultEnabled && (!defaultString.empty() || overridesPrevious) && bitfieldData.needsDefaultSizeCheck)
     {
-        int bytes;
-
         std::string lengthString;
 
-        // How many bytes do we need? From 1 to 8 bits we need 1 byte, from
-        // 9 to 15 we need 2 bytes, etc. However, some bits may already have
-        // gone by
         if(bitfieldData.groupStart)
-            bytes = (bitfieldData.groupBits+7)/8;
-        else
-            bytes = ((*bitcount) + encodedType.bits + 7)/8;
-
-        lengthString = std::to_string(bytes);
-
-        // Technically we only need to check the length if bitcount is zero
-        // (i.e. a new byte is being decoded) or if this bitfield will cross
-        // a byte boundary (again, requiring a new byte)
-        if(((*bitcount) == 0) || (bytes > 1))
         {
-            output += TAB_IN + "if(_pg_byteindex + " + lengthString + " > _pg_numbytes)\n";
-            output += TAB_IN + TAB_IN + "return 1;\n";
-            output += "\n";
+            lengthString = std::to_string((bitfieldData.groupBits+7)/8);
         }
+        else if(!bitfieldData.groupMember)
+        {
+            // Account for bits that have already gone by
+            lengthString = std::to_string(((*bitcount) + encodedType.bits + 7)/8);
+        }
+
+        output += TAB_IN + "if(_pg_byteindex + " + lengthString + " > _pg_numbytes)\n";
+        output += TAB_IN + TAB_IN + "return " + getReturnCode(true) + ";\n";
+        output += "\n";
     }
 
     if(bitfieldData.groupStart)

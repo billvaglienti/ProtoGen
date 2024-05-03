@@ -73,7 +73,8 @@ public:
         groupBits(0),
         groupStart(false),
         groupMember(false),
-        lastBitfield(true)
+        lastBitfield(true),
+        needsDefaultSizeCheck(false)
     {}
 
 
@@ -85,6 +86,7 @@ public:
         groupStart = false;
         groupMember = false;
         lastBitfield = true;
+        needsDefaultSizeCheck = false;
     }
 
     int startingBitCount;   //!< The starting bit count for this field if a bitfield
@@ -92,6 +94,7 @@ public:
     bool groupStart;        //!< true if this bitfield starts a group
     bool groupMember;       //!< true if this bitfield is a member of a group
     bool lastBitfield;      //!< true if this bitfield is the last in a list of bitfields
+    bool needsDefaultSizeCheck; //! true if this bitfield should check the packet size before decoding
 };
 
 

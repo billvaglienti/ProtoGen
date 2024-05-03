@@ -234,7 +234,7 @@ efficiently encode data for little or big endian architectures.">
         <Data name="description" inMemoryType="string" array="32" comment="The board description"/>
     </Structure>
 
-    <Packet name="Version" parameterInterface="true" structureInterface="true" dbc="true"
+    <Packet name="Version" parameterInterface="true" structureInterface="true"
             comment="Version information for the software and hardware. Send
             this packet with zero length to request the version information.">
 
