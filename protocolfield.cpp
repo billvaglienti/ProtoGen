@@ -704,13 +704,11 @@ bool ProtocolField::getOverriddenTypeData(ProtocolField* prev)
     // Let the previous one know that we are overriding it
     prev->isOverriden = true;
 
-    // If we get here, then this is our baby. Update the data being overriden.
-    inMemoryType = prev->inMemoryType;
-
     if(!inMemoryType.enumName.empty())
         emitWarning("Enumeration name ignored for overridden field");
 
-    inMemoryType.enumName = prev->inMemoryType.enumName;
+    // If we get here, then this is our baby. Update the data being overriden.
+    inMemoryType = prev->inMemoryType;
 
     if(!array.empty())
         emitWarning("Array information ignored for overridden field");
@@ -4642,11 +4640,9 @@ std::string ProtocolField::getDecodeStringForBitfield(int* bitcount, bool isStru
             // Increment our byte counter, 1 to 8 bits should result in 1 byte, 9 to 16 bits in 2 bytes, etc.
             int bytes = ((*bitcount)+7)/8;
 
-            output += TAB_IN + "_pg_byteindex += " + std::to_string(bytes) + "; // close bit field\n\n";
+            output += TAB_IN + "_pg_byteindex += " + std::to_string(bytes) + "; // close bit field\n";
 
         }// else if terminating a non-group
-
-        output += "\n";
 
         // Reset bit counter
         *bitcount = 0;
@@ -4684,8 +4680,6 @@ std::string ProtocolField::getCloseBitfieldString(int* bitcount) const
         {
            output += spacing + "bitcount = 0; // close bit field, byte index already advanced\n";
         }
-
-        output += "\n";
 
         // Reset bit counter
         (*bitcount) = 0;
