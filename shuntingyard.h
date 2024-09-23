@@ -24,6 +24,7 @@
  * \author Five By Five Development, LLC
  */
 
+#include <stdint.h>
 #include <string>
 
 class ShuntingYard
