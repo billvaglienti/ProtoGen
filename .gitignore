@@ -31,3 +31,5 @@ Novatel/floatspecial.c
 Novatel/floatspecial.h
 Novatel/Novatel.markdown
 Novatel/Novatel.html
+/build
+*.tgz

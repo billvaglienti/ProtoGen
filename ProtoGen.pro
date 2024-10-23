@@ -8,7 +8,8 @@ CONFIG   += console
 }
 
 macx{
-    CONFIG   += app_bundle
+    CONFIG += app_bundle
+    CONFIG += sdk_no_version_check
 }
 
 CONFIG += c++1z
