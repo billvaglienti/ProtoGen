@@ -15,7 +15,7 @@
 #include <fstream>
 
 // The version of the protocol generator is set here
-const std::string ProtocolParser::genVersion = "3.6.g";
+const std::string ProtocolParser::genVersion = "3.6.h";
 
 /*!
  * \brief ProtocolParser::ProtocolParser
@@ -1759,153 +1759,168 @@ bool ProtocolParser::isFieldClear(const std::string& value)
     return result;
 }
 
-
 /*!
- * Get the string used for inline css. This must be bracketed in <style> tags in the html
+ * Get the string used for inline css. This must be bracketed in <style> tags in the html.
+ * Notice the terrible formatting: some markdown parsers will incorrectly trigger on
+ * indenting and add html blocks around this.
  * \return the inline csss string
  */
 std::string ProtocolParser::getDefaultInlinCSS(void)
 {
-    std::string css("\
-body {\n\
-    text-align:justify;\n\
-    max-width: 25cm;\n\
-    margin-left: auto;\n\
-    margin-right: auto;\n\
-    font-family: Georgia;\n\
-    counter-reset: h1counter h2counter  h3counter toc1counter toc2counter toc3counter;\n\
- }\n\
-\n\
-table {\n\
-   border: 1px solid #e0e0e0;\n\
-   border-collapse: collapse;\n\
-   margin-bottom: 25px;\n\
-}\n\
-\n\
-th, td {\n\
-    border: 1px solid #e0e0e0;\n\
-    font-family: Courier, monospace;\n\
-    font-size: 90%;\n\
-    padding: 2px;\n\
-}\n\
-\n\
-/*\n\
- * Alternate colors for the table, including the heading row\n\
- */\n\
-th {\n\
-background-color: #e0e0e0   \n\
-}\n\
-tr:nth-child(even){background-color: #e0e0e0}\n\
-\n\
-h1, h2, h3, h4, h5 { font-family: Arial; }\n\
-h1 { font-size:120%; margin-bottom: 25px; }\n\
-h2 { font-size:110%; margin-bottom: 15px; }\n\
-h3 { font-size:100%; margin-bottom: 10px;}\n\
-h4, li { font-size:100%; }\n\
-\n\
-caption{ font-family:Arial; font-size:85%;}\n\
-\n\
-code, pre, .codelike {\n\
-    font-family: Courier, monospace;\n\
-    font-size: 100%;\n\
-    color: darkblue;\n\
-}\n\
-\n\
-/*\n\
- * Counters for the main headings\n\
- */\n\
-\n\
-h1:before {\n\
-    counter-increment: h1counter;\n\
-    content: counter(h1counter) \"\\00a0 \";\n\
-}\n\
-h1 {\n\
-    counter-reset: h2counter;\n\
-}\n\
-\n\
-h2:before {\n\
-    counter-increment: h2counter;\n\
-    content: counter(h1counter) \".\" counter(h2counter) \"\\00a0 \";\n\
-}\n\
-h2 {\n\
-    counter-reset: h3counter;\n\
-}\n\
-\n\
-h3:before {\n\
-  counter-increment: h3counter;\n\
-  content: counter(h1counter) \".\" counter(h2counter) \".\" counter(h3counter) \"\\00a0 \";\n\
-}\n\
-\n\
-/*\n\
- * The document title, centered\n\
- */\n\
-doctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:25px; text-align:center; display:block;}\n\
-titlepagetext {text-align:center; display:block;}\n\
-\n\
-/*\n\
- * The table of contents formatting\n\
- */\n\
-toctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:25px; display:block;}\n\
-toc1, toc2, toc3 {font-family: Arial; font-size:100%; margin-bottom:2px; display:block;}\n\
-toc1 {text-indent: 0px;}\n\
-toc2 {text-indent: 15px;}\n\
-toc3 {text-indent: 30px;}\n\
-\n\
-toc1:before {\n\
-    content: counter(toc1counter) \"\\00a0 \";\n\
-    counter-increment: toc1counter;\n\
-}\n\
-toc1 {\n\
-    counter-reset: toc2counter;\n\
-}\n\
-\n\
-toc2:before {\n\
-    content: counter(toc1counter) \".\" counter(toc2counter) \"\\00a0 \";\n\
-    counter-increment: toc2counter;\n\
-}\n\
-toc2 {\n\
-    counter-reset: toc3counter;\n\
-}\n\
-\n\
-toc3:before {\n\
-  content: counter(toc1counter) \".\" counter(toc2counter) \".\" counter(toc3counter) \"\\00a0 \";\n\
-  counter-increment: toc3counter;\n\
-}\n\
-\n\
-/* How it looks on a screen, notice the fancy hr blocks and lack of page breaks */\n\
-@media screen {\n\
-  body {\n\
-    background-color: #f0f0f0;\n\
-  }\n\
-  .page-break { display: none; }\n\
-  hr { \n\
-    height: 25px; \n\
-    border-style: solid; \n\
-    border-color: gray; \n\
-    border-width: 1px 0 0 0; \n\
-    border-radius: 10px; \n\
-  } \n\
-  hr:before { \n\
-    display: block; \n\
-    content: \"\"; \n\
-    height: 25px; \n\
-    margin-top: -26px; \n\
-    border-style: solid; \n\
-    border-color: gray; \n\
-    border-width: 0 0 1px 0; \n\
-    border-radius: 10px; \n\
-  }\n\
-}\n\
-\n\
-/* How it looks when printed, hr turned off, in favor of page breaks*/\n\
-@media print {\n\
-  hr {display: none;}\n\
-  body {background-color: white;}\n\
-  .page-break{page-break-before: always;}\n\
-}\n");
-
-    return css;
-
+    return R"(header {
+height: 400px;
+}
+img {
+position:relative;
+top:0px; left:30%;
+width:40%;
+border:none;
+}
+body {
+line-height: 1.5;
+text-align:justify;
+max-width: 25cm;
+margin-left: auto;
+margin-right: auto;
+font-family: Georgia;
+counter-reset: h1counter h2counter h3counter toc1counter toc2counter toc3counter tablecounter;
+}
+table {
+margin-left: 60px;
+margin-right: auto;
+border: 2px solid #e0e0e0;
+border-collapse: collapse;
+margin-bottom: 25px;
+}
+th, td {
+line-height: 1;
+border: 1px solid #e0e0e0;
+font-size: 90%;
+padding: 7px;
+font-family: Courier, monospace
+}
+/* Alternate colors for the table, including the heading row */
+th {
+background-color: #e0e0e0
+}
+tr:nth-child(even){background-color: #e0e0e0}
+h1, h2, h3, h4, h5 { font-family: Arial; }
+h1 { font-size:120%; }
+h2 { font-size:110%; margin-top: 20px; margin-left: 30px;}
+h3 { font-size:100%; margin-top: 10px; margin-left: 60px;}
+h4, li { font-size:100%;}
+h2 ~ p {margin-left: 30px;}
+h3 ~ p {margin-left: 60px;}
+h1 + p,
+h1 + p + p,
+h1 + p + p + p,
+h1 + p + p + p + p,
+h1 + p + p + p + p + p,
+h1 + p + p + p + p + p + p,
+h1 + p + p + p + p + p + p + p,
+h1 + p + p + p + p + p + p + p + p {
+margin-left: 0px;
+}
+h2 + p,
+h2 + p + p,
+h2 + p + p + p,
+h2 + p + p + p + p,
+h2 + p + p + p + p + p,
+h2 + p + p + p + p + p + p,
+h2 + p + p + p + p + p + p + p,
+h2 + p + p + p + p + p + p + p + p,
+ul + p,
+ul + p + p,
+ul + p + p + p {
+margin-left: 30px;
+}
+ul {margin-left: 37px;}
+caption{ font-family:Arial; font-size:85%; margin-bottom: 5px;}
+code, pre, .codelike {
+font-family: Courier, monospace;
+font-size: 100%;
+color: darkblue;
+}
+/* Counters for the main headings */
+h1:before {
+counter-increment: h1counter;
+content: counter(h1counter) "\00a0 ";
+}
+h1 {
+counter-reset: h2counter;
+}
+h2:before {
+counter-increment: h2counter;
+content: counter(h1counter) "." counter(h2counter) "\00a0 ";
+}
+h2 {
+counter-reset: h3counter;
+}
+h3:before {
+counter-increment: h3counter;
+content: counter(h1counter) "." counter(h2counter) "." counter(h3counter) "\00a0 ";
+}
+caption:before {
+counter-increment: tablecounter;
+content: "Table " counter(tablecounter) ": ";
+}
+/* The document title, centered */
+doctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:25px; text-align:center; display:block;}
+titlepagetext {text-align:center; display:block;}
+/* The table of contents formatting */
+toctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:10px; display:block;}
+toc1, toc2, toc3 {font-family: Arial; font-size:100%; margin-bottom:2px; display:block;}
+toc1 {text-indent: 0px; margin-top: 15px;}
+toc2 {text-indent: 15px; margin-top: 5px;}
+toc3 {text-indent: 30px;}
+toc1:before {
+content: counter(toc1counter) "\00a0 ";
+counter-increment: toc1counter;
+}
+toc1 {
+counter-reset: toc2counter;
+}
+toc2:before {
+content: counter(toc1counter) "." counter(toc2counter) "\00a0 ";
+counter-increment: toc2counter;
+}
+toc2 {
+counter-reset: toc3counter;
+}
+toc3:before {
+content: counter(toc1counter) "." counter(toc2counter) "." counter(toc3counter) "\00a0 ";
+counter-increment: toc3counter;
+}
+/* How it looks on a screen, notice the fancy hr blocks and lack of page breaks */
+@media screen {
+body {
+background-color: #f0f0f0;
+}
+.page-break { display: none; }
+hr {
+height: 25px;
+border-style: solid;
+border-color: gray;
+border-width: 1px 0 0 0;
+border-radius: 10px;
+}
+hr:before {
+display: block;
+content: "";
+height: 25px;
+margin-top: -26px;
+border-style: solid;
+border-color: gray;
+border-width: 0 0 1px 0;
+border-radius: 10px;
+}
+}
+/* How it looks when printed, hr turned off, in favor of page breaks*/
+@media print {
+hr {display: none;}
+body {background-color: white;}
+.page-break{page-break-before: always;}
+})";
 }// ProtocolParser::getDefaultInlinCSS
 
 
