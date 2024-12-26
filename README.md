@@ -43,7 +43,7 @@ The project can then be built in the Qt Creator IDE, or in the command line with
 qmake ./ProtoGen.pro
 make
 ```
-This generates the `./ProtoGen` executable.
+This generates the `./ProtoGen` executable. It may give an error about multimarkdown which is an optional dependency (details below).
 
 ---
 
