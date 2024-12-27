@@ -25,6 +25,28 @@ This document refers to ProtoGen version 3.5. Source code for ProtoGen is availa
 
 ---
 
+Build
+=====
+
+ProtoGen by default is built using Qt. See [this page](https://doc.qt.io/qt-5/topics-app-development.html) for information on building for your OS.
+
+For Ubuntu, install the dev tools with
+
+```bash
+sudo apt update
+sudo apt install qtbase5-dev qt5-qmake cmake
+```
+
+The project can then be built in the Qt Creator IDE, or in the command line with
+
+```
+qmake ./ProtoGen.pro
+make
+```
+This generates the `./ProtoGen` executable. It may give an error about multimarkdown which is an optional dependency (details below).
+
+---
+
 Usage
 =====
 
