@@ -990,32 +990,67 @@ std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, e
 
     if(isTypeSigned(encoded))
     {
-        std::string max;
-        std::string min;
+        std::string intmax;
+        std::string intmin;
+        std::string floatmax;
+        std::string floatmin;
+
         switch(typeLength(encoded))
         {
         default:
-        case 1: max = "127"; break;
-        case 2: max = "32767"; break;
-        case 3: max = "8388607"; break;
-        case 4: max = "2147483647l"; break;
-        case 5: max = "549755813887ll"; break;
-        case 6: max = "140737488355327ll"; break;
-        case 7: max = "36028797018963967ll"; break;
-        case 8: max = "9223372036854775807ll"; break;
+        case 1: intmax = "127"; break;
+        case 2: intmax = "32767"; break;
+        case 3: intmax = "8388607"; break;
+        case 4: intmax = "2147483647l"; break;
+        case 5: intmax = "549755813887ll"; break;
+        case 6: intmax = "140737488355327ll"; break;
+        case 7: intmax = "36028797018963967ll"; break;
+        case 8: intmax = "9223372036854775807ll"; break;
         }
 
         switch(typeLength(encoded))
         {
         default:
-        case 1: min = "(-127 - 1)"; break;
-        case 2: min = "(-32767 - 1)"; break;
-        case 3: min = "(-8388607l - 1)"; break;
-        case 4: min = "(-2147483647l - 1)"; break;
-        case 5: min = "(-549755813887ll - 1)"; break;
-        case 6: min = "(-140737488355327ll - 1)"; break;
-        case 7: min = "(-36028797018963967ll - 1)"; break;
-        case 8: min = "(-9223372036854775807ll - 1)"; break;
+        case 1: intmin = "(-127 - 1)"; break;
+        case 2: intmin = "(-32767 - 1)"; break;
+        case 3: intmin = "(-8388607l - 1)"; break;
+        case 4: intmin = "(-2147483647l - 1)"; break;
+        case 5: intmin = "(-549755813887ll - 1)"; break;
+        case 6: intmin = "(-140737488355327ll - 1)"; break;
+        case 7: intmin = "(-36028797018963967ll - 1)"; break;
+        case 8: intmin = "(-9223372036854775807ll - 1)"; break;
+        }
+
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: floatmax = "127.0"; break;
+        case 2: floatmax = "32767.0"; break;
+        case 3: floatmax = "8388607.0"; break;
+        case 4: floatmax = "2147483647.0"; break;
+        case 5: floatmax = "549755813887.0"; break;
+        case 6: floatmax = "140737488355327.0"; break;
+        case 7: floatmax = "36028797018963967.0"; break;
+        case 8: floatmax = "9223372036854775807.0"; break;
+        }
+
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: floatmin = "-128.0"; break;
+        case 2: floatmin = "-32768.0"; break;
+        case 3: floatmin = "-8388608.0"; break;
+        case 4: floatmin = "-2147483648.0"; break;
+        case 5: floatmin = "-549755813888.0"; break;
+        case 6: floatmin = "-140737488355328.0"; break;
+        case 7: floatmin = "-36028797018963968.0"; break;
+        case 8: floatmin = "-9223372036854775808.0"; break;
+        }
+
+        if(typeLength(inmemory) <= 4)
+        {
+            floatmin += "f";
+            floatmax += "f";
         }
 
         function += "    " + typeName(inmemory) + " scaledvalue = (" + typeName(inmemory) + ")(value*scaler);\n";
@@ -1024,15 +1059,15 @@ std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, e
         function += "    // Make sure number fits in the range\n";
         function += "    if(scaledvalue >= 0)\n";
         function += "    {\n";
-        function += "        if(scaledvalue >= " + max + ")\n";
-        function += "            number = " + max + ";\n";
+        function += "        if(scaledvalue >= " + floatmax + ")\n";
+        function += "            number = " + intmax + ";\n";
         function += "        else\n";
         function += "            number = (" + typeName(encoded) + ")(scaledvalue + " + halfFraction + "); // account for fractional truncation\n";
         function += "    }\n";
         function += "    else\n";
         function += "    {\n";
-        function += "        if(scaledvalue <= " + min + ")\n";
-        function += "            number = " + min + ";\n";
+        function += "        if(scaledvalue <= " + floatmin + ")\n";
+        function += "            number = " + intmin + ";\n";
         function += "        else\n";
         function += "            number = (" + typeName(encoded) + ")(scaledvalue - " + halfFraction + "); // account for fractional truncation\n";
         function += "    }\n";
@@ -1041,27 +1076,46 @@ std::string ProtocolScaling::fullFloatEncodeFunction(inmemorytypes_t inmemory, e
     }
     else
     {
-        std::string max;
+        std::string intmax;
+        std::string floatmax;
 
         switch(typeLength(encoded))
         {
         default:
-        case 1: max = "255u"; break;
-        case 2: max = "65535u"; break;
-        case 3: max = "16777215ul"; break;
-        case 4: max = "4294967295ul"; break;
-        case 5: max = "1099511627775ull"; break;
-        case 6: max = "281474976710655ull"; break;
-        case 7: max = "72057594037927935ull"; break;
-        case 8: max = "18446744073709551615ull"; break;
+        case 1: intmax = "255u"; break;
+        case 2: intmax = "65535u"; break;
+        case 3: intmax = "16777215ul"; break;
+        case 4: intmax = "4294967295ul"; break;
+        case 5: intmax = "1099511627775ull"; break;
+        case 6: intmax = "281474976710655ull"; break;
+        case 7: intmax = "72057594037927935ull"; break;
+        case 8: intmax = "18446744073709551615ull"; break;
+        }
+
+        switch(typeLength(encoded))
+        {
+        default:
+        case 1: floatmax = "255.0"; break;
+        case 2: floatmax = "65535.0"; break;
+        case 3: floatmax = "16777215.0"; break;
+        case 4: floatmax = "4294967295.0"; break;
+        case 5: floatmax = "1099511627775.0"; break;
+        case 6: floatmax = "281474976710655.0"; break;
+        case 7: floatmax = "72057594037927935.0"; break;
+        case 8: floatmax = "18446744073709551615.0"; break;
+        }
+
+        if(typeLength(inmemory) <= 4)
+        {
+            floatmax += "f";
         }
 
         function += "    " + typeName(inmemory) + " scaledvalue = (" + typeName(inmemory) + ")((value - min)*scaler);\n";
         function += "    " + typeName(encoded) + " number;\n";
         function += "\n";
         function += "    // Make sure number fits in the range\n";
-        function += "    if(scaledvalue >= " + max + ")\n";
-        function += "        number = " + max + ";\n";
+        function += "    if(scaledvalue >= " + floatmax + ")\n";
+        function += "        number = " + intmax + ";\n";
         function += "    else if(scaledvalue <= 0)\n";
         function += "        number = 0;\n";
         function += "    else\n";
