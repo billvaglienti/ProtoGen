@@ -12,6 +12,7 @@ ProtoGenInstall/
 *Makefile
 *.Release
 *.Debug
+*.DS_Store
 Novatel/NovatelStructures.c
 Novatel/NovatelStructures.h
 Novatel/scaleddecode.c
