@@ -452,7 +452,7 @@ std::string Encodable::getRepeatsDocumentationDetails(void) const
         else
             arrayLink = "["+array+"](#"+arrayLink+")";
 
-        if(variableArray.empty())
+        if(!variableArray.empty())
             variableArrayLink = parser->getEnumerationNameForEnumValue(variableArray);
 
         if(variableArrayLink.empty())
@@ -470,7 +470,7 @@ std::string Encodable::getRepeatsDocumentationDetails(void) const
         else
             array2dLink = "["+array2d+"](#"+array2dLink+")";
 
-        if(variable2dArray.empty())
+        if(!variable2dArray.empty())
             variable2dArrayLink = parser->getEnumerationNameForEnumValue(variable2dArray);
 
         if(variable2dArrayLink.empty())

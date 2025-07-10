@@ -2419,14 +2419,21 @@ void ProtocolField::getDocumentationDetails(std::vector<int>& outline, std::stri
     else
     {
         // The encoding
-        if(encodedType.isFixedString)
+        if(encodedType.isFixedString || encodedType.isString)
         {
-            encodings.push_back("Zero terminated string of exactly " + array + " bytes");
-            repeats.push_back(std::string());
-        }
-        else if( encodedType.isString)
-        {
-            encodings.push_back("Zero-terminated string up to " + array + " bytes");
+            // Length of the string could be an enumeration
+            std::string arrayLink = parser->getEnumerationNameForEnumValue(array);
+
+            if(arrayLink.empty())
+                arrayLink = array;
+            else
+                arrayLink = "["+array+"](#"+arrayLink+")";
+
+            if(encodedType.isFixedString)
+                encodings.push_back("Zero-terminated string of exactly " + arrayLink + " bytes");
+            else
+                encodings.push_back("Zero-terminated string up to " + arrayLink + " bytes");
+
             repeats.push_back(std::string());
         }
         else
