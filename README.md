@@ -47,6 +47,14 @@ This generates the `./ProtoGen` executable. It may give an error about multimark
 
 ---
 
+Alternative, CMake can be used to build the Protogen executable.
+
+```bash
+cmake -B build
+cmake --build build
+./build/ProtoGen --help
+```
+
 Usage
 =====
 
