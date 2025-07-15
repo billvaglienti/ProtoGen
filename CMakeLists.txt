@@ -60,3 +60,6 @@ target_include_directories(ProtoGen
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(ProtoGen PRIVATE _DEBUG)
 endif()
+
+include(GNUInstallDirs)
+install(TARGETS ProtoGen)

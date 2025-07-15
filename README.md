@@ -52,7 +52,8 @@ Alternative, CMake can be used to build the Protogen executable.
 ```bash
 cmake -B build
 cmake --build build
-./build/ProtoGen --help
+cmake --install build --prefix install
+./install/bin/ProtoGen --help
 ```
 
 Usage
