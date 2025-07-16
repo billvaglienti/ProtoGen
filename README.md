@@ -47,7 +47,7 @@ This generates the `./ProtoGen` executable. It may give an error about multimark
 
 ---
 
-Alternative, CMake can be used to build the Protogen executable.
+Alternative, CMake can be used to build the Protogen package without relying on QT.
 
 ```bash
 cmake -B build
@@ -55,6 +55,8 @@ cmake --build build
 cmake --install build --prefix install
 ./install/bin/ProtoGen --help
 ```
+
+When building with CMake, this allows the ProtoGen package to be found and the executable to be called from other CMake projects.
 
 Usage
 =====
@@ -130,6 +132,9 @@ Using ProtoGen as a compiler pre-build step
 ProtoGen will not touch an output file if the generated file is not different from what already exists. In this way you can run ProtoGen repeatedly without worrying about causing unneeded rebuild of your project. ProtoGen runs quickly, and if you don't use the `-yes-doxygen` switch it is typically fast enough to run it every time you compile. Note that the generated files include a comment with the ProtoGen version, so if you change ProtoGen version you will get updated output (and hence a project rebuild) even if the protocol code did not change.
 
 ProtoGen applies many checks to the protocol xml. In most cases if a problem is discovered the protocol is altered as needed and ProtoGen will output a warning on stdout. The warnings conform to the layout most IDEs will expect; so you can click directly on the warning and go straight to the offending line in the xml (I've only tested this in Qt Creator).
+
+If using CMake in a consuming project, a CMake function is included for calling protogen at configure time.
+See [test/CMakeLists.txt](./test/CMakeLists.txt) for usage. This requires building and installing ProtoGen with CMake (see above).
 
 Protocol ICD
 ================
