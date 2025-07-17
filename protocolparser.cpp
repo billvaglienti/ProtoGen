@@ -14,7 +14,8 @@
 #include <filesystem>
 #include <fstream>
 
-// The version of the protocol generator is set here
+// The version of the protocol generator is set here.
+// This should match CMakeLists.txt.
 const std::string ProtocolParser::genVersion = "3.6.k";
 
 /*!
